@@ -3,15 +3,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
-const APP_VERSION = '1.4.0';
-const VERSION_HISTORY = [
-  { version: '1.4.0', datum: '06.06.2026', beschreibung: 'Rechnungen-Tabs, Firmendaten in Rechnungen, App-Einstellungen' },
-  { version: '1.3.0', datum: '06.06.2026', beschreibung: 'Korrekte Umlaute, Landing Page aktualisiert' },
-  { version: '1.2.0', datum: '06.06.2026', beschreibung: 'Einstellungen & Firmendaten für Rechnungs-PDFs' },
-  { version: '1.1.0', datum: '06.06.2026', beschreibung: 'E-Rechnungen mit PDF-Export' },
-  { version: '1.0.0', datum: '06.06.2026', beschreibung: 'MVP Launch: Kunden, Aufträge, Dashboard' },
-];
-
 export default function Einstellungen() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -20,7 +11,6 @@ export default function Einstellungen() {
   const [status, setStatus] = useState('');
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
-  const [changelog, setChangelog] = useState(false);
 
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setUser(data.user)); }, []);
 
@@ -45,7 +35,6 @@ export default function Einstellungen() {
       </div>
 
       <div className="space-y-5">
-        {/* Konto */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Konto</h2>
           <div className="flex items-center gap-4">
@@ -59,7 +48,6 @@ export default function Einstellungen() {
           </div>
         </div>
 
-        {/* Passwort */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Passwort ändern</h2>
           <form onSubmit={handlePasswort} className="space-y-3">
@@ -79,40 +67,19 @@ export default function Einstellungen() {
           </form>
         </div>
 
-        {/* App-Info */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-3">App-Info</h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-gray-500">Version</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">v{APP_VERSION}</span>
-                <button onClick={() => setChangelog(!changelog)} className="text-xs text-gray-400 hover:text-gray-600 underline">
-                  {changelog ? 'Ausblenden' : 'Changelog'}
-                </button>
-              </div>
+              <span className="text-gray-500">Status</span>
+              <span className="bg-yellow-50 text-yellow-700 text-xs font-semibold px-2.5 py-1 rounded-full">Beta</span>
             </div>
             <div className="flex justify-between"><span className="text-gray-500">Datenbank</span><span className="text-green-600 font-medium">● Verbunden</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Region</span><span className="text-gray-700">EU Frankfurt (DSGVO-konform)</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Domain</span><span className="text-gray-700">kanalpro.de</span></div>
           </div>
-
-          {changelog && (
-            <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
-              {VERSION_HISTORY.map(v => (
-                <div key={v.version} className="flex gap-3 text-sm">
-                  <span className="font-mono text-blue-600 font-medium w-14 shrink-0">v{v.version}</span>
-                  <div>
-                    <span className="text-gray-400 text-xs">{v.datum} · </span>
-                    <span className="text-gray-600">{v.beschreibung}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Abmelden */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-3">Sitzung beenden</h2>
           <button onClick={handleAbmelden} className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">🚪 Abmelden</button>
