@@ -5,10 +5,11 @@ import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
 const navLinks = [
-  { href: '/dashboard',            label: 'Übersicht',  icon: '🏠' },
-  { href: '/dashboard/kunden',     label: 'Kunden',     icon: '👥' },
-  { href: '/dashboard/auftraege',  label: 'Aufträge',   icon: '📋' },
-  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: '🧾' },
+  { href: '/dashboard',              label: 'Übersicht',    icon: '🏠' },
+  { href: '/dashboard/kunden',       label: 'Kunden',       icon: '👥' },
+  { href: '/dashboard/auftraege',    label: 'Aufträge',     icon: '📋' },
+  { href: '/dashboard/rechnungen',   label: 'Rechnungen',   icon: '🧾' },
+  { href: '/dashboard/einstellungen',label: 'Einstellungen',icon: '⚙️' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -54,7 +55,8 @@ export default function DashboardLayout({ children }) {
         </nav>
         <div className="px-3 py-4 border-t border-gray-100">
           <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition">
+          <button onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition">
             🚪 Abmelden
           </button>
         </div>
