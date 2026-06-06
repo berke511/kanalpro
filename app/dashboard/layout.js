@@ -5,9 +5,10 @@ import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
 const navLinks = [
-  { href: '/dashboard',           label: 'Übersicht',  icon: '🏠' },
-  { href: '/dashboard/kunden',    label: 'Kunden',     icon: '👥' },
-  { href: '/dashboard/auftraege', label: 'Aufträge',   icon: '📋' },
+  { href: '/dashboard',            label: 'Übersicht',  icon: '🏠' },
+  { href: '/dashboard/kunden',     label: 'Kunden',     icon: '👥' },
+  { href: '/dashboard/auftraege',  label: 'Aufträge',   icon: '📋' },
+  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: '🧾' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -43,7 +44,9 @@ export default function DashboardLayout({ children }) {
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                pathname === link.href ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                pathname === link.href || pathname.startsWith(link.href + '/')
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}>
               <span>{link.icon}</span>{link.label}
             </Link>
