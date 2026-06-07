@@ -36,7 +36,7 @@ export default function AuftragDetail() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('auftraege')
-        .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse)')
+        .select('*, kunden(id, name, firmenname), objekte(id, bezeichnung, adresse)')
         .eq('id', id)
         .eq('user_id', user.id)
         .single();
@@ -56,7 +56,7 @@ export default function AuftragDetail() {
 
       // Kunden für Dropdown laden
       const { data: kundenData } = await supabase
-        .from('kunden').select('id, name, firmennamen').eq('user_id', user.id).order('name');
+        .from('kunden').select('id, name, firmenname').eq('user_id', user.id).order('name');
       setKunden(kundenData ?? []);
 
       setLaden(false);
@@ -105,7 +105,7 @@ export default function AuftragDetail() {
     // Aktualisierten Auftrag neu laden
     const { data } = await supabase
       .from('auftraege')
-      .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse)')
+      .select('*, kunden(id, name, firmenname), objekte(id, bezeichnung, adresse)')
       .eq('id', id).single();
     setAuftrag(data);
     setEditMode(false);
@@ -124,7 +124,7 @@ export default function AuftragDetail() {
 
   const cfg = STATUS_CONFIG[auftrag.status] ?? STATUS_CONFIG.offen;
   const kundeLabel = auftrag.kunden
-    ? (auftrag.kunden.firmennamen || auftrag.kunden.name)
+    ? (auftrag.kunden.firmenname || auftrag.kunden.name)
     : null;
 
   // ─── Edit-Modus ───────────────────────────────────────────────────────────────
@@ -158,7 +158,7 @@ export default function AuftragDetail() {
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">— Kein Kunde zugewiesen —</option>
                 {kunden.map(k => (
-                  <option key={k.id} value={k.id}>{k.firmennamen || k.name}</option>
+                  <option key={k.id} value={k.id}>{k.firmenname || k.name}</option>
                 ))}
               </select>
             </div>
