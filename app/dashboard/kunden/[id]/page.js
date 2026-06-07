@@ -310,12 +310,13 @@ export default function KundeDetail() {
           )}
 
           {objekte.map(o => (
-            <div key={o.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between">
-              <div>
-                <p className="font-medium text-gray-900 text-sm">{o.bezeichnung}</p>
+            <div key={o.id} className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between group hover:border-blue-200 transition">
+              <Link href={`/dashboard/kunden/${id}/objekte/${o.id}`} className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition">{o.bezeichnung}</p>
                 {o.adresse && <p className="text-gray-400 text-xs mt-0.5">{o.adresse}</p>}
-              </div>
-              <button onClick={() => deleteObjekt(o.id)}
+                <p className="text-xs text-blue-400 mt-1 opacity-0 group-hover:opacity-100 transition">🏗️ Digitaler Zwilling →</p>
+              </Link>
+              <button onClick={(e) => { e.preventDefault(); deleteObjekt(o.id); }}
                 className="text-gray-300 hover:text-red-500 transition text-xs px-2 py-1 rounded ml-4 shrink-0">
                 ✕ Entfernen
               </button>
