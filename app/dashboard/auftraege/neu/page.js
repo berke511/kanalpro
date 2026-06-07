@@ -1,34 +1,80 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
 export default function NeuerAuftrag() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillKundeId = searchParams.get('kunde_id') ?? '';
+  const prefillObjektId = searchParams.get('objekt_id') ?? '';
+
   const [kunden, setKunden] = useState([]);
-  const [form, setForm] = useState({ titel: '', beschreibung: '', kunde_id: '', status: 'offen', datum: '', adresse: '', notizen: '' });
+  const [objekte, setObjekte] = useState([]);
+  const [objekteLaden, setObjekteLaden] = useState(false);
+  const [form, setForm] = useState({
+    titel: '', beschreibung: '', kunde_id: '', objekt_id: '',
+    status: 'offen', datum: '', adresse: '', notizen: '',
+  });
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
 
+  // Kunden laden + Prefill aus Query-Params
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data } = await supabase.from('kunden').select('id, name').eq('user_id', user.id).order('name');
+      const { data } = await supabase.from('kunden').select('id, name, firmennamen').eq('user_id', user.id).order('name');
       setKunden(data ?? []);
+      if (prefillKundeId) {
+        setForm(prev => ({ ...prev, kunde_id: prefillKundeId, objekt_id: prefillObjektId }));
+      }
     }
     load();
-  }, []);
+  }, [prefillKundeId, prefillObjektId]);
 
-  function handleChange(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
+  // Objekte laden wenn Kunde gewechselt
+  useEffect(() => {
+    if (!form.kunde_id) { setObjekte([]); return; }
+    setObjekteLaden(true);
+    supabase.from('objekte').select('id, bezeichnung, adresse').eq('kunde_id', form.kunde_id).order('bezeichnung')
+      .then(({ data }) => { setObjekte(data ?? []); setObjekteLaden(false); });
+  }, [form.kunde_id]);
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm(prev => {
+      const next = { ...prev, [name]: value };
+      // Objekt-Selektion zurücksetzen wenn Kunde wechselt
+      if (name === 'kunde_id') next.objekt_id = '';
+      return next;
+    });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault(); setFehler(''); setLaden(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('auftraege').insert({ ...form, kunde_id: form.kunde_id || null, datum: form.datum || null, user_id: user.id });
-    if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); } else { router.push('/dashboard/auftraege'); }
+    const { error } = await supabase.from('auftraege').insert({
+      titel: form.titel,
+      beschreibung: form.beschreibung || null,
+      notizen: form.notizen || null,
+      adresse: form.adresse || null,
+      status: form.status,
+      datum: form.datum || null,
+      kunde_id: form.kunde_id || null,
+      objekt_id: form.objekt_id || null,
+      user_id: user.id,
+    });
+    if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); }
+    else { router.push('/dashboard/auftraege'); }
     setLaden(false);
   }
+
+  // Anzeigename für gewählten Kunden
+  const gewaehlterKunde = kunden.find(k => k.id === form.kunde_id);
+  const kundeLabel = gewaehlterKunde
+    ? (gewaehlterKunde.firmennamen || gewaehlterKunde.name)
+    : null;
 
   return (
     <div className="max-w-xl">
@@ -39,27 +85,105 @@ export default function NeuerAuftrag() {
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label><input type="text" name="titel" required value={form.titel} onChange={handleChange} placeholder="z. B. Rohrverstopfung Keller" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
-            <select name="kunde_id" value={form.kunde_id} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+
+          {/* Titel */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+            <input type="text" name="titel" required value={form.titel} onChange={handleChange}
+              placeholder="z. B. Rohrverstopfung Keller"
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          {/* Kunde */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
+            <select name="kunde_id" value={form.kunde_id} onChange={handleChange}
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
               <option value="">— Kein Kunde zugewiesen —</option>
-              {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+              {kunden.map(k => <option key={k.id} value={k.id}>{k.firmennamen || k.name}</option>)}
             </select>
           </div>
+
+          {/* Objekt (nur wenn Kunde gewählt) */}
+          {form.kunde_id && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Objekt / Immobilie
+                {objekteLaden && <span className="text-gray-400 font-normal ml-2">lädt…</span>}
+              </label>
+              {objekte.length === 0 && !objekteLaden ? (
+                <div className="text-sm text-gray-400 px-4 py-2.5 border border-dashed border-gray-200 rounded-lg">
+                  Keine Objekte für diesen Kunden —{' '}
+                  <Link href={`/dashboard/kunden/${form.kunde_id}?tab=objekte`} className="text-blue-500 hover:underline">
+                    jetzt anlegen
+                  </Link>
+                </div>
+              ) : (
+                <select name="objekt_id" value={form.objekt_id} onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  <option value="">— Kein Objekt ausgewählt —</option>
+                  {objekte.map(o => (
+                    <option key={o.id} value={o.id}>
+                      {o.bezeichnung}{o.adresse ? ` (${o.adresse})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Status + Datum */}
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select name="status" value={form.status} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white">
-                <option value="offen">Offen</option><option value="in_bearbeitung">In Bearbeitung</option><option value="abgeschlossen">Abgeschlossen</option>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select name="status" value={form.status} onChange={handleChange}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white">
+                <option value="offen">Offen</option>
+                <option value="in_bearbeitung">In Bearbeitung</option>
+                <option value="abgeschlossen">Abgeschlossen</option>
               </select>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Datum</label><input type="date" name="datum" value={form.datum} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm" /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+              <input type="date" name="datum" value={form.datum} onChange={handleChange}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm" />
+            </div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Adresse (Einsatzort)</label><input type="text" name="adresse" value={form.adresse} onChange={handleChange} placeholder="Musterstraße 1, 40000 Düsseldorf" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label><textarea name="beschreibung" value={form.beschreibung} onChange={handleChange} rows={3} placeholder="Was muss gemacht werden?" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Notizen</label><textarea name="notizen" value={form.notizen} onChange={handleChange} rows={2} placeholder="Interne Notizen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" /></div>
+
+          {/* Adresse */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse (Einsatzort)</label>
+            <input type="text" name="adresse" value={form.adresse} onChange={handleChange}
+              placeholder="Musterstraße 1, 40000 Düsseldorf"
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+
+          {/* Beschreibung */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+            <textarea name="beschreibung" value={form.beschreibung} onChange={handleChange} rows={3}
+              placeholder="Was muss gemacht werden?"
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+
+          {/* Notizen */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
+            <textarea name="notizen" value={form.notizen} onChange={handleChange} rows={2}
+              placeholder="Interne Notizen..."
+              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          </div>
+
+          {/* Buttons */}
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Auftrag speichern'}</button>
-            <Link href="/dashboard/auftraege" className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">Abbrechen</Link>
+            <button type="submit" disabled={laden}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">
+              {laden ? 'Wird gespeichert...' : 'Auftrag speichern'}
+            </button>
+            <Link href="/dashboard/auftraege"
+              className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">
+              Abbrechen
+            </Link>
           </div>
         </form>
       </div>
