@@ -19,11 +19,18 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push('/login'); } else { setUser(data.user); }
+      if (!data.user) { router.push('/login'); return; }
+      setUser(data.user);
+      if (sessionStorage.getItem('tempLogin') === '1') {
+        const fn = () => supabase.auth.signOut();
+        window.addEventListener('beforeunload', fn);
+        return () => window.removeEventListener('beforeunload', fn);
+      }
     });
   }, [router]);
 
   async function handleLogout() {
+    sessionStorage.removeItem('tempLogin');
     await supabase.auth.signOut();
     router.push('/login');
   }
