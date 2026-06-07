@@ -28,7 +28,7 @@ export default function Einsatzplanung() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data } = await supabase
         .from('auftraege')
-        .select('id, titel, datum, status, adresse, kunden(name, firmennamen)')
+        .select('id, titel, datum, status, adresse, kunden(name, firmenname)')
         .eq('user_id', user.id)
         .not('datum', 'is', null)
         .order('datum');
@@ -162,7 +162,7 @@ export default function Einsatzplanung() {
                 <div className="space-y-1">
                   {tagesAuftraege.slice(0, 3).map(a => {
                     const cfg        = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.offen;
-                    const kundeLabel = a.kunden ? (a.kunden.firmennamen || a.kunden.name) : null;
+                    const kundeLabel = a.kunden ? (a.kunden.firmenname || a.kunden.name) : null;
                     return (
                       <Link key={a.id} href={`/dashboard/auftraege/${a.id}`}
                         title={`${a.titel}${kundeLabel ? ' — ' + kundeLabel : ''}${a.adresse ? ' · ' + a.adresse : ''}`}
