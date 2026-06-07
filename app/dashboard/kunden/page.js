@@ -1,78 +1,67 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
-const avatarFarben = [
-  'bg-blue-100 text-blue-700',
-  'bg-purple-100 text-purple-700',
-  'bg-green-100 text-green-700',
-  'bg-orange-100 text-orange-700',
-  'bg-pink-100 text-pink-700',
-  'bg-teal-100 text-teal-700',
-  'bg-red-100 text-red-700',
-  'bg-yellow-100 text-yellow-700',
-];
-
-function avatarFarbe(name) {
-  const code = (name || 'A').charCodeAt(0);
-  return avatarFarben[code % avatarFarben.length];
+function farbeVonName(name) {
+  const farben = ['bg-blue-500','bg-green-500','bg-purple-500','bg-pink-500','bg-orange-500','bg-teal-500','bg-indigo-500','bg-red-500'];
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+  return farben[sum % farben.length];
 }
 
-function initialen(name, firma) {
-  const teile = (name || '').trim().split(' ');
+function initialen(name) {
+  const teile = name.trim().split(' ');
   if (teile.length >= 2) return (teile[0][0] + teile[teile.length - 1][0]).toUpperCase();
-  return (name || '?')[0].toUpperCase();
+  return name.slice(0, 2).toUpperCase();
 }
+
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export default function Kunden() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
-  const [suche, setSuche] = useState('');
-  const [aktiverBuchstabe, setAktiverBuchstabe] = useState('Alle');
   const [laden, setLaden] = useState(true);
+  const [buchstabe, setBuchstabe] = useState(null);
   const [loeschenId, setLoeschenId] = useState(null);
+  const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: k } = await supabase
-        .from('kunden')
-        .select('*, auftraege(id, datum, status)')
-        .eq('user_id', user.id)
-        .order('name');
-      setKunden(k ?? []);
-      setLaden(false);
-    }
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  async function handleLoeschen(id) {
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data } = await supabase
+      .from('kunden')
+      .select('*, auftraege(id, datum, status)')
+      .eq('user_id', user.id)
+      .order('name');
+    setKunden(data ?? []);
+    setLaden(false);
+  }
+
+  async function handleDelete(id) {
+    if (!loeschenBestaetigt) { setLoeschenBestaetigt(true); return; }
     await supabase.from('kunden').delete().eq('id', id);
-    setKunden(kunden.filter(k => k.id !== id));
     setLoeschenId(null);
+    setLoeschenBestaetigt(false);
+    load();
   }
 
-  // Aktive Buchstaben ermitteln
-  const aktiveBuchstaben = new Set(kunden.map(k => (k.name || '')[0]?.toUpperCase()).filter(Boolean));
+  const gefiltert = buchstabe
+    ? kunden.filter(k => {
+        const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
+        return n.toUpperCase().startsWith(buchstabe);
+      })
+    : kunden;
 
-  // Filter anwenden
-  let gefiltert = kunden;
-  if (suche) {
-    gefiltert = gefiltert.filter(k =>
-      `${k.name} ${k.firma} ${k.telefon} ${k.email}`.toLowerCase().includes(suche.toLowerCase())
-    );
-  }
-  if (aktiverBuchstabe !== 'Alle') {
-    gefiltert = gefiltert.filter(k => (k.name || '')[0]?.toUpperCase() === aktiverBuchstabe);
-  }
+  const vorhandeneBuchstaben = new Set(kunden.map(k => {
+    const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
+    return n[0]?.toUpperCase();
+  }));
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
@@ -84,49 +73,31 @@ export default function Kunden() {
         </Link>
       </div>
 
-      {/* Suche */}
-      <input type="text" placeholder="🔍  Suche nach Name, Firma, Telefon..."
-        value={suche} onChange={e => { setSuche(e.target.value); setAktiverBuchstabe('Alle'); }}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-
       {/* A-Z Register */}
-      <div className="flex flex-wrap gap-1 mb-6">
-        <button
-          onClick={() => setAktiverBuchstabe('Alle')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-            aktiverBuchstabe === 'Alle'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
-          }`}>
+      <div className="flex flex-wrap gap-1 mb-5">
+        <button onClick={() => setBuchstabe(null)}
+          className={`px-2.5 h-7 rounded-lg text-xs font-bold transition ${!buchstabe ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
           Alle
         </button>
-        {ALPHABET.map(b => {
-          const aktiv = aktiveBuchstaben.has(b);
-          const ausgewaehlt = aktiverBuchstabe === b;
-          return (
-            <button key={b}
-              onClick={() => aktiv && setAktiverBuchstabe(ausgewaehlt ? 'Alle' : b)}
-              className={`w-8 h-8 rounded-lg text-xs font-semibold transition ${
-                ausgewaehlt
-                  ? 'bg-blue-600 text-white'
-                  : aktiv
-                    ? 'bg-white border border-gray-200 text-gray-700 hover:bg-blue-50 hover:border-blue-200 cursor-pointer'
-                    : 'text-gray-200 cursor-default'
-              }`}>
-              {b}
-            </button>
-          );
-        })}
+        {ALPHABET.map(b => (
+          <button key={b} onClick={() => vorhandeneBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
+            className={`w-7 h-7 rounded-md text-xs font-bold transition ${
+              buchstabe === b ? 'bg-blue-600 text-white' :
+              vorhandeneBuchstaben.has(b) ? 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700' :
+              'bg-gray-50 text-gray-300 cursor-default'
+            }`}>
+            {b}
+          </button>
+        ))}
       </div>
 
-      {/* Liste */}
       {laden ? (
         <p className="text-gray-400">Wird geladen...</p>
       ) : gefiltert.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-3">👥</div>
-          <p className="font-medium">{suche || aktiverBuchstabe !== 'Alle' ? 'Keine Kunden gefunden' : 'Noch keine Kunden'}</p>
-          <p className="text-sm mt-1">{suche || aktiverBuchstabe !== 'Alle' ? 'Versuche eine andere Suche.' : 'Lege deinen ersten Kunden an.'}</p>
+          <p className="font-medium">Keine Kunden{buchstabe ? ` mit „${buchstabe}"` : ''}</p>
+          {!buchstabe && <p className="text-sm mt-1">Lege deinen ersten Kunden an.</p>}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -134,95 +105,83 @@ export default function Kunden() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500 hidden md:table-cell">Kontakt</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Aufträge</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Letzter Auftrag</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-500">Kontakt</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-500">Aktionen</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500 hidden lg:table-cell">Letzter Einsatz</th>
+                <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {gefiltert.map(k => {
-                const auftraege = k.auftraege ?? [];
-                const letzterAuftrag = auftraege.sort((a, b) => new Date(b.datum||0) - new Date(a.datum||0))[0];
-                const istLoeschen = loeschenId === k.id;
-
+                const anzeigeName = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
+                const sortiert = (k.auftraege ?? []).slice().sort((a, b) => new Date(b.datum ?? 0) - new Date(a.datum ?? 0));
+                const letzter = sortiert[0];
                 return (
-                  <tr key={k.id} className="hover:bg-gray-50 transition">
-                    {/* Avatar + Name */}
+                  <tr key={k.id} onClick={() => router.push('/dashboard/kunden/' + k.id)}
+                    className="hover:bg-gray-50 cursor-pointer transition">
                     <td className="px-5 py-3">
-                      <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push("/dashboard/kunden/" + k.id)}>
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${avatarFarbe(k.name)}`}>
-                          {initialen(k.name, k.firma)}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 ${farbeVonName(anzeigeName)}`}>
+                          {initialen(anzeigeName)}
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{k.name}</p>
-                          {k.firma && <p className="text-xs text-gray-400 mt-0.5">{k.firma}</p>}
+                          <p className="font-medium text-gray-900">{anzeigeName}</p>
+                          {k.kundentyp === 'firma' && k.name && (
+                            <p className="text-xs text-gray-400">{k.name}</p>
+                          )}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${k.kundentyp === 'firma' ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-500'}`}>
+                              {k.kundentyp === 'firma' ? '🏢 Firma' : '👤 Privat'}
+                            </span>
+                            {k.ist_vertragskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">📄 Vertrag</span>}
+                            {k.ist_wartungskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">🔧 Wartung</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
-
-                    {/* Aufträge */}
-                    <td className="px-5 py-3">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        auftraege.length > 0 ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-400'
-                      }`}>
-                        {auftraege.length} {auftraege.length === 1 ? 'Auftrag' : 'Aufträge'}
-                      </span>
-                    </td>
-
-                    {/* Letzter Auftrag */}
-                    <td className="px-5 py-3 text-gray-500 text-sm">
-                      {letzterAuftrag?.datum
-                        ? new Date(letzterAuftrag.datum).toLocaleDateString('de-DE')
-                        : <span className="text-gray-300">–</span>}
-                    </td>
-
-                    {/* Kontakt */}
-                    <td className="px-5 py-3">
-                      <div className="flex flex-col gap-1">
+                    <td className="px-5 py-3 hidden md:table-cell">
+                      <div className="space-y-0.5">
                         {k.telefon && (
-                          <a href={"tel:" + k.telefon}
-                            onClick={e => e.stopPropagation()}
-                            className="text-blue-600 hover:underline text-xs flex items-center gap-1">
-                            📞 {k.telefon}
-                          </a>
+                          <a href={'tel:' + k.telefon} onClick={e => e.stopPropagation()}
+                            className="block text-blue-600 hover:underline text-xs">{k.telefon}</a>
                         )}
                         {k.email && (
-                          <a href={"mailto:" + k.email}
-                            onClick={e => e.stopPropagation()}
-                            className="text-blue-600 hover:underline text-xs flex items-center gap-1 truncate max-w-[160px]">
-                            ✉️ {k.email}
-                          </a>
+                          <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
+                            className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-40">{k.email}</a>
                         )}
                         {!k.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
                       </div>
                     </td>
-
-                    {/* Aktionen */}
-                    <td className="px-5 py-3 text-right">
-                      {!istLoeschen ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => router.push("/dashboard/kunden/" + k.id)}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-blue-50 hover:text-blue-600 transition">
-                            Bearbeiten
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                        {k.auftraege?.length ?? 0}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-gray-400 text-xs hidden lg:table-cell">
+                      {letzter?.datum ? new Date(letzter.datum).toLocaleDateString('de-DE') : '–'}
+                    </td>
+                    <td className="px-5 py-3 text-right" onClick={e => e.stopPropagation()}>
+                      {loeschenId === k.id ? (
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="text-xs text-red-600">Löschen?</span>
+                          <button onClick={() => handleDelete(k.id)}
+                            className={`text-xs px-2 py-1 rounded transition ${loeschenBestaetigt ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>
+                            {loeschenBestaetigt ? 'Endgültig' : 'Ja'}
                           </button>
-                          <button
-                            onClick={e => { e.stopPropagation(); setLoeschenId(k.id); }}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-red-50 hover:text-red-600 transition">
-                            Löschen
+                          <button onClick={() => { setLoeschenId(null); setLoeschenBestaetigt(false); }}
+                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100">
+                            Nein
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-end gap-2">
-                          <span className="text-xs text-red-600 font-medium">Wirklich löschen?</span>
-                          <button onClick={() => handleLoeschen(k.id)}
-                            className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition">
-                            Ja
-                          </button>
-                          <button onClick={() => setLoeschenId(null)}
-                            className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium">
-                            Nein
+                        <div className="flex items-center gap-1 justify-end">
+                          <Link href={'/dashboard/kunden/' + k.id} onClick={e => e.stopPropagation()}
+                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition">
+                            Bearbeiten
+                          </Link>
+                          <button onClick={() => { setLoeschenId(k.id); setLoeschenBestaetigt(false); }}
+                            className="text-xs px-2 py-1 rounded text-gray-300 hover:bg-red-50 hover:text-red-500 transition">
+                            ✕
                           </button>
                         </div>
                       )}
