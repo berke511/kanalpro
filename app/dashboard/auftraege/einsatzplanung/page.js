@@ -78,7 +78,7 @@ function KalenderAnsicht({ auftraege }) {
           <button onClick={prevMonat} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition text-gray-600 text-lg">‹</button>
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900">{MONATE[monat]} {jahr}</h2>
-            x(jahr !== _today.getFullYear() || monat !== _today.getMonth()) && (
+            {(jahr !== _today.getFullYear() || monat !== _today.getMonth()) && (
               <button onClick={zuHeute} className="text-xs text-blue-600 hover:underline font-medium">Heute</button>
             )}
           </div>
