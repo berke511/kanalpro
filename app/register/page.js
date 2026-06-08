@@ -50,11 +50,11 @@ const LEISTUNGEN = [
 ];
 
 const FEATURES = [
-  'Auftragsmanagement & Disposition',
-  'Digitale Dokumentation & TV-Berichte',
-  'Kunden- & Objektverwaltung',
-  'Rechnungen & Angebote',
+  'Kundenverwaltung & Auftragsmanagement',
+  'Mitarbeiterplanung & Disposition',
+  'Fahrzeug- & Maschinenverwaltung',
   'Einsatzplanung & Navigation',
+  'Digitale Dokumentation & Berichte',
 ];
 
 const BADGES = [
@@ -324,15 +324,15 @@ export default function RegisterPage() {
             </div>
 
             <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
-              Die All-in-One Software für{' '}
+              Die Betriebssoftware für{' '}
               <span className="text-blue-400">
                 Rohr- und Kanalservice
               </span>
             </h1>
 
-            <p className="text-gray-300 text-lg mb-8 leading-relaxed">
-              Verwalten Sie Kunden, Aufträge, Dokumentationen, Mitarbeiter
-              und Fahrzeuge in einer zentralen Plattform – entwickelt für
+             <p className="text-gray-300 text-lg mb-8 leading-relaxed">
+              Kunden, Mitarbeiter, Fahrzeuge und Maschinen –
+              alles zentral verwaltet. Entwickelt für
               den Kanal- und Rohrleitungsbetrieb.
             </p>
 
@@ -358,7 +358,7 @@ export default function RegisterPage() {
             <div className="space-y-3">
               {FEATURES.map((f, i) => (
                 <div key={i} className="flex items-center gap-3 text-gray-300">
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w5 h-5 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                     <CheckIcon />
                   </div>
                   <span className="text-sm">{f}</span>
