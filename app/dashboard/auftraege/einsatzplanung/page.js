@@ -116,7 +116,7 @@ function KalenderAnsicht({ auftraege }) {
           <button onClick={prevMonat} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition text-gray-600 text-lg">‹</button>
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900">{MONATE[monat]} {jahr}</h2>
-            {(jahr !== _today.getFullYear() || monat !== _today.getMonth()) && (
+            x(jahr !== _today.getFullYear() || monat !== _today.getMonth()) && (
               <button onClick={zuHeute} className="text-xs text-blue-600 hover:underline font-medium">Heute</button>
             )}
           </div>
@@ -136,7 +136,7 @@ function KalenderAnsicht({ auftraege }) {
             const tags    = byDate[dateStr] ?? [];
             const isToday = dateStr === todayStr;
             const isWE    = i % 7 >= 5;
-    /       return (
+            return (
               <div key={d} className={`min-h-28 border-r border-b border-gray-100 p-2 ${isWE ? 'bg-amber-50/20' : 'bg-white'}`}>
                 <div className={`text-sm font-semibold mb-1.5 w-7 h-7 flex items-center justify-center rounded-full leading-none ${isToday ? 'bg-blue-600 text-white' : isWE ? 'text-gray-400' : 'text-gray-700'}`}>{d}</div>
                 <div className="space-y-1">
@@ -233,7 +233,7 @@ function DispositionAnsicht({ auftraege: alleAuftraege }) {
         if (coords) {
           L.marker([coords.lat, coords.lng], { icon: makeIcon(String(i + 1)) })
             .addTo(routeLayer.current)
-            .bindPopup(`<b>${a.titem}</b><br><small>${a.adresse}</small>`);
+            .bindPopup(`<b>${a.titel}</b><br><small>${a.adresse}</small>`);
           bounds.extend([coords.lat, coords.lng]);
         }
         done++;
