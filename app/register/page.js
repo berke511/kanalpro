@@ -511,7 +511,7 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         key={t}
-  2                     onClick={() => toggleTaetigkeit(t)}
+                        onClick={() => toggleTaetigkeit(t)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           form.taetigkeitsbereiche.includes(t)
                             ? 'bg-blue-600 text-white border-blue-600'
