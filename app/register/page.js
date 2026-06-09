@@ -193,6 +193,18 @@ export default function RegisterPage() {
           trial_start: new Date().toISOString(),
           trial_end: trialEnd,
         });
+        // Welcome-E-Mail senden (fire & forget)
+        fetch('/api/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email,
+            vorname: form.vorname,
+            firmenname: form.firmenname,
+            typ: 'trial',
+            trialEnd,
+          }),
+        }).catch(() => {});
       }
       setSchritt(2);
     } catch (err) {
