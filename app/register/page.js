@@ -189,7 +189,7 @@ export default function RegisterPage() {
         await supabase.from('abonnements').upsert({
           user_id: data.user.id,
           status: 'trial',
-          plan: 'starter',
+          plan: 'enterprise',
           trial_start: new Date().toISOString(),
           trial_end: trialEnd,
         });
@@ -209,7 +209,7 @@ export default function RegisterPage() {
       await supabase.auth.updateUser({ data: { leistungen } });
     } catch (_) {}
     setLaden(false);
-    router.push('/dashboard');
+    router.push('/onboarding');
   }
 
   const pwStrength = getPasswordStrength(form.passwort);
@@ -276,7 +276,7 @@ export default function RegisterPage() {
                 <SpinIcon /> Wird gespeichert...
               </span>
             ) : (
-              'Dashboard öffnen →'
+              'Weiter zur Einrichtung →'
             )}
           </button>
 
@@ -363,7 +363,7 @@ export default function RegisterPage() {
                   </div>
                   <span className="text-sm">{f}</span>
                 </div>
-              ))}
+     0        ))}
             </div>
           </div>
 
@@ -511,7 +511,7 @@ export default function RegisterPage() {
                       <button
                         type="button"
                         key={t}
-                        onClick={() => toggleTaetigkeit(t)}
+  2                     onClick={() => toggleTaetigkeit(t)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           form.taetigkeitsbereiche.includes(t)
                             ? 'bg-blue-600 text-white border-blue-600'
