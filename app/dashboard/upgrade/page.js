@@ -105,7 +105,7 @@ export default function Upgrade() {
         {/* Überschrift */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Einfache Preise, volle Kontrolle</h1>
-          <p className="text-xl text-gray-500">30 Tage kostenlos testen — danach ohne Risiko kündbar</p>
+          <p className="text-xl text-gray-500">14 Tage kostenlos testen — danach ohne Risiko kündbar</p>
         </div>
 
         {/* Pläne */}
