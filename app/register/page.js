@@ -363,7 +363,7 @@ export default function RegisterPage() {
                   </div>
                   <span className="text-sm">{f}</span>
                 </div>
-     0        ))}
+              ))}
             </div>
           </div>
 
