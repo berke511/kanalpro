@@ -38,7 +38,7 @@ const LEISTUNGEN = [
   { id: 'rohrreinigung', label: 'Rohrreinigung', icon: '&#128295;' },
   { id: 'kanalreinigung', label: 'Kanalreinigung', icon: '&#128695;' },
   { id: 'tv_inspektion', label: 'TV-Inspektion', icon: '&#128247;' },
-  { id: 'dichtheitspruefung', label: 'Dichtheitsprüfung', icon: '&#128269;' },
+  { id: 'dichtheitspruefung', label: 'Dichtheitsprøfung', icon: '&#128269;' },
   { id: 'kanalortung', label: 'Kanalortung', icon: '&#128225;' },
   { id: 'kanalsanierung', label: 'Kanalsanierung', icon: '&#127959;' },
   { id: 'hebeanlagen', label: 'Hebeanlagen', icon: '&#11014;' },
@@ -186,8 +186,18 @@ export default function RegisterPage() {
       if (error) throw error;
       if (data.user) {
         const trialEnd = new Date(Date.now() + 14 * 86400000).toISOString();
+
+        // Company-ID holen (wurde durch DB-Trigger angelegt)
+        const { data: memberData } = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', data.user.id)
+          .single();
+        const companyId = memberData?.company_id;
+
         await supabase.from('abonnements').upsert({
           user_id: data.user.id,
+          company_id: companyId,
           status: 'trial',
           plan: 'enterprise',
           trial_start: new Date().toISOString(),
