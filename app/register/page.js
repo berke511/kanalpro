@@ -38,7 +38,7 @@ const LEISTUNGEN = [
   { id: 'rohrreinigung', label: 'Rohrreinigung', icon: '&#128295;' },
   { id: 'kanalreinigung', label: 'Kanalreinigung', icon: '&#128695;' },
   { id: 'tv_inspektion', label: 'TV-Inspektion', icon: '&#128247;' },
-  { id: 'dichtheitspruefung', label: 'Dichtheitsprøfung', icon: '&#128269;' },
+  { id: 'dichtheitspruefung', label: 'Dichtheitsprüfung', icon: '&#128269;' },
   { id: 'kanalortung', label: 'Kanalortung', icon: '&#128225;' },
   { id: 'kanalsanierung', label: 'Kanalsanierung', icon: '&#127959;' },
   { id: 'hebeanlagen', label: 'Hebeanlagen', icon: '&#11014;' },
@@ -187,7 +187,26 @@ export default function RegisterPage() {
       if (data.user) {
         const trialEnd = new Date(Date.now() + 14 * 86400000).toISOString();
 
-        // Company-ID holen (wurde durch DB-Trigger angelegt)
+        // Welcome-E-Mail senden (fire & forget)
+        fetch('/api/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email,
+            vorname: form.vorname,
+            firmenname: form.firmenname,
+            typ: 'trial',
+            trialEnd,
+          }),
+        }).catch(() => {});
+
+        // Wenn keine Session → E-Mail-Bestätigung erforderlich
+        if (!data.session) {
+          router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
+          return;
+        }
+
+        // Session vorhanden → Company-ID holen und Trial anlegen
         const { data: memberData } = await supabase
           .from('company_members')
           .select('company_id')
@@ -203,18 +222,6 @@ export default function RegisterPage() {
           trial_start: new Date().toISOString(),
           trial_end: trialEnd,
         });
-        // Welcome-E-Mail senden (fire & forget)
-        fetch('/api/send-welcome', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: form.email,
-            vorname: form.vorname,
-            firmenname: form.firmenname,
-            typ: 'trial',
-            trialEnd,
-          }),
-        }).catch(() => {});
       }
       setSchritt(2);
     } catch (err) {
