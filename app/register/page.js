@@ -458,7 +458,7 @@ export default function RegisterPage() {
                     <input
                       id="nachname"
                       type="text"
-     0                placeholder="Mustermann"
+                      placeholder="Mustermann"
                       value={form.nachname}
                       onChange={e => setField('nachname', e.target.value)}
                       className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
@@ -470,27 +470,27 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="mt-3">
-             0    <Label htmlFor="email">Gesch√§ftliche E-Mail</Label>
+                  <Label htmlFor="email">Gesch√§ftliche E-Mail</Label>
                   <input
                     id="email"
                     type="email"
-   0                placeholder="max@musterfirma.de"
+                    placeholder="max@musterfirma.de"
                     value={form.email}
                     onChange={e => setField('email', e.target.value)}
                     autoComplete="email"
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
                       errors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'
                     }`}
- 0                />
+                  />
                   <FieldError msg={errors.email} />
                 </div>
 
                 <div className="mt-3">
-               0  <Label htmlFor="telefon">Telefon</Label>
+                  <Label htmlFor="telefon">Telefon</Label>
                   <input
                     id="telefon"
                     type="tel"
-                 0  placeholder="+49 123 456789"
+                    placeholder="+49 123 456789"
                     value={form.telefon}
                     onChange={e => setField('telefon', e.target.value)}
                     className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
@@ -719,7 +719,7 @@ export default function RegisterPage() {
                 </div>
 
                 <label className="flex items-start gap-3 cursor-pointer">
-           Ä     <input
+                  <input
                     type="checkbox"
                     checked={form.newsletter}
                     onChange={e => setField('newsletter', e.target.checked)}
@@ -741,7 +741,7 @@ export default function RegisterPage() {
 
               {/* Submit */}
               <button
-           Ä   type="submit"
+                type="submit"
                 disabled={laden}
                 className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-base hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25"
               >
