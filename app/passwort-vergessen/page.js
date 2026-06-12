@@ -35,7 +35,7 @@ export default function PasswortVergessenPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 px-6 py-5">
         <Link href="/" className="inline-flex items-center gap-2">
-          <div className="w-xàh-9 bg-blue-600 rounded-xl flex items-center justify-center">
+          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-sm">KP</span>
           </div>
           <span className="text-white font-bold text-xl">KanalPro</span>
