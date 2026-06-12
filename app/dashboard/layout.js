@@ -4,15 +4,17 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus, canAccess } from '@/lib/subscription';
+import TrialBanner from '@/components/TrialBanner';
 
 // Nav-Links mit optionalem Feature-Gate
 const navLinks = [
-  { href: '/dashboard',               label: 'Übersicht',      icon: '🏠', feature: null },
-  { href: '/dashboard/kunden',        label: 'Kunden',         icon: '👥', feature: null },
-  { href: '/dashboard/auftraege',     label: 'Aufträge',       icon: '📋', feature: null },
-  { href: '/dashboard/rechnungen',    label: 'Rechnungen',     icon: '🧾', feature: 'rechnungen' },
-  { href: '/dashboard/einsatzplanung',label: 'Einsatzplanung', icon: '🗺️', feature: 'einsatzplanung' },
-  { href: '/dashboard/einstellungen', label: 'Einstellungen',  icon: '⚙️', feature: null },
+  { href: '/dashboard',                label: 'Übersicht',      icon: '🏠', feature: null },
+  { href: '/dashboard/kunden',         label: 'Kunden',         icon: '👥', feature: null },
+  { href: '/dashboard/auftraege',      label: 'Aufträge',       icon: '📋', feature: null },
+  { href: '/dashboard/rechnungen',     label: 'Rechnungen',     icon: '🧾', feature: 'rechnungen' },
+  { href: '/dashboard/einsatzplanung', label: 'Einsatzplanung', icon: '🗺️', feature: 'einsatzplanung' },
+  { href: '/dashboard/einstellungen',  label: 'Einstellungen',  icon: '⚙️', feature: null },
+  { href: '/dashboard/billing',        label: 'Abonnement',     icon: '💳', feature: null },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -64,52 +66,26 @@ export default function DashboardLayout({ children }) {
 
   const sub = getSubscriptionStatus(abo);
   const { isTrialActive, isExpired, daysLeft, plan } = sub;
-  const warnung = isTrialActive && daysLeft <= 7;
 
   if (!user) return null;
 
-  // Trial abgelaufen → Upgrade-Seite erzwingen
-  if (isExpired && pathname !== '/dashboard/upgrade') {
-    router.push('/dashboard/upgrade');
+  // Trial abgelaufen → Billing-Seite erzwingen
+  if (isExpired && pathname !== '/dashboard/billing' && pathname !== '/dashboard/upgrade') {
+    router.push('/dashboard/billing');
     return null;
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
 
-      {/* ── Trial-Banner ─────────────────────────────────────────── */}
-      {isTrialActive && daysLeft > 0 && (
-        <div className={`px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 ${
-          warnung ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'
-        }`}>
-          <span>
-            {warnung ? '⚠️' : '🎉'}{' '}
-            Noch {daysLeft} {daysLeft === 1 ? 'Tag' : 'Tage'} kostenlose Testphase —{' '}
-            <strong>Enterprise</strong>
-          </span>
-          <Link
-            href="/dashboard/upgrade"
-            className="bg-white text-blue-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-50 transition"
-          >
-            Jetzt upgraden
-          </Link>
-        </div>
-      )}
-
-      {/* ── Basic-Banner (nach Trial-Ablauf ohne Upgrade) ─────────── */}
-      {!isTrialActive && !isExpired && plan === 'basic' && (
-        <div className="px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 bg-gray-700 text-white">
-          <span>
-            📦 Sie nutzen den <strong>Basic-Plan</strong> — eingeschränkte Funktionen
-          </span>
-          <Link
-            href="/dashboard/upgrade"
-            className="bg-white text-gray-800 px-3 py-1 rounded-lg text-xs font-bold hover:bg-gray-100 transition"
-          >
-            Upgrade
-          </Link>
-        </div>
-      )}
+      {/* ── Trial-Banner (extrahierte Komponente) ───────────────── */}
+      <TrialBanner
+        daysLeft={daysLeft}
+        isTrialActive={isTrialActive}
+        isExpired={isExpired}
+        plan={plan}
+        upgradeHref="/dashboard/billing"
+      />
 
       <div className="flex flex-1">
         {/* ── Sidebar ─────────────────────────────────────────────── */}
@@ -132,8 +108,8 @@ export default function DashboardLayout({ children }) {
                 return (
                   <Link
                     key={link.href}
-                    href="/dashboard/upgrade"
-                    title={`Nur im Enterprise-Plan verfügbar`}
+                    href="/dashboard/billing"
+                    title="Nicht in deinem aktuellen Plan enthalten"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 transition group"
                   >
                     <span className="opacity-60">{link.icon}</span>
@@ -161,9 +137,9 @@ export default function DashboardLayout({ children }) {
           </nav>
 
           <div className="px-3 py-4 border-t border-gray-100">
-            {(isTrialActive || plan === 'basic') && (
+            {(isTrialActive || plan === 'starter') && !sub.isPaid && (
               <Link
-                href="/dashboard/upgrade"
+                href="/dashboard/billing"
                 className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
               >
                 ⭐ Upgrade — ab 29 €/Monat
