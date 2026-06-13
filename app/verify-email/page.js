@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
-export default function VerifyEmailPage() {
+function VerifyEmailInner() {
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') || '';
   const [email, setEmail] = useState(emailParam);
@@ -149,5 +149,19 @@ export default function VerifyEmailPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
+          <p className="text-gray-500 text-sm">Lädt…</p>
+        </div>
+      </div>
+    }>
+      <VerifyEmailInner />
+    </Suspense>
   );
 }
