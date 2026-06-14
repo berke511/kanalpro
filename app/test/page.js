@@ -79,7 +79,7 @@ const SZENARIEN = [
   {
     id: 'enterprise',
     label: 'Plan: Enterprise',
-    sub: '249 €/Monat — voller Zugriff',
+    sub: '249 €/Monat — Bis 50 Nutzer · Voller Zugang · API, SSO, White-Label',
     emoji: '🚀',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-yellow-50 border-yellow-200 hover:border-yellow-400',
@@ -117,7 +117,7 @@ const PLAN_INFO = [
   { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: '1 Nutzer · 20 Kunden · 20 Aufträge · 100 MB · 30 Tage' },
   { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Bis 5 Nutzer · Bis 10 Fahrzeuge · Bis 10 Geräte · 10 GB · CRM, Angebote, Basis-Disposition · Jahresabo: 869 €' },
   { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Bis 20 Nutzer · 50 GB · Rechnungen, DATEV-Export, Zeiterfassung, Checklisten, Wiederkehrende Aufträge · Jahresabo: 1.419 €' },
-  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Unbegrenzt, API · Jahresabo: 2.739 €' },
+  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Bis 50 Nutzer · Unbegrenzt · API, SSO, Audit-Log, White-Label, Standorte · Jahresabo: 2.739 €' },
 ];
 
 export default function TestSzenarien() {
