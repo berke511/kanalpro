@@ -51,7 +51,7 @@ const SZENARIEN = [
   {
     id: 'pro',
     label: 'Plan: Pro',
-    sub: '79 €/Monat — Bis 5 Nutzer · Bis 10 Fahrzeuge · Bis 10 Geräte · 10 GB',
+    sub: '79 €/Monat — Bis 5 Nutzer · Bis 10 Fahrzeuge · Bis 10 Geräte · 2 GB',
     emoji: '⭐',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-purple-50 border-purple-200 hover:border-purple-400',
@@ -65,7 +65,7 @@ const SZENARIEN = [
   {
     id: 'professional',
     label: 'Plan: Professional',
-    sub: '129 €/Monat — 20 Nutzer · 50 GB · Rechnungen, DATEV, Chat',
+    sub: '129 €/Monat — 20 Nutzer · 5 GB · Rechnungen, DATEV, Chat',
     emoji: '💎',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-indigo-50 border-indigo-200 hover:border-indigo-400',
@@ -114,10 +114,10 @@ const SCHNELLLINKS = [
 ];
 
 const PLAN_INFO = [
-  { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: '1 Nutzer · 50 Kunden · 100 Aufträge · 500 MB · 30 Tage' },
-  { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Bis 3 Nutzer · Bis 5 Fahrzeuge · Bis 10 Geräte · 10 GB · CRM, Angebote, Mobile App, Basis-Disposition · Jahresabo: 869 €' },
-  { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Bis 10 Nutzer · Bis 20 Fahrzeuge · 50 GB · Rechnungen, Mahnungen, Dokumente, Berichte, Chat · Jahresabo: 1.419 €' },
-  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Bis 25 Nutzer · Bis 50 Fahrzeuge · 100 GB · Teams, Erweiterte Rollen, Erweiterte Auswertungen · Jahresabo: 2.739 €' },
+  { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: '1 Nutzer · 50 Kunden · 100 Aufträge · 100 MB · 30 Tage' },
+  { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Bis 3 Nutzer · Bis 5 Fahrzeuge · Bis 10 Geräte · 2 GB · CRM, Angebote, Mobile App, Basis-Disposition · Jahresabo: 869 €' },
+  { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Bis 10 Nutzer · Bis 20 Fahrzeuge · 5 GB · Rechnungen, Mahnungen, Dokumente, Berichte, Chat · Jahresabo: 1.419 €' },
+  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Bis 25 Nutzer · Bis 50 Fahrzeuge · 10 GB · Teams, Erweiterte Rollen, Erweiterte Auswertungen · Jahresabo: 2.739 €' },
 ];
 
 export default function TestSzenarien() {
