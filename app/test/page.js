@@ -36,7 +36,7 @@ const SZENARIEN = [
   {
     id: 'trial-abgelaufen',
     label: 'Enterprise Trial — abgelaufen',
-    sub: 'Vor 6 Tagen abgelaufen → Starter',
+    sub: 'Vor 6 Tagen abgelaufen → automatisch Starter (kostenlos)',
     emoji: '🔴',
     gruppe: 'Trial',
     farbe: 'bg-red-50 border-red-200 hover:border-red-400',
@@ -49,23 +49,9 @@ const SZENARIEN = [
   },
   // === PAID PLANS ===
   {
-    id: 'starter',
-    label: 'Plan: Starter',
-    sub: '29 €/Monat — Basis-Features',
-    emoji: '🔵',
-    gruppe: 'Bezahlte Pläne',
-    farbe: 'bg-blue-50 border-blue-200 hover:border-blue-400',
-    badge: 'bg-blue-100 text-blue-800',
-    data: {
-      plan: 'starter', status: 'aktiv',
-      trial_start: () => new Date(Date.now() - 30*86400000).toISOString(),
-      trial_end:   () => new Date(Date.now() - 16*86400000).toISOString(),
-    }
-  },
-  {
     id: 'pro',
     label: 'Plan: Pro',
-    sub: '59 €/Monat — erweiterte Features',
+    sub: '79 €/Monat — erweiterte Features',
     emoji: '⭐',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-purple-50 border-purple-200 hover:border-purple-400',
@@ -79,7 +65,7 @@ const SZENARIEN = [
   {
     id: 'professional',
     label: 'Plan: Professional',
-    sub: '99 €/Monat — für wachsende Teams',
+    sub: '129 €/Monat — für wachsende Teams',
     emoji: '💎',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-indigo-50 border-indigo-200 hover:border-indigo-400',
@@ -93,7 +79,7 @@ const SZENARIEN = [
   {
     id: 'enterprise',
     label: 'Plan: Enterprise',
-    sub: '199 €/Monat — voller Zugriff',
+    sub: '249 €/Monat — voller Zugriff',
     emoji: '🚀',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-yellow-50 border-yellow-200 hover:border-yellow-400',
@@ -105,7 +91,6 @@ const SZENARIEN = [
     }
   },
 ];
-
 const SCHNELLLINKS = [
   { gruppe: 'Dashboard', links: [
     ['Dashboard', '/dashboard'],
@@ -128,10 +113,10 @@ const SCHNELLLINKS = [
 ];
 
 const PLAN_INFO = [
-  { name: 'Starter', preis: '29 €/Mo', color: 'bg-blue-100 text-blue-800', features: 'Basis-Features, 1 Nutzer' },
-  { name: 'Pro', preis: '59 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Erweitert, 5 Nutzer' },
-  { name: 'Professional', preis: '99 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Teams, 20 Nutzer' },
-  { name: 'Enterprise', preis: '199 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Unbegrenzt, 14-Tage Trial' },
+  { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: 'Automatisch nach Trial — nicht buchbar' },
+  { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Erweitert, 10 Nutzer · Jahresabo: 869 €' },
+  { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Teams, 50 Nutzer · Jahresabo: 1.419 €' },
+  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Unbegrenzt, API · Jahresabo: 2.739 €' },
 ];
 
 export default function TestSzenarien() {
@@ -265,7 +250,7 @@ export default function TestSzenarien() {
             ))}
           </div>
           <div className="mt-3 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
-            💡 Neue Kunden erhalten automatisch 14 Tage Enterprise Trial. Nach Ablauf: automatische Rückstufung auf Starter.
+            💡 Neue Kunden erhalten automatisch 14 Tage Enterprise Trial. Nach Ablauf: automatische Rückstufung auf <strong>Starter</strong> (kostenlos, eingeschränkt). Starter ist <em>nicht</em> buchbar — Upgrade direkt auf Pro, Professional oder Enterprise.
           </div>
         </div>
 
@@ -289,8 +274,8 @@ export default function TestSzenarien() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Implementierte Features</h2>
           <div className="space-y-2">
             {[
-              { ok: true, text: 'Abo-System: Starter / Pro / Professional / Enterprise' },
-              { ok: true, text: '14-Tage Enterprise Trial für neue Kunden' },
+              { ok: true, text: 'Abo-System: Pro 79€ / Professional 129€ / Enterprise 249€ (+ Jahresabo mit 1 Monat gratis)' },
+              { ok: true, text: '14-Tage Enterprise Trial → automatisch Starter (kostenlos) nach Ablauf' },
               { ok: true, text: 'TrialBanner im Dashboard (grün → orange → rot)' },
               { ok: true, text: 'Billing-Seite unter /dashboard/billing' },
               { ok: true, text: 'Upgrade-Seite mit Plan-Vergleich' },
