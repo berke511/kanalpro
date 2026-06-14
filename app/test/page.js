@@ -65,7 +65,7 @@ const SZENARIEN = [
   {
     id: 'professional',
     label: 'Plan: Professional',
-    sub: '129 €/Monat — für wachsende Teams',
+    sub: '129 €/Monat — 20 Nutzer · 50 GB · Rechnungen, DATEV, Chat',
     emoji: '💎',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-indigo-50 border-indigo-200 hover:border-indigo-400',
@@ -116,7 +116,7 @@ const SCHNELLLINKS = [
 const PLAN_INFO = [
   { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: '1 Nutzer · 20 Kunden · 20 Aufträge · 100 MB · 30 Tage' },
   { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: '5 Nutzer · 5 Fahrzeuge · 10 GB · CRM, Angebote, Basis-Disposition · Jahresabo: 869 €' },
-  { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Teams, 50 Nutzer · Jahresabo: 1.419 €' },
+  { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: '20 Nutzer · 50 GB · Rechnungen, DATEV, Chat, Berichte · Jahresabo: 1.419 €' },
   { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Unbegrenzt, API · Jahresabo: 2.739 €' },
 ];
 
