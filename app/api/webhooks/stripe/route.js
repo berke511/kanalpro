@@ -1,16 +1,17 @@
+export const dynamic = 'force-dynamic';
+
 import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// Supabase Admin-Client (Service Role) für Server-seitige DB-Updates
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 export async function POST(req) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
 
@@ -24,7 +25,6 @@ export async function POST(req) {
 
   const now = new Date().toISOString();
 
-  // Zahlung erfolgreich — Plan aktivieren
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const { userId, planId } = session.metadata || {};
@@ -40,11 +40,10 @@ export async function POST(req) {
         })
         .eq('user_id', userId);
 
-      // Bestätigungs-Email
       try {
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId);
         if (userData?.user?.email) {
-          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/plan-bestaetigung`, {
+          await fetch(process.env.NEXT_PUBLIC_BASE_URL + '/api/plan-bestaetigung', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -60,21 +59,14 @@ export async function POST(req) {
     }
   }
 
-  // Abo gekündigt — auf Starter zurücksetzen
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object;
     await supabaseAdmin
       .from('abonnements')
-      .update({
-        plan: 'starter',
-        status: 'abgelaufen',
-        stripe_subscription_id: null,
-        aktualisiert_am: now,
-      })
+      .update({ plan: 'starter', status: 'abgelaufen', stripe_subscription_id: null, aktualisiert_am: now })
       .eq('stripe_subscription_id', sub.id);
   }
 
-  // Zahlung fehlgeschlagen — Status setzen
   if (event.type === 'invoice.payment_failed') {
     const invoice = event.data.object;
     await supabaseAdmin
