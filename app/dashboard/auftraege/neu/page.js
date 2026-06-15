@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
 export default function NeuerAuftrag() {
   const router = useRouter();
@@ -20,10 +21,18 @@ export default function NeuerAuftrag() {
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
 
-  // Kunden laden + Prefill aus Query-Params
+  // Kunden laden + Prefill aus Query-Params + Limit-Check
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      const abo = await checkAndDowngrade(supabase, user.id);
+      const sub = getSubscriptionStatus(abo);
+      const plan = getPlan(sub.plan);
+      const limit = plan.limits.auftraege;
+      if (limit != null && limit !== Infinity) {
+        const { count } = await supabase.from('auftraege').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+        if (count >= limit) { router.push('/dashboard/auftraege'); return; }
+      }
       const { data } = await supabase.from('kunden').select('id, name, firmennamen').eq('user_id', user.id).order('name');
       setKunden(data ?? []);
       if (prefillKundeId) {
