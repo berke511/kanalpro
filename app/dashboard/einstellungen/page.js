@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
 import { PLANS } from '@/lib/plans';
+import StorageBar from '@/components/StorageBar';
 
 const INVITABLE_ROLES = [
   { value: 'administrator', label: 'Administrator' },
@@ -194,7 +195,7 @@ export default function Einstellungen() {
   const memberName = (m) =>
     [m.vorname, m.nachname].filter(Boolean).join(' ') || m.email || 'Unbekannt';
 
-  // ─── Nutzer-Limit Badge ────────────────────────────────────────────────────
+  // ─── Nutzer-Limit Badge ───────────────────────────────────────────────────
   const limitColor = nutzerCount >= nutzerLimit
     ? 'text-red-600 bg-red-50'
     : nutzerCount >= nutzerLimit * 0.8
@@ -393,6 +394,9 @@ export default function Einstellungen() {
           </div>
         </div>
 
+        {/* ══ SPEICHER ═══════════════════════════════════════════════════════ */}
+        <StorageBar />
+
         {/* ══ PASSWORT ═══════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Passwort ändern</h2>
@@ -514,7 +518,7 @@ export default function Einstellungen() {
                     ))}
                 </select>
                 <p className="text-xs text-gray-400 mt-1.5">
-                  Die Person erhält eine E-Mail mit einem Einladungslink (7 Tage gøltig).
+                  Die Person erhält eine E-Mail mit einem Einladungslink (7 Tage gültig).
                 </p>
               </div>
 
