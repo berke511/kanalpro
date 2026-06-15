@@ -4,17 +4,19 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus, canAccess } from '@/lib/subscription';
+import { hasMinRole } from '@/lib/roles';
 import TrialBanner from '@/components/TrialBanner';
 
-// Nav-Links mit optionalem Feature-Gate
+// Nav-Links mit optionalem Feature-Gate und Rollen-Gate
 const navLinks = [
-  { href: '/dashboard',                label: 'Übersicht',      icon: '🏠', feature: null },
-  { href: '/dashboard/kunden',         label: 'Kunden',         icon: '👥', feature: null },
-  { href: '/dashboard/auftraege',      label: 'Aufträge',       icon: '📋', feature: null },
-  { href: '/dashboard/rechnungen',     label: 'Rechnungen',     icon: '🧾', feature: 'rechnungen' },
-  { href: '/dashboard/einsatzplanung', label: 'Einsatzplanung', icon: '🗺️', feature: 'einsatzplanung' },
-  { href: '/dashboard/einstellungen',  label: 'Einstellungen',  icon: '⚙️', feature: null },
-  { href: '/dashboard/billing',        label: 'Abonnement',     icon: '💳', feature: null },
+  { href: '/dashboard',                        label: 'Übersicht',      icon: '🏠', feature: null, minRole: null },
+  { href: '/dashboard/kunden',                 label: 'Kunden',         icon: '👥', feature: null, minRole: null },
+  { href: '/dashboard/auftraege',              label: 'Aufträge',       icon: '📋', feature: null, minRole: null },
+  { href: '/dashboard/rechnungen',             label: 'Rechnungen',     icon: '🧾', feature: 'rechnungen', minRole: null },
+  { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', icon: '🗺️', feature: 'einsatzplanung', minRole: null },
+  { href: '/dashboard/einstellungen',          label: 'Einstellungen',  icon: '⚙️', feature: null, minRole: null },
+  { href: '/dashboard/einstellungen/rollen',   label: 'Rollen & Rechte',icon: '🔐', feature: null, minRole: 'administrator' },
+  { href: '/dashboard/billing',                label: 'Abonnement',     icon: '💳', feature: null, minRole: null },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -22,6 +24,7 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [abo, setAbo] = useState(null);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -48,6 +51,15 @@ export default function DashboardLayout({ children }) {
         aboData = neu;
       }
       setAbo(aboData);
+
+      // Rolle laden
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('role')
+        .eq('user_id', u.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      setUserRole(member?.role ?? null);
 
       if (sessionStorage.getItem('tempLogin') === '1') {
         const fn = () => supabase.auth.signOut();
@@ -102,6 +114,8 @@ export default function DashboardLayout({ children }) {
           <nav className="flex-1 px-3 py-4 space-y-1">
             {navLinks.map((link) => {
               const locked = link.feature && !canAccess(plan, link.feature);
+              // Rollen-Gate: Link ausblenden wenn Rolle nicht ausreicht
+              if (link.minRole && userRole && !hasMinRole(userRole, link.minRole)) return null;
               const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
 
               if (locked) {
