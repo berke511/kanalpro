@@ -14,7 +14,7 @@ export default function Upgrade() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
-      const { data } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).single();
+      const { data } = await supabase.from('abonnements').select('*').eq('user_id', user.id).single();
       setAbo(data);
       setLaden(false);
     }
