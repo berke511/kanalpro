@@ -106,11 +106,29 @@ export default function BillingPage() {
   const { isTrialActive, isExpired, daysLeft, plan, isPaid } = sub;
 
   async function handlePlanWaehlen(planId) {
-    if (planId !== 'starter') {
-      alert('Stripe-Zahlung wird in Kürze freigeschaltet.\nKontakt: support@kanalpro.de');
+    if (planId === 'starter') {
+      setModal(planId);
       return;
     }
-    setModal(planId);
+    // Bezahlte Pläne → Stripe Checkout
+    if (!process.env.NEXT_PUBLIC_STRIPE_ENABLED) {
+      alert('Online-Zahlung wird demnächst freigeschaltet.\nKontakt: support@kanalpro.de');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, userId: currentUser.id, email: currentUser.email }),
+      });
+      const { url, error } = await res.json();
+      if (url) window.location.href = url;
+      else throw new Error(error || 'Checkout Fehler');
+    } catch (e) {
+      setFehler('Zahlung konnte nicht gestartet werden: ' + e.message);
+      setSaving(false);
+    }
   }
 
   async function handleBestaetigen() {
