@@ -3,25 +3,42 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
+
 const statusConfig = {
   offen:          { label: 'Offen',          cls: 'bg-yellow-50 text-yellow-700' },
   in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-50 text-blue-700'    },
   abgeschlossen:  { label: 'Abgeschlossen',  cls: 'bg-green-50 text-green-700'  },
 };
+
 export default function Auftraege() {
   const router = useRouter();
   const [auftraege, setAuftraege] = useState([]);
   const [filter, setFilter] = useState('alle');
   const [laden, setLaden] = useState(true);
+  const [planInfo, setPlanInfo] = useState(null);
+
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      const abo = await checkAndDowngrade(supabase, user.id);
+      const sub = getSubscriptionStatus(abo);
+      const plan = getPlan(sub.plan);
+      const limit = plan.limits.auftraege;
       const { data } = await supabase.from('auftraege').select('*, kunden(name)').eq('user_id', user.id).order('erstellt_am', { ascending: false });
-      setAuftraege(data ?? []); setLaden(false);
+      setAuftraege(data ?? []);
+      const count = (data ?? []).length;
+      const isLimited = limit != null && limit !== Infinity;
+      const atLimit = isLimited && count >= limit;
+      const nearLimit = isLimited && !atLimit && count >= Math.floor(limit * 0.8);
+      setPlanInfo({ planId: sub.plan, limit, count, atLimit, nearLimit });
+      setLaden(false);
     }
     load();
   }, []);
+
   const gefiltert = filter === 'alle' ? auftraege : auftraege.filter(a => a.status === filter);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -29,8 +46,29 @@ export default function Auftraege() {
           <h1 className="text-2xl font-bold text-gray-900">Aufträge</h1>
           <p className="text-gray-500 mt-1">{auftraege.length} Aufträge gesamt</p>
         </div>
-        <Link href="/dashboard/auftraege/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neuer Auftrag</Link>
+        {planInfo?.atLimit ? (
+          <Link href="/dashboard/billing"
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-1.5 border border-red-100">
+            🔒 Limit erreicht
+          </Link>
+        ) : (
+          <Link href="/dashboard/auftraege/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neuer Auftrag</Link>
+        )}
       </div>
+
+      {planInfo?.atLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+          <span>🚫 Limit erreicht: {planInfo.count}/{planInfo.limit} Aufträge (Starter-Plan)</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
+      {planInfo?.nearLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
+          <span>⚠️ {planInfo.count}/{planInfo.limit} Aufträge genutzt — bald voll</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
+
       <div className="flex gap-2 mb-5">
         {['alle','offen','in_bearbeitung','abgeschlossen'].map(s => (
           <button key={s} onClick={() => setFilter(s)}
@@ -39,6 +77,7 @@ export default function Auftraege() {
           </button>
         ))}
       </div>
+
       {laden ? <p className="text-gray-400">Wird geladen...</p> : gefiltert.length===0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-3">📋</div>
