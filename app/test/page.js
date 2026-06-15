@@ -79,7 +79,7 @@ const SZENARIEN = [
   {
     id: 'enterprise',
     label: 'Plan: Enterprise',
-    sub: '249 €/Monat — Bis 25 Nutzer · Voller Zugang · Teams, Erweiterte Rollen & Auswertungen',
+    sub: '289 €/Monat — Bis 25 Nutzer · Voller Zugang · Teams, Erweiterte Rollen & Auswertungen',
     emoji: '🚀',
     gruppe: 'Bezahlte Pläne',
     farbe: 'bg-yellow-50 border-yellow-200 hover:border-yellow-400',
@@ -117,7 +117,7 @@ const PLAN_INFO = [
   { name: 'Starter', preis: 'Kostenlos', color: 'bg-gray-100 text-gray-600', features: '1 Nutzer · 50 Kunden · 100 Aufträge · 100 MB · 30 Tage' },
   { name: 'Pro', preis: '79 €/Mo', color: 'bg-purple-100 text-purple-800', features: 'Bis 3 Nutzer · Bis 5 Fahrzeuge · Bis 10 Geräte · 2 GB · CRM, Angebote, Mobile App, Basis-Disposition · Jahresabo: 869 €' },
   { name: 'Professional', preis: '129 €/Mo', color: 'bg-indigo-100 text-indigo-800', features: 'Bis 10 Nutzer · Bis 20 Fahrzeuge · 5 GB · Rechnungen, Mahnungen, Dokumente, Berichte, Chat · Jahresabo: 1.419 €' },
-  { name: 'Enterprise', preis: '249 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Bis 25 Nutzer · Bis 50 Fahrzeuge · 10 GB · Teams, Erweiterte Rollen, Erweiterte Auswertungen · Jahresabo: 2.739 €' },
+  { name: 'Enterprise', preis: '289 €/Mo', color: 'bg-yellow-100 text-yellow-800', features: 'Bis 25 Nutzer · Bis 50 Fahrzeuge · 10 GB · Teams, Erweiterte Rollen, Erweiterte Auswertungen · Jahresabo: 3.179 €' },
 ];
 
 export default function TestSzenarien() {
@@ -275,7 +275,7 @@ export default function TestSzenarien() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Implementierte Features</h2>
           <div className="space-y-2">
             {[
-              { ok: true, text: 'Abo-System: Pro 79€ / Professional 129€ / Enterprise 249€ (+ Jahresabo mit 1 Monat gratis)' },
+              { ok: true, text: 'Abo-System: Pro 79€ / Professional 129€ / Enterprise 289€ (+ Jahresabo mit 1 Monat gratis)' },
               { ok: true, text: '14-Tage Enterprise Trial → automatisch Starter (kostenlos) nach Ablauf' },
               { ok: true, text: 'TrialBanner im Dashboard (grün → orange → rot)' },
               { ok: true, text: 'Billing-Seite unter /dashboard/billing' },
