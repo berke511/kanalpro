@@ -10,8 +10,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export const config = { api: { bodyParser: false } };
-
 export async function POST(req) {
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
