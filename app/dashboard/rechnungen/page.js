@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import PlanGate from '@/components/PlanGate';
 
 const statusConfig = {
   entwurf:  { label: 'Entwurf',  cls: 'bg-gray-100 text-gray-600'  },
@@ -63,6 +64,7 @@ export default function Rechnungen() {
   }
 
   return (
+    <PlanGate feature="rechnungen">
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
@@ -142,5 +144,6 @@ export default function Rechnungen() {
         </form>
       )}
     </div>
+    </PlanGate>
   );
 }
