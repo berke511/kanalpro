@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
 function farbeVonName(name) {
   const farben = ['bg-blue-500','bg-green-500','bg-purple-500','bg-pink-500','bg-orange-500','bg-teal-500','bg-indigo-500','bg-red-500'];
@@ -26,17 +27,27 @@ export default function Kunden() {
   const [buchstabe, setBuchstabe] = useState(null);
   const [loeschenId, setLoeschenId] = useState(null);
   const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
+  const [planInfo, setPlanInfo] = useState(null);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
+    const abo = await checkAndDowngrade(supabase, user.id);
+    const sub = getSubscriptionStatus(abo);
+    const plan = getPlan(sub.plan);
+    const limit = plan.limits.kunden;
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
       .eq('user_id', user.id)
       .order('name');
     setKunden(data ?? []);
+    const count = (data ?? []).length;
+    const isLimited = limit != null && limit !== Infinity;
+    const atLimit = isLimited && count >= limit;
+    const nearLimit = isLimited && !atLimit && count >= Math.floor(limit * 0.8);
+    setPlanInfo({ planId: sub.plan, limit, count, atLimit, nearLimit });
     setLaden(false);
   }
 
@@ -67,11 +78,31 @@ export default function Kunden() {
           <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
           <p className="text-gray-500 mt-1">{kunden.length} Kunden gesamt</p>
         </div>
-        <Link href="/dashboard/kunden/neu"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-          + Neuer Kunde
-        </Link>
+        {planInfo?.atLimit ? (
+          <Link href="/dashboard/billing"
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-1.5 border border-red-100">
+            🔒 Limit erreicht
+          </Link>
+        ) : (
+          <Link href="/dashboard/kunden/neu"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
+            + Neuer Kunde
+          </Link>
+        )}
       </div>
+
+      {planInfo?.atLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+          <span>🚫 Limit erreicht: {planInfo.count}/{planInfo.limit} Kunden (Starter-Plan)</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
+      {planInfo?.nearLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
+          <span>⚠️ {planInfo.count}/{planInfo.limit} Kunden genutzt — bald voll</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
 
       {/* A-Z Register */}
       <div className="flex flex-wrap gap-1 mb-5">
