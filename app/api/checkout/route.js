@@ -1,17 +1,19 @@
-import Stripe from 'stripe';
-import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import { NextResponse } from 'next/server';
 
 // Stripe Price IDs — nach Account-Erstellung in .env.local setzen
 const PRICE_IDS = {
-  pro:          process.env.STRIPE_PRO_PRICE_ID,
+  pro: process.env.STRIPE_PRO_PRICE_ID,
   professional: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
-  enterprise:   process.env.STRIPE_ENTERPRISE_PRICE_ID,
+  enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID,
 };
 
 export async function POST(req) {
   try {
+    const { default: Stripe } = await import('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
     const { planId, userId, email } = await req.json();
 
     const priceId = PRICE_IDS[planId];
