@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
 export default function NeuerKunde() {
   const router = useRouter();
@@ -15,6 +16,21 @@ export default function NeuerKunde() {
   });
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
+
+  useEffect(() => {
+    async function checkLimit() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const abo = await checkAndDowngrade(supabase, user.id);
+      const sub = getSubscriptionStatus(abo);
+      const plan = getPlan(sub.plan);
+      const limit = plan.limits.kunden;
+      if (limit == null || limit === Infinity) return;
+      const { count } = await supabase.from('kunden').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+      if (count >= limit) router.push('/dashboard/kunden');
+    }
+    checkLimit();
+  }, []);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
