@@ -38,14 +38,10 @@ function PlanCard({ plan, isAktuell, isTrialing }) {
 
       {/* Preis */}
       <div className="mb-5">
-        {istEnterprise ? (
-          <span className="text-2xl font-bold text-gray-900">Auf Anfrage</span>
-        ) : (
           <>
-            <span className="text-3xl font-bold text-gray-900">{plan.preis} €</span>
-            <span className="text-gray-400 text-sm ml-1">/Monat</span>
+            <span className="text-3xl font-bold text-gray-900">{plan.preis === 0 ? 'Kostenlos' : plan.preis + ' €'}</span>
+            {plan.preis > 0 && <span className="text-gray-400 text-sm ml-1">/Monat</span>}
           </>
-        )}
       </div>
 
       {/* Feature-Liste */}
