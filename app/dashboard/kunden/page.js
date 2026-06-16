@@ -18,7 +18,7 @@ function initialen(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ALPABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export default function Kunden() {
   const router = useRouter();
@@ -180,7 +180,7 @@ export default function Kunden() {
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-40">{k.email}</a>
                         )}
-                        {!k].telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
+                        {!kh.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3">
@@ -200,13 +200,13 @@ export default function Kunden() {
                             {loeschenBestaetigt ? 'Endgültig' : 'Ja'}
                           </button>
                           <button onClick={() => { setLoeschenId(null); setLoeschenBestaetigt(false); }}
-                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100&quot;
+                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100">
                             Nein
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 justify-end">
-                          <Link href={'$/dashboard/kunden/' + k.id} onClick={e => e.stopPropagation()}
+                          <Link href={'/dashboard/kunden/' + k.id} onClick={e => e.stopPropagation()}
                             className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition">
                             Bearbeiten
                           </Link>
