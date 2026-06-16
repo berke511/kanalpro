@@ -78,8 +78,8 @@ export default function NeuerKunde() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Kundentyp</label>
             <div className="flex gap-3">
               {[
-                { value: 'privat', label: '👤 Privatperson' },
-                { value: 'firma', label: '🏢 Firmenkunde' },
+                { value: 'privat', label: 'Privatperson' },
+                { value: 'firma', label: 'Firmenkunde' },
               ].map(opt => (
                 <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition ${
                   form.kundentyp === opt.value
@@ -168,12 +168,12 @@ export default function NeuerKunde() {
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_vertragskunde" checked={form.ist_vertragskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">📄 Vertragskunde</span>
+              <span className="text-sm font-medium text-gray-700">Vertragskunde</span>
             </label>
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_wartungskunde" checked={form.ist_wartungskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">🔧 Wartungskunde</span>
+              <span className="text-sm font-medium text-gray-700">Wartungskunde</span>
             </label>
           </div>
 
