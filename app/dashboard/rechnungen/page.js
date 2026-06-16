@@ -74,7 +74,7 @@ export default function Rechnungen() {
       </div>
 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-6">
-        {[{ key: 'liste', label: '📋 Rechnungen' }, { key: 'firmendaten', label: '🏢 Firmendaten' }].map(t => (
+        {[{ key: 'liste', label: 'Rechnungen' }, { key: 'firmendaten', label: 'Firmendaten' }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             {t.label}
@@ -85,7 +85,7 @@ export default function Rechnungen() {
       {tab === 'liste' && (
         laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <div className="text-4xl mb-3">🧾</div>
+            
             <p className="font-medium">Noch keine Rechnungen</p>
             <p className="text-sm mt-1">Erstelle deine erste Rechnung.</p>
           </div>
