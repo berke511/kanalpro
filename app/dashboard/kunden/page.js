@@ -81,7 +81,7 @@ export default function Kunden() {
         {planInfo?.atLimit ? (
           <Link href="/dashboard/billing"
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-1.5 border border-red-100">
-            🔒 Limit erreicht
+            Limit erreicht
           </Link>
         ) : (
           <Link href="/dashboard/kunden/neu"
@@ -93,13 +93,13 @@ export default function Kunden() {
 
       {planInfo?.atLimit && (
         <div className="mb-4 flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
-          <span>🚫 Limit erreicht: {planInfo.count}/{planInfo.limit} Kunden (Starter-Plan)</span>
+          <span>Limit erreicht: {planInfo.count}/{planInfo.limit} Kunden (Starter-Plan)</span>
           <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
         </div>
       )}
       {planInfo?.nearLimit && (
         <div className="mb-4 flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
-          <span>⚠️ {planInfo.count}/{planInfo.limit} Kunden genutzt — bald voll</span>
+          <span>{planInfo.count}/{planInfo.limit} Kunden genutzt — bald voll</span>
           <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
         </div>
       )}
@@ -126,7 +126,7 @@ export default function Kunden() {
         <p className="text-gray-400">Wird geladen...</p>
       ) : gefiltert.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <div className="text-4xl mb-3">👥</div>
+          
           <p className="font-medium">Keine Kunden{buchstabe ? ` mit „${buchstabe}"` : ''}</p>
           {!buchstabe && <p className="text-sm mt-1">Lege deinen ersten Kunden an.</p>}
         </div>
@@ -162,10 +162,10 @@ export default function Kunden() {
                           )}
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${k.kundentyp === 'firma' ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-500'}`}>
-                              {k.kundentyp === 'firma' ? '🏢 Firma' : '👤 Privat'}
+                              {k.kundentyp === 'firma' ? 'Firma' : 'Privat'}
                             </span>
-                            {k.ist_vertragskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">📄 Vertrag</span>}
-                            {k.ist_wartungskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">🔧 Wartung</span>}
+                            {k.ist_vertragskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Vertrag</span>}
+                            {k.ist_wartungskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">Wartung</span>}
                           </div>
                         </div>
                       </div>
@@ -180,7 +180,7 @@ export default function Kunden() {
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-40">{k.email}</a>
                         )}
-                        {!k.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
+                        {!k].telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3">
@@ -200,13 +200,13 @@ export default function Kunden() {
                             {loeschenBestaetigt ? 'Endgültig' : 'Ja'}
                           </button>
                           <button onClick={() => { setLoeschenId(null); setLoeschenBestaetigt(false); }}
-                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100">
+                            className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100&quot;
                             Nein
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 justify-end">
-                          <Link href={'/dashboard/kunden/' + k.id} onClick={e => e.stopPropagation()}
+                          <Link href={'$/dashboard/kunden/' + k.id} onClick={e => e.stopPropagation()}
                             className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition">
                             Bearbeiten
                           </Link>
