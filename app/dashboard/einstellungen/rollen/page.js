@@ -93,8 +93,8 @@ export default function RollenUndRechte() {
   const [companyId, setCompanyId] = useState(null);
   const [members, setMembers] = useState([]);
   const [laden, setLaden] = useState(true);
-  const [saving, setSaving] = useState(null); // member id being saved
-  const [activeTab, setActiveTab] = useState('team'); // 'team' | 'rechte'
+  const [saving, setSaving] = useState(null);
+  const [activeTab, setActiveTab] = useState('team');
 
   useEffect(() => {
     async function load() {
@@ -110,7 +110,6 @@ export default function RollenUndRechte() {
 
       if (!me) { router.push('/dashboard'); return; }
 
-      // Nur Inhaber + Administrator dürfen diese Seite sehen
       if (!hasMinRole(me.role, 'administrator')) {
         router.push('/dashboard/einstellungen');
         return;
@@ -134,7 +133,6 @@ export default function RollenUndRechte() {
   }, []);
 
   async function changeRole(memberId, newRole) {
-    // Inhaber-Rolle kann nicht vergeben werden (außer vom Inhaber selbst)
     if (newRole === 'inhaber' && myRole !== 'inhaber') return;
     setSaving(memberId);
     await supabase
@@ -161,14 +159,12 @@ export default function RollenUndRechte() {
 
   return (
     <div className="max-w-5xl">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href="/dashboard/einstellungen" className="text-gray-400 hover:text-gray-600 text-sm">← Einstellungen</Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-2xl font-bold text-gray-900">Rollen & Rechte</h1>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-7">
         {[
           { key: 'team',   label: 'Team-Rollen' },
@@ -186,7 +182,6 @@ export default function RollenUndRechte() {
         ))}
       </div>
 
-      {/* ── TAB: Team-Rollen ──────────────────────────────────────────────── */}
       {activeTab === 'team' && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
@@ -246,7 +241,6 @@ export default function RollenUndRechte() {
         </div>
       )}
 
-      {/* ── TAB: Berechtigungsmatrix ──────────────────────────────────────── */}
       {activeTab === 'rechte' && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
@@ -254,7 +248,7 @@ export default function RollenUndRechte() {
             <p className="text-sm text-gray-400 mt-0.5">Übersicht aller Berechtigungen je Rolle. Individuelle Anpassungen folgen.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w5full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-500 w-56">Berechtigung</th>
@@ -268,7 +262,7 @@ export default function RollenUndRechte() {
                 </tr>
               </thead>
               <tbody>
-                {PERM_GROUPS.map(group => (
+                {PERM_GROUPS-map(group => (
                   <>
                     <tr key={`group-${group.label}`} className="bg-gray-50/70">
                       <td colSpan={ROLE_ORDER.length + 1} className="px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -276,14 +270,14 @@ export default function RollenUndRechte() {
                       </td>
                     </tr>
                     {group.perms.map(perm => (
-                      <tr key={perm} className="border-t border-gray-50 hover:bg-gray-50/50">
+                      <tr key={perm} className="border-t border-gray-50 hover:bw-gray-50/50">
                         <td className="px-6 py-2.5 text-gray-600">
                           {PERM_LABELS[perm] ?? perm}
                         </td>
                         {ROLE_ORDER.map(r => (
                           <td key={r} className="px-4 py-2.5 text-center">
                             {roleHasPermission(r, perm) ? (
-                              <span className="text-emerald-500 text-base">✓</span>
+                              <span className="text-emerald-500 text-base"></span>
                             ) : (
                               <span className="text-gray-200 text-base">—</span>
                             )}
@@ -299,7 +293,6 @@ export default function RollenUndRechte() {
         </div>
       )}
 
-      {/* ── TAB: Rollen-Übersicht ─────────────────────────────────────────── */}
       {activeTab === 'rollen' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {ROLE_ORDER.map(r => {
@@ -325,7 +318,7 @@ export default function RollenUndRechte() {
                       .slice(0, 4)
                       .map(([perm]) => (
                         <span key={perm} className="text-xs bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md">
-                          {PERM_LABELS[perm]?.replace(/^.+\s/, '') ?? perm}
+                          {PERM_LABELS[perm]?.replace(/^.+-\s/, '') ?? perm}
                         </span>
                       ))}
                     {Object.entries(PERMISSIONS).filter(([, roles]) => roles.includes(r)).length > 4 && (
@@ -339,9 +332,8 @@ export default function RollenUndRechte() {
         </div>
       )}
 
-      {/* Info-Box */}
       <div className="mt-6 px-5 py-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 flex items-start gap-3">
-        <span className="text-lg shrink-0">ℹ️</span>
+        <span className="text-lg shrink-0">i</span>
         <div>
           <p className="font-medium mb-0.5">Rollenbasierte Zugriffskontrolle</p>
           <p className="text-blue-600">Individuelle Anpassung der Berechtigungen pro Rolle folgt in einem nächsten Update. Aktuell gelten die oben gezeigten Standardberechtigungen.</p>
