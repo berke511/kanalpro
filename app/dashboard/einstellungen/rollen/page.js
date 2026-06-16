@@ -13,42 +13,34 @@ const PERM_GROUPS = [
   {
     label: 'Kunden',
     perms: ['kunden.view','kunden.create','kunden.edit','kunden.delete'],
-    icon: '👥',
   },
   {
     label: 'Aufträge',
     perms: ['auftraege.view','auftraege.create','auftraege.edit','auftraege.delete','auftraege.assign'],
-    icon: '📋',
   },
   {
     label: 'Rechnungen',
     perms: ['rechnungen.view','rechnungen.create','rechnungen.edit','rechnungen.delete'],
-    icon: '🧾',
   },
   {
     label: 'Einsatzplanung',
     perms: ['disposition.view','disposition.edit'],
-    icon: '🗺️',
   },
   {
     label: 'Fahrzeuge',
     perms: ['fahrzeuge.view','fahrzeuge.edit'],
-    icon: '🚐',
   },
   {
     label: 'Dokumente',
     perms: ['dokumente.view','dokumente.upload','dokumente.delete'],
-    icon: '📁',
   },
   {
     label: 'Unternehmen',
     perms: ['company.edit','company.billing','members.view','members.invite','members.edit','members.delete'],
-    icon: '🏢',
   },
   {
     label: 'Einstellungen',
     perms: ['einstellungen.view','einstellungen.edit'],
-    icon: '⚙️',
   },
 ];
 
@@ -142,7 +134,7 @@ export default function RollenUndRechte() {
   }, []);
 
   async function changeRole(memberId, newRole) {
-    // Inhaber-Rolle kann nicht vergeben werden (außer on Inhaber selbst)
+    // Inhaber-Rolle kann nicht vergeben werden (außer vom Inhaber selbst)
     if (newRole === 'inhaber' && myRole !== 'inhaber') return;
     setSaving(memberId);
     await supabase
@@ -178,11 +170,10 @@ export default function RollenUndRechte() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-7">
-        {/* suppress React Fragment from map */}
         {[
-          { key: 'team',   label: '👥 Team-Rollen' },
-          { key: 'rechte', label: '🔐 Berechtigungen' },
-          { key: 'rollen', label: '📋 Rollen-Übersicht' },
+          { key: 'team',   label: 'Team-Rollen' },
+          { key: 'rechte', label: 'Berechtigungen' },
+          { key: 'rollen', label: 'Rollen-Übersicht' },
         ].map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
@@ -281,7 +272,7 @@ export default function RollenUndRechte() {
                   <>
                     <tr key={`group-${group.label}`} className="bg-gray-50/70">
                       <td colSpan={ROLE_ORDER.length + 1} className="px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        {group.icon} {group.label}
+                        {group.label}
                       </td>
                     </tr>
                     {group.perms.map(perm => (
