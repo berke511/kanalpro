@@ -92,7 +92,7 @@ export default function NeueRechnung() {
     doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} €`, 195, ty+7, { align: 'right' });
     doc.setDrawColor(...grau); doc.line(140, ty+10, 195, ty+10);
     doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, ty+17, { align: 'right' });
+    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, y+17, { align: 'right' });
     if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(form.notizen, 15, ty+37); }
     doc.setFillColor(249,250,251); doc.rect(15, 260, 180, 22, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Bankverbindung:', 20, 268);
@@ -136,7 +136,7 @@ export default function NeueRechnung() {
             {positionen.map((p, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-5"><input type="text" value={p.beschreibung} onChange={e=>onPosition(i,'beschreibung',e.target.value)} placeholder="Leistungsbeschreibung" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-                <div className="col-span-2"><input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+                <div className="col-span-2"><input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w7-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
                 <div className="col-span-2"><select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"><option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option></select></div>
                 <div className="col-span-2"><input type="number" min="0" step="0.01" value={p.preis} onChange={e=>onPosition(i,'preis',e.target.value)} placeholder="€" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
                 <div className="col-span-1 flex justify-center"><button type="button" onClick={()=>removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button></div>
@@ -152,7 +152,7 @@ export default function NeueRechnung() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte øberweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
           <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
