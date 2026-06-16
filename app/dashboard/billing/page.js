@@ -265,7 +265,7 @@ export default function BillingPage() {
       </div>
 
       <p className="text-center text-gray-400 text-xs mt-6">
-        Sichere Zahlung · Jederzeit kündbar · DSGVO-konform · Made in Germany
+        Sichere Zahlung · Jederzeit køndbar · DSGVO-konform · Made in Germany
       </p>
     </div>
   );
