@@ -148,7 +148,7 @@ export default function Upgrade() {
             {[
               { f: 'Kann ich jederzeit kündigen?', a: 'Ja — du kannst monatlich kündigen, ohne Mindestlaufzeit.' },
               { f: 'Was passiert nach der Testphase?', a: 'Du wählst einfach einen Plan. Ohne Abo werden die Daten für 30 Tage gespeichert.' },
-              { f: 'Wie läuft die Zahlung ab?', a: 'Sicher øber Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.' },
+              { f: 'Wie läuft die Zahlung ab?', a: 'Sicher über Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.' },
               { f: 'Sind meine Daten DSGVO-konform?', a: 'Ja — alle Daten liegen auf EU-Servern in Frankfurt.' },
             ].map(item => (
               <div key={item.f}>
