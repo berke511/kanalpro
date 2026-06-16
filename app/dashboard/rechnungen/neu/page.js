@@ -152,11 +152,11 @@ export default function NeueRechnung() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte øberweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
-          <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : '💾 Speichern'}</button>
-          <button type="button" onClick={handlePDF} disabled={pdfLaden} className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm">{pdfLaden ? 'PDF wird erstellt...' : '📄 PDF herunterladen'}</button>
+          <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
+          <button type="button" onClick={handlePDF} disabled={pdfLaden} className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm">{pdfLaden ? 'PDF wird erstellt...' : 'PDF herunterladen'}</button>
           <Link href="/dashboard/rechnungen" className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">Abbrechen</Link>
         </div>
       </form>
