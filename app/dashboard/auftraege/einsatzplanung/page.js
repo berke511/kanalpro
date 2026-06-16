@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
-// ── Konstanten ──────────────────────────────────────────────────────────────
+// ── Konstanten ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   offen:          { label: 'Offen',          cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
   in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-100 text-blue-700 border-blue-200'       },
@@ -195,6 +195,7 @@ function DispositionAnsicht({ auftraege: alleAuftraege }) {
                   </Link>
                 </div>
               </div>
+  
             );
           })}
         </div>
