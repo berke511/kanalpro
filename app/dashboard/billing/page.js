@@ -167,7 +167,7 @@ export default function BillingPage() {
                   daysLeft <= 7 ? 'text-orange-600' : 'text-blue-600'
                 }`}
               >
-                {daysLeft <= 7 ? '⚠️' : '🎉'} Noch{' '}
+                Noch{' '}
                 <strong>
                   {daysLeft} {daysLeft === 1 ? 'Tag' : 'Tage'}
                 </strong>{' '}
@@ -176,12 +176,12 @@ export default function BillingPage() {
             )}
             {isExpired && (
               <p className="text-sm mt-1 text-red-600 font-medium">
-                ⛔ Testphase abgelaufen — bitte wähle einen Plan
+                Testphase abgelaufen — bitte wähle einen Plan
               </p>
             )}
             {isPaid && (
               <p className="text-sm mt-1 text-green-600 font-medium">
-                ✅ Abo aktiv
+                Abo aktiv
               </p>
             )}
           </div>
@@ -241,7 +241,7 @@ export default function BillingPage() {
             },
             {
               f: 'Wie läuft die Zahlung ab?',
-              a: 'Sicher øber Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.',
+              a: 'Sicher über Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.',
             },
             {
               f: 'Sind meine Daten DSGVO-konform?',
@@ -249,7 +249,7 @@ export default function BillingPage() {
             },
             {
               f: 'Was ist im Enterprise-Plan enthalten?',
-              a: 'Unbegrenzte Nutzer, API-Zugang, dedizierter Support und SLA. Schreib uns før ein individuelles Angebot.',
+              a: 'Unbegrenzte Nutzer, API-Zugang, dedizierter Support und SLA. Schreib uns für ein individuelles Angebot.',
             },
             {
               f: 'Kann ich den Plan jederzeit wechseln?',
@@ -265,7 +265,7 @@ export default function BillingPage() {
       </div>
 
       <p className="text-center text-gray-400 text-xs mt-6">
-        🔒 Sichere Zahlung · Jederzeit kündbar · DSGVO-konform · Made in Germany
+        Sichere Zahlung · Jederzeit kündbar · DSGVO-konform · Made in Germany
       </p>
     </div>
   );
