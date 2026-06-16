@@ -262,7 +262,7 @@ export default function AuftragDetail() {
         <div className="flex gap-2">
           <button onClick={() => setEditMode(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-            ✏️ Bearbeiten
+            Bearbeiten
           </button>
           <button onClick={() => {
             if (window.confirm('Auftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
@@ -270,7 +270,7 @@ export default function AuftragDetail() {
             }
           }} disabled={loeschen}
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition disabled:opacity-60">
-            {loeschen ? '…' : '🗑️ Löschen'}
+            {loeschen ? '…' : 'Löschen'}
           </button>
         </div>
       </div>
