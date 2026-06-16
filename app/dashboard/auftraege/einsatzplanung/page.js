@@ -237,8 +237,8 @@ export default function Einsatzplanung() {
       </div>
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit no-print">
         {[
-          { id: 'kalender',    label: '📅 Kalender'    },
-          { id: 'disposition', label: '🗨️ Disposition' },
+          { id: 'kalender',    label: 'Kalender'    },
+          { id: 'disposition', label: 'Disposition' },
         ].map(t => (
           <button key={t.id} onClick={() => setAktiveTab(t.id)}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition ${aktiveTab === t.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
