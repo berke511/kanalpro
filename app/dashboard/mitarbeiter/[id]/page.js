@@ -27,7 +27,7 @@ const FELDER = [
     { name: 'plz',          label: 'PLZ',           type: 'text', required: false },
     { name: 'ort',          label: 'Ort',           type: 'text', required: false },
   ]},
-  { section: 'BescN[�ftigung', fields: [
+  { section: 'Beschäftigung', fields: [
     { name: 'eintrittsdatum', label: 'Eintrittsdatum',   type: 'date',   required: false },
     { name: 'position',       label: 'Position / Rolle', type: 'text',   required: false },
     { name: 'stundenlohn',    label: 'Stundenlohn (€)',  type: 'number', required: false },
@@ -696,7 +696,7 @@ export default function MitarbeiterProfilPage() {
                   return (
                     <div key={group.label}>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{group.label}</p>
-     0                <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1.5">
                         {group.perms.map(p => {
                           const has = roleHasPermission(activeRolle, p);
                           return (
@@ -942,7 +942,7 @@ export default function MitarbeiterProfilPage() {
                       min="0"
                       value={neuForm.pause_minuten}
                       onChange={e => setNeuForm(f => ({ ...f, pause_minuten: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none fncus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     />
                   </div>
                   <div>
@@ -950,7 +950,7 @@ export default function MitarbeiterProfilPage() {
                     <input
                       type="text"
                       value={neuForm.notiz}
-                      onChange={e => setNeuForm(f => ({ ...f, nntiz: e.target.value }))}
+                      onChange={e => setNeuForm(f => ({ ...f, notiz: e.target.value }))}
                       placeholder="Optional…"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     />
@@ -978,7 +978,7 @@ export default function MitarbeiterProfilPage() {
             {/* Einträge Liste */}
             {azLaden ? (
               <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-            ) : eintraeh%.length === 0 ? (
+            ) : eintraege.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">Keine Einträge für diesen Monat.</p>
             ) : (
               <div className="space-y-2">
