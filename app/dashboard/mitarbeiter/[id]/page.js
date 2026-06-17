@@ -3,9 +3,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import {
+  ROLE_LABELS, ROLE_COLORS, PERMISSIONS, roleHasPermission,
+} from '@/lib/roles';
 
 const TABS = [
   { id: 'stammdaten', label: 'Stammdaten' },
+  { id: 'rollen',     label: 'Rollen & Rechte' },
 ];
 
 const FELDER = [
@@ -28,6 +32,55 @@ const FELDER = [
   ]},
 ];
 
+const ROLE_ORDER = ['inhaber', 'administrator', 'disponent', 'buero', 'techniker', 'fahrer'];
+
+const ROLE_DESCRIPTIONS = {
+  inhaber:       'Vollzugriff auf alle Bereiche inkl. Billing.',
+  administrator: 'Vollzugriff auf alle Bereiche außer Billing.',
+  disponent:     'Kann Aufträge planen und Ressourcen koordinieren.',
+  buero:         'Kann Kunden, Aufträge und Rechnungen verwalten.',
+  techniker:     'Kann eigene Aufträge und Dokumentation verwalten.',
+  fahrer:        'Kann eigene Aufträge anzeigen.',
+};
+
+const PERM_GROUPS = [
+  { label: 'Kunden',        perms: ['kunden.view','kunden.create','kunden.edit','kunden.delete'] },
+  { label: 'Aufträge',      perms: ['auftraege.view','auftraege.create','auftraege.edit','auftraege.delete','auftraege.assign'] },
+  { label: 'Rechnungen',    perms: ['rechnungen.view','rechnungen.create','rechnungen.edit','rechnungen.delete'] },
+  { label: 'Einsatzplanung',perms: ['disposition.view','disposition.edit'] },
+  { label: 'Fahrzeuge',     perms: ['fahrzeuge.view','fahrzeuge.edit'] },
+  { label: 'Dokumente',     perms: ['dokumente.view','dokumente.upload','dokumente.delete'] },
+  { label: 'Einstellungen', perms: ['einstellungen.view','einstellungen.edit','members.view','members.invite','members.edit'] },
+];
+
+const PERM_LABELS = {
+  'kunden.view':        'Anzeigen',
+  'kunden.create':      'Erstellen',
+  'kunden.edit':        'Bearbeiten',
+  'kunden.delete':      'Löschen',
+  'auftraege.view':     'Anzeigen',
+  'auftraege.create':   'Erstellen',
+  'auftraege.edit':     'Bearbeiten',
+  'auftraege.delete':   'Löschen',
+  'auftraege.assign':   'Zuweisen',
+  'rechnungen.view':    'Anzeigen',
+  'rechnungen.create':  'Erstellen',
+  'rechnungen.edit':    'Bearbeiten',
+  'rechnungen.delete':  'Löschen',
+  'disposition.view':   'Anzeigen',
+  'disposition.edit':   'Bearbeiten',
+  'fahrzeuge.view':     'Anzeigen',
+  'fahrzeuge.edit':     'Bearbeiten',
+  'dokumente.view':     'Anzeigen',
+  'dokumente.upload':   'Hochladen',
+  'dokumente.delete':   'Löschen',
+  'einstellungen.view': 'Anzeigen',
+  'einstellungen.edit': 'Bearbeiten',
+  'members.view':       'Team anzeigen',
+  'members.invite':     'Einladen',
+  'members.edit':       'Bearbeiten',
+};
+
 export default function MitarbeiterProfilPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -38,6 +91,12 @@ export default function MitarbeiterProfilPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Rollen & Rechte state
+  const [rolle, setRolle] = useState(null);
+  const [rolleSaving, setRolleSaving] = useState(false);
+  const [rolleSaved, setRolleSaved] = useState(false);
+  const [rollePreview, setRollePreview] = useState(null); // locally selected but not yet saved
 
   useEffect(() => {
     async function load() {
@@ -66,6 +125,8 @@ export default function MitarbeiterProfilPage() {
         stundenlohn:     data.stundenlohn != null ? String(data.stundenlohn) : '',
         notizen:         data.notizen ?? '',
       });
+      setRolle(data.rolle ?? null);
+      setRollePreview(data.rolle ?? null);
       setLoading(false);
     }
     load();
@@ -111,6 +172,20 @@ export default function MitarbeiterProfilPage() {
     setTimeout(() => setSaved(false), 3000);
   }
 
+  async function handleRolleSave() {
+    setRolleSaving(true);
+    const { error: dbError } = await supabase
+      .from('mitarbeiter')
+      .update({ rolle: rollePreview })
+      .eq('id', id);
+    setRolleSaving(false);
+    if (!dbError) {
+      setRolle(rollePreview);
+      setRolleSaved(true);
+      setTimeout(() => setRolleSaved(false), 3000);
+    }
+  }
+
   async function handleDelete() {
     if (!confirm('Mitarbeiter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
     setDeleting(true);
@@ -125,6 +200,7 @@ export default function MitarbeiterProfilPage() {
   );
 
   const fullName = `${form.vorname} ${form.nachname}`.trim() || 'Unbekannt';
+  const activeRolle = rollePreview; // what's shown in the UI
 
   return (
     <div className="max-w-2xl">
@@ -228,6 +304,125 @@ export default function MitarbeiterProfilPage() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Tab: Rollen & Rechte */}
+      {tab === 'rollen' && (
+        <div className="space-y-5">
+
+          {/* Rolle wählen */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">System-Rolle</h2>
+            <p className="text-xs text-gray-400 mb-4">Legt fest, welche Rechte dieser Mitarbeiter im System erhält.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {ROLE_ORDER.map(r => {
+                const isSelected = activeRolle === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRollePreview(r)}
+                    className={`text-left p-4 rounded-xl border-2 transition ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-100 bg-white hover:border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_COLORS[r]}`}>
+                        {ROLE_LABELS[r]}
+                      </span>
+                      {isSelected && (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-blue-500">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">{ROLE_DESCRIPTIONS[r]}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Keine Rolle Option */}
+            <button
+              type="button"
+              onClick={() => setRollePreview(null)}
+              className={`mt-3 w-full text-left px-4 py-3 rounded-xl border-2 transition text-sm ${
+                activeRolle === null
+                  ? 'border-gray-300 bg-gray-50 text-gray-700'
+                  : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-600'
+              }`}
+            >
+              Keine Rolle zugewiesen
+            </button>
+
+            <div className="flex items-center gap-3 mt-5">
+              <button
+                type="button"
+                onClick={handleRolleSave}
+                disabled={rolleSaving || rollePreview === rolle}
+                className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition"
+              >
+                {rolleSaving ? 'Speichert…' : 'Rolle speichern'}
+              </button>
+              {rolleSaved && (
+                <span className="text-sm text-green-600 font-medium">Gespeichert</span>
+              )}
+              {rollePreview !== rolle && !rolleSaving && !rolleSaved && (
+                <span className="text-xs text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">Ungespeicherte Änderung</span>
+              )}
+            </div>
+          </div>
+
+          {/* Berechtigungsübersicht für gewählte Rolle */}
+          {activeRolle && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-1">
+                Berechtigungen —{' '}
+                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${ROLE_COLORS[activeRolle]}`}>
+                  {ROLE_LABELS[activeRolle]}
+                </span>
+              </h2>
+              <p className="text-xs text-gray-400 mb-4">Übersicht der Rechte für diese Rolle.</p>
+              <div className="space-y-4">
+                {PERM_GROUPS.map(group => {
+                  const granted = group.perms.filter(p => roleHasPermission(activeRolle, p));
+                  if (granted.length === 0) return null;
+                  return (
+                    <div key={group.label}>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{group.label}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.perms.map(p => {
+                          const has = roleHasPermission(activeRolle, p);
+                          return (
+                            <span
+                              key={p}
+                              className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
+                                has
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-gray-50 text-gray-300'
+                              }`}
+                            >
+                              {has ? '✓ ' : ''}{PERM_LABELS[p] ?? p}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-50">
+                Vollständige Berechtigungsmatrix unter{' '}
+                <Link href="/dashboard/einstellungen/rollen" className="text-blue-600 hover:underline">
+                  Einstellungen → Rollen & Rechte
+                </Link>
+              </p>
+            </div>
+          )}
+
+        </div>
       )}
     </div>
   );
