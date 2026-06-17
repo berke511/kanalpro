@@ -74,7 +74,7 @@ function DonutChart({ segments, total, centerLabel = 'gesamt' }) {
   );
 }
 
-// ── Line Chart ──────────────────────────────────────────────────────────────
+// ── Line Chart ───────────────────────────────────────────────────────────────
 function LineChart({ data, months }) {
   const W = 600, H = 120;
   const PAD = { t: 10, b: 24, l: 4, r: 4 };
@@ -122,23 +122,31 @@ function LineChart({ data, months }) {
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KPICard({ label, value, sub, icon, trend, accent, href, loading }) {
+function KPICard({ label, value, sub, trend, accent, href, loading, iconPath }) {
   const inner = (
     <div className={`bg-white rounded-2xl border p-5 hover:shadow-sm transition h-full ${
       accent === 'red' ? 'border-red-100 bg-red-50' :
       accent === 'green' ? 'border-green-100 bg-green-50' :
       'border-gray-100'
     }`}>
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-2xl">{icon}</span>
-        {trend != null && (
+      {iconPath && (
+        <div className="mb-3">
+          <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-500" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
+            </svg>
+          </div>
+        </div>
+      )}
+      {trend != null && (
+        <div className="flex justify-end mb-2">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
             trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
           }`}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <div className="text-2xl font-bold text-gray-900 mb-0.5">
         {loading
           ? <span className="inline-block w-14 h-6 bg-gray-100 rounded animate-pulse" />
@@ -241,7 +249,6 @@ export default function Dashboard() {
 
         // Ereignisse: neueste 8 Aufträge
         setEvents(auftraegeData.slice(0, 8).map(a => ({
-          icon: a.status === 'abgeschlossen' ? '✅' : a.status === 'in_bearbeitung' ? '🔧' : '📋',
           text: a.titel ?? '(kein Titel)',
           zeit: a.erstellt_am,
           status: a.status,
@@ -300,13 +307,15 @@ export default function Dashboard() {
         <section>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Umsatz & Finanzen</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <KPICard label="Monatsumsatz" value={fmtEur(umsatz.monat)} icon="💰"
-              sub="Laufender Monat" href="/dashboard/rechnungen" loading={laden} />
-            <KPICard label="Jahresumsatz" value={fmtEur(umsatz.jahr)} icon="📈"
-              sub={String(new Date().getFullYear())} href="/dashboard/rechnungen" loading={laden} />
+            <KPICard label="Monatsumsatz" value={fmtEur(umsatz.monat)}
+              sub="Laufender Monat" href="/dashboard/rechnungen" loading={laden}
+              iconPath="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            <KPICard label="Jahresumsatz" value={fmtEur(umsatz.jahr)}
+              sub={String(new Date().getFullYear())} href="/dashboard/rechnungen" loading={laden}
+              iconPath="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
             <KPICard label="Rechnungen gesamt"
-              value={rechnung.offen + rechnung.bezahlt + rechnung.ueberfaellig}
-              icon="🧾" href="/dashboard/rechnungen" loading={laden} />
+              value={rechnung.offen + rechnung.bezahlt + rechnung.ueberfaellig} href="/dashboard/rechnungen" loading={laden}
+              iconPath="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z" />
           </div>
           {/* Umsatz-Diagramm */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -329,14 +338,14 @@ export default function Dashboard() {
         <section>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Aufträge</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-            <KPICard label="Offen" value={auftrag.offen} icon="🔓"
+            <KPICard label="Offen" value={auftrag.offen}
               href="/dashboard/auftraege" loading={laden} />
-            <KPICard label="Heute fällig" value={auftrag.heute} icon="📅"
+            <KPICard label="Heute fällig" value={auftrag.heute}
               href="/dashboard/auftraege" loading={laden} />
-            <KPICard label="Überfällig" value={auftrag.ueberfaellig} icon="⏰"
+            <KPICard label="Überfällig" value={auftrag.ueberfaellig}
               accent={auftrag.ueberfaellig > 0 ? 'red' : undefined}
               href="/dashboard/auftraege" loading={laden} />
-            <KPICard label="Gesamt" value={auftrag.total} icon="📋"
+            <KPICard label="Gesamt" value={auftrag.total}
               href="/dashboard/auftraege" loading={laden} />
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -366,11 +375,11 @@ export default function Dashboard() {
         <section>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Rechnungen</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-            <KPICard label="Offene Rechnungen" value={rechnung.offen} icon="📄"
+            <KPICard label="Offene Rechnungen" value={rechnung.offen}
               href="/dashboard/rechnungen" loading={laden} />
-            <KPICard label="Offener Betrag" value={fmtEur(rechnung.betrag)} icon="💶"
+            <KPICard label="Offener Betrag" value={fmtEur(rechnung.betrag)}
               href="/dashboard/rechnungen" loading={laden} />
-            <KPICard label="Überfällig" value={rechnung.ueberfaellig} icon="🚨"
+            <KPICard label="Überfällig" value={rechnung.ueberfaellig}
               accent={rechnung.ueberfaellig > 0 ? 'red' : undefined}
               href="/dashboard/rechnungen" loading={laden} />
           </div>
@@ -410,8 +419,8 @@ export default function Dashboard() {
             <section>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Mitarbeiter</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <KPICard label="Team gesamt" value={mitarbeiter.total} icon="👥" loading={laden} />
-                <KPICard label="Im Einsatz" value="—" icon="🟢" loading={false} sub="Bald verfügbar" />
+                <KPICard label="Team gesamt" value={mitarbeiter.total} loading={laden} />
+                <KPICard label="Im Einsatz" value="—" loading={false} sub="Bald verføgbar" />
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -443,8 +452,8 @@ export default function Dashboard() {
             <section>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Fahrzeuge</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <KPICard label="Fahrzeuge gesamt" value={fahrzeug.total} icon="🚐" loading={false} />
-                <KPICard label="Im Einsatz" value={fahrzeug.imEinsatz} icon="🟢" loading={false} sub="Bald verfügbar" />
+                <KPICard label="Fahrzeuge gesamt" value={fahrzeug.total} loading={false} />
+                <KPICard label="Im Einsatz" value={fahrzeug.imEinsatz} loading={false} sub="Bald verfügbar" />
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex items-center justify-between mb-5">
@@ -496,17 +505,17 @@ export default function Dashboard() {
               </div>
             ) : events.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
-                <div className="text-4xl mb-2">📭</div>
-                <p className="text-sm font-medium">Noch keine Ereignisse</p>
+                  <p className="text-sm font-medium">Noch keine Ereignisse</p>
                 <p className="text-xs mt-0.5">Lege deinen ersten Auftrag an</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {events.map((e, i) => (
                   <div key={i} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition">
-                    <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-lg shrink-0">
-                      {e.icon}
-                    </div>
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                      e.status === 'abgeschlossen' ? 'bg-emerald-400' :
+                      e.status === 'in_bearbeitung' ? 'bg-blue-400' : 'bg-amber-400'
+                    }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{e.text}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -537,14 +546,18 @@ export default function Dashboard() {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Schnellzugriff</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: '/dashboard/kunden',    icon: '👥', label: 'Kunden',    sub: `${kundenTotal} gesamt` },
-            { href: '/dashboard/auftraege', icon: '📋', label: 'Aufträge',  sub: `${auftrag.offen} offen` },
-            { href: '/dashboard/rechnungen',icon: '🧾', label: 'Rechnungen',sub: 'Bald verfügbar' },
-            { href: '/dashboard/einstellungen', icon: '⚙️', label: 'Einstellungen', sub: 'Team & Konto' },
+            { href: '/dashboard/kunden',         label: 'Kunden',        sub: `${kundenTotal} gesamt`,    d: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z' },
+            { href: '/dashboard/auftraege',       label: 'Aufträge',      sub: `${auftrag.offen} offen`,   d: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z' },
+            { href: '/dashboard/rechnungen',      label: 'Rechnungen',    sub: 'Bald verfügbar',           d: 'M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z' },
+            { href: '/dashboard/einstellungen',   label: 'Einstellungen', sub: 'Team & Konto',             d: 'M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 010-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
           ].map(l => (
             <Link key={l.href} href={l.href}>
               <div className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-sm hover:border-gray-200 transition cursor-pointer">
-                <div className="text-2xl mb-2">{l.icon}</div>
+                <div className="mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-500" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={l.d} />
+                  </svg>
+                </div>
                 <p className="text-sm font-semibold text-gray-900">{l.label}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{laden ? '...' : l.sub}</p>
               </div>
