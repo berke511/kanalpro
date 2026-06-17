@@ -92,9 +92,11 @@ export default function RollenUndRechte() {
   const [myMemberId, setMyMemberId] = useState(null);
   const [companyId, setCompanyId] = useState(null);
   const [members, setMembers] = useState([]);
+  const [mitarbeiterListe, setMitarbeiterListe] = useState([]);
   const [laden, setLaden] = useState(true);
-  const [saving, setSaving] = useState(null);
-  const [activeTab, setActiveTab] = useState('team');
+  const [saving, setSaving] = useState(null); // member id being saved
+  const [savingMitarbeiter, setSavingMitarbeiter] = useState(null);
+  const [activeTab, setActiveTab] = useState('team'); // 'team' | 'rechte'
 
   useEffect(() => {
     async function load() {
@@ -110,6 +112,7 @@ export default function RollenUndRechte() {
 
       if (!me) { router.push('/dashboard'); return; }
 
+      // Nur Inhaber + Administrator dürfen diese Seite sehen
       if (!hasMinRole(me.role, 'administrator')) {
         router.push('/dashboard/einstellungen');
         return;
@@ -127,12 +130,22 @@ export default function RollenUndRechte() {
         .order('role');
 
       setMembers(allMembers ?? []);
+
+      const { data: mitarbeiterData } = await supabase
+        .from('mitarbeiter')
+        .select('id, vorname, nachname, position, rolle')
+        .eq('company_id', me.company_id)
+        .not('rolle', 'is', null)
+        .order('nachname');
+      setMitarbeiterListe(mitarbeiterData ?? []);
+
       setLaden(false);
     }
     load();
   }, []);
 
   async function changeRole(memberId, newRole) {
+    // Inhaber-Rolle kann nicht vergeben werden (außer vom Inhaber selbst)
     if (newRole === 'inhaber' && myRole !== 'inhaber') return;
     setSaving(memberId);
     await supabase
@@ -143,6 +156,16 @@ export default function RollenUndRechte() {
 
     setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole } : m));
     setSaving(null);
+  }
+
+  async function changeMitarbeiterRolle(mitarbeiterId, newRole) {
+    setSavingMitarbeiter(mitarbeiterId);
+    await supabase
+      .from('mitarbeiter')
+      .update({ rolle: newRole })
+      .eq('id', mitarbeiterId);
+    setMitarbeiterListe(prev => prev.map(m => m.id === mitarbeiterId ? { ...m, rolle: newRole } : m));
+    setSavingMitarbeiter(null);
   }
 
   const editableRoles = myRole === 'inhaber'
@@ -159,12 +182,14 @@ export default function RollenUndRechte() {
 
   return (
     <div className="max-w-5xl">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href="/dashboard/einstellungen" className="text-gray-400 hover:text-gray-600 text-sm">← Einstellungen</Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-2xl font-bold text-gray-900">Rollen & Rechte</h1>
       </div>
 
+      {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-7">
         {[
           { key: 'team',   label: 'Team-Rollen' },
@@ -182,65 +207,112 @@ export default function RollenUndRechte() {
         ))}
       </div>
 
+      {/* ── TAB: Team-Rollen ──────────────────────────────────────────────── */}
       {activeTab === 'team' && (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-900">Teammitglieder & Rollen</h2>
-            <p className="text-sm text-gray-400 mt-0.5">Weise jedem Mitglied die passende Rolle zu.</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {members.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 text-sm">Keine Mitglieder gefunden</div>
-            ) : members.map(m => {
-              const name = [m.vorname, m.nachname].filter(Boolean).join(' ') || 'Unbekannt';
-              const isSelf = m.id === myMemberId;
-              const isInhaber = m.role === 'inhaber';
-              const canEdit = !isSelf && !(isInhaber && myRole !== 'inhaber');
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50">
+              <h2 className="font-semibold text-gray-900">Teammitglieder & Rollen</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Weise jedem Mitglied die passende Rolle zu.</p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {members.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-sm">Keine Mitglieder gefunden</div>
+              ) : members.map(m => {
+                const name = [m.vorname, m.nachname].filter(Boolean).join(' ') || 'Unbekannt';
+                const isSelf = m.id === myMemberId;
+                const isInhaber = m.role === 'inhaber';
+                const canEdit = !isSelf && !(isInhaber && myRole !== 'inhaber');
 
-              return (
-                <div key={m.id} className="flex items-center gap-4 px-6 py-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
-                    {name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-sm">{name}</p>
-                      {isSelf && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">Du</span>}
+                return (
+                  <div key={m.id} className="flex items-center gap-4 px-6 py-4">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
+                      {name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
-                    <span className={`inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[m.role] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {ROLE_LABELS[m.role] ?? m.role}
-                    </span>
-                  </div>
-                  <div className="shrink-0">
-                    {!canEdit ? (
-                      <span className="text-xs text-gray-400 px-3 py-2">
-                        {isSelf ? 'Eigene Rolle' : 'Nicht änderbar'}
-                      </span>
-                    ) : (
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        {saving === m.id && (
+                        <p className="font-medium text-gray-900 text-sm">{name}</p>
+                        {isSelf && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">Du</span>}
+                      </div>
+                      <span className={`inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[m.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {ROLE_LABELS[m.role] ?? m.role}
+                      </span>
+                    </div>
+                    <div className="shrink-0">
+                      {!canEdit ? (
+                        <span className="text-xs text-gray-400 px-3 py-2">
+                          {isSelf ? 'Eigene Rolle' : 'Nicht änderbar'}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {saving === m.id && (
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                          )}
+                          <select
+                            value={m.role}
+                            onChange={e => changeRole(m.id, e.target.value)}
+                            disabled={saving === m.id}
+                            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+                          >
+                            {editableRoles.map(r => (
+                              <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {mitarbeiterListe.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50">
+                <h2 className="font-semibold text-gray-900">Mitarbeiter mit Rolle</h2>
+                <p className="text-sm text-gray-400 mt-0.5">Mitarbeiter, denen eine Systemrolle zugewiesen wurde.</p>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {mitarbeiterListe.map(m => {
+                  const name = [m.vorname, m.nachname].filter(Boolean).join(' ') || 'Unbekannt';
+                  return (
+                    <div key={m.id} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm shrink-0">
+                        {name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-sm">{name}</p>
+                        {m.position && <p className="text-xs text-gray-400 truncate">{m.position}</p>}
+                        <span className={`inline-flex mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[m.rolle] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {ROLE_LABELS[m.rolle] ?? m.rolle}
+                        </span>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-2">
+                        {savingMitarbeiter === m.id && (
                           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                         )}
                         <select
-                          value={m.role}
-                          onChange={e => changeRole(m.id, e.target.value)}
-                          disabled={saving === m.id}
+                          value={m.rolle ?? ''}
+                          onChange={e => changeMitarbeiterRolle(m.id, e.target.value)}
+                          disabled={savingMitarbeiter === m.id}
                           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
                         >
-                          {editableRoles.map(r => (
+                          {ROLE_ORDER.map(r => (
                             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                           ))}
                         </select>
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {/* ── TAB: Berechtigungsmatrix ──────────────────────────────────────── */}
       {activeTab === 'rechte' && (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-50">
@@ -248,7 +320,7 @@ export default function RollenUndRechte() {
             <p className="text-sm text-gray-400 mt-0.5">Übersicht aller Berechtigungen je Rolle. Individuelle Anpassungen folgen.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w5full text-sm">
+            <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-500 w-56">Berechtigung</th>
@@ -262,7 +334,7 @@ export default function RollenUndRechte() {
                 </tr>
               </thead>
               <tbody>
-                {PERM_GROUPS-map(group => (
+                {PERM_GROUPS.map(group => (
                   <>
                     <tr key={`group-${group.label}`} className="bg-gray-50/70">
                       <td colSpan={ROLE_ORDER.length + 1} className="px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -270,14 +342,14 @@ export default function RollenUndRechte() {
                       </td>
                     </tr>
                     {group.perms.map(perm => (
-                      <tr key={perm} className="border-t border-gray-50 hover:bw-gray-50/50">
+                      <tr key={perm} className="border-t border-gray-50 hover:bg-gray-50/50">
                         <td className="px-6 py-2.5 text-gray-600">
                           {PERM_LABELS[perm] ?? perm}
                         </td>
                         {ROLE_ORDER.map(r => (
                           <td key={r} className="px-4 py-2.5 text-center">
                             {roleHasPermission(r, perm) ? (
-                              <span className="text-emerald-500 text-base"></span>
+                              <span className="text-emerald-500 text-base">✓</span>
                             ) : (
                               <span className="text-gray-200 text-base">—</span>
                             )}
@@ -293,6 +365,7 @@ export default function RollenUndRechte() {
         </div>
       )}
 
+      {/* ── TAB: Rollen-Übersicht ─────────────────────────────────────────── */}
       {activeTab === 'rollen' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {ROLE_ORDER.map(r => {
@@ -318,7 +391,7 @@ export default function RollenUndRechte() {
                       .slice(0, 4)
                       .map(([perm]) => (
                         <span key={perm} className="text-xs bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md">
-                          {PERM_LABELS[perm]?.replace(/^.+-\s/, '') ?? perm}
+                          {PERM_LABELS[perm]?.replace(/^.+\s/, '') ?? perm}
                         </span>
                       ))}
                     {Object.entries(PERMISSIONS).filter(([, roles]) => roles.includes(r)).length > 4 && (
@@ -332,6 +405,7 @@ export default function RollenUndRechte() {
         </div>
       )}
 
+      {/* Info-Box */}
       <div className="mt-6 px-5 py-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700 flex items-start gap-3">
         <span className="text-lg shrink-0">i</span>
         <div>
