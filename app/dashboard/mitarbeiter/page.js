@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
 
 export default function MitarbeiterPage() {
   const router = useRouter();
@@ -86,6 +87,11 @@ export default function MitarbeiterPage() {
                   <p className="text-xs text-gray-400 truncate">{m.position || '—'}</p>
                 </div>
               </div>
+              {m.rolle && (
+                <span className={`inline-flex text-xs px-2 py-0.5 rounded-full font-medium mb-2 ${ROLE_COLORS[m.rolle]}`}>
+                  {ROLE_LABELS[m.rolle]}
+                </span>
+              )}
               {m.email && (
                 <p className="text-xs text-gray-500 truncate">{m.email}</p>
               )}
