@@ -8,8 +8,9 @@ import {
 } from '@/lib/roles';
 
 const TABS = [
-  { id: 'stammdaten', label: 'Stammdaten' },
-  { id: 'rollen',     label: 'Rollen & Rechte' },
+  { id: 'stammdaten',    label: 'Stammdaten' },
+  { id: 'rollen',        label: 'Rollen & Rechte' },
+  { id: 'arbeitszeiten', label: 'Arbeitszeiten' },
 ];
 
 const FELDER = [
@@ -81,6 +82,64 @@ const PERM_LABELS = {
   'members.edit':       'Bearbeiten',
 };
 
+const TYP_LABELS = {
+  arbeit:    'Arbeit',
+  urlaub:    'Urlaub',
+  krank:     'Krank',
+  feiertag:  'Feiertag',
+  sonstiges: 'Sonstiges',
+};
+
+const TYP_COLORS = {
+  arbeit:    'bg-blue-50 text-blue-700',
+  urlaub:    'bg-green-50 text-green-700',
+  krank:     'bg-red-50 text-red-600',
+  feiertag:  'bg-purple-50 text-purple-700',
+  sonstiges: 'bg-gray-50 text-gray-600',
+};
+
+const MONAT_NAMEN = [
+  'Januar','Februar','März','April','Mai','Juni',
+  'Juli','August','September','Oktober','November','Dezember',
+];
+
+const ARBEITSMODELL_OPTIONS = [
+  { value: 'vollzeit', label: 'Vollzeit' },
+  { value: 'teilzeit', label: 'Teilzeit' },
+  { value: 'minijob',  label: 'Minijob' },
+];
+
+function nettoMinuten(e) {
+  if (!e.beginn || !e.ende) return null;
+  const [bH, bM] = e.beginn.split(':').map(Number);
+  const [eH, eM] = e.ende.split(':').map(Number);
+  return (eH * 60 + eM) - (bH * 60 + bM) - (e.pause_minuten || 0);
+}
+
+function formatStunden(min) {
+  if (min == null || isNaN(min)) return '—';
+  const h = Math.floor(Math.abs(min) / 60);
+  const m = Math.abs(min) % 60;
+  return `${min < 0 ? '-' : ''}${h}:${String(m).padStart(2, '0')} h`;
+}
+
+function sollStundenImMonat(jahr, monat, wochenstunden) {
+  if (!wochenstunden) return null;
+  const tage = new Date(jahr, monat, 0).getDate();
+  let arbeitstage = 0;
+  for (let d = 1; d <= tage; d++) {
+    const wd = new Date(jahr, monat - 1, d).getDay();
+    if (wd !== 0 && wd !== 6) arbeitstage++;
+  }
+  return arbeitstage * (parseFloat(wochenstunden) / 5);
+}
+
+function formatDatum(datum) {
+  const [year, month, day] = datum.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+}
+
 export default function MitarbeiterProfilPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -96,8 +155,35 @@ export default function MitarbeiterProfilPage() {
   const [rolle, setRolle] = useState(null);
   const [rolleSaving, setRolleSaving] = useState(false);
   const [rolleSaved, setRolleSaved] = useState(false);
-  const [rollePreview, setRollePreview] = useState(null); // locally selected but not yet saved
+  const [rollePreview, setRollePreview] = useState(null);
 
+  // Arbeitszeiten state
+  const [companyId, setCompanyId] = useState(null);
+  const [vertrag, setVertrag] = useState({
+    arbeitsmodell: null,
+    wochenstunden: '',
+    soll_beginn: '',
+    soll_ende: '',
+  });
+  const [vertragSaving, setVertragSaving] = useState(false);
+  const [vertragSaved, setVertragSaved] = useState(false);
+  const [azJahr, setAzJahr] = useState(new Date().getFullYear());
+  const [azMonat, setAzMonat] = useState(new Date().getMonth() + 1);
+  const [eintraege, setEintraege] = useState([]);
+  const [azLaden, setAzLaden] = useState(false);
+  const [neuForm, setNeuForm] = useState({
+    datum: '',
+    beginn: '',
+    ende: '',
+    pause_minuten: '0',
+    typ: 'arbeit',
+    notiz: '',
+  });
+  const [neuShown, setNeuShown] = useState(false);
+  const [neuSaving, setNeuSaving] = useState(false);
+  const [deletingAzId, setDeletingAzId] = useState(null);
+
+  // Load mitarbeiter base data
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -127,10 +213,38 @@ export default function MitarbeiterProfilPage() {
       });
       setRolle(data.rolle ?? null);
       setRollePreview(data.rolle ?? null);
+      setCompanyId(data.company_id);
+      setVertrag({
+        arbeitsmodell: data.arbeitsmodell ?? null,
+        wochenstunden: data.wochenstunden != null ? String(data.wochenstunden) : '',
+        soll_beginn:   data.soll_beginn ?? '',
+        soll_ende:     data.soll_ende ?? '',
+      });
       setLoading(false);
     }
     load();
   }, [id, router]);
+
+  // Load Arbeitszeiten for selected month
+  useEffect(() => {
+    if (!id) return;
+    async function loadAz() {
+      setAzLaden(true);
+      const von = `${azJahr}-${String(azMonat).padStart(2, '0')}-01`;
+      const letzterTag = new Date(azJahr, azMonat, 0).getDate();
+      const bis = `${azJahr}-${String(azMonat).padStart(2, '0')}-${String(letzterTag).padStart(2, '0')}`;
+      const { data } = await supabase
+        .from('arbeitszeiten')
+        .select('*')
+        .eq('mitarbeiter_id', id)
+        .gte('datum', von)
+        .lte('datum', bis)
+        .order('datum');
+      setEintraege(data ?? []);
+      setAzLaden(false);
+    }
+    loadAz();
+  }, [id, azJahr, azMonat]);
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -193,6 +307,70 @@ export default function MitarbeiterProfilPage() {
     router.push('/dashboard/mitarbeiter');
   }
 
+  async function handleVertragSave() {
+    setVertragSaving(true);
+    const payload = {
+      arbeitsmodell: vertrag.arbeitsmodell || null,
+      wochenstunden: vertrag.wochenstunden ? parseFloat(vertrag.wochenstunden) : null,
+      soll_beginn:   vertrag.soll_beginn || null,
+      soll_ende:     vertrag.soll_ende || null,
+    };
+    const { error: dbError } = await supabase
+      .from('mitarbeiter')
+      .update(payload)
+      .eq('id', id);
+    setVertragSaving(false);
+    if (!dbError) {
+      setVertragSaved(true);
+      setTimeout(() => setVertragSaved(false), 3000);
+    }
+  }
+
+  async function handleNeuEintrag(e) {
+    e.preventDefault();
+    if (!neuForm.datum) return;
+    setNeuSaving(true);
+    const payload = {
+      company_id:     companyId,
+      mitarbeiter_id: id,
+      datum:          neuForm.datum,
+      beginn:         neuForm.beginn || null,
+      ende:           neuForm.ende || null,
+      pause_minuten:  parseInt(neuForm.pause_minuten) || 0,
+      typ:            neuForm.typ,
+      notiz:          neuForm.notiz.trim() || null,
+    };
+    const { data: newRow, error: dbError } = await supabase
+      .from('arbeitszeiten')
+      .insert(payload)
+      .select()
+      .single();
+    setNeuSaving(false);
+    if (!dbError && newRow) {
+      setEintraege(prev => [...prev, newRow].sort((a, b) => a.datum.localeCompare(b.datum)));
+      setNeuForm({ datum: '', beginn: '', ende: '', pause_minuten: '0', typ: 'arbeit', notiz: '' });
+      setNeuShown(false);
+    }
+  }
+
+  async function handleDeleteAz(azId) {
+    if (!confirm('Eintrag löschen?')) return;
+    setDeletingAzId(azId);
+    await supabase.from('arbeitszeiten').delete().eq('id', azId);
+    setEintraege(prev => prev.filter(e => e.id !== azId));
+    setDeletingAzId(null);
+  }
+
+  function prevMonat() {
+    if (azMonat === 1) { setAzJahr(y => y - 1); setAzMonat(12); }
+    else setAzMonat(m => m - 1);
+  }
+
+  function nextMonat() {
+    if (azMonat === 12) { setAzJahr(y => y + 1); setAzMonat(1); }
+    else setAzMonat(m => m + 1);
+  }
+
   if (loading || !form) return (
     <div className="flex items-center justify-center h-48">
       <p className="text-gray-400 text-sm">Lädt…</p>
@@ -200,7 +378,17 @@ export default function MitarbeiterProfilPage() {
   );
 
   const fullName = `${form.vorname} ${form.nachname}`.trim() || 'Unbekannt';
-  const activeRolle = rollePreview; // what's shown in the UI
+  const activeRolle = rollePreview;
+
+  // Derived Monatsauswertung
+  const istMinuten = eintraege
+    .filter(e => e.typ === 'arbeit')
+    .reduce((sum, e) => sum + (nettoMinuten(e) ?? 0), 0);
+  const urlaubstage = eintraege.filter(e => e.typ === 'urlaub').length;
+  const kranktage   = eintraege.filter(e => e.typ === 'krank').length;
+  const sollH       = sollStundenImMonat(azJahr, azMonat, vertrag.wochenstunden);
+  const sollMinuten = sollH != null ? Math.round(sollH * 60) : null;
+  const diffMin     = sollMinuten != null ? istMinuten - sollMinuten : null;
 
   return (
     <div className="max-w-2xl">
@@ -309,8 +497,6 @@ export default function MitarbeiterProfilPage() {
       {/* Tab: Rollen & Rechte */}
       {tab === 'rollen' && (
         <div className="space-y-5">
-
-          {/* Rolle wählen */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-1">System-Rolle</h2>
             <p className="text-xs text-gray-400 mb-4">Legt fest, welche Rechte dieser Mitarbeiter im System erhält.</p>
@@ -344,7 +530,6 @@ export default function MitarbeiterProfilPage() {
               })}
             </div>
 
-            {/* Keine Rolle Option */}
             <button
               type="button"
               onClick={() => setRollePreview(null)}
@@ -375,7 +560,6 @@ export default function MitarbeiterProfilPage() {
             </div>
           </div>
 
-          {/* Berechtigungsübersicht für gewählte Rolle */}
           {activeRolle && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-700 mb-1">
@@ -421,7 +605,301 @@ export default function MitarbeiterProfilPage() {
               </p>
             </div>
           )}
+        </div>
+      )}
 
+      {/* Tab: Arbeitszeiten */}
+      {tab === 'arbeitszeiten' && (
+        <div className="space-y-5">
+
+          {/* Vertrag & Sollzeit */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">Vertrag & Sollzeit</h2>
+            <p className="text-xs text-gray-400 mb-4">Arbeitsmodell und wöchentliche Soll-Stunden für die Monatsauswertung.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Arbeitsmodell */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsmodell</label>
+                <div className="flex gap-2">
+                  {ARBEITSMODELL_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setVertrag(v => ({ ...v, arbeitsmodell: opt.value }))}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition ${
+                        vertrag.arbeitsmodell === opt.value
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Wochenstunden */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Wochenstunden</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  step="0.5"
+                  value={vertrag.wochenstunden}
+                  onChange={e => setVertrag(v => ({ ...v, wochenstunden: e.target.value }))}
+                  placeholder="z. B. 40"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Soll-Beginn */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsbeginn (Soll)</label>
+                <input
+                  type="time"
+                  value={vertrag.soll_beginn}
+                  onChange={e => setVertrag(v => ({ ...v, soll_beginn: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Soll-Ende */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsende (Soll)</label>
+                <input
+                  type="time"
+                  value={vertrag.soll_ende}
+                  onChange={e => setVertrag(v => ({ ...v, soll_ende: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-5">
+              <button
+                type="button"
+                onClick={handleVertragSave}
+                disabled={vertragSaving}
+                className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                {vertragSaving ? 'Speichert…' : 'Speichern'}
+              </button>
+              {vertragSaved && (
+                <span className="text-sm text-green-600 font-medium">Gespeichert</span>
+              )}
+            </div>
+          </div>
+
+          {/* Monatsnavigation */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={prevMonat}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <span className="text-sm font-semibold text-gray-800">
+              {MONAT_NAMEN[azMonat - 1]} {azJahr}
+            </span>
+            <button
+              type="button"
+              onClick={nextMonat}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Monatsauswertung */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Monatsauswertung</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Ist-Stunden</p>
+                <p className="text-lg font-bold text-gray-800">{formatStunden(istMinuten)}</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Soll-Stunden</p>
+                <p className="text-lg font-bold text-gray-800">
+                  {sollH != null ? formatStunden(Math.round(sollH * 60)) : '—'}
+                </p>
+              </div>
+              <div className={`rounded-xl p-4 ${
+                diffMin == null ? 'bg-gray-50' :
+                diffMin >= 0 ? 'bg-emerald-50' : 'bg-red-50'
+              }`}>
+                <p className="text-xs text-gray-400 mb-1">Differenz</p>
+                <p className={`text-lg font-bold ${
+                  diffMin == null ? 'text-gray-800' :
+                  diffMin >= 0 ? 'text-emerald-700' : 'text-red-600'
+                }`}>
+                  {diffMin != null ? (diffMin >= 0 ? '+' : '') + formatStunden(diffMin) : '—'}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Arbeitstage</p>
+                <p className="text-lg font-bold text-gray-800">
+                  {eintraege.filter(e => e.typ === 'arbeit').length}
+                </p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Urlaubstage</p>
+                <p className="text-lg font-bold text-green-700">{urlaubstage}</p>
+              </div>
+              <div className="bg-red-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Kranktage</p>
+                <p className="text-lg font-bold text-red-600">{kranktage}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Zeiterfassung */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-700">Zeiterfassung</h2>
+              <button
+                type="button"
+                onClick={() => setNeuShown(s => !s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Eintrag hinzufügen
+              </button>
+            </div>
+
+            {/* Neu-Formular */}
+            {neuShown && (
+              <form onSubmit={handleNeuEintrag} className="mb-5 p-4 bg-gray-50 rounded-xl space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Datum <span className="text-red-400">*</span></label>
+                    <input
+                      type="date"
+                      required
+                      value={neuForm.datum}
+                      onChange={e => setNeuForm(f => ({ ...f, datum: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Typ</label>
+                    <select
+                      value={neuForm.typ}
+                      onChange={e => setNeuForm(f => ({ ...f, typ: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    >
+                      {Object.entries(TYP_LABELS).map(([v, l]) => (
+                        <option key={v} value={v}>{l}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Beginn</label>
+                    <input
+                      type="time"
+                      value={neuForm.beginn}
+                      onChange={e => setNeuForm(f => ({ ...f, beginn: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ende</label>
+                    <input
+                      type="time"
+                      value={neuForm.ende}
+                      onChange={e => setNeuForm(f => ({ ...f, ende: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Pause (Min.)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={neuForm.pause_minuten}
+                      onChange={e => setNeuForm(f => ({ ...f, pause_minuten: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Notiz</label>
+                    <input
+                      type="text"
+                      value={neuForm.notiz}
+                      onChange={e => setNeuForm(f => ({ ...f, notiz: e.target.value }))}
+                      placeholder="Optional…"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={neuSaving || !neuForm.datum}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {neuSaving ? 'Speichert…' : 'Speichern'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNeuShown(false)}
+                    className="px-4 py-2 text-xs font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Einträge Liste */}
+            {azLaden ? (
+              <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+            ) : eintraege.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">Keine Einträge für diesen Monat.</p>
+            ) : (
+              <div className="space-y-2">
+                {eintraege.map(e => {
+                  const netto = nettoMinuten(e);
+                  return (
+                    <div key={e.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition group">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${TYP_COLORS[e.typ] ?? 'bg-gray-50 text-gray-600'}`}>
+                        {TYP_LABELS[e.typ] ?? e.typ}
+                      </span>
+                      <span className="text-xs text-gray-500 shrink-0 w-20">{formatDatum(e.datum)}</span>
+                      <span className="text-xs text-gray-400 shrink-0">
+                        {e.beginn && e.ende ? `${e.beginn.slice(0,5)} – ${e.ende.slice(0,5)}` : '—'}
+                        {e.pause_minuten > 0 && ` (${e.pause_minuten} Min. Pause)`}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-700 ml-auto shrink-0">
+                        {e.typ === 'arbeit' && netto != null ? formatStunden(netto) : ''}
+                      </span>
+                      {e.notiz && (
+                        <span className="text-xs text-gray-400 italic truncate max-w-24 hidden sm:block">{e.notiz}</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAz(e.id)}
+                        disabled={deletingAzId === e.id}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition shrink-0"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
