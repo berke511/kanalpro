@@ -11,6 +11,7 @@ const TABS = [
   { id: 'stammdaten',    label: 'Stammdaten' },
   { id: 'rollen',        label: 'Rollen & Rechte' },
   { id: 'arbeitszeiten', label: 'Arbeitszeiten' },
+  { id: 'urlaub',        label: 'Urlaub & Abwesenheiten' },
 ];
 
 const FELDER = [
@@ -26,7 +27,7 @@ const FELDER = [
     { name: 'plz',          label: 'PLZ',           type: 'text', required: false },
     { name: 'ort',          label: 'Ort',           type: 'text', required: false },
   ]},
-  { section: 'Beschäftigung', fields: [
+  { section: 'BescN[�ftigung', fields: [
     { name: 'eintrittsdatum', label: 'Eintrittsdatum',   type: 'date',   required: false },
     { name: 'position',       label: 'Position / Rolle', type: 'text',   required: false },
     { name: 'stundenlohn',    label: 'Stundenlohn (€)',  type: 'number', required: false },
@@ -109,6 +110,13 @@ const ARBEITSMODELL_OPTIONS = [
   { value: 'minijob',  label: 'Minijob' },
 ];
 
+const UA_TYP_OPTIONS = [
+  { value: 'urlaub',    label: 'Urlaub' },
+  { value: 'krank',     label: 'Krank' },
+  { value: 'feiertag',  label: 'Feiertag' },
+  { value: 'sonstiges', label: 'Sonstiges' },
+];
+
 function nettoMinuten(e) {
   if (!e.beginn || !e.ende) return null;
   const [bH, bM] = e.beginn.split(':').map(Number);
@@ -183,6 +191,18 @@ export default function MitarbeiterProfilPage() {
   const [neuSaving, setNeuSaving] = useState(false);
   const [deletingAzId, setDeletingAzId] = useState(null);
 
+  // Urlaub & Abwesenheiten state
+  const [urlaubsanspruch, setUrlaubsanspruch] = useState('30');
+  const [anspruchSaving, setAnspruchSaving] = useState(false);
+  const [anspruchSaved, setAnspruchSaved] = useState(false);
+  const [uaJahr, setUaJahr] = useState(new Date().getFullYear());
+  const [abwesenheiten, setAbwesenheiten] = useState([]);
+  const [uaLaden, setUaLaden] = useState(false);
+  const [uaNeuForm, setUaNeuForm] = useState({ von: '', bis: '', typ: 'urlaub', notiz: '', skipWE: true });
+  const [uaNeuShown, setUaNeuShown] = useState(false);
+  const [uaNeuSaving, setUaNeuSaving] = useState(false);
+  const [deletingUaId, setDeletingUaId] = useState(null);
+
   // Load mitarbeiter base data
   useEffect(() => {
     async function load() {
@@ -220,6 +240,7 @@ export default function MitarbeiterProfilPage() {
         soll_beginn:   data.soll_beginn ?? '',
         soll_ende:     data.soll_ende ?? '',
       });
+      setUrlaubsanspruch(data.urlaubsanspruch != null ? String(data.urlaubsanspruch) : '30');
       setLoading(false);
     }
     load();
@@ -245,6 +266,25 @@ export default function MitarbeiterProfilPage() {
     }
     loadAz();
   }, [id, azJahr, azMonat]);
+
+  // Load Abwesenheiten for selected year
+  useEffect(() => {
+    if (!id) return;
+    async function loadAbwesenheiten() {
+      setUaLaden(true);
+      const { data } = await supabase
+        .from('arbeitszeiten')
+        .select('*')
+        .eq('mitarbeiter_id', id)
+        .in('typ', ['urlaub', 'krank', 'feiertag', 'sonstiges'])
+        .gte('datum', `${uaJahr}-01-01`)
+        .lte('datum', `${uaJahr}-12-31`)
+        .order('datum');
+      setAbwesenheiten(data ?? []);
+      setUaLaden(false);
+    }
+    loadAbwesenheiten();
+  }, [id, uaJahr]);
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -371,6 +411,78 @@ export default function MitarbeiterProfilPage() {
     else setAzMonat(m => m + 1);
   }
 
+  async function handleAnspruchSave() {
+    setAnspruchSaving(true);
+    const { error: dbError } = await supabase
+      .from('mitarbeiter')
+      .update({ urlaubsanspruch: parseInt(urlaubsanspruch) || null })
+      .eq('id', id);
+    setAnspruchSaving(false);
+    if (!dbError) {
+      setAnspruchSaved(true);
+      setTimeout(() => setAnspruchSaved(false), 3000);
+    }
+  }
+
+  async function handleNeuAbwesenheit(e) {
+    e.preventDefault();
+    if (!uaNeuForm.von) return;
+    setUaNeuSaving(true);
+
+    const vonDate = new Date(uaNeuForm.von + 'T00:00:00');
+    const bisDate = uaNeuForm.bis
+      ? new Date(uaNeuForm.bis + 'T00:00:00')
+      : new Date(uaNeuForm.von + 'T00:00:00');
+
+    const rows = [];
+    const cur = new Date(vonDate);
+    while (cur <= bisDate) {
+      const wd = cur.getDay();
+      const isWE = wd === 0 || wd === 6;
+      if (!uaNeuForm.skipWE || !isWE) {
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, '0');
+        const d = String(cur.getDate()).padStart(2, '0');
+        rows.push({
+          company_id:     companyId,
+          mitarbeiter_id: id,
+          datum:          `${y}-${m}-${d}`,
+          typ:            uaNeuForm.typ,
+          notiz:          uaNeuForm.notiz.trim() || null,
+        });
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    if (rows.length > 0) {
+      const { data: newRows } = await supabase
+        .from('arbeitszeiten')
+        .insert(rows)
+        .select();
+      if (newRows) {
+        const inThisYear = newRows.filter(r => r.datum.startsWith(String(uaJahr)));
+        setAbwesenheiten(prev =>
+          [...prev, ...inThisYear].sort((a, b) => a.datum.localeCompare(b.datum))
+        );
+      }
+    }
+
+    setUaNeuSaving(false);
+    setUaNeuForm({ von: '', bis: '', typ: 'urlaub', notiz: '', skipWE: true });
+    setUaNeuShown(false);
+  }
+
+  async function handleDeleteUa(uaId) {
+    if (!confirm('Eintrag löschen?')) return;
+    setDeletingUaId(uaId);
+    await supabase.from('arbeitszeiten').delete().eq('id', uaId);
+    setAbwesenheiten(prev => prev.filter(e => e.id !== uaId));
+    setDeletingUaId(null);
+  }
+
+  function prevJahr() { setUaJahr(y => y - 1); }
+  function nextJahr() { setUaJahr(y => y + 1); }
+
   if (loading || !form) return (
     <div className="flex items-center justify-center h-48">
       <p className="text-gray-400 text-sm">Lädt…</p>
@@ -380,7 +492,7 @@ export default function MitarbeiterProfilPage() {
   const fullName = `${form.vorname} ${form.nachname}`.trim() || 'Unbekannt';
   const activeRolle = rollePreview;
 
-  // Derived Monatsauswertung
+  // Derived Monatsauswertung (Arbeitszeiten tab)
   const istMinuten = eintraege
     .filter(e => e.typ === 'arbeit')
     .reduce((sum, e) => sum + (nettoMinuten(e) ?? 0), 0);
@@ -389,6 +501,14 @@ export default function MitarbeiterProfilPage() {
   const sollH       = sollStundenImMonat(azJahr, azMonat, vertrag.wochenstunden);
   const sollMinuten = sollH != null ? Math.round(sollH * 60) : null;
   const diffMin     = sollMinuten != null ? istMinuten - sollMinuten : null;
+
+  // Derived Jahresübersicht (Urlaub tab)
+  const urlaubGenommen    = abwesenheiten.filter(e => e.typ === 'urlaub').length;
+  const anspruchInt       = parseInt(urlaubsanspruch) || 0;
+  const urlaubVerbleibend = anspruchInt > 0 ? anspruchInt - urlaubGenommen : null;
+  const krankImJahr       = abwesenheiten.filter(e => e.typ === 'krank').length;
+  const feiertageImJahr   = abwesenheiten.filter(e => e.typ === 'feiertag').length;
+  const sonstigesImJahr   = abwesenheiten.filter(e => e.typ === 'sonstiges').length;
 
   return (
     <div className="max-w-2xl">
@@ -411,12 +531,12 @@ export default function MitarbeiterProfilPage() {
       </div>
 
       {/* Tab-Navigation */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100">
+      <div className="flex gap-1 mb-6 border-b border-gray-100 overflow-x-auto">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition whitespace-nowrap ${
               tab === t.id
                 ? 'border-blue-600 text-blue-700'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -576,7 +696,7 @@ export default function MitarbeiterProfilPage() {
                   return (
                     <div key={group.label}>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{group.label}</p>
-                      <div className="flex flex-wrap gap-1.5">
+     0                <div className="flex flex-wrap gap-1.5">
                         {group.perms.map(p => {
                           const has = roleHasPermission(activeRolle, p);
                           return (
@@ -617,7 +737,6 @@ export default function MitarbeiterProfilPage() {
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Vertrag & Sollzeit</h2>
             <p className="text-xs text-gray-400 mb-4">Arbeitsmodell und wöchentliche Soll-Stunden für die Monatsauswertung.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Arbeitsmodell */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsmodell</label>
                 <div className="flex gap-2">
@@ -638,7 +757,6 @@ export default function MitarbeiterProfilPage() {
                 </div>
               </div>
 
-              {/* Wochenstunden */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Wochenstunden</label>
                 <input
@@ -653,7 +771,6 @@ export default function MitarbeiterProfilPage() {
                 />
               </div>
 
-              {/* Soll-Beginn */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsbeginn (Soll)</label>
                 <input
@@ -664,7 +781,6 @@ export default function MitarbeiterProfilPage() {
                 />
               </div>
 
-              {/* Soll-Ende */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Arbeitsende (Soll)</label>
                 <input
@@ -826,7 +942,7 @@ export default function MitarbeiterProfilPage() {
                       min="0"
                       value={neuForm.pause_minuten}
                       onChange={e => setNeuForm(f => ({ ...f, pause_minuten: e.target.value }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none fncus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     />
                   </div>
                   <div>
@@ -834,7 +950,7 @@ export default function MitarbeiterProfilPage() {
                     <input
                       type="text"
                       value={neuForm.notiz}
-                      onChange={e => setNeuForm(f => ({ ...f, notiz: e.target.value }))}
+                      onChange={e => setNeuForm(f => ({ ...f, nntiz: e.target.value }))}
                       placeholder="Optional…"
                       className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     />
@@ -862,7 +978,7 @@ export default function MitarbeiterProfilPage() {
             {/* Einträge Liste */}
             {azLaden ? (
               <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-            ) : eintraege.length === 0 ? (
+            ) : eintraeh%.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">Keine Einträge für diesen Monat.</p>
             ) : (
               <div className="space-y-2">
@@ -897,6 +1013,231 @@ export default function MitarbeiterProfilPage() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Urlaub & Abwesenheiten */}
+      {tab === 'urlaub' && (
+        <div className="space-y-5">
+
+          {/* Urlaubsanspruch */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">Urlaubsanspruch</h2>
+            <p className="text-xs text-gray-400 mb-4">Jährlicher Urlaubsanspruch in Werktagen.</p>
+            <div className="flex items-end gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tage pro Jahr</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="365"
+                  value={urlaubsanspruch}
+                  onChange={e => setUrlaubsanspruch(e.target.value)}
+                  className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAnspruchSave}
+                disabled={anspruchSaving}
+                className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                {anspruchSaving ? 'Speichert…' : 'Speichern'}
+              </button>
+              {anspruchSaved && (
+                <span className="text-sm text-green-600 font-medium">Gespeichert</span>
+              )}
+            </div>
+          </div>
+
+          {/* Jahresnavigation */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={prevJahr}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            <span className="text-sm font-semibold text-gray-800">{uaJahr}</span>
+            <button
+              type="button"
+              onClick={nextJahr}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Jahresübersicht */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Jahresübersicht {uaJahr}</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Anspruch</p>
+                <p className="text-lg font-bold text-gray-800">
+                  {anspruchInt > 0 ? `${anspruchInt} Tage` : '—'}
+                </p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Genommen</p>
+                <p className="text-lg font-bold text-green-700">{urlaubGenommen} Tage</p>
+              </div>
+              <div className={`rounded-xl p-4 ${
+                urlaubVerbleibend == null ? 'bg-gray-50' :
+                urlaubVerbleibend >= 0 ? 'bg-emerald-50' : 'bg-red-50'
+              }`}>
+                <p className="text-xs text-gray-400 mb-1">Verbleibend</p>
+                <p className={`text-lg font-bold ${
+                  urlaubVerbleibend == null ? 'text-gray-800' :
+                  urlaubVerbleibend >= 0 ? 'text-emerald-700' : 'text-red-600'
+                }`}>
+                  {urlaubVerbleibend != null ? `${urlaubVerbleibend} Tage` : '—'}
+                </p>
+              </div>
+              <div className="bg-red-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Kranktage</p>
+                <p className="text-lg font-bold text-red-600">{krankImJahr} Tage</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Feiertage</p>
+                <p className="text-lg font-bold text-purple-700">{feiertageImJahr} Tage</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 mb-1">Sonstiges</p>
+                <p className="text-lg font-bold text-gray-600">{sonstigesImJahr} Tage</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Abwesenheitsliste */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-700">Abwesenheiten</h2>
+              <button
+                type="button"
+                onClick={() => setUaNeuShown(s => !s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Eintragen
+              </button>
+            </div>
+
+            {/* Neu-Formular */}
+            {uaNeuShown && (
+              <form onSubmit={handleNeuAbwesenheit} className="mb-5 p-4 bg-gray-50 rounded-xl space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Von <span className="text-red-400">*</span></label>
+                    <input
+                      type="date"
+                      required
+                      value={uaNeuForm.von}
+                      onChange={e => setUaNeuForm(f => ({ ...f, von: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Bis <span className="text-gray-400 font-normal">(optional)</span></label>
+                    <input
+                      type="date"
+                      min={uaNeuForm.von}
+                      value={uaNeuForm.bis}
+                      onChange={e => setUaNeuForm(f => ({ ...f, bis: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Typ</label>
+                    <select
+                      value={uaNeuForm.typ}
+                      onChange={e => setUaNeuForm(f => ({ ...f, typ: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    >
+                      {UA_TYP_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Notiz</label>
+                    <input
+                      type="text"
+                      value={uaNeuForm.notiz}
+                      onChange={e => setUaNeuForm(f => ({ ...f, notiz: e.target.value }))}
+                      placeholder="Optional…"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </div>
+                {uaNeuForm.bis && (uaNeuForm.typ === 'urlaub' || uaNeuForm.typ === 'krank') && (
+                  <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={uaNeuForm.skipWE}
+                      onChange={e => setUaNeuForm(f => ({ ...f, skipWE: e.target.checked }))}
+                      className="rounded"
+                    />
+                    Wochenenden überspringen
+                  </label>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={uaNeuSaving || !uaNeuForm.von}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {uaNeuSaving ? 'Speichert…' : 'Speichern'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUaNeuShown(false)}
+                    className="px-4 py-2 text-xs font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Abwesenheitsliste */}
+            {uaLaden ? (
+              <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+            ) : abwesenheiten.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">Keine Abwesenheiten für {uaJahr}.</p>
+            ) : (
+              <div className="space-y-2">
+                {abwesenheiten.map(e => (
+                  <div key={e.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition group">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${TYP_COLORS[e.typ] ?? 'bg-gray-50 text-gray-600'}`}>
+                      {TYP_LABELS[e.typ] ?? e.typ}
+                    </span>
+                    <span className="text-xs text-gray-600 shrink-0 w-24">{formatDatum(e.datum)}</span>
+                    {e.notiz && (
+                      <span className="text-xs text-gray-400 italic truncate">{e.notiz}</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUa(e.id)}
+                      disabled={deletingUaId === e.id}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition shrink-0 ml-auto"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
