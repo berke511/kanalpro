@@ -12,6 +12,7 @@ const TABS = [
   { id: 'rollen',        label: 'Rollen & Rechte' },
   { id: 'arbeitszeiten', label: 'Arbeitszeiten' },
   { id: 'urlaub',        label: 'Urlaub & Abwesenheiten' },
+  { id: 'zertifikate',   label: 'Zertifikate & Schulungen' },
 ];
 
 const FELDER = [
@@ -191,6 +192,16 @@ export default function MitarbeiterProfilPage() {
   const [neuSaving, setNeuSaving] = useState(false);
   const [deletingAzId, setDeletingAzId] = useState(null);
 
+  // Zertifikate & Schulungen state
+  const [zertifikate, setZertifikate] = useState([]);
+  const [zertLaden, setZertLaden] = useState(false);
+  const [zertNeuShown, setZertNeuShown] = useState(false);
+  const [zertNeuSaving, setZertNeuSaving] = useState(false);
+  const [deletingZertId, setDeletingZertId] = useState(null);
+  const [zertForm, setZertForm] = useState({
+    name: '', ausstellende_stelle: '', ausgestellt_am: '', gueltig_bis: '', notiz: '',
+  });
+
   // Urlaub & Abwesenheiten state
   const [urlaubsanspruch, setUrlaubsanspruch] = useState('30');
   const [anspruchSaving, setAnspruchSaving] = useState(false);
@@ -266,6 +277,22 @@ export default function MitarbeiterProfilPage() {
     }
     loadAz();
   }, [id, azJahr, azMonat]);
+
+  // Load Zertifikate
+  useEffect(() => {
+    if (!id) return;
+    async function loadZertifikate() {
+      setZertLaden(true);
+      const { data } = await supabase
+        .from('zertifikate')
+        .select('*')
+        .eq('mitarbeiter_id', id)
+        .order('gueltig_bis', { ascending: true, nullsFirst: false });
+      setZertifikate(data ?? []);
+      setZertLaden(false);
+    }
+    loadZertifikate();
+  }, [id]);
 
   // Load Abwesenheiten for selected year
   useEffect(() => {
@@ -482,6 +509,57 @@ export default function MitarbeiterProfilPage() {
 
   function prevJahr() { setUaJahr(y => y - 1); }
   function nextJahr() { setUaJahr(y => y + 1); }
+
+  async function handleNeuZertifikat(e) {
+    e.preventDefault();
+    if (!zertForm.name.trim()) return;
+    setZertNeuSaving(true);
+    const payload = {
+      company_id:        companyId,
+      mitarbeiter_id:    id,
+      name:              zertForm.name.trim(),
+      ausstellende_stelle: zertForm.ausstellende_stelle.trim() || null,
+      ausgestellt_am:    zertForm.ausgestellt_am || null,
+      gueltig_bis:       zertForm.gueltig_bis || null,
+      notiz:             zertForm.notiz.trim() || null,
+    };
+    const { data: newRow, error: dbError } = await supabase
+      .from('zertifikate')
+      .insert(payload)
+      .select()
+      .single();
+    setZertNeuSaving(false);
+    if (!dbError && newRow) {
+      setZertifikate(prev => [...prev, newRow].sort((a, b) => {
+        if (!a.gueltig_bis && !b.gueltig_bis) return 0;
+        if (!a.gueltig_bis) return 1;
+        if (!b.gueltig_bis) return -1;
+        return a.gueltig_bis.localeCompare(b.gueltig_bis);
+      }));
+      setZertForm({ name: '', ausstellende_stelle: '', ausgestellt_am: '', gueltig_bis: '', notiz: '' });
+      setZertNeuShown(false);
+    }
+  }
+
+  async function handleDeleteZert(zertId) {
+    if (!confirm('Zertifikat löschen?')) return;
+    setDeletingZertId(zertId);
+    await supabase.from('zertifikate').delete().eq('id', zertId);
+    setZertifikate(prev => prev.filter(z => z.id !== zertId));
+    setDeletingZertId(null);
+  }
+
+  function zertStatus(gueltigBis) {
+    if (!gueltigBis) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(gueltigBis + 'T00:00:00');
+    const diff = Math.round((exp - today) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return { label: 'Abgelaufen', cls: 'bg-red-50 text-red-600' };
+    if (diff <= 30) return { label: `Läuft ab in ${diff}d`, cls: 'bg-amber-50 text-amber-600' };
+    if (diff <= 90) return { label: `Läuft ab in ${diff}d`, cls: 'bg-yellow-50 text-yellow-700' };
+    return { label: 'Gültig', cls: 'bg-emerald-50 text-emerald-700' };
+  }
 
   if (loading || !form) return (
     <div className="flex items-center justify-center h-48">
@@ -1238,6 +1316,165 @@ export default function MitarbeiterProfilPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Zertifikate & Schulungen */}
+      {tab === 'zertifikate' && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700">Zertifikate & Schulungen</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Qualifikationen, Lizenzen und Weiterbildungen.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setZertNeuShown(s => !s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Hinzufügen
+              </button>
+            </div>
+
+            {/* Neu-Formular */}
+            {zertNeuShown && (
+              <form onSubmit={handleNeuZertifikat} className="mb-5 p-4 bg-gray-50 rounded-xl space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Name / Bezeichnung <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      required
+                      value={zertForm.name}
+                      onChange={e => setZertForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="z. B. Führerschein Klasse B, Erste-Hilfe-Kurs…"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ausstellende Stelle</label>
+                    <input
+                      type="text"
+                      value={zertForm.ausstellende_stelle}
+                      onChange={e => setZertForm(f => ({ ...f, ausstellende_stelle: e.target.value }))}
+                      placeholder="z. B. TÜV, DEKRA…"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Ausgestellt am</label>
+                    <input
+                      type="date"
+                      value={zertForm.ausgestellt_am}
+                      onChange={e => setZertForm(f => ({ ...f, ausgestellt_am: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Gültig bis</label>
+                    <input
+                      type="date"
+                      value={zertForm.gueltig_bis}
+                      onChange={e => setZertForm(f => ({ ...f, gueltig_bis: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Notiz</label>
+                    <input
+                      type="text"
+                      value={zertForm.notiz}
+                      onChange={e => setZertForm(f => ({ ...f, notiz: e.target.value }))}
+                      placeholder="Optional…"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="submit"
+                    disabled={zertNeuSaving || !zertForm.name.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {zertNeuSaving ? 'Speichert…' : 'Speichern'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZertNeuShown(false)}
+                    className="px-4 py-2 text-xs font-medium text-gray-500 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Liste */}
+            {zertLaden ? (
+              <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+            ) : zertifikate.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">Noch keine Zertifikate hinterlegt.</p>
+            ) : (
+              <div className="space-y-2">
+                {zertifikate.map(z => {
+                  const status = zertStatus(z.gueltig_bis);
+                  return (
+                    <div key={z.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition group">
+                      {/* Icon */}
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-600">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-gray-800">{z.name}</span>
+                          {status && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
+                              {status.label}
+                            </span>
+                          )}
+                          {!z.gueltig_bis && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-50 text-gray-400">Unbefristet</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          {z.ausstellende_stelle && (
+                            <span className="text-xs text-gray-400">{z.ausstellende_stelle}</span>
+                          )}
+                          {z.ausGestellt_am && (
+                            <span className="text-xs text-gray-400">Ausgestellt: {new Date(z.ausgestellt_am + 'T00:00:00').toLocaleDateString('de-DE')}</span>
+                          )}
+                          {z.gueltig_bis && (
+                            <span className="text-xs text-gray-400">Gültig bis: {new Date(z.gueltig_bis + 'T00:00:00').toLocaleDateString('de-DE')}</span>
+                          )}
+                        </div>
+                        {z.notiz && (
+                          <p className="text-xs text-gray-400 italic mt-0.5">{z.notiz}</p>
+                        )}
+                      </div>
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteZert(z.id)}
+                        disabled={deletingZertId === z.id}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
