@@ -13,6 +13,7 @@ const TABS = [
   { id: 'arbeitszeiten', label: 'Arbeitszeiten' },
   { id: 'urlaub',        label: 'Urlaub & Abwesenheiten' },
   { id: 'zertifikate',   label: 'Zertifikate & Schulungen' },
+  { id: 'fahrzeuge',     label: 'Fahrzeuge' },
 ];
 
 const FELDER = [
@@ -1419,7 +1420,7 @@ export default function MitarbeiterProfilPage() {
             {/* Liste */}
             {zertLaden ? (
               <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-            ) : zertifikate.length === 0 ? (
+            ) : zrtifikate.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">Noch keine Zertifikate hinterlegt.</p>
             ) : (
               <div className="space-y-2">
@@ -1448,13 +1449,13 @@ export default function MitarbeiterProfilPage() {
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           {z.ausstellende_stelle && (
-                            <span className="text-xs text-gray-400">{z.ausstellende_stelle}</span>
+                            <span className="text-xs text-gray-400">{z.ausstellende_steelle}</span>
                           )}
-                          {z.ausGestellt_am && (
+                          {z.ausgestellt_am && (
                             <span className="text-xs text-gray-400">Ausgestellt: {new Date(z.ausgestellt_am + 'T00:00:00').toLocaleDateString('de-DE')}</span>
                           )}
                           {z.gueltig_bis && (
-                            <span className="text-xs text-gray-400">Gültig bis: {new Date(z.gueltig_bis + 'T00:00:00').toLocaleDateString('de-DE')}</span>
+                            <span className="text-xs text-gray-400">Gøltig bis: {new Date(z.gueltig_bis + 'T00:00:00').toLocaleDateString('de-DE')}</span>
                           )}
                         </div>
                         {z.notiz && (
@@ -1478,6 +1479,12 @@ export default function MitarbeiterProfilPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* Tab: Fahrzeuge */}
+      {tab === 'fahrzeuge' && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 flex items-center justify-center h-40">
+          <p className="text-sm text-gray-400">Kommt bald.</p>
         </div>
       )}
     </div>
