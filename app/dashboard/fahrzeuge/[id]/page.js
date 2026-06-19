@@ -5,10 +5,10 @@ import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
 const TABS = [
-  { id: 'fahrzeugdaten', label: 'Fahrzeugdaten' },
-  { id: 'tuev_uvv',      label: 'TÜV & UVV' },
-  { id: 'wartungen',     label: 'Wartungen' },
-  { id: 'kilometerstand',label: 'Kilometerstand' },
+  { id: 'fahrzeugdaten',  label: 'Fahrzeugdaten' },
+  { id: 'tuev_uvv',       label: 'TÜV & UVV' },
+  { id: 'wartungen',      label: 'Wartungen' },
+  { id: 'kilometerstand', label: 'Kilometerstand' },
 ];
 
 const TYP_OPTIONS = [
@@ -86,13 +86,23 @@ const ZWECK_OPTIONS = [
   { value: 'sonstiges', label: 'Sonstiges', cls: 'bg-gray-50 text-gray-500' },
 ];
 
+function newZeile() {
+  return {
+    rowId: Math.random().toString(36).slice(2),
+    datum: '',
+    km_start: '',
+    km_stand: '',
+    fahrer_name: '',
+    zweck: 'dienstfahrt',
+    notiz: '',
+  };
+}
+
 function datumsStatus(datum) {
   if (!datum) return null;
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
   const d = new Date(datum);
-  const diffMs = d - heute;
-  const diffTage = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const diffTage = Math.ceil((d - heute) / (1000 * 60 * 60 * 24));
   if (diffTage < 0) return { label: 'Überfällig', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `In ${diffTage} Tagen fällig`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `In ${diffTage} Tagen fällig`, diffTage, cls: 'text-amber-600', severity: 'warn' };
@@ -101,11 +111,9 @@ function datumsStatus(datum) {
 
 function pruefDatumsStatus(datum) {
   if (!datum) return null;
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
   const d = new Date(datum);
-  const diffMs = d - heute;
-  const diffTage = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const diffTage = Math.ceil((d - heute) / (1000 * 60 * 60 * 24));
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
@@ -133,8 +141,13 @@ function formatMonthKey(d) {
 
 function formatMonthLabel(key) {
   const [year, month] = key.split('-');
-  const names = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  const names = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
   return `${names[parseInt(month) - 1]} ${year}`;
+}
+
+function currentMonthValue() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function LabelInput({ label, required, children }) {
@@ -149,6 +162,7 @@ function LabelInput({ label, required, children }) {
 }
 
 const inputCls = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+const cellInputCls = 'w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
 
 const TrashIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -165,6 +179,18 @@ const PlusIcon = () => (
 const WarnIcon = ({ cls }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 shrink-0 ${cls}`}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+  </svg>
+);
+
+const ChevronRight = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-300">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
   </svg>
 );
 
@@ -215,12 +241,13 @@ export default function FahrzeugDetailPage() {
   // Kilometerstand
   const [kmEintraege, setKmEintraege] = useState([]);
   const [kmLaden, setKmLaden] = useState(false);
-  const [kmNeuShown, setKmNeuShown] = useState(false);
-  const [kmNeuSaving, setKmNeuSaving] = useState(false);
-  const [kmNeuError, setKmNeuError] = useState('');
+  const [kmAnsicht, setKmAnsicht] = useState('overview'); // 'overview' | 'eingabe' | 'detail'
+  const [detailMonat, setDetailMonat] = useState(null); // 'YYYY-MM'
+  const [eingabeMonat, setEingabeMonat] = useState(currentMonthValue);
+  const [eingabeZeilen, setEingabeZeilen] = useState(() => [newZeile()]);
+  const [eingabeSaving, setEingabeSaving] = useState(false);
+  const [eingabeError, setEingabeError] = useState('');
   const [deletingKmId, setDeletingKmId] = useState(null);
-  const [kmForm, setKmForm] = useState({ datum: '', km_stand: '', fahrer_name: '', zweck: 'dienstfahrt', liter: '', kosten: '', notiz: '' });
-  const [kmAnsicht, setKmAnsicht] = useState('liste'); // 'liste' | 'statistik'
   const [aktKmSaving, setAktKmSaving] = useState(false);
   const [aktKmSuccess, setAktKmSuccess] = useState(false);
   const [aktKmWert, setAktKmWert] = useState('');
@@ -256,7 +283,7 @@ export default function FahrzeugDetailPage() {
 
   const loadKmEintraege = useCallback(async () => {
     setKmLaden(true);
-    const { data } = await supabase.from('fahrzeug_km_eintraege').select('*').eq('fahrzeug_id', id).order('datum', { ascending: false }).order('km_stand', { ascending: false });
+    const { data } = await supabase.from('fahrzeug_km_eintraege').select('*').eq('fahrzeug_id', id).order('datum', { ascending: true }).order('km_start', { ascending: true });
     setKmEintraege(data ?? []);
     setKmLaden(false);
   }, [id]);
@@ -268,7 +295,7 @@ export default function FahrzeugDetailPage() {
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
-  // Fahrzeugdaten speichern
+  // Fahrzeugdaten
   async function handleSave(e) {
     e.preventDefault(); setSaveError(''); setSaveSuccess(false);
     if (!form.kennzeichen.trim()) { setSaveError('Kennzeichen ist Pflichtfeld.'); return; }
@@ -361,76 +388,98 @@ export default function FahrzeugDetailPage() {
     setTimeout(() => setAktKmSuccess(false), 2500);
   }
 
-  // km-Eintrag hinzufügen
-  async function handleKmNeu(e) {
-    e.preventDefault(); setKmNeuError('');
-    if (!kmForm.datum) { setKmNeuError('Datum ist Pflichtfeld.'); return; }
-    if (!kmForm.km_stand) { setKmNeuError('Kilometerstand ist Pflichtfeld.'); return; }
-    setKmNeuSaving(true);
-    const km = parseInt(kmForm.km_stand);
-    const { error } = await supabase.from('fahrzeug_km_eintraege').insert({ fahrzeug_id: id, company_id: companyId, datum: kmForm.datum, km_stand: km, fahrer_name: kmForm.fahrer_name.trim() || null, zweck: kmForm.zweck, liter: (kmForm.zweck === 'tankfahrt' && kmForm.liter) ? parseFloat(kmForm.liter.replace(',', '.')) : null, kosten: (kmForm.zweck === 'tankfahrt' && kmForm.kosten) ? parseFloat(kmForm.kosten.replace(',', '.')) : null, notiz: kmForm.notiz.trim() || null });
-    // Auto-update km_stand wenn neuer Eintrag größer als aktueller
-    if (!error && fahrzeug && (fahrzeug.km_stand == null || km > fahrzeug.km_stand)) {
-      await supabase.from('fahrzeuge').update({ km_stand: km, updated_at: new Date().toISOString() }).eq('id', id);
-      setFahrzeug(prev => ({ ...prev, km_stand: km }));
-      setForm(f => ({ ...f, km_stand: String(km) }));
-      setAktKmWert(String(km));
+  // Fahrtenbuch: Monat speichern (Sammel-Eingabe)
+  async function handleEingabeSave() {
+    setEingabeError('');
+    const valid = eingabeZeilen.filter(z => z.datum && z.km_stand);
+    if (valid.length === 0) { setEingabeError('Mindestens eine Fahrt mit Datum und km-Ende ist Pflichtfeld.'); return; }
+    setEingabeSaving(true);
+    const rows = valid.map(z => ({
+      fahrzeug_id: id,
+      company_id: companyId,
+      datum: z.datum,
+      km_start: z.km_start ? parseInt(z.km_start) : null,
+      km_stand: parseInt(z.km_stand),
+      fahrer_name: z.fahrer_name.trim() || null,
+      zweck: z.zweck,
+      notiz: z.notiz.trim() || null,
+    }));
+    const { error } = await supabase.from('fahrzeug_km_eintraege').insert(rows);
+    if (error) { setEingabeError(error.message); setEingabeSaving(false); return; }
+    // Auto-update fahrzeuge.km_stand wenn nötig
+    const maxKm = Math.max(...rows.map(r => r.km_stand));
+    if (fahrzeug && (fahrzeug.km_stand == null || maxKm > fahrzeug.km_stand)) {
+      await supabase.from('fahrzeuge').update({ km_stand: maxKm, updated_at: new Date().toISOString() }).eq('id', id);
+      setFahrzeug(prev => ({ ...prev, km_stand: maxKm }));
+      setAktKmWert(String(maxKm));
     }
-    setKmNeuSaving(false);
-    if (error) { setKmNeuError(error.message); return; }
-    setKmNeuShown(false); setKmForm({ datum: '', km_stand: '', fahrer_name: '', zweck: 'dienstfahrt', liter: '', kosten: '', notiz: '' }); loadKmEintraege();
+    setEingabeSaving(false);
+    setEingabeZeilen([newZeile()]);
+    await loadKmEintraege();
+    setKmAnsicht('overview');
   }
 
-  async function handleKmDelete(kmId) { setDeletingKmId(kmId); await supabase.from('fahrzeug_km_eintraege').delete().eq('id', kmId); setDeletingKmId(null); loadKmEintraege(); }
+  // Einzelnen km-Eintrag löschen
+  async function handleKmDelete(kmId) {
+    setDeletingKmId(kmId);
+    await supabase.from('fahrzeug_km_eintraege').delete().eq('id', kmId);
+    setDeletingKmId(null);
+    loadKmEintraege();
+  }
 
   // CSV Export
-  function handleExport() {
-    const sorted = [...kmEintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || a.km_stand - b.km_stand);
-    const rows = [['Datum', 'km-Stand', 'Tages-km', 'Fahrer', 'Zweck', 'Liter', 'Kosten (EUR)', 'Notiz']];
-    sorted.forEach((e, i) => {
-      const prev = sorted[i - 1];
-      const tagesKm = prev ? e.km_stand - prev.km_stand : '';
-      rows.push([formatDate(e.datum), e.km_stand, tagesKm, e.fahrer_name ?? '', ZWECK_OPTIONS.find(z => z.value === e.zweck)?.label ?? e.zweck, e.liter ?? '', e.kosten ?? '', e.notiz ?? '']);
+  function handleExport(monatKey) {
+    const source = monatKey
+      ? kmEintraege.filter(e => formatMonthKey(e.datum) === monatKey)
+      : [...kmEintraege];
+    const sorted = source.sort((a, b) => new Date(a.datum) - new Date(b.datum) || (a.km_start ?? 0) - (b.km_start ?? 0));
+    const rows = [['Datum', 'km-Start', 'km-Ende', 'Gefahrene km', 'Fahrer', 'Zweck', 'Notiz']];
+    sorted.forEach(e => {
+      const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : '';
+      rows.push([formatDate(e.datum), e.km_start ?? '', e.km_stand ?? '', tripKm, e.fahrer_name ?? '', ZWECK_OPTIONS.find(z => z.value === e.zweck)?.label ?? e.zweck, e.notiz ?? '']);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `km_${fahrzeug?.kennzeichen ?? id}.csv`; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fahrtenbuch_${fahrzeug?.kennzeichen ?? id}${monatKey ? '_' + monatKey : ''}.csv`;
+    a.click();
     URL.revokeObjectURL(url);
   }
 
-  // Statistik berechnen
+  // Monats-Statistiken berechnen
   const kmStats = useMemo(() => {
-    if (kmEintraege.length === 0) return null;
-    const sorted = [...kmEintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || a.km_stand - b.km_stand);
-
-    // Tageskilometer
-    const withDiff = sorted.map((e, i) => ({ ...e, tagesKm: i > 0 ? e.km_stand - sorted[i - 1].km_stand : null }));
-
-    // Monatsgruppen
     const monate = {};
-    withDiff.forEach(e => {
+    kmEintraege.forEach(e => {
       const key = formatMonthKey(e.datum);
-      if (!monate[key]) monate[key] = { gesamt: 0, dienst: 0, privat: 0, tank: 0, sonstiges: 0, liter: 0, tankKm: 0, eintraege: 0 };
+      if (!monate[key]) monate[key] = { km: 0, fahrten: 0, dienst: 0, privat: 0, tank: 0, sonstiges: 0, eintraege: [] };
       const m = monate[key];
-      m.eintraege++;
-      if (e.tagesKm != null && e.tagesKm > 0) {
-        m.gesamt += e.tagesKm;
-        if (e.zweck === 'dienstfahrt') m.dienst += e.tagesKm;
-        else if (e.zweck === 'privatfahrt') m.privat += e.tagesKm;
-        else if (e.zweck === 'tankfahrt') { m.tank += e.tagesKm; m.tankKm += e.tagesKm; }
-        else m.sonstiges += e.tagesKm;
+      const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : null;
+      m.fahrten++;
+      m.eintraege.push({ ...e, tripKm });
+      if (tripKm != null && tripKm > 0) {
+        m.km += tripKm;
+        if (e.zweck === 'dienstfahrt') m.dienst += tripKm;
+        else if (e.zweck === 'privatfahrt') m.privat += tripKm;
+        else if (e.zweck === 'tankfahrt') m.tank += tripKm;
+        else m.sonstiges += tripKm;
       }
-      if (e.zweck === 'tankfahrt' && e.liter) m.liter += parseFloat(e.liter);
     });
-
-    // Gesamtverbrauch
-    const gesamtLiter = withDiff.filter(e => e.zweck === 'tankfahrt' && e.liter).reduce((s, e) => s + parseFloat(e.liter), 0);
-    const gesamtKm = sorted.length > 1 ? sorted[sorted.length - 1].km_stand - sorted[0].km_stand : 0;
-    const verbrauch = gesamtKm > 0 && gesamtLiter > 0 ? (gesamtLiter / gesamtKm * 100) : null;
-
-    return { withDiff, monate, verbrauch, gesamtLiter, gesamtKm };
+    const gesamtKm = Object.values(monate).reduce((s, m) => s + m.km, 0);
+    return { monate, gesamtKm, gesamtFahrten: kmEintraege.length };
   }, [kmEintraege]);
+
+  // Zeilen-Helfer für Eingabe
+  function updateZeile(rowId, field, value) {
+    setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z));
+  }
+  function removeZeile(rowId) {
+    setEingabeZeilen(prev => prev.length > 1 ? prev.filter(z => z.rowId !== rowId) : prev);
+  }
+  function addZeile() {
+    setEingabeZeilen(prev => [...prev, newZeile()]);
+  }
 
   if (loading) return <div className="flex items-center justify-center h-48"><p className="text-gray-400 text-sm">Lädt…</p></div>;
   if (notFound) return (
@@ -448,6 +497,13 @@ export default function FahrzeugDetailPage() {
   const wartDatumStatus = datumsStatus(naechsteWart.datum);
   const wartKmStatus = kmStatus(naechsteWart.km ? parseInt(naechsteWart.km) : null, aktKm);
   const wartWarnCount = [wartDatumStatus, wartKmStatus].filter(s => s && (s.severity === 'danger' || s.severity === 'warn')).length;
+
+  // Eingabe-Summen live berechnen
+  const eingabeTotalKm = eingabeZeilen.reduce((s, z) => {
+    const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : 0;
+    return s + (km > 0 ? km : 0);
+  }, 0);
+  const eingabeValidRows = eingabeZeilen.filter(z => z.datum && z.km_stand).length;
 
   return (
     <div className="max-w-2xl">
@@ -533,7 +589,7 @@ export default function FahrzeugDetailPage() {
       {activeTab === 'tuev_uvv' && (
         <div className="space-y-5">
           {warnungen.length > 0 && <div className="space-y-2">{warnungen.map(w => <div key={w.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${w.status.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={w.status.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={w.status.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>{w.label}</strong> — {w.status.label}{w.datum ? ` (${formatDate(w.datum)})` : ''}</span></div>)}</div>}
-          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">Nächste fällige Prüfung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
+          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">Nächste fällige Prøfung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
           <form onSubmit={handleFristenSave} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Aktuelle Prüffristen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -546,8 +602,8 @@ export default function FahrzeugDetailPage() {
             <button type="submit" disabled={fristenSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{fristenSaving ? 'Speichert…' : 'Fristen speichern'}</button>
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prüfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufügen</button></div>
-          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gøltig bis (nächste Prüfung)"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prøfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prøfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40" title="Löschen"><TrashIcon /></button></div></div>; })}</div>}
+          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prøfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis (nächste Prøfung)"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
@@ -568,8 +624,8 @@ export default function FahrzeugDetailPage() {
             <button type="submit" disabled={naechsteWartSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{naechsteWartSaving ? 'Speichert…' : 'Speichern'}</button>
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Wartungshistorie</h2><button type="button" onClick={() => setWartNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Wartung erfassen</button></div>
-          {wartNeuShown && <form onSubmit={handleWartNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Wartungseintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Art der Wartung"><select value={wartForm.art} onChange={e => setWartForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>{WARTUNG_ART_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Datum" required><input type="date" required value={wartForm.datum} onChange={e => setWartForm(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Kilometerstand bei Wartung"><div className="relative"><input type="number" value={wartForm.km_stand} onChange={e => setWartForm(f => ({ ...f, km_stand: e.target.value }))} placeholder="z. B. 45000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput><LabelInput label="Werkstatt"><input type="text" value={wartForm.werkstatt} onChange={e => setWartForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z. B. Autohaus Müller" className={inputCls} /></LabelInput><LabelInput label="Kosten (€)"><div className="relative"><input type="text" value={wartForm.kosten} onChange={e => setWartForm(f => ({ ...f, kosten: e.target.value }))} placeholder="z. B. 180,00" className={inputCls + ' pr-6'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span></div></LabelInput><div /></div><div className="border-t border-gray-100 pt-3"><p className="text-xs font-medium text-gray-500 mb-3">Nächste Wartung fällig (optional — überschreibt aktuelle Einstellung)</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Datum nächste Wartung"><input type="date" value={wartForm.naechste_datum} onChange={e => setWartForm(f => ({ ...f, naechste_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Km nächste Wartung"><div className="relative"><input type="number" value={wartForm.naechste_km} onChange={e => setWartForm(f => ({ ...f, naechste_km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput></div></div><LabelInput label="Notiz"><textarea value={wartForm.notiz} onChange={e => setWartForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{wartNeuError && <p className="text-xs text-red-500">{wartNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={wartNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{wartNeuSaving ? 'Speichert…' : 'Wartung speichern'}</button><button type="button" onClick={() => setWartNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {wartLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : wartungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Wartungseinträge vorhanden.</p><p className="text-xs text-gray-300 mt-1">Erfasse die erste Wartung øber den Button oben.</p></div> : <div className="space-y-2">{wartungen.map(w => { const artLabel = WARTUNG_ART_OPTIONS.find(o => o.value === w.art)?.label ?? w.art; return <div key={w.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{artLabel}</span><span className="text-xs text-gray-400">{formatDate(w.datum)}</span>{w.km_stand != null && <span className="text-xs text-gray-400">{w.km_stand.toLocaleString('de-DE')} km</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{w.werkstatt && <span className="text-xs text-gray-400">{w.werkstatt}</span>}{w.kosten != null && <span className="text-xs text-gray-500 font-medium">{parseFloat(w.kosten).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}{w.naechste_datum && <span className="text-xs text-gray-400">Nächste: {formatDate(w.naechste_datum)}</span>}{w.naechste_km != null && <span className="text-xs text-gray-400">Nächste: {w.naechste_km.toLocaleString('de-DE')} km</span>}</div>{w.notiz && <p className="text-xs text-gray-400 mt-1 italic">{w.notiz}</p>}</div><button type="button" onClick={() => handleWartDelete(w.id)} disabled={deletingWartId === w.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40" title="Löschen"><TrashIcon /></button></div></div>; })}</div>}
+          {wartNeuShown && <form onSubmit={handleWartNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Wartungseintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Art der Wartung"><select value={wartForm.art} onChange={e => setWartForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>{WARTUNG_ART_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Datum" required><input type="date" required value={wartForm.datum} onChange={e => setWartForm(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Kilometerstand bei Wartung"><div className="relative"><input type="number" value={wartForm.km_stand} onChange={e => setWartForm(f => ({ ...f, km_stand: e.target.value }))} placeholder="z. B. 45000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput><LabelInput label="Werkstatt"><input type="text" value={wartForm.werkstatt} onChange={e => setWartForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z. B. Autohaus Müller" className={inputCls} /></LabelInput><LabelInput label="Kosten (€)"><div className="relative"><input type="text" value={wartForm.kosten} onChange={e => setWartForm(f => ({ ...f, kosten: e.target.value }))} placeholder="z. B. 180,00" className={inputCls + ' pr-6'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span></div></LabelInput><div /></div><div className="border-t border-gray-100 pt-3"><p className="text-xs font-medium text-gray-500 mb-3">Nächste Wartung fällig (optional)</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Datum nächste Wartung"><input type="date" value={wartForm.naechste_datum} onChange={e => setWartForm(f => ({ ...f, naechste_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Km nächste Wartung"><div className="relative"><input type="number" value={wartForm.naechste_km} onChange={e => setWartForm(f => ({ ...f, naechste_km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput></div></div><LabelInput label="Notiz"><textarea value={wartForm.notiz} onChange={e => setWartForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{wartNeuError && <p className="text-xs text-red-500">{wartNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={wartNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{wartNeuSaving ? 'Speichert…' : 'Wartung speichern'}</button><button type="button" onClick={() => setWartNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {wartLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : wartungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Wartungseinträge vorhanden.</p></div> : <div className="space-y-2">{wartungen.map(w => { const artLabel = WARTUNG_ART_OPTIONS.find(o => o.value === w.art)?.label ?? w.art; return <div key={w.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{artLabel}</span><span className="text-xs text-gray-400">{formatDate(w.datum)}</span>{w.km_stand != null && <span className="text-xs text-gray-400">{w.km_stand.toLocaleString('de-DE')} km</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{w.werkstatt && <span className="text-xs text-gray-400">{w.werkstatt}</span>}{w.kosten != null && <span className="text-xs text-gray-500 font-medium">{parseFloat(w.kosten).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}{w.naechste_datum && <span className="text-xs text-gray-400">Nächste: {formatDate(w.naechste_datum)}</span>}{w.naechste_km != null && <span className="text-xs text-gray-400">Nächste: {w.naechste_km.toLocaleString('de-DE')} km</span>}</div>{w.notiz && <p className="text-xs text-gray-400 mt-1 italic">{w.notiz}</p>}</div><button type="button" onClick={() => handleWartDelete(w.id)} disabled={deletingWartId === w.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
@@ -577,17 +633,17 @@ export default function FahrzeugDetailPage() {
       {activeTab === 'kilometerstand' && (
         <div className="space-y-5">
 
-          {/* Aktueller km-Stand */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          {/* Aktueller km-Stand — immer sichtbar */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-xs font-medium text-gray-400 mb-1">Aktueller Kilometerstand</p>
-            <div className="flex items-end gap-4">
+            <div className="flex items-end gap-4 flex-wrap">
               <div>
                 <p className="text-3xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '—'}</p>
                 <p className="text-xs text-gray-400 mt-0.5">km</p>
               </div>
               <form onSubmit={handleAktKmSave} className="flex items-center gap-2 mb-0.5">
                 <div className="relative">
-                  <input type="number" value={aktKmWert} onChange={e => setAktKmWert(e.target.value)} min="0" placeholder="Neuer km-Stand" className="w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-8" />
+                  <input type="number" value={aktKmWert} onChange={e => setAktKmWert(e.target.value)} min="0" placeholder="Neuer km-Stand" className="w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8" />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span>
                 </div>
                 <button type="submit" disabled={aktKmSaving} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">{aktKmSaving ? '…' : 'Aktualisieren'}</button>
@@ -596,177 +652,349 @@ export default function FahrzeugDetailPage() {
             </div>
           </div>
 
-          {/* Statistik-Karten wenn Daten vorhanden */}
-          {kmStats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                <p className="text-xs text-gray-400 mb-1">Gesamte km</p>
-                <p className="text-lg font-bold text-gray-900">{kmStats.gesamtKm.toLocaleString('de-DE')}</p>
-                <p className="text-xs text-gray-400">km (erfasst)</p>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                <p className="text-xs text-gray-400 mb-1">Einträge</p>
-                <p className="text-lg font-bold text-gray-900">{kmEintraege.length}</p>
-                <p className="text-xs text-gray-400">Fahrten</p>
-              </div>
-              {kmStats.verbrauch && (
-                <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                  <p className="text-xs text-gray-400 mb-1">Ø Verbrauch</p>
-                  <p className="text-lg font-bold text-gray-900">{kmStats.verbrauch.toFixed(1)}</p>
-                  <p className="text-xs text-gray-400">L/100 km</p>
+          {/* ── ÜBERSICHT ── */}
+          {kmAnsicht === 'overview' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbücher</h2>
+                  {kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}
                 </div>
-              )}
-              {kmStats.gesamtLiter > 0 && (
-                <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                  <p className="text-xs text-gray-400 mb-1">Getankt</p>
-                  <p className="text-lg font-bold text-gray-900">{kmStats.gesamtLiter.toFixed(1)}</p>
-                  <p className="text-xs text-gray-400">Liter gesamt</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Ansicht-Umschalter + Eintrag hinzufügen */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-              <button type="button" onClick={() => setKmAnsicht('liste')} className={`px-3 py-1 text-xs font-medium rounded-lg transition ${kmAnsicht === 'liste' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Fahrtenbuch</button>
-              <button type="button" onClick={() => setKmAnsicht('statistik')} className={`px-3 py-1 text-xs font-medium rounded-lg transition ${kmAnsicht === 'statistik' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Monatsübersicht</button>
-            </div>
-            <div className="flex gap-2">
-              {kmEintraege.length > 0 && (
-                <button type="button" onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                  CSV Export
+                <button
+                  type="button"
+                  onClick={() => { setEingabeMonat(currentMonthValue()); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"
+                >
+                  <PlusIcon /> Monat erfassen
                 </button>
-              )}
-              <button type="button" onClick={() => setKmNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition">
-                <PlusIcon /> Eintrag hinzufügen
-              </button>
-            </div>
-          </div>
+              </div>
 
-          {/* Neuer km-Eintrag */}
-          {kmNeuShown && (
-            <form onSubmit={handleKmNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4">
-              <h3 className="text-xs font-semibold text-gray-600">Fahrteneintrag erfassen</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <LabelInput label="Datum" required>
-                  <input type="date" required value={kmForm.datum} onChange={e => setKmForm(f => ({ ...f, datum: e.target.value }))} className={inputCls} />
-                </LabelInput>
-                <LabelInput label="km-Stand" required>
-                  <div className="relative">
-                    <input type="number" required value={kmForm.km_stand} onChange={e => setKmForm(f => ({ ...f, km_stand: e.target.value }))} placeholder="z. B. 45230" min="0" className={inputCls + ' pr-10'} />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span>
+              {kmLaden ? (
+                <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+              ) : Object.keys(kmStats.monate).length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                    </svg>
                   </div>
-                </LabelInput>
-                <LabelInput label="Fahrer">
-                  <input type="text" value={kmForm.fahrer_name} onChange={e => setKmForm(f => ({ ...f, fahrer_name: e.target.value }))} placeholder="Name des Fahrers" className={inputCls} />
-                </LabelInput>
-                <LabelInput label="Zweck">
-                  <select value={kmForm.zweck} onChange={e => setKmForm(f => ({ ...f, zweck: e.target.value }))} className={inputCls}>
-                    {ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </LabelInput>
-                {kmForm.zweck === 'tankfahrt' && <>
-                  <LabelInput label="Liter getankt">
-                    <div className="relative">
-                      <input type="text" value={kmForm.liter} onChange={e => setKmForm(f => ({ ...f, liter: e.target.value }))} placeholder="z. B. 45,5" className={inputCls + ' pr-6'} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">L</span>
-                    </div>
-                  </LabelInput>
-                  <LabelInput label="Kosten (€)">
-                    <div className="relative">
-                      <input type="text" value={kmForm.kosten} onChange={e => setKmForm(f => ({ ...f, kosten: e.target.value }))} placeholder="z. B. 72,50" className={inputCls + ' pr-6'} />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
-                    </div>
-                  </LabelInput>
-                </>}
-              </div>
-              <LabelInput label="Notiz">
-                <input type="text" value={kmForm.notiz} onChange={e => setKmForm(f => ({ ...f, notiz: e.target.value }))} placeholder="Optionale Anmerkung…" className={inputCls} />
-              </LabelInput>
-              {kmNeuError && <p className="text-xs text-red-500">{kmNeuError}</p>}
-              <div className="flex gap-2">
-                <button type="submit" disabled={kmNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{kmNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button>
-                <button type="button" onClick={() => setKmNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button>
-              </div>
-            </form>
-          )}
-
-          {/* Fahrtenbuch Liste */}
-          {kmAnsicht === 'liste' && (
-            kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> :
-            kmEintraege.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                <p className="text-sm text-gray-400">Noch keine km-Einträge vorhanden.</p>
-                <p className="text-xs text-gray-300 mt-1">Erfasse die erste Fahrt øber den Button oben.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {(() => {
-                  const sorted = [...kmEintraege].sort((a, b) => new Date(b.datum) - new Date(a.datum) || b.km_stand - a.km_stand);
-                  const allSorted = [...kmEintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || a.km_stand - b.km_stand);
-                  return sorted.map(e => {
-                    const idx = allSorted.findIndex(x => x.id === e.id);
-                    const prev = allSorted[idx - 1];
-                    const tagesKm = prev ? e.km_stand - prev.km_stand : null;
-                    const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck);
-                    return (
-                      <div key={e.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
-                        <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-medium text-gray-500">Noch kein Fahrtenbuch erfasst</p>
+                  <p className="text-xs text-gray-400 mt-1">Erfasse das erste Fahrtenbuch über den Button oben.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {Object.entries(kmStats.monate)
+                    .sort(([a], [b]) => b.localeCompare(a))
+                    .map(([key, m]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => { setDetailMonat(key); setKmAnsicht('detail'); }}
+                        className="w-full bg-white rounded-2xl border border-gray-100 px-5 py-4 hover:border-blue-100 hover:bg-blue-50/20 transition text-left group"
+                      >
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-gray-900">{e.km_stand.toLocaleString('de-DE')} km</span>
-                              {tagesKm != null && tagesKm >= 0 && <span className="text-xs font-medium text-blue-600">+{tagesKm.toLocaleString('de-DE')} km</span>}
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>{zweckOpt?.label ?? e.zweck}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-semibold text-gray-900">{formatMonthLabel(key)}</span>
+                              <span className="text-xs text-gray-400">{m.fahrten} Fahrt{m.fahrten !== 1 ? 'en' : ''}</span>
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
-                              <span className="text-xs text-gray-400">{formatDate(e.datum)}</span>
-                              {e.fahrer_name && <span className="text-xs text-gray-400">{e.fahrer_name}</span>}
-                              {e.zweck === 'tankfahrt' && e.liter && <span className="text-xs text-emerald-600">{parseFloat(e.liter).toFixed(1)} L</span>}
-                              {e.zweck === 'tankfahrt' && e.kosten && <span className="text-xs text-gray-500">{parseFloat(e.kosten).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}
+                            <div className="flex flex-wrap gap-3 mt-1.5">
+                              {m.dienst > 0 && <span className="text-xs text-blue-600">{m.dienst.toLocaleString('de-DE')} km Dienst</span>}
+                              {m.privat > 0 && <span className="text-xs text-purple-600">{m.privat.toLocaleString('de-DE')} km Privat</span>}
+                              {m.tank > 0 && <span className="text-xs text-emerald-600">{m.tank.toLocaleString('de-DE')} km Tankfahrt</span>}
+                              {m.sonstiges > 0 && <span className="text-xs text-gray-400">{m.sonstiges.toLocaleString('de-DE')} km Sonstiges</span>}
                             </div>
-                            {e.notiz && <p className="text-xs text-gray-400 mt-1 italic">{e.notiz}</p>}
                           </div>
-                          <button type="button" onClick={() => handleKmDelete(e.id)} disabled={deletingKmId === e.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40" title="Löschen"><TrashIcon /></button>
+                          <div className="flex items-center gap-3 ml-4">
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-blue-600">{m.km.toLocaleString('de-DE')}</p>
+                              <p className="text-xs text-gray-400">km gesamt</p>
+                            </div>
+                            <ChevronRight />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            )
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Monatsøbersicht */}
-          {kmAnsicht === 'statistik' && (
-            kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> :
-            !kmStats || Object.keys(kmStats.monate).length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Daten für Monatsøbersicht.</p></div>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(kmStats.monate).sort(([a], [b]) => b.localeCompare(a)).map(([key, m]) => (
-                  <div key={key} className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900">{formatMonthLabel(key)}</h3>
-                      <span className="text-sm font-bold text-blue-600">{m.gesamt.toLocaleString('de-DE')} km</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {m.dienst > 0 && <div className="bg-blue-50 rounded-xl p-3"><p className="text-xs text-blue-600 font-medium">Dienst</p><p className="text-sm font-bold text-blue-800">{m.dienst.toLocaleString('de-DE')} km</p></div>}
-                      {m.privat > 0 && <div className="bg-purple-50 rounded-xl p-3"><p className="text-xs text-purple-600 font-medium">Privat</p><p className="text-sm font-bold text-purple-800">{m.privat.toLocaleString('de-DE')} km</p></div>}
-                      {m.tank > 0 && <div className="bg-emerald-50 rounded-xl p-3"><p className="text-xs text-emerald-600 font-medium">Tank</p><p className="text-sm font-bold text-emerald-800">{m.tank.toLocaleString('de-DE')} km</p></div>}
-                      {m.sonstiges > 0 && <div className="bg-gray-50 rounded-xl p-3"><p className="text-xs text-gray-500 font-medium">Sonstiges</p><p className="text-sm font-bold text-gray-700">{m.sonstiges.toLocaleString('de-DE')} km</p></div>}
-                    </div>
-                    <div className="flex flex-wrap gap-4 mt-2">
-                      <span className="text-xs text-gray-400">{m.eintraege} Einträge</span>
-                      {m.liter > 0 && <span className="text-xs text-emerald-600">{m.liter.toFixed(1)} L getankt</span>}
-                      {m.liter > 0 && m.gesamt > 0 && <span className="text-xs text-gray-500">Ø {(m.liter / m.gesamt * 100).toFixed(1)} L/100 km</span>}
-                    </div>
-                  </div>
-                ))}
+          {/* ── MONAT ERFASSEN ── */}
+          {kmAnsicht === 'eingabe' && (
+            <div className="space-y-5">
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                  Übersicht
+                </button>
+                <h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2>
               </div>
-            )
+
+              {/* Monat */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5">
+                <LabelInput label="Monat" required>
+                  <input
+                    type="month"
+                    value={eingabeMonat}
+                    onChange={e => setEingabeMonat(e.target.value)}
+                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </LabelInput>
+              </div>
+
+              {/* Fahrten-Tabelle */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3>
+                  <span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} Zeilen vollständig</span>
+                </div>
+
+                {/* Spalten-Header */}
+                <div className="overflow-x-auto -mx-1 px-1">
+                  <div className="min-w-[580px]">
+                    <div className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 px-1 mb-1.5">
+                      <span className="text-xs font-medium text-gray-400">Datum <span className="text-red-400">*</span></span>
+                      <span className="text-xs font-medium text-gray-400">km-Start</span>
+                      <span className="text-xs font-medium text-gray-400">km-Ende <span className="text-red-400">*</span></span>
+                      <span className="text-xs font-medium text-gray-400">km</span>
+                      <span className="text-xs font-medium text-gray-400">Fahrer</span>
+                      <span className="text-xs font-medium text-gray-400">Zweck</span>
+                      <span></span>
+                    </div>
+
+                    {/* Zeilen */}
+                    <div className="space-y-1.5">
+                      {eingabeZeilen.map((z) => {
+                        const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : null;
+                        return (
+                          <div key={z.rowId} className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 items-center">
+                            <input
+                              type="date"
+                              value={z.datum}
+                              onChange={e => updateZeile(z.rowId, 'datum', e.target.value)}
+                              className={cellInputCls}
+                            />
+                            <input
+                              type="number"
+                              value={z.km_start}
+                              onChange={e => updateZeile(z.rowId, 'km_start', e.target.value)}
+                              placeholder="Start"
+                              min="0"
+                              className={cellInputCls}
+                            />
+                            <input
+                              type="number"
+                              value={z.km_stand}
+                              onChange={e => updateZeile(z.rowId, 'km_stand', e.target.value)}
+                              placeholder="Ende"
+                              min="0"
+                              className={cellInputCls}
+                            />
+                            <div className="text-center">
+                              {km != null && km >= 0
+                                ? <span className="text-xs font-semibold text-blue-600">{km}</span>
+                                : <span className="text-xs text-gray-300">—</span>}
+                            </div>
+                            <input
+                              type="text"
+                              value={z.fahrer_name}
+                              onChange={e => updateZeile(z.rowId, 'fahrer_name', e.target.value)}
+                              placeholder="Fahrer"
+                              className={cellInputCls}
+                            />
+                            <select
+                              value={z.zweck}
+                              onChange={e => updateZeile(z.rowId, 'zweck', e.target.value)}
+                              className={cellInputCls}
+                            >
+                              {ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeZeile(z.rowId)}
+                              disabled={eingabeZeilen.length === 1}
+                              className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"
+                              title="Zeile entfernen"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Zeile hinzufügen */}
+                    <button
+                      type="button"
+                      onClick={addZeile}
+                      className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"
+                    >
+                      <PlusIcon /> Zeile hinzufügen
+                    </button>
+                  </div>
+                </div>
+
+                {/* Zwischensumme */}
+                {eingabeTotalKm > 0 && (
+                  <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-6">
+                    <div>
+                      <p className="text-xs text-gray-400">Gesamt km</p>
+                      <p className="text-lg font-bold text-blue-600">{eingabeTotalKm.toLocaleString('de-DE')} km</p>
+                    </div>
+                    {(() => {
+                      const dienst = eingabeZeilen.reduce((s, z) => { const km = (z.km_start && z.km_stand && z.zweck === 'dienstfahrt') ? parseInt(z.km_stand) - parseInt(z.km_start) : 0; return s + Math.max(0, km); }, 0);
+                      const privat = eingabeZeilen.reduce((s, z) => { const km = (z.km_start && z.km_stand && z.zweck === 'privatfahrt') ? parseInt(z.km_stand) - parseInt(z.km_start) : 0; return s + Math.max(0, km); }, 0);
+                      return <>
+                        {dienst > 0 && <div><p className="text-xs text-gray-400">Dienstfahrten</p><p className="text-sm font-semibold text-blue-600">{dienst.toLocaleString('de-DE')} km</p></div>}
+                        {privat > 0 && <div><p className="text-xs text-gray-400">Privatfahrten</p><p className="text-sm font-semibold text-purple-600">{privat.toLocaleString('de-DE')} km</p></div>}
+                      </>;
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {eingabeError && <p className="text-xs text-red-500">{eingabeError}</p>}
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleEingabeSave}
+                  disabled={eingabeSaving}
+                  className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
+                >
+                  {eingabeSaving ? 'Speichert…' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKmAnsicht('overview')}
+                  className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
           )}
+
+          {/* ── MONATS-DETAIL ── */}
+          {kmAnsicht === 'detail' && detailMonat && (() => {
+            const m = kmStats.monate[detailMonat];
+            if (!m) return null;
+            const sorted = [...m.eintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || (a.km_start ?? 0) - (b.km_start ?? 0));
+            return (
+              <div className="space-y-5">
+                {/* Header */}
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                      Übersicht
+                    </button>
+                    <h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleExport(detailMonat)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"
+                    >
+                      <DownloadIcon /> CSV Export
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"
+                    >
+                      <PlusIcon /> Fahrten ergänzen
+                    </button>
+                  </div>
+                </div>
+
+                {/* Zusammenfassung */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-blue-50 rounded-xl p-4 text-center">
+                    <p className="text-xs text-blue-600 font-medium">Gesamt km</p>
+                    <p className="text-xl font-bold text-blue-800">{m.km.toLocaleString('de-DE')}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+                    <p className="text-xs text-gray-400">Fahrten</p>
+                    <p className="text-xl font-bold text-gray-900">{m.fahrten}</p>
+                  </div>
+                  {m.dienst > 0 && (
+                    <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+                      <p className="text-xs text-gray-400">Dienstfahrten</p>
+                      <p className="text-lg font-bold text-blue-600">{m.dienst.toLocaleString('de-DE')} km</p>
+                    </div>
+                  )}
+                  {m.privat > 0 && (
+                    <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+                      <p className="text-xs text-gray-400">Privatfahrten</p>
+                      <p className="text-lg font-bold text-purple-600">{m.privat.toLocaleString('de-DE')} km</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fahrten-Liste */}
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                  {/* Tabellen-Header */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[540px]">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="text-left text-xs font-medium text-gray-400 px-5 py-3">Datum</th>
+                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Start</th>
+                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Ende</th>
+                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km</th>
+                          <th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Fahrer</th>
+                          <th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Zweck</th>
+                          <th className="px-3 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {sorted.map(e => {
+                          const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck);
+                          return (
+                            <tr key={e.id} className="hover:bg-gray-50/50 transition">
+                              <td className="px-5 py-3 text-sm text-gray-700">{formatDate(e.datum)}</td>
+                              <td className="px-3 py-3 text-sm text-right text-gray-500">{e.km_start != null ? e.km_start.toLocaleString('de-DE') : '—'}</td>
+                              <td className="px-3 py-3 text-sm text-right text-gray-700 font-medium">{e.km_stand != null ? e.km_stand.toLocaleString('de-DE') : '—'}</td>
+                              <td className="px-3 py-3 text-sm text-right font-semibold text-blue-600">
+                                {e.tripKm != null && e.tripKm >= 0 ? e.tripKm.toLocaleString('de-DE') : '—'}
+                              </td>
+                              <td className="px-3 py-3 text-sm text-gray-500">{e.fahrer_name ?? '—'}</td>
+                              <td className="px-3 py-3">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>
+                                  {zweckOpt?.label ?? e.zweck}
+                                </span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleKmDelete(e.id)}
+                                  disabled={deletingKmId === e.id}
+                                  className="text-gray-300 hover:text-red-400 transition disabled:opacity-40"
+                                >
+                                  <TrashIcon />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-gray-100 bg-gray-50/50">
+                          <td colSpan={3} className="px-5 py-3 text-xs font-medium text-gray-500">Gesamt</td>
+                          <td className="px-3 py-3 text-sm font-bold text-blue-700 text-right">{m.km.toLocaleString('de-DE')} km</td>
+                          <td colSpan={3}></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
