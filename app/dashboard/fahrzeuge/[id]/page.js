@@ -9,6 +9,7 @@ const TABS = [
   { id: 'tuev_uvv',       label: 'TÜV & UVV' },
   { id: 'wartungen',      label: 'Wartungen' },
   { id: 'kilometerstand', label: 'Kilometerstand' },
+  { id: 'versicherung',   label: 'Versicherung' },
 ];
 
 const TYP_OPTIONS = [
@@ -86,16 +87,17 @@ const ZWECK_OPTIONS = [
   { value: 'sonstiges', label: 'Sonstiges', cls: 'bg-gray-50 text-gray-500' },
 ];
 
+const VERS_ART_OPTIONS = [
+  { value: 'haftpflicht', label: 'Haftpflicht' },
+  { value: 'teilkasko', label: 'Teilkasko' },
+  { value: 'vollkasko', label: 'Vollkasko' },
+  { value: 'haftpflicht_teilkasko', label: 'Haftpflicht + Teilkasko' },
+  { value: 'haftpflicht_vollkasko', label: 'Haftpflicht + Vollkasko' },
+  { value: 'sonstiges', label: 'Sonstiges' },
+];
+
 function newZeile() {
-  return {
-    rowId: Math.random().toString(36).slice(2),
-    datum: '',
-    km_start: '',
-    km_stand: '',
-    fahrer_name: '',
-    zweck: 'dienstfahrt',
-    notiz: '',
-  };
+  return { rowId: Math.random().toString(36).slice(2), datum: '', km_start: '', km_stand: '', fahrer_name: '', zweck: 'dienstfahrt', notiz: '' };
 }
 
 function datumsStatus(datum) {
@@ -117,7 +119,7 @@ function pruefDatumsStatus(datum) {
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `Gøltig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  return { label: `Gültig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function kmStatus(naechsteKm, aktuellerKm) {
@@ -148,6 +150,11 @@ function formatMonthLabel(key) {
 function currentMonthValue() {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatEuro(val) {
+  if (val == null) return null;
+  return parseFloat(val).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
 
 function LabelInput({ label, required, children }) {
@@ -241,8 +248,8 @@ export default function FahrzeugDetailPage() {
   // Kilometerstand
   const [kmEintraege, setKmEintraege] = useState([]);
   const [kmLaden, setKmLaden] = useState(false);
-  const [kmAnsicht, setKmAnsicht] = useState('overview'); // 'overview' | 'eingabe' | 'detail'
-  const [detailMonat, setDetailMonat] = useState(null); // 'YYYY-MM'
+  const [kmAnsicht, setKmAnsicht] = useState('overview');
+  const [detailMonat, setDetailMonat] = useState(null);
   const [eingabeMonat, setEingabeMonat] = useState(currentMonthValue);
   const [eingabeZeilen, setEingabeZeilen] = useState(() => [newZeile()]);
   const [eingabeSaving, setEingabeSaving] = useState(false);
@@ -251,6 +258,16 @@ export default function FahrzeugDetailPage() {
   const [aktKmSaving, setAktKmSaving] = useState(false);
   const [aktKmSuccess, setAktKmSuccess] = useState(false);
   const [aktKmWert, setAktKmWert] = useState('');
+
+  // Versicherung
+  const [versicherungen, setVersicherungen] = useState([]);
+  const [versLaden, setVersLaden] = useState(false);
+  const [versNeuShown, setVersNeuShown] = useState(false);
+  const [versNeuSaving, setVersNeuSaving] = useState(false);
+  const [versNeuError, setVersNeuError] = useState('');
+  const [deletingVersId, setDeletingVersId] = useState(null);
+  const [confirmDeleteVersId, setConfirmDeleteVersId] = useState(null);
+  const [versForm, setVersForm] = useState({ gesellschaft: '', art: 'haftpflicht', policennummer: '', beginn_datum: '', ablauf_datum: '', jahrespraemie: '', selbstbeteiligung: '', ansprechpartner: '', telefon: '', notiz: '' });
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -288,14 +305,21 @@ export default function FahrzeugDetailPage() {
     setKmLaden(false);
   }, [id]);
 
+  const loadVersicherungen = useCallback(async () => {
+    setVersLaden(true);
+    const { data } = await supabase.from('fahrzeug_versicherungen').select('*').eq('fahrzeug_id', id).order('ablauf_datum', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+    setVersicherungen(data ?? []);
+    setVersLaden(false);
+  }, [id]);
+
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (activeTab === 'tuev_uvv') loadPruefungen(); }, [activeTab, loadPruefungen]);
   useEffect(() => { if (activeTab === 'wartungen') loadWartungen(); }, [activeTab, loadWartungen]);
   useEffect(() => { if (activeTab === 'kilometerstand') loadKmEintraege(); }, [activeTab, loadKmEintraege]);
+  useEffect(() => { if (activeTab === 'versicherung') loadVersicherungen(); }, [activeTab, loadVersicherungen]);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
-  // Fahrzeugdaten
   async function handleSave(e) {
     e.preventDefault(); setSaveError(''); setSaveSuccess(false);
     if (!form.kennzeichen.trim()) { setSaveError('Kennzeichen ist Pflichtfeld.'); return; }
@@ -315,7 +339,6 @@ export default function FahrzeugDetailPage() {
     router.push('/dashboard/fahrzeuge');
   }
 
-  // Fristen
   async function handleFristenSave(e) {
     e.preventDefault(); setFristenError(''); setFristenSuccess(false); setFristenSaving(true);
     const { error } = await supabase.from('fahrzeuge').update({ tuev_bis: fristenForm.tuev_bis || null, hu_bis: fristenForm.hu_bis || null, uvv_bis: fristenForm.uvv_bis || null, updated_at: new Date().toISOString() }).eq('id', id);
@@ -327,7 +350,6 @@ export default function FahrzeugDetailPage() {
     setTimeout(() => setFristenSuccess(false), 3000);
   }
 
-  // Prüfeintrag
   async function handlePruefNeu(e) {
     e.preventDefault(); setPruefNeuError('');
     if (!pruefForm.pruef_datum) { setPruefNeuError('Prüfdatum ist Pflichtfeld.'); return; }
@@ -344,7 +366,6 @@ export default function FahrzeugDetailPage() {
 
   async function handlePruefDelete(pruefId) { setDeletingPruefId(pruefId); await supabase.from('fahrzeug_pruefungen').delete().eq('id', pruefId); setDeletingPruefId(null); loadPruefungen(); }
 
-  // Nächste Wartung
   async function handleNaechsteWartSave(e) {
     e.preventDefault(); setNaechsteWartError(''); setNaechsteWartSuccess(false); setNaechsteWartSaving(true);
     const { error } = await supabase.from('fahrzeuge').update({ naechste_wartung_datum: naechsteWart.datum || null, naechste_wartung_km: naechsteWart.km ? parseInt(naechsteWart.km) : null, updated_at: new Date().toISOString() }).eq('id', id);
@@ -354,7 +375,6 @@ export default function FahrzeugDetailPage() {
     setTimeout(() => setNaechsteWartSuccess(false), 3000);
   }
 
-  // Wartung
   async function handleWartNeu(e) {
     e.preventDefault(); setWartNeuError('');
     if (!wartForm.datum) { setWartNeuError('Datum ist Pflichtfeld.'); return; }
@@ -376,7 +396,6 @@ export default function FahrzeugDetailPage() {
 
   async function handleWartDelete(wartId) { setDeletingWartId(wartId); await supabase.from('fahrzeug_wartungen').delete().eq('id', wartId); setDeletingWartId(null); loadWartungen(); }
 
-  // Aktuellen km-Stand aktualisieren
   async function handleAktKmSave(e) {
     e.preventDefault(); setAktKmSaving(true);
     const km = parseInt(aktKmWert);
@@ -388,25 +407,14 @@ export default function FahrzeugDetailPage() {
     setTimeout(() => setAktKmSuccess(false), 2500);
   }
 
-  // Fahrtenbuch: Monat speichern (Sammel-Eingabe)
   async function handleEingabeSave() {
     setEingabeError('');
     const valid = eingabeZeilen.filter(z => z.datum && z.km_stand);
     if (valid.length === 0) { setEingabeError('Mindestens eine Fahrt mit Datum und km-Ende ist Pflichtfeld.'); return; }
     setEingabeSaving(true);
-    const rows = valid.map(z => ({
-      fahrzeug_id: id,
-      company_id: companyId,
-      datum: z.datum,
-      km_start: z.km_start ? parseInt(z.km_start) : null,
-      km_stand: parseInt(z.km_stand),
-      fahrer_name: z.fahrer_name.trim() || null,
-      zweck: z.zweck,
-      notiz: z.notiz.trim() || null,
-    }));
+    const rows = valid.map(z => ({ fahrzeug_id: id, company_id: companyId, datum: z.datum, km_start: z.km_start ? parseInt(z.km_start) : null, km_stand: parseInt(z.km_stand), fahrer_name: z.fahrer_name.trim() || null, zweck: z.zweck, notiz: z.notiz.trim() || null }));
     const { error } = await supabase.from('fahrzeug_km_eintraege').insert(rows);
     if (error) { setEingabeError(error.message); setEingabeSaving(false); return; }
-    // Auto-update fahrzeuge.km_stand wenn nötig
     const maxKm = Math.max(...rows.map(r => r.km_stand));
     if (fahrzeug && (fahrzeug.km_stand == null || maxKm > fahrzeug.km_stand)) {
       await supabase.from('fahrzeuge').update({ km_stand: maxKm, updated_at: new Date().toISOString() }).eq('id', id);
@@ -419,36 +427,47 @@ export default function FahrzeugDetailPage() {
     setKmAnsicht('overview');
   }
 
-  // Einzelnen km-Eintrag löschen
-  async function handleKmDelete(kmId) {
-    setDeletingKmId(kmId);
-    await supabase.from('fahrzeug_km_eintraege').delete().eq('id', kmId);
-    setDeletingKmId(null);
-    loadKmEintraege();
-  }
+  async function handleKmDelete(kmId) { setDeletingKmId(kmId); await supabase.from('fahrzeug_km_eintraege').delete().eq('id', kmId); setDeletingKmId(null); loadKmEintraege(); }
 
-  // CSV Export
   function handleExport(monatKey) {
-    const source = monatKey
-      ? kmEintraege.filter(e => formatMonthKey(e.datum) === monatKey)
-      : [...kmEintraege];
+    const source = monatKey ? kmEintraege.filter(e => formatMonthKey(e.datum) === monatKey) : [...kmEintraege];
     const sorted = source.sort((a, b) => new Date(a.datum) - new Date(b.datum) || (a.km_start ?? 0) - (b.km_start ?? 0));
     const rows = [['Datum', 'km-Start', 'km-Ende', 'Gefahrene km', 'Fahrer', 'Zweck', 'Notiz']];
-    sorted.forEach(e => {
-      const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : '';
-      rows.push([formatDate(e.datum), e.km_start ?? '', e.km_stand ?? '', tripKm, e.fahrer_name ?? '', ZWECK_OPTIONS.find(z => z.value === e.zweck)?.label ?? e.zweck, e.notiz ?? '']);
-    });
+    sorted.forEach(e => { const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : ''; rows.push([formatDate(e.datum), e.km_start ?? '', e.km_stand ?? '', tripKm, e.fahrer_name ?? '', ZWECK_OPTIONS.find(z => z.value === e.zweck)?.label ?? e.zweck, e.notiz ?? '']); });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fahrtenbuch_${fahrzeug?.kennzeichen ?? id}${monatKey ? '_' + monatKey : ''}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `fahrtenbuch_${fahrzeug?.kennzeichen ?? id}${monatKey ? '_' + monatKey : ''}.csv`; a.click(); URL.revokeObjectURL(url);
   }
 
-  // Monats-Statistiken berechnen
+  async function handleVersNeu(e) {
+    e.preventDefault(); setVersNeuError('');
+    if (!versForm.gesellschaft.trim()) { setVersNeuError('Versicherungsgesellschaft ist Pflichtfeld.'); return; }
+    setVersNeuSaving(true);
+    const ablauf = versForm.ablauf_datum || null;
+    const { error } = await supabase.from('fahrzeug_versicherungen').insert({ fahrzeug_id: id, company_id: companyId, gesellschaft: versForm.gesellschaft.trim(), art: versForm.art, policennummer: versForm.policennummer.trim() || null, beginn_datum: versForm.beginn_datum || null, ablauf_datum: ablauf, jahrespraemie: versForm.jahrespraemie ? parseFloat(versForm.jahrespraemie.replace(',', '.')) : null, selbstbeteiligung: versForm.selbstbeteiligung ? parseFloat(versForm.selbstbeteiligung.replace(',', '.')) : null, ansprechpartner: versForm.ansprechpartner.trim() || null, telefon: versForm.telefon.trim() || null, notiz: versForm.notiz.trim() || null });
+    if (!error && ablauf) {
+      await supabase.from('fahrzeuge').update({ versicherungs_ablauf: ablauf, updated_at: new Date().toISOString() }).eq('id', id);
+      setFahrzeug(prev => ({ ...prev, versicherungs_ablauf: ablauf }));
+    }
+    setVersNeuSaving(false);
+    if (error) { setVersNeuError(error.message); return; }
+    setVersNeuShown(false);
+    setVersForm({ gesellschaft: '', art: 'haftpflicht', policennummer: '', beginn_datum: '', ablauf_datum: '', jahrespraemie: '', selbstbeteiligung: '', ansprechpartner: '', telefon: '', notiz: '' });
+    loadVersicherungen();
+  }
+
+  async function handleVersDelete(versId) {
+    setDeletingVersId(versId);
+    await supabase.from('fahrzeug_versicherungen').delete().eq('id', versId);
+    setDeletingVersId(null);
+    setConfirmDeleteVersId(null);
+    loadVersicherungen();
+  }
+
+  function updateZeile(rowId, field, value) { setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z)); }
+  function removeZeile(rowId) { setEingabeZeilen(prev => prev.length > 1 ? prev.filter(z => z.rowId !== rowId) : prev); }
+  function addZeile() { setEingabeZeilen(prev => [...prev, newZeile()]); }
+
   const kmStats = useMemo(() => {
     const monate = {};
     kmEintraege.forEach(e => {
@@ -456,8 +475,7 @@ export default function FahrzeugDetailPage() {
       if (!monate[key]) monate[key] = { km: 0, fahrten: 0, dienst: 0, privat: 0, tank: 0, sonstiges: 0, eintraege: [] };
       const m = monate[key];
       const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : null;
-      m.fahrten++;
-      m.eintraege.push({ ...e, tripKm });
+      m.fahrten++; m.eintraege.push({ ...e, tripKm });
       if (tripKm != null && tripKm > 0) {
         m.km += tripKm;
         if (e.zweck === 'dienstfahrt') m.dienst += tripKm;
@@ -466,28 +484,11 @@ export default function FahrzeugDetailPage() {
         else m.sonstiges += tripKm;
       }
     });
-    const gesamtKm = Object.values(monate).reduce((s, m) => s + m.km, 0);
-    return { monate, gesamtKm, gesamtFahrten: kmEintraege.length };
+    return { monate, gesamtKm: Object.values(monate).reduce((s, m) => s + m.km, 0), gesamtFahrten: kmEintraege.length };
   }, [kmEintraege]);
 
-  // Zeilen-Helfer für Eingabe
-  function updateZeile(rowId, field, value) {
-    setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z));
-  }
-  function removeZeile(rowId) {
-    setEingabeZeilen(prev => prev.length > 1 ? prev.filter(z => z.rowId !== rowId) : prev);
-  }
-  function addZeile() {
-    setEingabeZeilen(prev => [...prev, newZeile()]);
-  }
-
   if (loading) return <div className="flex items-center justify-center h-48"><p className="text-gray-400 text-sm">Lädt…</p></div>;
-  if (notFound) return (
-    <div className="max-w-2xl">
-      <p className="text-sm text-gray-500">Fahrzeug nicht gefunden.</p>
-      <Link href="/dashboard/fahrzeuge" className="text-sm text-blue-600 hover:underline mt-2 inline-block">← Zurück zur Liste</Link>
-    </div>
-  );
+  if (notFound) return <div className="max-w-2xl"><p className="text-sm text-gray-500">Fahrzeug nicht gefunden.</p><Link href="/dashboard/fahrzeuge" className="text-sm text-blue-600 hover:underline mt-2 inline-block">← Zurück zur Liste</Link></div>;
 
   const title = fahrzeug ? [fahrzeug.marke, fahrzeug.modell].filter(Boolean).join(' ') : '';
   const zustandCls = ZUSTAND_COLORS[form.zustand] ?? 'bg-gray-50 text-gray-500';
@@ -497,24 +498,20 @@ export default function FahrzeugDetailPage() {
   const wartDatumStatus = datumsStatus(naechsteWart.datum);
   const wartKmStatus = kmStatus(naechsteWart.km ? parseInt(naechsteWart.km) : null, aktKm);
   const wartWarnCount = [wartDatumStatus, wartKmStatus].filter(s => s && (s.severity === 'danger' || s.severity === 'warn')).length;
-
-  // Eingabe-Summen live berechnen
-  const eingabeTotalKm = eingabeZeilen.reduce((s, z) => {
-    const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : 0;
-    return s + (km > 0 ? km : 0);
-  }, 0);
+  const aktuelleVers = versicherungen[0] ?? null;
+  const versAblaufStatus = aktuelleVers?.ablauf_datum ? pruefDatumsStatus(aktuelleVers.ablauf_datum) : (fahrzeug?.versicherungs_ablauf ? pruefDatumsStatus(fahrzeug.versicherungs_ablauf) : null);
+  const versWarn = versAblaufStatus && (versAblaufStatus.severity === 'danger' || versAblaufStatus.severity === 'warn');
+  const eingabeTotalKm = eingabeZeilen.reduce((s, z) => { const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : 0; return s + Math.max(0, km); }, 0);
   const eingabeValidRows = eingabeZeilen.filter(z => z.datum && z.km_stand).length;
 
   return (
     <div className="max-w-2xl">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-5">
         <Link href="/dashboard/fahrzeuge" className="hover:text-gray-600 transition">Fahrzeuge</Link>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
         <span className="text-gray-600 font-medium">{fahrzeug?.kennzeichen}</span>
       </div>
 
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{fahrzeug?.kennzeichen}</h1>
@@ -524,12 +521,13 @@ export default function FahrzeugDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit flex-wrap">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 flex-wrap">
         {TABS.map(tab => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`px-4 py-1.5 text-sm font-medium rounded-lg transition ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition ${activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
             {tab.label}
             {tab.id === 'tuev_uvv' && warnungen.length > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-red-500 text-white rounded-full">{warnungen.length}</span>}
             {tab.id === 'wartungen' && wartWarnCount > 0 && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-amber-500 text-white rounded-full">{wartWarnCount}</span>}
+            {tab.id === 'versicherung' && versWarn && <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-xs bg-red-500 text-white rounded-full">!</span>}
           </button>
         ))}
       </div>
@@ -589,7 +587,7 @@ export default function FahrzeugDetailPage() {
       {activeTab === 'tuev_uvv' && (
         <div className="space-y-5">
           {warnungen.length > 0 && <div className="space-y-2">{warnungen.map(w => <div key={w.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${w.status.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={w.status.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={w.status.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>{w.label}</strong> — {w.status.label}{w.datum ? ` (${formatDate(w.datum)})` : ''}</span></div>)}</div>}
-          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">Nächste fällige Prøfung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
+          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">Nächste fällige Prüfung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
           <form onSubmit={handleFristenSave} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Aktuelle Prüffristen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -602,7 +600,7 @@ export default function FahrzeugDetailPage() {
             <button type="submit" disabled={fristenSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{fristenSaving ? 'Speichert…' : 'Fristen speichern'}</button>
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prüfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufügen</button></div>
-          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prøfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis (nächste Prøfung)"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
           {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
@@ -632,369 +630,273 @@ export default function FahrzeugDetailPage() {
       {/* ── KILOMETERSTAND ── */}
       {activeTab === 'kilometerstand' && (
         <div className="space-y-5">
-
-          {/* Aktueller km-Stand — immer sichtbar */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-xs font-medium text-gray-400 mb-1">Aktueller Kilometerstand</p>
             <div className="flex items-end gap-4 flex-wrap">
-              <div>
-                <p className="text-3xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '—'}</p>
-                <p className="text-xs text-gray-400 mt-0.5">km</p>
-              </div>
+              <div><p className="text-3xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '—'}</p><p className="text-xs text-gray-400 mt-0.5">km</p></div>
               <form onSubmit={handleAktKmSave} className="flex items-center gap-2 mb-0.5">
-                <div className="relative">
-                  <input type="number" value={aktKmWert} onChange={e => setAktKmWert(e.target.value)} min="0" placeholder="Neuer km-Stand" className="w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8" />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span>
-                </div>
+                <div className="relative"><input type="number" value={aktKmWert} onChange={e => setAktKmWert(e.target.value)} min="0" placeholder="Neuer km-Stand" className="w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div>
                 <button type="submit" disabled={aktKmSaving} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">{aktKmSaving ? '…' : 'Aktualisieren'}</button>
                 {aktKmSuccess && <span className="text-xs text-emerald-600">✓</span>}
               </form>
             </div>
           </div>
 
-          {/* ── ÜBERSICHT ── */}
           {kmAnsicht === 'overview' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbücher</h2>
-                  {kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setEingabeMonat(currentMonthValue()); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"
-                >
-                  <PlusIcon /> Monat erfassen
-                </button>
+                <div><h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbücher</h2>{kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}</div>
+                <button type="button" onClick={() => { setEingabeMonat(currentMonthValue()); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Monat erfassen</button>
               </div>
-
-              {kmLaden ? (
-                <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-              ) : Object.keys(kmStats.monate).length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium text-gray-500">Noch kein Fahrtenbuch erfasst</p>
-                  <p className="text-xs text-gray-400 mt-1">Erfasse das erste Fahrtenbuch über den Button oben.</p>
-                </div>
+              {kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : Object.keys(kmStats.monate).length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center"><div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg></div><p className="text-sm font-medium text-gray-500">Noch kein Fahrtenbuch erfasst</p></div>
               ) : (
-                <div className="space-y-2">
-                  {Object.entries(kmStats.monate)
-                    .sort(([a], [b]) => b.localeCompare(a))
-                    .map(([key, m]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => { setDetailMonat(key); setKmAnsicht('detail'); }}
-                        className="w-full bg-white rounded-2xl border border-gray-100 px-5 py-4 hover:border-blue-100 hover:bg-blue-50/20 transition text-left group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-semibold text-gray-900">{formatMonthLabel(key)}</span>
-                              <span className="text-xs text-gray-400">{m.fahrten} Fahrt{m.fahrten !== 1 ? 'en' : ''}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-3 mt-1.5">
-                              {m.dienst > 0 && <span className="text-xs text-blue-600">{m.dienst.toLocaleString('de-DE')} km Dienst</span>}
-                              {m.privat > 0 && <span className="text-xs text-purple-600">{m.privat.toLocaleString('de-DE')} km Privat</span>}
-                              {m.tank > 0 && <span className="text-xs text-emerald-600">{m.tank.toLocaleString('de-DE')} km Tankfahrt</span>}
-                              {m.sonstiges > 0 && <span className="text-xs text-gray-400">{m.sonstiges.toLocaleString('de-DE')} km Sonstiges</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3 ml-4">
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-blue-600">{m.km.toLocaleString('de-DE')}</p>
-                              <p className="text-xs text-gray-400">km gesamt</p>
-                            </div>
-                            <ChevronRight />
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </div>
+                <div className="space-y-2">{Object.entries(kmStats.monate).sort(([a], [b]) => b.localeCompare(a)).map(([key, m]) => (
+                  <button key={key} type="button" onClick={() => { setDetailMonat(key); setKmAnsicht('detail'); }} className="w-full bg-white rounded-2xl border border-gray-100 px-5 py-4 hover:border-blue-100 hover:bg-blue-50/20 transition text-left group">
+                    <div className="flex items-center justify-between"><div className="flex-1 min-w-0"><div className="flex items-center gap-3"><span className="text-sm font-semibold text-gray-900">{formatMonthLabel(key)}</span><span className="text-xs text-gray-400">{m.fahrten} Fahrt{m.fahrten !== 1 ? 'en' : ''}</span></div><div className="flex flex-wrap gap-3 mt-1.5">{m.dienst > 0 && <span className="text-xs text-blue-600">{m.dienst.toLocaleString('de-DE')} km Dienst</span>}{m.privat > 0 && <span className="text-xs text-purple-600">{m.privat.toLocaleString('de-DE')} km Privat</span>}{m.tank > 0 && <span className="text-xs text-emerald-600">{m.tank.toLocaleString('de-DE')} km Tank</span>}</div></div><div className="flex items-center gap-3 ml-4"><div className="text-right"><p className="text-lg font-bold text-blue-600">{m.km.toLocaleString('de-DE')}</p><p className="text-xs text-gray-400">km gesamt</p></div><ChevronRight /></div></div>
+                  </button>
+                ))}</div>
               )}
             </div>
           )}
 
-          {/* ── MONAT ERFASSEN ── */}
           {kmAnsicht === 'eingabe' && (
             <div className="space-y-5">
-              {/* Header */}
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                  Übersicht
-                </button>
-                <h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2>
-              </div>
-
-              {/* Monat */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <LabelInput label="Monat" required>
-                  <input
-                    type="month"
-                    value={eingabeMonat}
-                    onChange={e => setEingabeMonat(e.target.value)}
-                    className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </LabelInput>
-              </div>
-
-              {/* Fahrten-Tabelle */}
+              <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2></div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-5"><LabelInput label="Monat" required><input type="month" value={eingabeMonat} onChange={e => setEingabeMonat(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" /></LabelInput></div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3>
-                  <span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} Zeilen vollständig</span>
-                </div>
-
-                {/* Spalten-Header */}
+                <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3><span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} vollständig</span></div>
                 <div className="overflow-x-auto -mx-1 px-1">
                   <div className="min-w-[580px]">
                     <div className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 px-1 mb-1.5">
-                      <span className="text-xs font-medium text-gray-400">Datum <span className="text-red-400">*</span></span>
-                      <span className="text-xs font-medium text-gray-400">km-Start</span>
-                      <span className="text-xs font-medium text-gray-400">km-Ende <span className="text-red-400">*</span></span>
-                      <span className="text-xs font-medium text-gray-400">km</span>
-                      <span className="text-xs font-medium text-gray-400">Fahrer</span>
-                      <span className="text-xs font-medium text-gray-400">Zweck</span>
-                      <span></span>
+                      <span className="text-xs font-medium text-gray-400">Datum <span className="text-red-400">*</span></span><span className="text-xs font-medium text-gray-400">km-Start</span><span className="text-xs font-medium text-gray-400">km-Ende <span className="text-red-400">*</span></span><span className="text-xs font-medium text-gray-400">km</span><span className="text-xs font-medium text-gray-400">Fahrer</span><span className="text-xs font-medium text-gray-400">Zweck</span><span></span>
                     </div>
-
-                    {/* Zeilen */}
                     <div className="space-y-1.5">
-                      {eingabeZeilen.map((z) => {
-                        const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : null;
-                        return (
-                          <div key={z.rowId} className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 items-center">
-                            <input
-                              type="date"
-                              value={z.datum}
-                              onChange={e => updateZeile(z.rowId, 'datum', e.target.value)}
-                              className={cellInputCls}
-                            />
-                            <input
-                              type="number"
-                              value={z.km_start}
-                              onChange={e => updateZeile(z.rowId, 'km_start', e.target.value)}
-                              placeholder="Start"
-                              min="0"
-                              className={cellInputCls}
-                            />
-                            <input
-                              type="number"
-                              value={z.km_stand}
-                              onChange={e => updateZeile(z.rowId, 'km_stand', e.target.value)}
-                              placeholder="Ende"
-                              min="0"
-                              className={cellInputCls}
-                            />
-                            <div className="text-center">
-                              {km != null && km >= 0
-                                ? <span className="text-xs font-semibold text-blue-600">{km}</span>
-                                : <span className="text-xs text-gray-300">—</span>}
-                            </div>
-                            <input
-                              type="text"
-                              value={z.fahrer_name}
-                              onChange={e => updateZeile(z.rowId, 'fahrer_name', e.target.value)}
-                              placeholder="Fahrer"
-                              className={cellInputCls}
-                            />
-                            <select
-                              value={z.zweck}
-                              onChange={e => updateZeile(z.rowId, 'zweck', e.target.value)}
-                              className={cellInputCls}
-                            >
-                              {ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => removeZeile(z.rowId)}
-                              disabled={eingabeZeilen.length === 1}
-                              className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"
-                              title="Zeile entfernen"
-                            >
-                              <TrashIcon />
-                            </button>
-                          </div>
-                        );
-                      })}
+                      {eingabeZeilen.map(z => { const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : null; return (
+                        <div key={z.rowId} className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 items-center">
+                          <input type="date" value={z.datum} onChange={e => updateZeile(z.rowId, 'datum', e.target.value)} className={cellInputCls} />
+                          <input type="number" value={z.km_start} onChange={e => updateZeile(z.rowId, 'km_start', e.target.value)} placeholder="Start" min="0" className={cellInputCls} />
+                          <input type="number" value={z.km_stand} onChange={e => updateZeile(z.rowId, 'km_stand', e.target.value)} placeholder="Ende" min="0" className={cellInputCls} />
+                          <div className="text-center">{km != null && km >= 0 ? <span className="text-xs font-semibold text-blue-600">{km}</span> : <span className="text-xs text-gray-300">—</span>}</div>
+                          <input type="text" value={z.fahrer_name} onChange={e => updateZeile(z.rowId, 'fahrer_name', e.target.value)} placeholder="Fahrer" className={cellInputCls} />
+                          <select value={z.zweck} onChange={e => updateZeile(z.rowId, 'zweck', e.target.value)} className={cellInputCls}>{ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
+                          <button type="button" onClick={() => removeZeile(z.rowId)} disabled={eingabeZeilen.length === 1} className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"><TrashIcon /></button>
+                        </div>
+                      ); })}
                     </div>
-
-                    {/* Zeile hinzufügen */}
-                    <button
-                      type="button"
-                      onClick={addZeile}
-                      className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"
-                    >
-                      <PlusIcon /> Zeile hinzufügen
-                    </button>
+                    <button type="button" onClick={addZeile} className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"><PlusIcon /> Zeile hinzufügen</button>
                   </div>
                 </div>
-
-                {/* Zwischensumme */}
-                {eingabeTotalKm > 0 && (
-                  <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-6">
-                    <div>
-                      <p className="text-xs text-gray-400">Gesamt km</p>
-                      <p className="text-lg font-bold text-blue-600">{eingabeTotalKm.toLocaleString('de-DE')} km</p>
-                    </div>
-                    {(() => {
-                      const dienst = eingabeZeilen.reduce((s, z) => { const km = (z.km_start && z.km_stand && z.zweck === 'dienstfahrt') ? parseInt(z.km_stand) - parseInt(z.km_start) : 0; return s + Math.max(0, km); }, 0);
-                      const privat = eingabeZeilen.reduce((s, z) => { const km = (z.km_start && z.km_stand && z.zweck === 'privatfahrt') ? parseInt(z.km_stand) - parseInt(z.km_start) : 0; return s + Math.max(0, km); }, 0);
-                      return <>
-                        {dienst > 0 && <div><p className="text-xs text-gray-400">Dienstfahrten</p><p className="text-sm font-semibold text-blue-600">{dienst.toLocaleString('de-DE')} km</p></div>}
-                        {privat > 0 && <div><p className="text-xs text-gray-400">Privatfahrten</p><p className="text-sm font-semibold text-purple-600">{privat.toLocaleString('de-DE')} km</p></div>}
-                      </>;
-                    })()}
-                  </div>
-                )}
+                {eingabeTotalKm > 0 && <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-6"><div><p className="text-xs text-gray-400">Gesamt km</p><p className="text-lg font-bold text-blue-600">{eingabeTotalKm.toLocaleString('de-DE')} km</p></div></div>}
               </div>
-
               {eingabeError && <p className="text-xs text-red-500">{eingabeError}</p>}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleEingabeSave}
-                  disabled={eingabeSaving}
-                  className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition"
-                >
-                  {eingabeSaving ? 'Speichert…' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setKmAnsicht('overview')}
-                  className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition"
-                >
-                  Abbrechen
-                </button>
-              </div>
+              <div className="flex gap-2"><button type="button" onClick={handleEingabeSave} disabled={eingabeSaving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{eingabeSaving ? 'Speichert…' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}</button><button type="button" onClick={() => setKmAnsicht('overview')} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>
             </div>
           )}
 
-          {/* ── MONATS-DETAIL ── */}
           {kmAnsicht === 'detail' && detailMonat && (() => {
             const m = kmStats.monate[detailMonat];
             if (!m) return null;
             const sorted = [...m.eintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || (a.km_start ?? 0) - (b.km_start ?? 0));
             return (
               <div className="space-y-5">
-                {/* Header */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                      Übersicht
-                    </button>
-                    <h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleExport(detailMonat)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"
-                    >
-                      <DownloadIcon /> CSV Export
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"
-                    >
-                      <PlusIcon /> Fahrten ergänzen
-                    </button>
-                  </div>
+                  <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2></div>
+                  <div className="flex gap-2"><button type="button" onClick={() => handleExport(detailMonat)} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"><DownloadIcon /> CSV</button><button type="button" onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Fahrten ergänzen</button></div>
                 </div>
-
-                {/* Zusammenfassung */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-blue-50 rounded-xl p-4 text-center">
-                    <p className="text-xs text-blue-600 font-medium">Gesamt km</p>
-                    <p className="text-xl font-bold text-blue-800">{m.km.toLocaleString('de-DE')}</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                    <p className="text-xs text-gray-400">Fahrten</p>
-                    <p className="text-xl font-bold text-gray-900">{m.fahrten}</p>
-                  </div>
-                  {m.dienst > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                      <p className="text-xs text-gray-400">Dienstfahrten</p>
-                      <p className="text-lg font-bold text-blue-600">{m.dienst.toLocaleString('de-DE')} km</p>
-                    </div>
-                  )}
-                  {m.privat > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                      <p className="text-xs text-gray-400">Privatfahrten</p>
-                      <p className="text-lg font-bold text-purple-600">{m.privat.toLocaleString('de-DE')} km</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Fahrten-Liste */}
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                  {/* Tabellen-Header */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[540px]">
-                      <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="text-left text-xs font-medium text-gray-400 px-5 py-3">Datum</th>
-                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Start</th>
-                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Ende</th>
-                          <th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km</th>
-                          <th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Fahrer</th>
-                          <th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Zweck</th>
-                          <th className="px-3 py-3"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {sorted.map(e => {
-                          const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck);
-                          return (
-                            <tr key={e.id} className="hover:bg-gray-50/50 transition">
-                              <td className="px-5 py-3 text-sm text-gray-700">{formatDate(e.datum)}</td>
-                              <td className="px-3 py-3 text-sm text-right text-gray-500">{e.km_start != null ? e.km_start.toLocaleString('de-DE') : '—'}</td>
-                              <td className="px-3 py-3 text-sm text-right text-gray-700 font-medium">{e.km_stand != null ? e.km_stand.toLocaleString('de-DE') : '—'}</td>
-                              <td className="px-3 py-3 text-sm text-right font-semibold text-blue-600">
-                                {e.tripKm != null && e.tripKm >= 0 ? e.tripKm.toLocaleString('de-DE') : '—'}
-                              </td>
-                              <td className="px-3 py-3 text-sm text-gray-500">{e.fahrer_name ?? '—'}</td>
-                              <td className="px-3 py-3">
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>
-                                  {zweckOpt?.label ?? e.zweck}
-                                </span>
-                              </td>
-                              <td className="px-3 py-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleKmDelete(e.id)}
-                                  disabled={deletingKmId === e.id}
-                                  className="text-gray-300 hover:text-red-400 transition disabled:opacity-40"
-                                >
-                                  <TrashIcon />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t border-gray-100 bg-gray-50/50">
-                          <td colSpan={3} className="px-5 py-3 text-xs font-medium text-gray-500">Gesamt</td>
-                          <td className="px-3 py-3 text-sm font-bold text-blue-700 text-right">{m.km.toLocaleString('de-DE')} km</td>
-                          <td colSpan={3}></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3"><div className="bg-blue-50 rounded-xl p-4 text-center"><p className="text-xs text-blue-600 font-medium">Gesamt km</p><p className="text-xl font-bold text-blue-800">{m.km.toLocaleString('de-DE')}</p></div><div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Fahrten</p><p className="text-xl font-bold text-gray-900">{m.fahrten}</p></div>{m.dienst > 0 && <div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Dienstfahrten</p><p className="text-lg font-bold text-blue-600">{m.dienst.toLocaleString('de-DE')} km</p></div>}{m.privat > 0 && <div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Privatfahrten</p><p className="text-lg font-bold text-purple-600">{m.privat.toLocaleString('de-DE')} km</p></div>}</div>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[500px]"><thead><tr className="border-b border-gray-100"><th className="text-left text-xs font-medium text-gray-400 px-5 py-3">Datum</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Start</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Ende</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Fahrer</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Zweck</th><th className="px-3 py-3"></th></tr></thead><tbody className="divide-y divide-gray-50">{sorted.map(e => { const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck); return (<tr key={e.id} className="hover:bg-gray-50/50 transition"><td className="px-5 py-3 text-sm text-gray-700">{formatDate(e.datum)}</td><td className="px-3 py-3 text-sm text-right text-gray-500">{e.km_start != null ? e.km_start.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-right text-gray-700 font-medium">{e.km_stand != null ? e.km_stand.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-right font-semibold text-blue-600">{e.tripKm != null && e.tripKm >= 0 ? e.tripKm.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-gray-500">{e.fahrer_name ?? '—'}</td><td className="px-3 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>{zweckOpt?.label ?? e.zweck}</span></td><td className="px-3 py-3"><button type="button" onClick={() => handleKmDelete(e.id)} disabled={deletingKmId === e.id} className="text-gray-300 hover:text-red-400 transition disabled:opacity-40"><TrashIcon /></button></td></tr>); })}</tbody><tfoot><tr className="border-t border-gray-100 bg-gray-50/50"><td colSpan={3} className="px-5 py-3 text-xs font-medium text-gray-500">Gesamt</td><td className="px-3 py-3 text-sm font-bold text-blue-700 text-right">{m.km.toLocaleString('de-DE')} km</td><td colSpan={3}></td></tr></tfoot></table></div></div>
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ── VERSICHERUNG ── */}
+      {activeTab === 'versicherung' && (
+        <div className="space-y-5">
+
+          {/* Ablauf-Warnung */}
+          {versAblaufStatus && (versAblaufStatus.severity === 'danger' || versAblaufStatus.severity === 'warn') && aktuelleVers && (
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${versAblaufStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}>
+              <WarnIcon cls={versAblaufStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} />
+              <span className={versAblaufStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}>
+                <strong>Versicherung läuft ab</strong> — {versAblaufStatus.label} ({formatDate(aktuelleVers.ablauf_datum)})
+              </span>
+            </div>
+          )}
+
+          {/* Aktuelle Versicherung — prominente Karte */}
+          {!versLaden && aktuelleVers && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-400">Aktuelle Versicherung</span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Aktuell</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">{aktuelleVers.gesellschaft}</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{VERS_ART_OPTIONS.find(o => o.value === aktuelleVers.art)?.label ?? aktuelleVers.art}</p>
+                </div>
+                {aktuelleVers.jahrespraemie && (
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-gray-400">Jahresprämie</p>
+                    <p className="text-xl font-bold text-gray-900">{formatEuro(aktuelleVers.jahrespraemie)}</p>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {aktuelleVers.policennummer && (
+                  <div><p className="text-xs text-gray-400">Policennummer</p><p className="text-sm font-medium text-gray-700">{aktuelleVers.policennummer}</p></div>
+                )}
+                {aktuelleVers.beginn_datum && (
+                  <div><p className="text-xs text-gray-400">Versicherungsbeginn</p><p className="text-sm font-medium text-gray-700">{formatDate(aktuelleVers.beginn_datum)}</p></div>
+                )}
+                {aktuelleVers.ablauf_datum && (
+                  <div>
+                    <p className="text-xs text-gray-400">Ablaufdatum</p>
+                    <p className={`text-sm font-medium ${versAblaufStatus && versAblaufStatus.severity !== 'ok' ? versAblaufStatus.cls : 'text-gray-700'}`}>
+                      {formatDate(aktuelleVers.ablauf_datum)}
+                      {versAblaufStatus && versAblaufStatus.severity !== 'ok' && <span className="block text-xs">{versAblaufStatus.label}</span>}
+                    </p>
+                  </div>
+                )}
+                {aktuelleVers.selbstbeteiligung && (
+                  <div><p className="text-xs text-gray-400">Selbstbeteiligung</p><p className="text-sm font-medium text-gray-700">{formatEuro(aktuelleVers.selbstbeteiligung)}</p></div>
+                )}
+                {aktuelleVers.ansprechpartner && (
+                  <div><p className="text-xs text-gray-400">Ansprechpartner</p><p className="text-sm font-medium text-gray-700">{aktuelleVers.ansprechpartner}</p></div>
+                )}
+                {aktuelleVers.telefon && (
+                  <div><p className="text-xs text-gray-400">Telefon</p><a href={`tel:${aktuelleVers.telefon}`} className="text-sm font-medium text-blue-600 hover:underline">{aktuelleVers.telefon}</a></div>
+                )}
+              </div>
+              {aktuelleVers.notiz && (
+                <p className="text-sm text-gray-500 mt-4 italic border-t border-gray-100 pt-3">{aktuelleVers.notiz}</p>
+              )}
+            </div>
+          )}
+
+          {/* Header + Button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">Versicherungshistorie</h2>
+            <button type="button" onClick={() => setVersNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition">
+              <PlusIcon /> Versicherung hinzufügen
+            </button>
+          </div>
+
+          {/* Neu-Formular */}
+          {versNeuShown && (
+            <form onSubmit={handleVersNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4">
+              <h3 className="text-xs font-semibold text-gray-600">Versicherung erfassen</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <LabelInput label="Versicherungsgesellschaft" required>
+                  <input type="text" required value={versForm.gesellschaft} onChange={e => setVersForm(f => ({ ...f, gesellschaft: e.target.value }))} placeholder="z. B. ADAC, Allianz, HUK-Coburg…" className={inputCls} />
+                </LabelInput>
+                <LabelInput label="Versicherungsart">
+                  <select value={versForm.art} onChange={e => setVersForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>
+                    {VERS_ART_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </LabelInput>
+                <LabelInput label="Policennummer / Versicherungsnummer">
+                  <input type="text" value={versForm.policennummer} onChange={e => setVersForm(f => ({ ...f, policennummer: e.target.value }))} placeholder="z. B. DE123456789" className={inputCls} />
+                </LabelInput>
+                <div />
+                <LabelInput label="Versicherungsbeginn">
+                  <input type="date" value={versForm.beginn_datum} onChange={e => setVersForm(f => ({ ...f, beginn_datum: e.target.value }))} className={inputCls} />
+                </LabelInput>
+                <LabelInput label="Ablaufdatum">
+                  <input type="date" value={versForm.ablauf_datum} onChange={e => setVersForm(f => ({ ...f, ablauf_datum: e.target.value }))} className={inputCls} />
+                </LabelInput>
+                <LabelInput label="Jahresprämie (€)">
+                  <div className="relative">
+                    <input type="text" value={versForm.jahrespraemie} onChange={e => setVersForm(f => ({ ...f, jahrespraemie: e.target.value }))} placeholder="z. B. 1.200,00" className={inputCls + ' pr-6'} />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                  </div>
+                </LabelInput>
+                <LabelInput label="Selbstbeteiligung (€)">
+                  <div className="relative">
+                    <input type="text" value={versForm.selbstbeteiligung} onChange={e => setVersForm(f => ({ ...f, selbstbeteiligung: e.target.value }))} placeholder="z. B. 500,00" className={inputCls + ' pr-6'} />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                  </div>
+                </LabelInput>
+                <LabelInput label="Ansprechpartner">
+                  <input type="text" value={versForm.ansprechpartner} onChange={e => setVersForm(f => ({ ...f, ansprechpartner: e.target.value }))} placeholder="Name des Ansprechpartners" className={inputCls} />
+                </LabelInput>
+                <LabelInput label="Telefon">
+                  <input type="tel" value={versForm.telefon} onChange={e => setVersForm(f => ({ ...f, telefon: e.target.value }))} placeholder="z. B. 089 12345678" className={inputCls} />
+                </LabelInput>
+              </div>
+              <LabelInput label="Notizen">
+                <textarea value={versForm.notiz} onChange={e => setVersForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Besondere Konditionen, Schadenfreiheitsrabatt, etc." className={inputCls + ' resize-none'} />
+              </LabelInput>
+              {versNeuError && <p className="text-xs text-red-500">{versNeuError}</p>}
+              <div className="flex gap-2">
+                <button type="submit" disabled={versNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{versNeuSaving ? 'Speichert…' : 'Versicherung speichern'}</button>
+                <button type="button" onClick={() => setVersNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button>
+              </div>
+            </form>
+          )}
+
+          {/* History-Liste */}
+          {versLaden ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+          ) : versicherungen.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+              <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-500">Noch keine Versicherung erfasst</p>
+              <p className="text-xs text-gray-400 mt-1">Füge die aktuelle Versicherung über den Button oben hinzu.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {versicherungen.map((v, i) => {
+                const ablaufS = v.ablauf_datum ? pruefDatumsStatus(v.ablauf_datum) : null;
+                const artLabel = VERS_ART_OPTIONS.find(o => o.value === v.art)?.label ?? v.art;
+                const isConfirmDel = confirmDeleteVersId === v.id;
+                return (
+                  <div key={v.id} className={`bg-white rounded-2xl border px-5 py-4 ${i === 0 ? 'border-blue-100' : 'border-gray-100'}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900">{v.gesellschaft}</span>
+                          <span className="text-xs text-gray-400">{artLabel}</span>
+                          {i === 0 && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Aktuell</span>}
+                          {i > 0 && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-400">Archiv</span>}
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
+                          {v.policennummer && <span className="text-xs text-gray-400">Police: {v.policennummer}</span>}
+                          {v.beginn_datum && <span className="text-xs text-gray-400">Von: {formatDate(v.beginn_datum)}</span>}
+                          {v.ablauf_datum && (
+                            <span className={`text-xs ${ablaufS && ablaufS.severity !== 'ok' ? ablaufS.cls : 'text-gray-400'}`}>
+                              Bis: {formatDate(v.ablauf_datum)}{ablaufS && ablaufS.severity !== 'ok' ? ` (${ablaufS.label})` : ''}
+                            </span>
+                          )}
+                          {v.jahrespraemie && <span className="text-xs text-gray-500 font-medium">{formatEuro(v.jahrespraemie)}/Jahr</span>}
+                          {v.selbstbeteiligung && <span className="text-xs text-gray-400">SB: {formatEuro(v.selbstbeteiligung)}</span>}
+                          {v.ansprechpartner && <span className="text-xs text-gray-400">{v.ansprechpartner}{v.telefon ? ` · ${v.telefon}` : ''}</span>}
+                        </div>
+                        {v.notiz && <p className="text-xs text-gray-400 mt-1 italic">{v.notiz}</p>}
+                      </div>
+                      <div className="shrink-0 flex items-center gap-1">
+                        {isConfirmDel ? (
+                          <>
+                            <button type="button" onClick={() => handleVersDelete(v.id)} disabled={deletingVersId === v.id} className="px-2.5 py-1 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition">{deletingVersId === v.id ? '…' : 'Löschen'}</button>
+                            <button type="button" onClick={() => setConfirmDeleteVersId(null)} className="px-2.5 py-1 text-xs text-gray-500 rounded-lg hover:bg-gray-100 transition">Abbruch</button>
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => setConfirmDeleteVersId(v.id)} className="text-gray-300 hover:text-red-400 transition mt-0.5"><TrashIcon /></button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
