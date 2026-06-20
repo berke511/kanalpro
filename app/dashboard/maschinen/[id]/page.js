@@ -38,11 +38,41 @@ const TABS = [
 ];
 
 const PRUEFUNG_ART_OPTIONS = [
-  { value: 'uvv',           label: 'UVV-Prüfung' },
-  { value: 'dguv_v3',       label: 'DGUV V3' },
-  { value: 'dguv_v54',      label: 'DGUV V54' },
-  { value: 'wiederkehrend', label: 'Wiederkehrende Prüfung' },
-  { value: 'sonstiges',     label: 'Sonstige' },
+  // ── Elektrische Betriebsmittel ──────────────────────────────────────────────
+  { value: 'uvv',                     label: 'UVV-Prüfung (DGUV V1)' },
+  { value: 'dguv_v3_ortsveraenderl',  label: 'DGUV V3 – Elektrische Betriebsmittel (ortsveränderlich)' },
+  { value: 'dguv_v4_ortsfest',        label: 'DGUV V4 – Ortsfeste elektrische Anlagen' },
+  { value: 'vde_0701_0702',           label: 'VDE 0701/0702 – Wiederholungsprüfung nach Reparatur' },
+  // ── Hebezeuge / Krane ───────────────────────────────────────────────────────
+  { value: 'dguv_v52_krane',          label: 'DGUV V52 – Krane' },
+  { value: 'dguv_v54_winden',         label: 'DGUV V54 – Winden, Hub- und Zuggeräte' },
+  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebühne / Arbeitsbühne' },
+  { value: 'lastaufnahmemittel',      label: 'Lastaufnahmemittel-Prüfung (DGUV V54)' },
+  // ── Druckgeräte / Hydraulik ─────────────────────────────────────────────────
+  { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprüfung (BetrSichV / DGRL 2014/68/EU)' },
+  { value: 'druckbehaelter_zuev',     label: 'Druckbehälter – ZÜS-Prüfung (§ 15 BetrSichV)' },
+  { value: 'druckpruefung_leitung',   label: 'Druckprüfung Leitung / Hydraulik' },
+  // ── Fahrzeuge / Flurförderzeuge ─────────────────────────────────────────────
+  { value: 'dguv_v68_fahrzeuge',      label: 'DGUV V68/V70 – Fahrzeuge / Flurförderzeuge' },
+  { value: 'hauptuntersuchung',       label: 'Hauptuntersuchung HU (TÜV / § 57a StVZO)' },
+  { value: 'sicherheitspruefung_sp',  label: 'Sicherheitsprüfung SP (§ 29 StVZO)' },
+  { value: 'abgasuntersuchung',       label: 'Abgasuntersuchung AU' },
+  // ── Rohr- und Kanaltechnik ──────────────────────────────────────────────────
+  { value: 'kanalinspektion_tv',      label: 'Kanalinspektion (DIN EN 13508-2 / TV-Inspektion)' },
+  { value: 'dichtheitspruefung',      label: 'Dichtheitsprüfung (DIN EN 1610 / § 60 WHG)' },
+  { value: 'abscheider_din4040',      label: 'Abscheiderprüfung Fett (DIN 4040-100)' },
+  { value: 'abscheider_lfa_din1999',  label: 'Leichtfløssigkeitsabscheider (DIN 1999-100)' },
+  { value: 'eigenüberwachung_ekvo',   label: 'Eigenüberwachung Abwasser (EKVO / SüwVO Abw)' },
+  { value: 'schlauchliner_din11296',  label: 'Schlauchliner-Abnahme (DIN EN ISO 11296-4)' },
+  { value: 'kurzliner_abnahme',       label: 'Kurzliner-Abnahme (DIN EN 13566)' },
+  { value: 'druckrohrleitung_trbs',   label: 'Druckrohrleitung Abwasser (TRBS 1201 / DGRL)' },
+  // ── Allgemein / BetrSichV ───────────────────────────────────────────────────
+  { value: 'betrsichv_arbeitsmittel', label: 'Arbeitsmittelprüfung (§ 3 BetrSichV)' },
+  { value: 'zuev_pruefung',           label: 'ZÜS-Prüfung – Zugelassene Überwachungsstelle' },
+  { value: 'sachverstaendiger',       label: 'Sachverständigenprüfung (extern)' },
+  { value: 'wiederkehrend',           label: 'Wiederkehrende Prüfung (allgemein)' },
+  { value: 'interne_pruefung',        label: 'Interne Sicherheitsprüfung' },
+  { value: 'sonstiges',               label: 'Sonstige' },
 ];
 
 const PRUEFUNG_ERGEBNIS_CONFIG = {
@@ -503,7 +533,7 @@ export default function MaschinenDetailPage() {
                         </div>
                         <div className="text-xs text-gray-500 flex flex-wrap gap-3">
                           <span>Datum: {fmtDate(p.datum)}</span>
-                          {p.pruefer && <span>Prøfer: {p.pruefer}</span>}
+                          {p.pruefer && <span>Prüfer: {p.pruefer}</span>}
                           {p.naechstes_datum && <span>Nächste: {fmtDate(p.naechstes_datum)}</span>}
                           {p.kosten != null && <span>Kosten: {fmtCurrency(p.kosten)}</span>}
                         </div>
@@ -541,9 +571,9 @@ export default function MaschinenDetailPage() {
                   <input type="date" value={pruefungForm.datum} onChange={e => setPruefungForm(f => ({ ...f, datum: e.target.value }))} required className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Prüfer">
-                  <input type="text" value={pruefungForm.pruefer} onChange={e => setPruefungForm(f => ({ ...f, pruefer: e.target.value }))} placeholder="Name des Prøfers / der Stelle" className={inputCls()} />
+                  <input type="text" value={pruefungForm.pruefer} onChange={e => setPruefungForm(f => ({ ...f, pruefer: e.target.value }))} placeholder="Name des Prüfers / der Stelle" className={inputCls()} />
                 </LabelInput>
-                <LabelInput label="Nächste Prøfung am">
+                <LabelInput label="Nächste Prüfung am">
                   <input type="date" value={pruefungForm.naechstes_datum} onChange={e => setPruefungForm(f => ({ ...f, naechstes_datum: e.target.value }))} className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Kosten (€)">
