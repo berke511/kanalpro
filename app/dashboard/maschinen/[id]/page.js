@@ -5,7 +5,7 @@ import supabase from '@/lib/supabase';
 
 // ── Konstanten ────────────────────────────────────────────────────────────────
 const MASCHINENTYP_OPTIONS = [
-  { value: 'hebebuehne',       label: 'Hebebøhne' },
+  { value: 'hebebuehne',       label: 'Hebebühne' },
   { value: 'kompressor',       label: 'Kompressor' },
   { value: 'generator',        label: 'Generator / Aggregat' },
   { value: 'kran',             label: 'Kran' },
@@ -14,7 +14,7 @@ const MASCHINENTYP_OPTIONS = [
   { value: 'werkzeugmaschine', label: 'Werkzeugmaschine' },
   { value: 'pumpe',            label: 'Pumpe' },
   { value: 'druckluftwerkzeug',label: 'Druckluftwerkzeug' },
-  { value: 'hochdruckspueler', label: 'Hochdruckspøler' },
+  { value: 'hochdruckspueler', label: 'Hochdruckspüler' },
   { value: 'fraese',           label: 'Fräse / Bohrwerk' },
   { value: 'messgeraet',       label: 'Messgerät' },
   { value: 'pruefgeraet',      label: 'Prüfgerät' },
@@ -36,7 +36,15 @@ const TABS = [
   { id: 'geraeteverwaltung',    label: 'Geräteverwaltung' },
   { id: 'wartungen_pruefungen', label: 'Wartungen & Prüfungen' },
   { id: 'standort',             label: 'Standort & Verfügbarkeit' },
+  { id: 'historie',             label: 'Historie' },
 ];
+
+const MASCHINEN_FELD_LABELS = {
+  name: 'Name', typ: 'Typ', hersteller: 'Hersteller', modell: 'Modell',
+  seriennummer: 'Seriennummer', inventarnummer: 'Inventarnummer', baujahr: 'Baujahr',
+  kaufdatum: 'Kaufdatum', anschaffungswert: 'Anschaffungswert', lagerort: 'Lagerort',
+  zustand: 'Zustand', naechste_pruefung_datum: 'Nächste Prüfung', notiz: 'Notiz',
+};
 
 const VERFUEGBARKEIT_CONFIG = {
   verfuegbar:    { label: 'Verfügbar',     bg: 'bg-green-100',  text: 'text-green-700' },
@@ -59,12 +67,12 @@ const PRUEFUNG_ART_OPTIONS = [
   // ── Hebezeuge / Krane ───────────────────────────────────────────────────────
   { value: 'dguv_v52_krane',          label: 'DGUV V52 – Krane' },
   { value: 'dguv_v54_winden',         label: 'DGUV V54 – Winden, Hub- und Zuggeräte' },
-  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebøhne / Arbeitsbühne' },
+  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebøhne / Arbeitsbøhne' },
   { value: 'lastaufnahmemittel',      label: 'Lastaufnahmemittel-Prüfung (DGUV V54)' },
   // ── Druckgeräte / Hydraulik ─────────────────────────────────────────────────
-  { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprüfung (BetrSichV / DGRL 2014/68/EU)' },
+  { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprøfung (BetrSichV / DGRL 2014/68/EU)' },
   { value: 'druckbehaelter_zuev',     label: 'Druckbehälter – ZÜS-Prüfung (§ 15 BetrSichV)' },
-  { value: 'druckpruefung_leitung',   label: 'Druckprüfung Leitung / Hydraulik' },
+  { value: 'druckpruefung_leitung',   label: 'Druckprøfung Leitung / Hydraulik' },
   // ── Flurförderzeuge ─────────────────────────────────────────────────────────
   { value: 'dguv_v68_fahrzeuge',      label: 'DGUV V68/V70 – Flurförderzeuge / Stapler' },
   // ── Rohr- und Kanaltechnik ──────────────────────────────────────────────────
@@ -72,14 +80,14 @@ const PRUEFUNG_ART_OPTIONS = [
   { value: 'dichtheitspruefung',      label: 'Dichtheitsprüfung (DIN EN 1610 / § 60 WHG)' },
   { value: 'abscheider_din4040',      label: 'Abscheiderprüfung Fett (DIN 4040-100)' },
   { value: 'abscheider_lfa_din1999',  label: 'Leichtflüssigkeitsabscheider (DIN 1999-100)' },
-  { value: 'eigenüberwachung_ekvo',   label: 'Eigenüberwachung Abwasser (EKVO / SüwVO Abw)' },
+  { value: 'eigenüuerwachung_ekvo',   label: 'Eigenøberwachung Abwasser (EKVO / SøwVO Abw)' },
   { value: 'schlauchliner_din11296',  label: 'Schlauchliner-Abnahme (DIN EN ISO 11296-4)' },
   { value: 'kurzliner_abnahme',       label: 'Kurzliner-Abnahme (DIN EN 13566)' },
   { value: 'druckrohrleitung_trbs',   label: 'Druckrohrleitung Abwasser (TRBS 1201 / DGRL)' },
   // ── Allgemein / BetrSichV ───────────────────────────────────────────────────
   { value: 'betrsichv_arbeitsmittel', label: 'Arbeitsmittelprüfung (§ 3 BetrSichV)' },
   { value: 'zuev_pruefung',           label: 'ZÜS-Prüfung – Zugelassene Überwachungsstelle' },
-  { value: 'sachverstaendiger',       label: 'Sachverständigenprüfung (extern)' },
+  { value: 'sachverstaendiger',       label: 'Sachverständigenprøfung (extern)' },
   { value: 'wiederkehrend',           label: 'Wiederkehrende Prüfung (allgemein)' },
   { value: 'interne_pruefung',        label: 'Interne Sicherheitsprüfung' },
   { value: 'sonstiges',               label: 'Sonstige' },
@@ -165,6 +173,8 @@ export default function MaschinenDetailPage() {
   const [loading, setLoading]       = useState(true);
   const [activeTab, setActiveTab]   = useState('geraeteverwaltung');
   const [companyId, setCompanyId]   = useState(null);
+  const [userId, setUserId]         = useState(null);
+  const [userName, setUserName]     = useState('');
 
   // Geräteverwaltung
   const [editing, setEditing]       = useState(false);
@@ -188,8 +198,9 @@ export default function MaschinenDetailPage() {
   const [savingWartung, setSavingWartung]   = useState(false);
   const [delWartungId, setDelWartungId]     = useState(null);
 
-  // Standort & Verfügbarkeit
+  // Standort & Verføgbarkeit
   const [standort, setStandort]             = useState(null);
+
   const [standortLaden, setStandortLaden]   = useState(false);
   const [standortForm, setStandortForm]     = useState({ ...EMPTY_STANDORT });
   const [standortEditing, setStandortEditing] = useState(false);
@@ -197,9 +208,15 @@ export default function MaschinenDetailPage() {
   const [standortError, setStandortError]   = useState('');
   const [standortSaved, setStandortSaved]   = useState(false);
 
+  // Historie
+  const [historieEintraege, setHistorieEintraege] = useState([]);
+  const [historieLaden, setHistorieLaden]         = useState(false);
+
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
+      setUserName(user.user_metadata?.full_name || user.email || user.id);
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
       if (member) setCompanyId(member.company_id);
     }
@@ -248,6 +265,13 @@ export default function MaschinenDetailPage() {
     setWartungen(data ?? []);
   }, [id]);
 
+  const loadHistorie = useCallback(async () => {
+    setHistorieLaden(true);
+    const { data } = await supabase.from('maschinen_historie').select('*').eq('maschine_id', id).order('zeitpunkt', { ascending: false }).limit(200);
+    setHistorieEintraege(data ?? []);
+    setHistorieLaden(false);
+  }, [id]);
+
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
@@ -258,6 +282,7 @@ export default function MaschinenDetailPage() {
   }, [activeTab, loadPruefungen, loadWartungen]);
 
   useEffect(() => { if (activeTab === 'standort') loadStandort(); }, [activeTab, loadStandort]);
+  useEffect(() => { if (activeTab === 'historie') loadHistorie(); }, [activeTab, loadHistorie]);
 
   // ── Geräteverwaltung ──────────────────────────────────────────────────────
   function startEdit() {
@@ -283,7 +308,9 @@ export default function MaschinenDetailPage() {
   async function handleSave(e) {
     e.preventDefault();
     setSaving(true);
-    await supabase.from('maschinen').update({
+
+    // Detect changed fields for Änderungsprotokoll
+    const neuWerte = {
       name:             form.name.trim(),
       typ:              form.typ,
       hersteller:       form.hersteller.trim()    || null,
@@ -297,7 +324,22 @@ export default function MaschinenDetailPage() {
       zustand:          form.zustand,
       naechste_pruefung_datum: form.naechste_pruefung_datum || null,
       notiz:            form.notiz.trim()          || null,
-    }).eq('id', id);
+    };
+    const changedFields = Object.keys(MASCHINEN_FELD_LABELS).reduce((acc, key) => {
+      const alt = maschine?.[key] ?? null;
+      const neu = neuWerte[key] ?? null;
+      if (String(alt ?? '') !== String(neu ?? '')) acc.push({ feld: MASCHINEN_FELD_LABELS[key], alt: alt ?? '', neu: neu ?? '' });
+      return acc;
+    }, []);
+
+    await supabase.from('maschinen').update(neuWerte).eq('id', id);
+
+    // Write history entry
+    if (changedFields.length > 0 && companyId) {
+      await supabase.from('maschinen_historie').insert({ maschine_id: id, company_id: companyId, benutzer_id: userId || null, benutzer_name: userName || null, aktion: 'Änderung', felder: changedFields });
+      if (activeTab === 'historie') loadHistorie();
+    }
+
     await load();
     setEditing(false);
     setSaving(false);
@@ -574,7 +616,7 @@ export default function MaschinenDetailPage() {
       {activeTab === 'wartungen_pruefungen' && (
         <div className="space-y-6">
 
-          {/* Prüfungen-Karte */}
+          {/* Prøfungen-Karte */}
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
@@ -741,7 +783,7 @@ export default function MaschinenDetailPage() {
                 <LabelInput label="Nächste Wartung bei Bst.">
                   <input type="number" value={wartungForm.naechste_stunden} onChange={e => setWartungForm(f => ({ ...f, naechste_stunden: e.target.value }))} min="0" step="0.1" placeholder="0.0" className={inputCls()} />
                 </LabelInput>
-                <LabelInput label="Werkstatt / Durchgeführt von">
+                <LabelInput label="Werkstatt / Durchgeføhrt von">
                   <input type="text" value={wartungForm.werkstatt} onChange={e => setWartungForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z.B. Intern, Werkstatt Müller" className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Kosten (€)">
@@ -799,7 +841,7 @@ export default function MaschinenDetailPage() {
                       onChange={e => setStandortForm(f => ({ ...f, standort: e.target.value }))}
                       placeholder="z. B. Lager Köln, Baustelle A4" />
                   </LabelInput>
-                  <LabelInput label="Verfügbarkeitsstatus">
+                  <LabelInput label="Verføgbarkeitsstatus">
                     <select className={inputCls()} value={standortForm.verfuegbarkeitsstatus}
                       onChange={e => setStandortForm(f => ({ ...f, verfuegbarkeitsstatus: e.target.value }))}>
                       {Object.entries(VERFUEGBARKEIT_CONFIG).map(([v, c]) => (
@@ -876,7 +918,7 @@ export default function MaschinenDetailPage() {
                 )}
                 {standort.naechste_verfuegbarkeit && (
                   <div>
-                    <p className="text-xs text-gray-400 mb-1">Nächste Verføgbarkeit</p>
+                    <p className="text-xs text-gray-400 mb-1">Nächste Verfügbarkeit</p>
                     <p className="text-gray-900 font-medium">
                       {new Date(standort.naechste_verfuegbarkeit).toLocaleDateString('de-DE')}
                     </p>
@@ -896,6 +938,54 @@ export default function MaschinenDetailPage() {
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* ── HISTORIE ── */}
+      {activeTab === 'historie' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">Änderungsprotokoll</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Alle Änderungen an den Maschinendaten</p>
+          </div>
+          {historieLaden ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+          ) : historieEintraege.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+              <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-500">Noch keine Änderungen protokolliert</p>
+              <p className="text-xs text-gray-400 mt-1">Änderungen an den Maschinendaten werden hier aufgezeichnet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {historieEintraege.map(eintrag => (
+                <div key={eintrag.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{eintrag.aktion}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(eintrag.zeitpunkt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {eintrag.benutzer_name && <span className="text-xs text-gray-400">· {eintrag.benutzer_name}</span>}
+                  </div>
+                  <div className="space-y-1.5">
+                    {(eintrag.felder ?? []).map((f, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <span className="font-medium text-gray-600 shrink-0 w-32">{f.feld}</span>
+                        <span className="text-gray-400 shrink-0">von</span>
+                        <span className="text-red-500 line-through truncate max-w-xs">{f.alt !== '' && f.alt != null ? String(f.alt) : <span className="italic text-gray-300">leer</span>}</span>
+                        <span className="text-gray-400 shrink-0">zu</span>
+                        <span className="text-emerald-600 font-medium truncate max-w-xs">{f.neu !== '' && f.neu != null ? String(f.neu) : <span className="italic text-gray-300 font-normal">leer</span>}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
