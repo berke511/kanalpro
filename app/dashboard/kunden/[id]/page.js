@@ -36,7 +36,7 @@ export default function KundeDetail() {
 
   useEffect(() => {
     async function load() {
-      const { data: k} = await supabase.from('kunden').select('*').eq('id', id).single();
+      const { data:k } = await supabase.from('kunden').select('*').eq('id', id).single();
       if (!k) { router.push('/dashboard/kunden'); return; }
       setForm({
         name: k.name ?? '',
@@ -103,11 +103,13 @@ export default function KundeDetail() {
   async function addObjekt() {
     if (!neuesObjekt.bezeichnung.trim()) return;
     const { data: { user } } = await supabase.auth.getUser();
+    const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
     const { data } = await supabase.from('objekte').insert({
       bezeichnung: neuesObjekt.bezeichnung,
       adresse: neuesObjekt.adresse || null,
       kunde_id: id,
       user_id: user.id,
+      company_id: member?.company_id ?? null,
     }).select().single();
     if (data) {
       setObjekte(prev => [...prev, data]);
@@ -133,10 +135,10 @@ export default function KundeDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{anzeigeName}</h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${form.kundentyp === 'firma' ? 'bg-purple-50 text-purple-700' : 'bg-gray-50 text-gray-600'}`}>
-              {form.kundentyp === 'firma' ? '🏢 Firma' : '👤 Privat'}
+              {form.kundentyp === 'firma' ? 'Firma' : 'Privat'}
             </span>
-            {form.ist_vertragskunde && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700">📄 Vertrag</span>}
-            {form.ist_wartungskunde && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-50 text-orange-700">🔧 Wartung</span>}
+            {form.ist_vertragskunde && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700">Vertrag</span>}
+            {form.ist_wartungskunde && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-orange-50 text-orange-700">Wartung</span>}
           </div>
         </div>
       </div>
@@ -145,9 +147,9 @@ export default function KundeDetail() {
       <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit">
         {/* TAB */}
         {[
-          { key: 'stammdaten', label: '👤 Stammdaten' },
-          { key: 'objekte',    label: `🏠 Objekte (${objekte.length})` },
-          { key: 'historie',   label: `📋 Einsätze (${auftraege.length})` },
+          { key: 'stammdaten', label: 'Stammdaten' },
+          { key: 'objekte',    label: `Objekte (${objekte.length})` },
+          { key: 'historie',   label: `Einsätze (${auftraege.length})` },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -161,15 +163,15 @@ export default function KundeDetail() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <form onSubmit={handleSave} className="space-y-5">
             {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
-            {erfolg && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg">✓ Erfolgreich gespeichert</div>}
+            {erfolg && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg">Gespeichert</div>}
 
             {/* Kundentyp */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Kundentyp</label>
               <div className="flex gap-3">
                 {[
-                  { value: 'privat', label: '👤 Privatperson' },
-                  { value: 'firma',  label: '🏢 Firmenkunde'  },
+                  { value: 'privat', label: 'Privatperson' },
+                  { value: 'firma',  label: 'Firmenkunde'  },
                 ].map(opt => (
                   <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition ${
                     form.kundentyp === opt.value
@@ -252,13 +254,13 @@ export default function KundeDetail() {
                 <input type="checkbox" name="ist_vertragskunde"
                   checked={form.ist_vertragskunde} onChange={handleChange}
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span className="text-sm font-medium text-gray-700">📄 Vertragskunde</span>
+                <span className="text-sm font-medium text-gray-700">Vertragskunde</span>
               </label>
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input type="checkbox" name="ist_wartungskunde"
                   checked={form.ist_wartungskunde} onChange={handleChange}
                   className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span className="text-sm font-medium text-gray-700">🔧 Wartungskunde</span>
+                <span className="text-sm font-medium text-gray-700">Wartungskunde</span>
               </label>
             </div>
 
@@ -303,7 +305,7 @@ export default function KundeDetail() {
         <div className="space-y-3">
           {objekte.length === 0 && !objektHinzufuegen && (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
-              <div className="text-3xl mb-2">🏠</div>
+              
               <p className="font-medium">Keine Objekte erfasst</p>
               <p className="text-sm mt-1">Füge Immobilien oder Einsatzorte dieses Kunden hinzu.</p>
             </div>
@@ -314,11 +316,11 @@ export default function KundeDetail() {
               <Link href={`/dashboard/kunden/${id}/objekte/${o.id}`} className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition">{o.bezeichnung}</p>
                 {o.adresse && <p className="text-gray-400 text-xs mt-0.5">{o.adresse}</p>}
-                <p className="text-xs text-blue-400 mt-1 opacity-0 group-hover:opacity-100 transition">🏗️ Digitaler Zwilling →</p>
+                <p className="text-xs text-blue-400 mt-1 opacity-0 group-hover:opacity-100 transition">Digitaler Zwilling →</p>
               </Link>
               <button onClick={(e) => { e.preventDefault(); deleteObjekt(o.id); }}
                 className="text-gray-300 hover:text-red-500 transition text-xs px-2 py-1 rounded ml-4 shrink-0">
-                ✕ Entfernen
+                Entfernen
               </button>
             </div>
           ))}
@@ -359,7 +361,7 @@ export default function KundeDetail() {
         <div>
           {auftraege.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
-              <div className="text-3xl mb-2">📋</div>
+              
               <p className="font-medium">Noch keine Einsätze für diesen Kunden</p>
             </div>
           ) : (
