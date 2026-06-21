@@ -10,19 +10,8 @@ const TABS = [
   { id: 'wartungen',        label: 'Wartungen' },
   { id: 'kilometerstand',   label: 'Kilometerstand' },
   { id: 'versicherung',     label: 'Versicherung' },
-  { id: 'maschinen_geraete',   label: 'Maschinen & Geräte' },
 ];
 
-const GERAET_ZUSTAND_CONFIG = {
-  gut:          { label: 'Gut',          bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  defekt:       { label: 'Defekt',       bg: 'bg-red-50',     text: 'text-red-600' },
-  in_reparatur: { label: 'In Reparatur', bg: 'bg-amber-50',   text: 'text-amber-700' },
-};
-
-const EMPTY_GERAET = {
-  bezeichnung: '', hersteller: '', modell: '', seriennummer: '', inventarnummer: '',
-  kaufdatum: '', kaufpreis: '', naechste_wartung: '', wartungsintervall_monate: '', zustand: 'gut', notizen: '',
-};
 
 const TYP_OPTIONS = [
   { value: '', label: '— Bitte wählen —' },
@@ -131,7 +120,7 @@ function pruefDatumsStatus(datum) {
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `Gøltig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  return { label: `Gültig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function kmStatus(naechsteKm, aktuellerKm) {
@@ -271,16 +260,6 @@ export default function FahrzeugDetailPage() {
   const [aktKmSuccess, setAktKmSuccess] = useState(false);
   const [aktKmWert, setAktKmWert] = useState('');
 
-  // Maschinen & Geräte
-  const [geraete, setGeraete] = useState([]);
-  const [geraetLaden, setGeraetLaden] = useState(false);
-  const [geraetView, setGeraetView] = useState('list');
-  const [geraetForm, setGeraetForm] = useState({ ...EMPTY_GERAET });
-  const [geraetEditId, setGeraetEditId] = useState(null);
-  const [savingGeraet, setSavingGeraet] = useState(false);
-  const [geraetError, setGeraetError] = useState('');
-  const [deletingGeraetId, setDeletingGeraetId] = useState(null);
-  const [confirmDelGeraetId, setConfirmDelGeraetId] = useState(null);
 
   // Versicherung
   const [versicherungen, setVersicherungen] = useState([]);
@@ -328,12 +307,6 @@ export default function FahrzeugDetailPage() {
     setKmLaden(false);
   }, [id]);
 
-  const loadGeraete = useCallback(async () => {
-    setGeraetLaden(true);
-    const { data } = await supabase.from('fahrzeug_geraete').select('*').eq('fahrzeug_id', id).order('created_at', { ascending: false });
-    setGeraete(data ?? []);
-    setGeraetLaden(false);
-  }, [id]);
 
   const loadVersicherungen = useCallback(async () => {
     setVersLaden(true);
@@ -347,7 +320,6 @@ export default function FahrzeugDetailPage() {
   useEffect(() => { if (activeTab === 'wartungen') loadWartungen(); }, [activeTab, loadWartungen]);
   useEffect(() => { if (activeTab === 'kilometerstand') loadKmEintraege(); }, [activeTab, loadKmEintraege]);
   useEffect(() => { if (activeTab === 'versicherung') loadVersicherungen(); }, [activeTab, loadVersicherungen]);
-  useEffect(() => { if (activeTab === 'maschinen_geraete') loadGeraete(); }, [activeTab, loadGeraete]);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
@@ -495,66 +467,6 @@ export default function FahrzeugDetailPage() {
     loadVersicherungen();
   }
 
-  function openGeraetNeu() {
-    setGeraetForm({ ...EMPTY_GERAET });
-    setGeraetEditId(null);
-    setGeraetError('');
-    setGeraetView('form');
-  }
-
-  function openGeraetEdit(g) {
-    setGeraetForm({
-      bezeichnung: g.bezeichnung ?? '', hersteller: g.hersteller ?? '', modell: g.modell ?? '',
-      seriennummer: g.seriennummer ?? '', inventarnummer: g.inventarnummer ?? '',
-      kaufdatum: g.kaufdatum ?? '', kaufpreis: g.kaufpreis != null ? String(g.kaufpreis) : '',
-      naechste_wartung: g.naechste_wartung ?? '',
-      wartungsintervall_monate: g.wartungsintervall_monate != null ? String(g.wartungsintervall_monate) : '',
-      zustand: g.zustand ?? 'gut', notizen: g.notizen ?? '',
-    });
-    setGeraetEditId(g.id);
-    setGeraetError('');
-    setGeraetView('form');
-  }
-
-  async function handleGeraetSave(e) {
-    e.preventDefault();
-    if (!geraetForm.bezeichnung.trim()) { setGeraetError('Bezeichnung ist Pflichtfeld.'); return; }
-    setSavingGeraet(true); setGeraetError('');
-    const payload = {
-      fahrzeug_id: id, company_id: companyId,
-      bezeichnung: geraetForm.bezeichnung.trim(),
-      hersteller: geraetForm.hersteller.trim() || null,
-      modell: geraetForm.modell.trim() || null,
-      seriennummer: geraetForm.seriennummer.trim() || null,
-      inventarnummer: geraetForm.inventarnummer.trim() || null,
-      kaufdatum: geraetForm.kaufdatum || null,
-      kaufpreis: geraetForm.kaufpreis ? parseFloat(geraetForm.kaufpreis) : null,
-      naechste_wartung: geraetForm.naechste_wartung || null,
-      wartungsintervall_monate: geraetForm.wartungsintervall_monate ? parseInt(geraetForm.wartungsintervall_monate) : null,
-      zustand: geraetForm.zustand,
-      notizen: geraetForm.notizen.trim() || null,
-      updated_at: new Date().toISOString(),
-    };
-    let error;
-    if (geraetEditId) {
-      ({ error } = await supabase.from('fahrzeug_geraete').update(payload).eq('id', geraetEditId));
-    } else {
-      ({ error } = await supabase.from('fahrzeug_geraete').insert(payload));
-    }
-    setSavingGeraet(false);
-    if (error) { setGeraetError(error.message); return; }
-    setGeraetView('list');
-    loadGeraete();
-  }
-
-  async function handleGeraetDelete(gid) {
-    setDeletingGeraetId(gid);
-    await supabase.from('fahrzeug_geraete').delete().eq('id', gid);
-    setDeletingGeraetId(null);
-    setConfirmDelGeraetId(null);
-    loadGeraete();
-  }
-
   function updateZeile(rowId, field, value) { setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z)); }
   function removeZeile(rowId) { setEingabeZeilen(prev => prev.length > 1 ? prev.filter(z => z.rowId !== rowId) : prev); }
   function addZeile() { setEingabeZeilen(prev => [...prev, newZeile()]); }
@@ -691,8 +603,8 @@ export default function FahrzeugDetailPage() {
             <button type="submit" disabled={fristenSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{fristenSaving ? 'Speichert…' : 'Fristen speichern'}</button>
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prøfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzuføgen</button></div>
-          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prøfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prøfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prøfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prøfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prøfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
+          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prøfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prøfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
@@ -736,7 +648,7 @@ export default function FahrzeugDetailPage() {
           {kmAnsicht === 'overview' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div><h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbøcher</h2>{kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}</div>
+                <div><h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbücher</h2>{kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}</div>
                 <button type="button" onClick={() => { setEingabeMonat(currentMonthValue()); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Monat erfassen</button>
               </div>
               {kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : Object.keys(kmStats.monate).length === 0 ? (
@@ -753,25 +665,29 @@ export default function FahrzeugDetailPage() {
 
           {kmAnsicht === 'eingabe' && (
             <div className="space-y-5">
-              <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2></div>
-              <div className="bg-white rounded-2xl border border-gray-100 p-5"><LabelInput label="Monat" required><input type="month" value={eingabeMonat} onChange={e => setEingabeMonat(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" /></LabelInput></div>
-              <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-                <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3><span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} vollständig</span></div>
-                <div className="overflow-x-auto -mx-1 px-1">
-                  <div className="min-w-[580px]">
-                    <div className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 px-1 mb-1.5">
-                      <span className="text-xs font-medium text-gray-400">Datum <span className="text-red-400">*</span></span><span className="text-xs font-medium text-gray-400">km-Start</span><span className="text-xs font-medium text-gray-400">km-Ende <span className="text-red-400">*</span></span><span className="text-xs font-medium text-gray-400">km</span><span className="text-xs font-medium text-gray-400">Fahrer</span><span className="text-xs font-medium text-gray-400">Zweck</span><span></span>
+              <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-7" onClick={() => removeZeile(z.rowId)} disabled={eingabeZeilen.length === 1} className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"><TrashIcon /></button>
+                        </div>
+                      ); })}
                     </div>
-                    <div className="space-y-1.5">
-                      {eingabeZeilen.map(z => { const km = (z.km_start && z.km_stand) ? parseInt(z.km_stand) - parseInt(z.km_start) : null; return (
-                        <div key={z.rowId} className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 items-center">
-                          <input type="date" value={z.datum} onChange={e => updateZeile(z.rowId, 'datum', e.target.value)} className={cellInputCls} />
-                          <input type="number" value={z.km_start} onChange={e => updateZeile(z.rowId, 'km_start', e.target.value)} placeholder="Start" min="0" className={cellInputCls} />
-                          <input type="number" value={z.km_stand} onChange={e => updateZeile(z.rowId, 'km_stand', e.target.value)} placeholder="Ende" min="0" className={cellInputCls} />
-                          <div className="text-center">{km != null && km >= 0 ? <span className="text-xs font-semibold text-blue-600">{km}</span> : <span className="text-xs text-gray-300">—</span>}</div>
-                          <input type="text" value={z.fahrer_name} onChange={e => updateZeile(z.rowId, 'fahrer_name', e.target.value)} placeholder="Fahrer" className={cellInputCls} />
-                          <select value={z.zweck} onChange={e => updateZeile(z.rowId, 'zweck', e.target.value)} className={cellInputCls}>{ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
-                          <button type="button" onClick={() => removeZeile(z.rowId)} disabled={eingabeZeilen.length === 1} className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"><TrashIcon /></button>
+                    <button type="button" onClick={addZeile} className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"><PlusIcon /> Zeile hinzufügen</button>
+                  </div>
+                </div>
+                {eingabeTotalKm > 0 && <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-6"><div><p className="text-xs text-gray-400">Gesamt km</p><p className="text-lg font-bold text-blue-600">{eingabeTotalKm.toLocaleString('de-DE')} km</p></div></div>}
+              </div>
+              {eingabeError && <p className="text-xs text-red-500">{eingabeError}</p>}
+              <div className="flex gap-2"><button type="button" onClick={handleEingabeSave} disabled={eingabeSaving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{eingabeSaving ? 'Speichert…' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}</button><button type="button" onClick={() => setKmAnsicht('overview')} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>
+            </div>
+          )}
+
+          {kmAnsicht === 'detail' && detailMonat && (() => {
+            const m = kmStats.monate[detailMonat];
+            if (!m) return null;
+            const sorted = [...m.eintraege].sort((a, b) => new Date(a.datum) - new Date(b.datum) || (a.km_start ?? 0) - (b.km_start ?? 0));
+            return (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2></div>
+                  <div className="flex gap-2"><button type="button" onClick={() => handleExport(detailMonat)} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"><DownloadIcon /> CSV</button><button type="button" onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-whit" onClick={() => removeZeile(z.rowId)} disabled={eingabeZeilen.length === 1} className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"><TrashIcon /></button>
                         </div>
                       ); })}
                     </div>
@@ -987,148 +903,6 @@ export default function FahrzeugDetailPage() {
                 );
               })}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Tab: Maschinen & Geräte ──────────────────────────────────────────── */}
-      {activeTab === 'maschinen_geraete' && (
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Maschinen & Geräte</h2>
-              <p className="text-xs text-gray-400 mt-0.5">An dieses Fahrzeug gebundene Geräte und Maschinen</p>
-            </div>
-            {geraetView === 'list' && (
-              <button type="button" onClick={openGeraetNeu}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition">
-                <PlusIcon /> Gerät hinzufügen
-              </button>
-            )}
-          </div>
-
-          {/* Formular */}
-          {geraetView === 'form' && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-800 mb-4">{geraetEditId ? 'Gerät bearbeiten' : 'Neues Gerät'}</h3>
-              <form onSubmit={handleGeraetSave} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <LabelInput label="Bezeichnung" required>
-                    <input className={inputCls} value={geraetForm.bezeichnung} onChange={e => setGeraetForm(f => ({ ...f, bezeichnung: e.target.value }))} placeholder="z. B. Hochdruckreiniger" />
-                  </LabelInput>
-                  <LabelInput label="Hersteller">
-                    <input className={inputCls} value={geraetForm.hersteller} onChange={e => setGeraetForm(f => ({ ...f, hersteller: e.target.value }))} placeholder="z. B. Kärcher" />
-                  </LabelInput>
-                  <LabelInput label="Modell">
-                    <input className={inputCls} value={geraetForm.modell} onChange={e => setGeraetForm(f => ({ ...f, modell: e.target.value }))} />
-                  </LabelInput>
-                  <LabelInput label="Seriennummer">
-                    <input className={inputCls} value={geraetForm.seriennummer} onChange={e => setGeraetForm(f => ({ ...f, seriennummer: e.target.value }))} />
-                  </LabelInput>
-                  <LabelInput label="Inventarnummer">
-                    <input className={inputCls} value={geraetForm.inventarnummer} onChange={e => setGeraetForm(f => ({ ...f, inventarnummer: e.target.value }))} />
-                  </LabelInput>
-                  <LabelInput label="Kaufdatum">
-                    <input type="date" className={inputCls} value={geraetForm.kaufdatum} onChange={e => setGeraetForm(f => ({ ...f, kaufdatum: e.target.value }))} />
-                  </LabelInput>
-     0            <LabelInput label="Kaufpreis (€)">
-                    <input type="number" min="0" step="0.01" className={inputCls} value={geraetForm.kaufpreis} onChange={e => setGeraetForm(f => ({ ...f, kaufpreis: e.target.value }))} placeholder="0,00" />
-                  </LabelInput>
-                  <LabelInput label="Nächste Wartung">
-                    <input type="date" className={inputCls} value={geraetForm.naechste_wartung} onChange={e => setGeraetForm(f => ({ ...f, naechste_wartung: e.target.value }))} />
-                  </LabelInput>
-                  <LabelInput label="Wartungsintervall (Monate)">
-                    <input type="number" min="1" className={inputCls} value={geraetForm.wartungsintervall_monate} onChange={e => setGeraetForm(f => ({ ...f, wartungsintervall_monate: e.target.value }))} placeholder="z. B. 12" />
-                  </LabelInput>
-                  <LabelInput label="Zustand">
-                    <select className={inputCls} value={geraetForm.zustand} onChange={e => setGeraetForm(f => ({ ...f, zustand: e.target.value }))}>
-                      {Object.entries(GERAET_ZUSTAND_CONFIG).map(([v, c]) => (
-                        <option key={v} value={v}>{c.label}</option>
-                      ))}
-                    </select>
-                  </LabelInput>
-                </div>
-                <LabelInput label="Notizen">
-                  <textarea rows={2} className={inputCls} value={geraetForm.notizen} onChange={e => setGeraetForm(f => ({ ...f, notizen: e.target.value }))} />
-                </LabelInput>
-                {geraetError && <p className="text-sm text-red-500">{geraetError}</p>}
-                <div className="flex gap-2 pt-1">
-                  <button type="submit" disabled={savingGeraet}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">
-                    {savingGeraet ? 'Speichern…' : 'Speichern'}
-                  </button>
-                  <button type="button" onClick={() => setGeraetView('list')}
-                    className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">
-                    Abbrechen
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Liste */}
-          {geraetView === 'list' && (
-            geraetLaden ? (
-              <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-            ) : geraete.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-gray-500">Noch keine Geräte erfasst</p>
-                <p className="text-xs text-gray-400 mt-1">Füge Maschinen und Geräte über den Button oben hinzu.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {geraete.map(g => {
-                  const zCfg = GERAET_ZUSTAND_CONFIG[g.zustand] ?? GERAET_ZUSTAND_CONFIG.gut;
-                  const wartS = g.naechste_wartung ? datumsStatus(g.naechste_wartung) : null;
-                  const isConfirmDel = confirmDelGeraetId === g.id;
-                  return (
-                    <div key={g.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold text-gray-900">{g.bezeichnung}</span>
-                            {g.hersteller && <span className="text-xs text-gray-400">{g.hersteller}{g.modell ? ` · ${g.modell}` : ''}</span>}
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zCfg.bg} ${zCfg.text}`}>{zCfg.label}</span>
-                          </div>
-                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
-                            {g.seriennummer && <span className="text-xs text-gray-400">SN: {g.seriennummer}</span>}
-                            {g.inventarnummer && <span className="text-xs text-gray-400">Inv.: {g.inventarnummer}</span>}
-                            {g.kaufdatum && <span className="text-xs text-gray-400">Kauf: {formatDate(g.kaufdatum)}</span>}
-                            {g.kaufpreis != null && <span className="text-xs text-gray-500 font-medium">{formatEuro(g.kaufpreis)}</span>}
-                            {g.naechste_wartung && (
-                              <span className={`text-xs ${wartS && wartS.severity !== 'ok' ? wartS.cls : 'text-gray-400'}`}>
-                                Wartung: {formatDate(g.naechste_wartung)}{wartS && wartS.severity !== 'ok' ? ` (${wartS.label})` : ''}
-                              </span>
-                            )}
-                            {g.wartungsintervall_monate && <span className="text-xs text-gray-400">alle {g.wartungsintervall_monate} Monate</span>}
-                          </div>
-                          {g.notizen && <p className="text-xs text-gray-400 mt-1 italic">{g.notizen}</p>}
-                        </div>
-                        <div className="shrink-0 flex items-center gap-1">
-                          {isConfirmDel ? (
-                            <>
-                              <button type="button" onClick={() => handleGeraetDelete(g.id)} disabled={deletingGeraetId === g.id} className="px-2.5 py-1 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition">{deletingGeraetId === g.id ? '…' : 'Löschen'}</button>
-                              <button type="button" onClick={() => setConfirmDelGeraetId(null)} className="px-2.5 py-1 text-xs text-gray-500 rounded-lg hover:bg-gray-100 transition">Abbruch</button>
-                            </>
-                          ) : (
-                            <>
-                              <button type="button" onClick={() => openGeraetEdit(g)} className="px-2.5 py-1 text-xs text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition">Bearbeiten</button>
-                              <button type="button" onClick={() => setConfirmDelGeraetId(g.id)} className="text-gray-300 hover:text-red-400 transition ml-1"><TrashIcon /></button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )
           )}
         </div>
       )}
