@@ -5,12 +5,24 @@ import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
 const TABS = [
-  { id: 'fahrzeugdaten',  label: 'Fahrzeugdaten' },
-  { id: 'tuev_uvv',       label: 'TÜV & UVV' },
-  { id: 'wartungen',      label: 'Wartungen' },
-  { id: 'kilometerstand', label: 'Kilometerstand' },
-  { id: 'versicherung',   label: 'Versicherung' },
+  { id: 'fahrzeugdaten',    label: 'Fahrzeugdaten' },
+  { id: 'tuev_uvv',         label: 'TÜV & UVV' },
+  { id: 'wartungen',        label: 'Wartungen' },
+  { id: 'kilometerstand',   label: 'Kilometerstand' },
+  { id: 'versicherung',     label: 'Versicherung' },
+  { id: 'maschinen_geraete',label: 'Maschinen & Geräte' },
 ];
+
+const GERAET_ZUSTAND_CONFIG = {
+  gut:          { label: 'Gut',          bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  defekt:       { label: 'Defekt',       bg: 'bg-red-50',     text: 'text-red-600' },
+  in_reparatur: { label: 'In Reparatur', bg: 'bg-amber-50',   text: 'text-amber-700' },
+};
+
+const EMPTY_GERAET = {
+  bezeichnung: '', hersteller: '', modell: '', seriennummer: '', inventarnummer: '',
+  kaufdatum: '', kaufpreis: '', naechste_wartung: '', wartungsintervall_monate: '', zustand: 'gut', notizen: '',
+};
 
 const TYP_OPTIONS = [
   { value: '', label: '— Bitte wählen —' },
@@ -49,7 +61,7 @@ const ZUSTAND_COLORS = {
 const ART_LABELS = {
   tuev: 'TÜV',
   hu: 'HU (Hauptuntersuchung)',
-  uvv: 'UVV-Prüfung',
+  uvv: 'UVV-Prøfung',
   sonstiges: 'Sonstige Prüfung',
 };
 
@@ -119,7 +131,7 @@ function pruefDatumsStatus(datum) {
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `Gültig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  return { label: `Gøltig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function kmStatus(naechsteKm, aktuellerKm) {
@@ -173,7 +185,7 @@ const cellInputCls = 'w-full px-2 py-1.5 text-sm border border-gray-200 rounded-
 
 const TrashIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0I9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
   </svg>
 );
 
@@ -259,6 +271,17 @@ export default function FahrzeugDetailPage() {
   const [aktKmSuccess, setAktKmSuccess] = useState(false);
   const [aktKmWert, setAktKmWert] = useState('');
 
+  // Maschinen & Geräte
+  const [geraete, setGeraete] = useState([]);
+  const [geraetLaden, setGeraetLaden] = useState(false);
+  const [geraetView, setGeraetView] = useState('list');
+  const [geraetForm, setGeraetForm] = useState({ ...EMPTY_GERAET });
+  const [geraetEditId, setGeraetEditId] = useState(null);
+  const [savingGeraet, setSavingGeraet] = useState(false);
+  const [geraetError, setGeraetError] = useState('');
+  const [deletingGeraetId, setDeletingGeraetId] = useState(null);
+  const [confirmDelGeraetId, setConfirmDelGeraetId] = useState(null);
+
   // Versicherung
   const [versicherungen, setVersicherungen] = useState([]);
   const [versLaden, setVersLaden] = useState(false);
@@ -277,9 +300,9 @@ export default function FahrzeugDetailPage() {
     const { data, error } = await supabase.from('fahrzeuge').select('*').eq('id', id).single();
     if (error || !data) { setNotFound(true); setLoading(false); return; }
     setFahrzeug(data);
-    setForm({ kennzeichen: data.kennzeichen ?? '', marke: data.marke ?? '', modell: data.modell ?? '', typ: data.typ ?? '', baujahr: data.baujahr != null ? String(data.baujahr) : '', farbe: data.farbe ?? '', kraftstoff: data.kraftstoff ?? '', km_stand: data.km_stand != null ? String(data.km_stand) : '', tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '', versicherung: data.versicherung ?? '', zustand: data.zustand ?? 'aktiv', notizen: data.notizen ?? '' });
+    setForm({ kennzeichen: data.kennzeichen ?? '', marke: data.marke ?? '', modell: data.modell ?? '', typ: data.typ ?? '', baujahr: data.baujahr != null ? String(data.baujahr) : '', farbe: data.farbe ?? '', kraftstoff: data.kraftstoff ?? '', km_stand: data.km_stand != null ? String(data.km_stand) : '', tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '', versicherung : data.versicherung ?? '', zustand: data.zustand ?? 'aktiv', notizen: data.notizen ?? '' });
     setFristenForm({ tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '' });
-    setNaechsteWart({ datum: data.naechste_wartung_datum ?? '', km: data.naechste_wartung_km != null ? String(data.naechste_wartung_km) : '' });
+    setNaechsteWart({ datum: data.naechste_wartung_datum ?? '', km: data.naechste_wartung_m != null ? String(data.naechste_wartung_km) : '' });
     setAktKmWert(data.km_stand != null ? String(data.km_stand) : '');
     setLoading(false);
   }, [id, router]);
@@ -305,6 +328,13 @@ export default function FahrzeugDetailPage() {
     setKmLaden(false);
   }, [id]);
 
+  const loadGeraete = useCallback(async () => {
+    setGeraetLaden(true);
+    const { data } = await supabase.from('fahrzeug_geraete').select('*').eq('fahrzeug_id', id).order('created_at', { ascending: false });
+    setGeraete(data ?? []);
+    setGeraetLaden(false);
+  }, [id]);
+
   const loadVersicherungen = useCallback(async () => {
     setVersLaden(true);
     const { data } = await supabase.from('fahrzeug_versicherungen').select('*').eq('fahrzeug_id', id).order('ablauf_datum', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
@@ -317,6 +347,7 @@ export default function FahrzeugDetailPage() {
   useEffect(() => { if (activeTab === 'wartungen') loadWartungen(); }, [activeTab, loadWartungen]);
   useEffect(() => { if (activeTab === 'kilometerstand') loadKmEintraege(); }, [activeTab, loadKmEintraege]);
   useEffect(() => { if (activeTab === 'versicherung') loadVersicherungen(); }, [activeTab, loadVersicherungen]);
+  useEffect(() => { if (activeTab === 'maschinen_geraete') loadGeraete(); }, [activeTab, loadGeraete]);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
@@ -352,7 +383,7 @@ export default function FahrzeugDetailPage() {
 
   async function handlePruefNeu(e) {
     e.preventDefault(); setPruefNeuError('');
-    if (!pruefForm.pruef_datum) { setPruefNeuError('Prüfdatum ist Pflichtfeld.'); return; }
+    if (!pruefForm.pruef_datum) { setPruefNeuError('Prøfdatum ist Pflichtfeld.'); return; }
     setPruefNeuSaving(true);
     const { error } = await supabase.from('fahrzeug_pruefungen').insert({ fahrzeug_id: id, company_id: companyId, art: pruefForm.art, pruef_datum: pruefForm.pruef_datum, gueltig_bis: pruefForm.gueltig_bis || null, pruefstelle: pruefForm.pruefstelle.trim() || null, ergebnis: pruefForm.ergebnis || null, notiz: pruefForm.notiz.trim() || null });
     if (!error && pruefForm.gueltig_bis) {
@@ -462,6 +493,66 @@ export default function FahrzeugDetailPage() {
     setDeletingVersId(null);
     setConfirmDeleteVersId(null);
     loadVersicherungen();
+  }
+
+  function openGeraetNeu() {
+    setGeraetForm({ ...EMPTY_GERAET });
+    setGeraetEditId(null);
+    setGeraetError('');
+    setGeraetView('form');
+  }
+
+  function openGeraetEdit(g) {
+    setGeraetForm({
+      bezeichnung: g.bezeichnung ?? '', hersteller: g.hersteller ?? '', modell: g.modell ?? '',
+      seriennummer: g.seriennummer ?? '', inventarnummer: g.inventarnummer ?? '',
+      kaufdatum: g.kaufdatum ?? '', kaufpreis: g.kaufpreis != null ? String(g.kaufpreis) : '',
+      naechste_wartung: g.naechste_wartung ?? '',
+      wartungsintervall_monate: g.wartungsintervall_monate != null ? String(g.wartungsintervall_monate) : '',
+      zustand: g.zustand ?? 'gut', notizen: g.notizen ?? '',
+    });
+    setGeraetEditId(g.id);
+    setGeraetError('');
+    setGeraetView('form');
+  }
+
+  async function handleGeraetSave(e) {
+    e.preventDefault();
+    if (!geraetForm.bezeichnung.trim()) { setGeraetError('Bezeichnung ist Pflichtfeld.'); return; }
+    setSavingGeraet(true); setGeraetError('');
+    const payload = {
+      fahrzeug_id: id, company_id: companyId,
+      bezeichnung: geraetForm.bezeichnung.trim(),
+      hersteller: geraetForm.hersteller.trim() || null,
+      modell: geraetForm.modell.trim() || null,
+      seriennummer: geraetForm.seriennummer.trim() || null,
+      inventarnummer: geraetForm.inventarnummer.trim() || null,
+      kaufdatum: geraetForm.kaufdatum || null,
+      kaufpreis: geraetForm.kaufpreis ? parseFloat(geraetForm.kaufpreis) : null,
+      naechste_wartung: geraetForm.naechste_wartung || null,
+      wartungsintervall_monate: geraetForm.wartungsintervall_monate ? parseInt(geraetForm.wartungsintervall_monate) : null,
+      zustand: geraetForm.zustand,
+      notizen: geraetForm.notizen.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    let error;
+    if (geraetEditId) {
+      ({ error } = await supabase.from('fahrzeug_geraete').update(payload).eq('id', geraetEditId));
+    } else {
+      ({ error } = await supabase.from('fahrzeug_geraete').insert(payload));
+    }
+    setSavingGeraet(false);
+    if (error) { setGeraetError(error.message); return; }
+    setGeraetView('list');
+    loadGeraete();
+  }
+
+  async function handleGeraetDelete(gid) {
+    setDeletingGeraetId(gid);
+    await supabase.from('fahrzeug_geraete').delete().eq('id', gid);
+    setDeletingGeraetId(null);
+    setConfirmDelGeraetId(null);
+    loadGeraete();
   }
 
   function updateZeile(rowId, field, value) { setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z)); }
@@ -601,7 +692,7 @@ export default function FahrzeugDetailPage() {
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prüfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufügen</button></div>
           {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
+          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prøfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
@@ -896,6 +987,148 @@ export default function FahrzeugDetailPage() {
                 );
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Maschinen & Geräte ──────────────────────────────────────────── */}
+      {activeTab === 'maschinen_geraete' && (
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Maschinen & Geräte</h2>
+              <p className="text-xs text-gray-400 mt-0.5">An dieses Fahrzeug gebundene Geräte und Maschinen</p>
+            </div>
+            {geraetView === 'list' && (
+              <button type="button" onClick={openGeraetNeu}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition">
+                <PlusIcon /> Gerät hinzufügen
+              </button>
+            )}
+          </div>
+
+          {/* Formular */}
+          {geraetView === 'form' && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-800 mb-4">{geraetEditId ? 'Gerät bearbeiten' : 'Neues Gerät'}</h3>
+              <form onSubmit={handleGeraetSave} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <LabelInput label="Bezeichnung" required>
+                    <input className={inputCls} value={geraetForm.bezeichnung} onChange={e => setGeraetForm(f => ({ ...f, bezeichnung: e.target.value }))} placeholder="z. B. Hochdruckreiniger" />
+                  </LabelInput>
+                  <LabelInput label="Hersteller">
+                    <input className={inputCls} value={geraetForm.hersteller} onChange={e => setGeraetForm(f => ({ ...f, hersteller: e.target.value }))} placeholder="z. B. Kärcher" />
+                  </LabelInput>
+                  <LabelInput label="Modell">
+                    <input className={inputCls} value={geraetForm.modell} onChange={e => setGeraetForm(f => ({ ...f, modell: e.target.value }))} />
+                  </LabelInput>
+                  <LabelInput label="Seriennummer">
+                    <input className={inputCls} value={geraetForm.seriennummer} onChange={e => setGeraetForm(f => ({ ...f, seriennummer: e.target.value }))} />
+                  </LabelInput>
+                  <LabelInput label="Inventarnummer">
+                    <input className={inputCls} value={geraetForm.inventarnummer} onChange={e => setGeraetForm(f => ({ ...f, inventarnummer: e.target.value }))} />
+                  </LabelInput>
+                  <LabelInput label="Kaufdatum">
+                    <input type="date" className={inputCls} value={geraetForm.kaufdatum} onChange={e => setGeraetForm(f => ({ ...f, kaufdatum: e.target.value }))} />
+                  </LabelInput>
+                  <LabelInput label="Kaufpreis (€)">
+                    <input type="number" min="0" step="0.01" className={inputCls} value={geraetForm.kaufpreis} onChange={e => setGeraetForm(f => ({ ...f, kaufpreis: e.target.value }))} placeholder="0,00" />
+                  </LabelInput>
+                  <LabelInput label="Nächste Wartung">
+                    <input type="date" className={inputCls} value={geraetForm.naechste_wartung} onChange={e => setGeraetForm(f => ({ ...f, naechste_wartung: e.target.value }))} />
+                  </LabelInput>
+                  <LabelInput label="Wartungsintervall (Monate)">
+                    <input type="number" min="1" className={inputCls} value={geraetForm.wartungsintervall_monate} onChange={e => setGeraetForm(f => ({ ...f, wartungsintervall_monate: e.target.value }))} placeholder="z. B. 12" />
+                  </LabelInput>
+                  <LabelInput label="Zustand">
+                    <select className={inputCls} value={geraetForm.zustand} onChange={e => setGeraetForm(f => ({ ...f, zustand: e.target.value }))}>
+                      {Object.entries(GERAET_ZUSTAND_CONFIG).map(([v, c]) => (
+                        <option key={v} value={v}>{c.label}</option>
+                      ))}
+                    </select>
+                  </LabelInput>
+                </div>
+                <LabelInput label="Notizen">
+                  <textarea rows={2} className={inputCls} value={geraetForm.notizen} onChange={e => setGeraetForm(f => ({ ...f, notizen: e.target.value }))} />
+                </LabelInput>
+                {geraetError && <p className="text-sm text-red-500">{geraetError}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button type="submit" disabled={savingGeraet}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">
+                    {savingGeraet ? 'Speichern…' : 'Speichern'}
+                  </button>
+                  <button type="button" onClick={() => setGeraetView('list')}
+                    className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Liste */}
+          {geraetView === 'list' && (
+            geraetLaden ? (
+              <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+            ) : geraete.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-gray-500">Noch keine Geräte erfasst</p>
+                <p className="text-xs text-gray-400 mt-1">Füge Maschinen und Geräte über den Button oben hinzu.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {geraete.map(g => {
+                  const zCfg = GERAET_ZUSTAND_CONFIG[g.zustand] ?? GERAET_ZUSTAND_CONFIG.gut;
+                  const wartS = g.naechste_wartung ? datumsStatus(g.naechste_wartung) : null;
+                  const isConfirmDel = confirmDelGeraetId === g.id;
+                  return (
+                    <div key={g.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-gray-900">{g.bezeichnung}</span>
+                            {g.hersteller && <span className="text-xs text-gray-400">{g.hersteller}{g.modell ? ` · ${g.modell}` : ''}</span>}
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zCfg.bg} ${zCfg.text}`}>{zCfg.label}</span>
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
+                            {g.seriennummer && <span className="text-xs text-gray-400">SN: {g.seriennummer}</span>}
+                            {g.inventarnummer && <span className="text-xs text-gray-400">Inv.: {g.inventarnummer}</span>}
+                            {g.kaufdatum && <span className="text-xs text-gray-400">Kauf: {formatDate(g.kaufdatum)}</span>}
+                            {g.kaufpreis != null && <span className="text-xs text-gray-500 font-medium">{formatEuro(g.kaufpreis)}</span>}
+                            {g.naechste_wartung && (
+                              <span className={`text-xs ${wartS && wartS.severity !== 'ok' ? wartS.cls : 'text-gray-400'}`}>
+                                Wartung: {formatDate(g.naechste_wartung)}{wartS && wartS.severity !== 'ok' ? ` (${wartS.label})` : ''}
+                              </span>
+                            )}
+                            {g.wartungsintervall_monate && <span className="text-xs text-gray-400">alle {g.wartungsintervall_monate} Monate</span>}
+                          </div>
+                          {g.notizen && <p className="text-xs text-gray-400 mt-1 italic">{g.notizen}</p>}
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1">
+                          {isConfirmDel ? (
+                            <>
+                              <button type="button" onClick={() => handleGeraetDelete(g.id)} disabled={deletingGeraetId === g.id} className="px-2.5 py-1 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition">{deletingGeraetId === g.id ? '…' : 'Löschen'}</button>
+                              <button type="button" onClick={() => setConfirmDelGeraetId(null)} className="px-2.5 py-1 text-xs text-gray-500 rounded-lg hover:bg-gray-100 transition">Abbruch</button>
+                            </>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => openGeraetEdit(g)} className="px-2.5 py-1 text-xs text-blue-500 border border-blue-100 rounded-lg hover:bg-blue-50 transition">Bearbeiten</button>
+                              <button type="button" onClick={() => setConfirmDelGeraetId(g.id)} className="text-gray-300 hover:text-red-400 transition ml-1"><TrashIcon /></button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           )}
         </div>
       )}
