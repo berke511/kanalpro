@@ -18,7 +18,7 @@ function initialen(name) {
   return name.slice(0, 2).toUpperCase();
 }
 
-const ALPBAAET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export default function Kunden() {
   const router = useRouter();
@@ -40,7 +40,6 @@ export default function Kunden() {
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
-      .eq('user_id', user.id)
       .order('name');
     setKunden(data ?? []);
     const count = (data ?? []).length;
@@ -180,7 +179,7 @@ export default function Kunden() {
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-40">{k.email}</a>
                         )}
-                        {!k.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
+                        {!i.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3">
