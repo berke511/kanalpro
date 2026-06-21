@@ -5,7 +5,7 @@ import supabase from '@/lib/supabase';
 
 // ── Konstanten ────────────────────────────────────────────────────────────────
 const MASCHINENTYP_OPTIONS = [
-  { value: 'hebebuehne',       label: 'Hebebühne' },
+  { value: 'hebebuehne',       label: 'Hebebøhne' },
   { value: 'kompressor',       label: 'Kompressor' },
   { value: 'generator',        label: 'Generator / Aggregat' },
   { value: 'kran',             label: 'Kran' },
@@ -14,7 +14,7 @@ const MASCHINENTYP_OPTIONS = [
   { value: 'werkzeugmaschine', label: 'Werkzeugmaschine' },
   { value: 'pumpe',            label: 'Pumpe' },
   { value: 'druckluftwerkzeug',label: 'Druckluftwerkzeug' },
-  { value: 'hochdruckspueler', label: 'Hochdruckspüler' },
+  { value: 'hochdruckspueler', label: 'Hochdruckspøler' },
   { value: 'fraese',           label: 'Fräse / Bohrwerk' },
   { value: 'messgeraet',       label: 'Messgerät' },
   { value: 'pruefgeraet',      label: 'Prüfgerät' },
@@ -35,7 +35,20 @@ const ZUSTAND_CONFIG = {
 const TABS = [
   { id: 'geraeteverwaltung',    label: 'Geräteverwaltung' },
   { id: 'wartungen_pruefungen', label: 'Wartungen & Prüfungen' },
+  { id: 'standort',             label: 'Standort & Verfügbarkeit' },
 ];
+
+const VERFUEGBARKEIT_CONFIG = {
+  verfuegbar:    { label: 'Verfügbar',     bg: 'bg-green-100',  text: 'text-green-700' },
+  im_einsatz:    { label: 'Im Einsatz',    bg: 'bg-blue-100',   text: 'text-blue-700' },
+  in_wartung:    { label: 'In Wartung',    bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  ausser_betrieb:{ label: 'Außer Betrieb', bg: 'bg-gray-100',   text: 'text-gray-600' },
+};
+
+const EMPTY_STANDORT = {
+  standort: '', verfuegbarkeitsstatus: 'verfuegbar', zugewiesen_an: '',
+  einsatzgebiet: '', naechste_verfuegbarkeit: '', notizen: '',
+};
 
 const PRUEFUNG_ART_OPTIONS = [
   // ── Elektrische Betriebsmittel ──────────────────────────────────────────────
@@ -46,7 +59,7 @@ const PRUEFUNG_ART_OPTIONS = [
   // ── Hebezeuge / Krane ───────────────────────────────────────────────────────
   { value: 'dguv_v52_krane',          label: 'DGUV V52 – Krane' },
   { value: 'dguv_v54_winden',         label: 'DGUV V54 – Winden, Hub- und Zuggeräte' },
-  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebühne / Arbeitsbøhne' },
+  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebøhne / Arbeitsbühne' },
   { value: 'lastaufnahmemittel',      label: 'Lastaufnahmemittel-Prüfung (DGUV V54)' },
   // ── Druckgeräte / Hydraulik ─────────────────────────────────────────────────
   { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprüfung (BetrSichV / DGRL 2014/68/EU)' },
@@ -151,6 +164,7 @@ export default function MaschinenDetailPage() {
   const [maschine, setMaschine]     = useState(null);
   const [loading, setLoading]       = useState(true);
   const [activeTab, setActiveTab]   = useState('geraeteverwaltung');
+  const [companyId, setCompanyId]   = useState(null);
 
   // Geräteverwaltung
   const [editing, setEditing]       = useState(false);
@@ -160,7 +174,7 @@ export default function MaschinenDetailPage() {
   const [deleting, setDeleting]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 
-  // Prøfungen
+  // Prüfungen
   const [pruefungen, setPruefungen]         = useState([]);
   const [pruefungView, setPruefungView]     = useState('list');
   const [pruefungForm, setPruefungForm]     = useState({});
@@ -174,7 +188,21 @@ export default function MaschinenDetailPage() {
   const [savingWartung, setSavingWartung]   = useState(false);
   const [delWartungId, setDelWartungId]     = useState(null);
 
+  // Standort & Verfügbarkeit
+  const [standort, setStandort]             = useState(null);
+  const [standortLaden, setStandortLaden]   = useState(false);
+  const [standortForm, setStandortForm]     = useState({ ...EMPTY_STANDORT });
+  const [standortEditing, setStandortEditing] = useState(false);
+  const [savingStandort, setSavingStandort] = useState(false);
+  const [standortError, setStandortError]   = useState('');
+  const [standortSaved, setStandortSaved]   = useState(false);
+
   const load = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
+      if (member) setCompanyId(member.company_id);
+    }
     const { data } = await supabase.from('maschinen').select('*').eq('id', id).single();
     setMaschine(data);
     setLoading(false);
@@ -187,6 +215,28 @@ export default function MaschinenDetailPage() {
       .eq('maschine_id', id)
       .order('datum', { ascending: false });
     setPruefungen(data ?? []);
+  }, [id]);
+
+  const loadStandort = useCallback(async () => {
+    setStandortLaden(true);
+    const { data } = await supabase.from('maschinen_standort').select('*').eq('maschine_id', id).maybeSingle();
+    if (data) {
+      setStandort(data);
+      setStandortForm({
+        standort: data.standort ?? '',
+        verfuegbarkeitsstatus: data.verfuegbarkeitsstatus ?? 'verfuegbar',
+        zugewiesen_an: data.zugewiesen_an ?? '',
+        einsatzgebiet: data.einsatzgebiet ?? '',
+        naechste_verfuegbarkeit: data.naechste_verfuegbarkeit ?? '',
+        notizen: data.notizen ?? '',
+      });
+      setStandortEditing(false);
+    } else {
+      setStandort(null);
+      setStandortForm({ ...EMPTY_STANDORT });
+      setStandortEditing(true);
+    }
+    setStandortLaden(false);
   }, [id]);
 
   const loadWartungen = useCallback(async () => {
@@ -206,6 +256,8 @@ export default function MaschinenDetailPage() {
       loadWartungen();
     }
   }, [activeTab, loadPruefungen, loadWartungen]);
+
+  useEffect(() => { if (activeTab === 'standort') loadStandort(); }, [activeTab, loadStandort]);
 
   // ── Geräteverwaltung ──────────────────────────────────────────────────────
   function startEdit() {
@@ -324,6 +376,30 @@ export default function MaschinenDetailPage() {
     await loadWartungen();
   }
 
+  async function handleStandortSave(e) {
+    e.preventDefault();
+    setSavingStandort(true); setStandortError('');
+    const payload = {
+      maschine_id: id, company_id: companyId,
+      standort: standortForm.standort.trim() || null,
+      verfuegbarkeitsstatus: standortForm.verfuegbarkeitsstatus,
+      zugewiesen_an: standortForm.zugewiesen_an.trim() || null,
+      einsatzgebiet: standortForm.einsatzgebiet.trim() || null,
+      naechste_verfuegbarkeit: standortForm.naechste_verfuegbarkeit || null,
+      notizen: standortForm.notizen.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase.from('maschinen_standort')
+      .upsert(payload, { onConflict: 'maschine_id' })
+      .select().single();
+    setSavingStandort(false);
+    if (error) { setStandortError(error.message); return; }
+    setStandort(data);
+    setStandortEditing(false);
+    setStandortSaved(true);
+    setTimeout(() => setStandortSaved(false), 3000);
+  }
+
   if (loading) return <div className="p-8 text-gray-400">Lade…</div>;
   if (!maschine) return <div className="p-8 text-gray-400">Maschine nicht gefunden.</div>;
 
@@ -393,7 +469,7 @@ export default function MaschinenDetailPage() {
                 <Field label="Anschaffungswert" value={fmtCurrency(maschine.anschaffungswert)} />
                 <Field label="Standort / Lagerort" value={maschine.lagerort} />
                 <Field label="Zustand"          value={ZUSTAND_CONFIG[maschine.zustand]?.label ?? maschine.zustand} />
-                <Field label="Nächste Prøfung"  value={fmtDate(maschine.naechste_pruefung_datum)}
+                <Field label="Nächste Prüfung"  value={fmtDate(maschine.naechste_pruefung_datum)}
                   warn={!!maschine.naechste_pruefung_datum && (new Date(maschine.naechste_pruefung_datum) - new Date()) / 86400000 <= 30} />
                 <Field label="Betriebsstunden"
                   value={maschine.betriebsstunden_aktuell > 0
@@ -498,7 +574,7 @@ export default function MaschinenDetailPage() {
       {activeTab === 'wartungen_pruefungen' && (
         <div className="space-y-6">
 
-          {/* Prøfungen-Karte */}
+          {/* Prüfungen-Karte */}
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
@@ -665,7 +741,7 @@ export default function MaschinenDetailPage() {
                 <LabelInput label="Nächste Wartung bei Bst.">
                   <input type="number" value={wartungForm.naechste_stunden} onChange={e => setWartungForm(f => ({ ...f, naechste_stunden: e.target.value }))} min="0" step="0.1" placeholder="0.0" className={inputCls()} />
                 </LabelInput>
-                <LabelInput label="Werkstatt / Durchgeføhrt von">
+                <LabelInput label="Werkstatt / Durchgeführt von">
                   <input type="text" value={wartungForm.werkstatt} onChange={e => setWartungForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z.B. Intern, Werkstatt Müller" className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Kosten (€)">
@@ -690,6 +766,136 @@ export default function MaschinenDetailPage() {
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* ── Tab: Standort & Verfügbarkeit ──────────────────────────────────── */}
+      {activeTab === 'standort' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Standort & Verfügbarkeit</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Aktueller Standort und Einsatzstatus dieser Maschine</p>
+            </div>
+            {!standortEditing && standort && (
+              <div className="flex items-center gap-2">
+                {standortSaved && <span className="text-sm text-green-600 font-medium">Gespeichert</span>}
+                <button type="button" onClick={() => setStandortEditing(true)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition">
+                  Bearbeiten
+                </button>
+              </div>
+            )}
+          </div>
+
+          {standortLaden ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+          ) : standortEditing ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <form onSubmit={handleStandortSave} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <LabelInput label="Aktueller Standort / Depot">
+                    <input className={inputCls()} value={standortForm.standort}
+                      onChange={e => setStandortForm(f => ({ ...f, standort: e.target.value }))}
+                      placeholder="z. B. Lager Köln, Baustelle A4" />
+                  </LabelInput>
+                  <LabelInput label="Verfügbarkeitsstatus">
+                    <select className={inputCls()} value={standortForm.verfuegbarkeitsstatus}
+                      onChange={e => setStandortForm(f => ({ ...f, verfuegbarkeitsstatus: e.target.value }))}>
+                      {Object.entries(VERFUEGBARKEIT_CONFIG).map(([v, c]) => (
+                        <option key={v} value={v}>{c.label}</option>
+                      ))}
+                    </select>
+                  </LabelInput>
+                  <LabelInput label="Zugewiesen an (Mitarbeiter / Team)">
+                    <input className={inputCls()} value={standortForm.zugewiesen_an}
+                      onChange={e => setStandortForm(f => ({ ...f, zugewiesen_an: e.target.value }))}
+                      placeholder="z. B. Max Mustermann, Team Nord" />
+                  </LabelInput>
+                  <LabelInput label="Einsatzgebiet">
+                    <input className={inputCls()} value={standortForm.einsatzgebiet}
+                      onChange={e => setStandortForm(f => ({ ...f, einsatzgebiet: e.target.value }))}
+                      placeholder="z. B. Region Köln, NRW" />
+                  </LabelInput>
+                  {standortForm.verfuegbarkeitsstatus !== 'verfuegbar' && (
+                    <LabelInput label="Nächste Verføgbarkeit">
+                      <input type="date" className={inputCls()} value={standortForm.naechste_verfuegbarkeit}
+                        onChange={e => setStandortForm(f => ({ ...f, naechste_verfuegbarkeit: e.target.value }))} />
+                    </LabelInput>
+                  )}
+                </div>
+                <LabelInput label="Notizen">
+                  <textarea rows={2} className={inputCls('resize-none')} value={standortForm.notizen}
+                    onChange={e => setStandortForm(f => ({ ...f, notizen: e.target.value }))} />
+                </LabelInput>
+                {standortError && <p className="text-sm text-red-500">{standortError}</p>}
+                <div className="flex gap-3 pt-1">
+                  <button type="submit" disabled={savingStandort}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+                    <Icon d={ICONS.save} className="w-4 h-4" />{savingStandort ? 'Speichern…' : 'Speichern'}
+                  </button>
+                  {standort && (
+                    <button type="button" onClick={() => setStandortEditing(false)}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition">
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          ) : standort ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              {standortSaved && (
+                <div className="mb-4 px-3 py-2 bg-green-50 text-green-700 text-sm rounded-xl">Änderungen gespeichert.</div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Verfügbarkeitsstatus</p>
+                  {(() => {
+                    const cfg = VERFUEGBARKEIT_CONFIG[standort.verfuegbarkeitsstatus] ?? VERFUEGBARKEIT_CONFIG.verfuegbar;
+                    return <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>;
+                  })()}
+                </div>
+                {standort.standort && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Standort / Depot</p>
+                    <p className="text-gray-900 font-medium">{standort.standort}</p>
+                  </div>
+                )}
+                {standort.zugewiesen_an && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Zugewiesen an</p>
+                    <p className="text-gray-900 font-medium">{standort.zugewiesen_an}</p>
+                  </div>
+                )}
+                {standort.einsatzgebiet && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Einsatzgebiet</p>
+                    <p className="text-gray-900 font-medium">{standort.einsatzgebiet}</p>
+                  </div>
+                )}
+                {standort.naechste_verfuegbarkeit && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Nächste Verføgbarkeit</p>
+                    <p className="text-gray-900 font-medium">
+                      {new Date(standort.naechste_verfuegbarkeit).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                )}
+                {standort.notizen && (
+                  <div className="sm:col-span-2">
+                    <p className="text-xs text-gray-400 mb-1">Notizen</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{standort.notizen}</p>
+                  </div>
+                )}
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-gray-300">
+                    Zuletzt aktualisiert: {new Date(standort.updated_at).toLocaleDateString('de-DE')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
 
