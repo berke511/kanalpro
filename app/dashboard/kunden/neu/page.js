@@ -26,7 +26,7 @@ export default function NeuerKunde() {
       const plan = getPlan(sub.plan);
       const limit = plan.limits.kunden;
       if (limit == null || limit === Infinity) return;
-      const { count } = await supabase.from('kunden').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+      const { count } = await supabase.from('kunden').select('id', { count: 'exact', head: true });
       if (count >= limit) router.push('/dashboard/kunden');
     }
     checkLimit();
@@ -42,6 +42,7 @@ export default function NeuerKunde() {
     setFehler('');
     setLaden(true);
     const { data: { user } } = await supabase.auth.getUser();
+    const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
     const { error } = await supabase.from('kunden').insert({
       name: form.name,
       telefon: form.telefon || null,
@@ -57,6 +58,7 @@ export default function NeuerKunde() {
       ist_vertragskunde: form.ist_vertragskunde,
       ist_wartungskunde: form.ist_wartungskunde,
       user_id: user.id,
+      company_id: member?.company_id ?? null,
     });
     if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); setLaden(false); return; }
     router.push('/dashboard/kunden');
