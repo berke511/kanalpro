@@ -10,8 +10,21 @@ const TABS = [
   { id: 'wartungen',        label: 'Wartungen' },
   { id: 'kilometerstand',   label: 'Kilometerstand' },
   { id: 'versicherung',     label: 'Versicherung' },
-  { id: 'maschinen_geraete',label: 'Maschinen & Geräte' },
+  { id: 'maschinen_geraete',   label: 'Maschinen & Geräte' },
+  { id: 'standort',            label: 'Standort & Verfügbarkeit' },
 ];
+
+const VERFUEGBARKEIT_CONFIG = {
+  verfuegbar:    { label: 'Verfügbar',      bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  im_einsatz:    { label: 'Im Einsatz',     bg: 'bg-blue-50',    text: 'text-blue-700' },
+  in_wartung:    { label: 'In Wartung',     bg: 'bg-amber-50',   text: 'text-amber-700' },
+  ausser_betrieb:{ label: 'Außer Betrieb',  bg: 'bg-red-50',     text: 'text-red-600' },
+};
+
+const EMPTY_STANDORT = {
+  standort: '', verfuegbarkeitsstatus: 'verfuegbar', zugewiesen_an: '',
+  einsatzgebiet: '', naechste_verfuegbarkeit: '', notizen: '',
+};
 
 const GERAET_ZUSTAND_CONFIG = {
   gut:          { label: 'Gut',          bg: 'bg-emerald-50', text: 'text-emerald-700' },
@@ -61,7 +74,7 @@ const ZUSTAND_COLORS = {
 const ART_LABELS = {
   tuev: 'TÜV',
   hu: 'HU (Hauptuntersuchung)',
-  uvv: 'UVV-Prøfung',
+  uvv: 'UVV-Prüfung',
   sonstiges: 'Sonstige Prüfung',
 };
 
@@ -131,13 +144,13 @@ function pruefDatumsStatus(datum) {
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `Gøltig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  return { label: `Gültig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function kmStatus(naechsteKm, aktuellerKm) {
   if (!naechsteKm || !aktuellerKm) return null;
   const diff = naechsteKm - aktuellerKm;
-  if (diff <= 0) return { label: `Überfällig (${Math.abs(diff).toLocaleString('de-DE')} km überschritten)`, cls: 'text-red-600 font-medium', severity: 'danger' };
+  if (diff <= 0) return { label: `Überfällig (${Math.abs(diff).toLocaleString('de-DE')} km øberschritten)`, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diff <= 1000) return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diff <= 3000) return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-amber-600', severity: 'warn' };
   return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-emerald-600', severity: 'ok' };
@@ -185,7 +198,7 @@ const cellInputCls = 'w-full px-2 py-1.5 text-sm border border-gray-200 rounded-
 
 const TrashIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0I9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
   </svg>
 );
 
@@ -282,6 +295,15 @@ export default function FahrzeugDetailPage() {
   const [deletingGeraetId, setDeletingGeraetId] = useState(null);
   const [confirmDelGeraetId, setConfirmDelGeraetId] = useState(null);
 
+  // Standort & Verføgbarkeit
+  const [standort, setStandort] = useState(null);
+  const [standortLaden, setStandortLaden] = useState(false);
+  const [standortForm, setStandortForm] = useState({ ...EMPTY_STANDORT });
+  const [standortEditing, setStandortEditing] = useState(false);
+  const [savingStandort, setSavingStandort] = useState(false);
+  const [standortError, setStandortError] = useState('');
+  const [standortSaved, setStandortSaved] = useState(false);
+
   // Versicherung
   const [versicherungen, setVersicherungen] = useState([]);
   const [versLaden, setVersLaden] = useState(false);
@@ -300,9 +322,9 @@ export default function FahrzeugDetailPage() {
     const { data, error } = await supabase.from('fahrzeuge').select('*').eq('id', id).single();
     if (error || !data) { setNotFound(true); setLoading(false); return; }
     setFahrzeug(data);
-    setForm({ kennzeichen: data.kennzeichen ?? '', marke: data.marke ?? '', modell: data.modell ?? '', typ: data.typ ?? '', baujahr: data.baujahr != null ? String(data.baujahr) : '', farbe: data.farbe ?? '', kraftstoff: data.kraftstoff ?? '', km_stand: data.km_stand != null ? String(data.km_stand) : '', tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '', versicherung : data.versicherung ?? '', zustand: data.zustand ?? 'aktiv', notizen: data.notizen ?? '' });
+    setForm({ kennzeichen: data.kennzeichen ?? '', marke: data.marke ?? '', modell: data.modell ?? '', typ: data.typ ?? '', baujahr: data.baujahr != null ? String(data.baujahr) : '', farbe: data.farbe ?? '', kraftstoff: data.kraftstoff ?? '', km_stand: data.km_stand != null ? String(data.km_stand) : '', tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '', versicherung: data.versicherung ?? '', zustand: data.zustand ?? 'aktiv', notizen: data.notizen ?? '' });
     setFristenForm({ tuev_bis: data.tuev_bis ?? '', hu_bis: data.hu_bis ?? '', uvv_bis: data.uvv_bis ?? '' });
-    setNaechsteWart({ datum: data.naechste_wartung_datum ?? '', km: data.naechste_wartung_m != null ? String(data.naechste_wartung_km) : '' });
+    setNaechsteWart({ datum: data.naechste_wartung_datum ?? '', km: data.naechste_wartung_km != null ? String(data.naechste_wartung_km) : '' });
     setAktKmWert(data.km_stand != null ? String(data.km_stand) : '');
     setLoading(false);
   }, [id, router]);
@@ -335,6 +357,27 @@ export default function FahrzeugDetailPage() {
     setGeraetLaden(false);
   }, [id]);
 
+  const loadStandort = useCallback(async () => {
+    setStandortLaden(true);
+    const { data } = await supabase.from('fahrzeug_standort').select('*').eq('fahrzeug_id', id).maybeSingle();
+    if (data) {
+      setStandort(data);
+      setStandortForm({
+        standort: data.standort ?? '',
+        verfuegbarkeitsstatus: data.verfuegbarkeitsstatus ?? 'verfuegbar',
+        zugewiesen_an: data.zugewiesen_an ?? '',
+        einsatzgebiet: data.einsatzgebiet ?? '',
+        naechste_verfuegbarkeit: data.naechste_verfuegbarkeit ?? '',
+        notizen: data.notizen ?? '',
+      });
+    } else {
+      setStandort(null);
+      setStandortForm({ ...EMPTY_STANDORT });
+    }
+    setStandortEditing(!data);
+    setStandortLaden(false);
+  }, [id]);
+
   const loadVersicherungen = useCallback(async () => {
     setVersLaden(true);
     const { data } = await supabase.from('fahrzeug_versicherungen').select('*').eq('fahrzeug_id', id).order('ablauf_datum', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
@@ -348,6 +391,7 @@ export default function FahrzeugDetailPage() {
   useEffect(() => { if (activeTab === 'kilometerstand') loadKmEintraege(); }, [activeTab, loadKmEintraege]);
   useEffect(() => { if (activeTab === 'versicherung') loadVersicherungen(); }, [activeTab, loadVersicherungen]);
   useEffect(() => { if (activeTab === 'maschinen_geraete') loadGeraete(); }, [activeTab, loadGeraete]);
+  useEffect(() => { if (activeTab === 'standort') loadStandort(); }, [activeTab, loadStandort]);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
 
@@ -383,7 +427,7 @@ export default function FahrzeugDetailPage() {
 
   async function handlePruefNeu(e) {
     e.preventDefault(); setPruefNeuError('');
-    if (!pruefForm.pruef_datum) { setPruefNeuError('Prøfdatum ist Pflichtfeld.'); return; }
+    if (!pruefForm.pruef_datum) { setPruefNeuError('Prüfdatum ist Pflichtfeld.'); return; }
     setPruefNeuSaving(true);
     const { error } = await supabase.from('fahrzeug_pruefungen').insert({ fahrzeug_id: id, company_id: companyId, art: pruefForm.art, pruef_datum: pruefForm.pruef_datum, gueltig_bis: pruefForm.gueltig_bis || null, pruefstelle: pruefForm.pruefstelle.trim() || null, ergebnis: pruefForm.ergebnis || null, notiz: pruefForm.notiz.trim() || null });
     if (!error && pruefForm.gueltig_bis) {
@@ -555,6 +599,30 @@ export default function FahrzeugDetailPage() {
     loadGeraete();
   }
 
+  async function handleStandortSave(e) {
+    e.preventDefault();
+    setSavingStandort(true); setStandortError('');
+    const payload = {
+      fahrzeug_id: id, company_id: companyId,
+      standort: standortForm.standort.trim() || null,
+      verfuegbarkeitsstatus: standortForm.verfuegbarkeitsstatus,
+      zugewiesen_an: standortForm.zugewiesen_an.trim() || null,
+      einsatzgebiet: standortForm.einsatzgebiet.trim() || null,
+      naechste_verfuegbarkeit: standortForm.naechste_verfuegbarkeit || null,
+      notizen: standortForm.notizen.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase.from('fahrzeug_standort')
+      .upsert(payload, { onConflict: 'fahrzeug_id' })
+      .select().single();
+    setSavingStandort(false);
+    if (error) { setStandortError(error.message); return; }
+    setStandort(data);
+    setStandortEditing(false);
+    setStandortSaved(true);
+    setTimeout(() => setStandortSaved(false), 3000);
+  }
+
   function updateZeile(rowId, field, value) { setEingabeZeilen(prev => prev.map(z => z.rowId === rowId ? { ...z, [field]: value } : z)); }
   function removeZeile(rowId) { setEingabeZeilen(prev => prev.length > 1 ? prev.filter(z => z.rowId !== rowId) : prev); }
   function addZeile() { setEingabeZeilen(prev => [...prev, newZeile()]); }
@@ -692,7 +760,7 @@ export default function FahrzeugDetailPage() {
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prüfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufügen</button></div>
           {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prøfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
+          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
@@ -1130,6 +1198,137 @@ export default function FahrzeugDetailPage() {
               </div>
             )
           )}
+        </div>
+      )}
+
+      {/* ── Tab: Standort & Verfügbarkeit ───────────────────────────────────── */}
+      {activeTab === 'standort' && (
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Standort & Verføgbarkeit</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Aktueller Standort und Einsatzstatus des Fahrzeugs</p>
+            </div>
+            {!standortEditing && standort && (
+              <div className="flex items-center gap-2">
+                {standortSaved && <span className="text-sm text-emerald-600 font-medium">Gespeichert</span>}
+                <button type="button" onClick={() => setStandortEditing(true)}
+                  className="px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-50 transition">
+                  Bearbeiten
+                </button>
+              </div>
+            )}
+          </div>
+
+          {standortLaden ? (
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
+          ) : standortEditing ? (
+            /* Formular */
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <form onSubmit={handleStandortSave} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <LabelInput label="Aktueller Standort / Depot">
+                    <input className={inputCls} value={standortForm.standort}
+                      onChange={e => setStandortForm(f => ({ ...f, standort: e.target.value }))}
+                      placeholder="z. B. Depot Köln, Baustelle A4" />
+                  </LabelInput>
+                  <LabelInput label="Verfügbarkeitsstatus">
+                    <select className={inputCls} value={standortForm.verfuegbarkeitsstatus}
+                      onChange={e => setStandortForm(f => ({ ...f, verfuegbarkeitsstatus: e.target.value }))}>
+                      {Object.entries(VERFUEGBARKEIT_CONFIG).map(([v, c]) => (
+                        <option key={v} value={v}>{c.label}</option>
+                      ))}
+                    </select>
+                  </LabelInput>
+                  <LabelInput label="Zugewiesen an (Fahrer / Team)">
+                    <input className={inputCls} value={standortForm.zugewiesen_an}
+                      onChange={e => setStandortForm(f => ({ ...f, zugewiesen_an: e.target.value }))}
+                      placeholder="z. B. Max Mustermann, Team Nord" />
+                  </LabelInput>
+                  <LabelInput label="Einsatzgebiet">
+                    <input className={inputCls} value={standortForm.einsatzgebiet}
+                      onChange={e => setStandortForm(f => ({ ...f, einsatzgebiet: e.target.value }))}
+                      placeholder="z. B. Region Köln, NRW" />
+                  </LabelInput>
+                  {standortForm.verfuegbarkeitsstatus !== 'verfuegbar' && (
+                    <LabelInput label="Nächste Verfügbarkeit">
+                      <input type="date" className={inputCls} value={standortForm.naechste_verfuegbarkeit}
+                        onChange={e => setStandortForm(f => ({ ...f, naechste_verfuegbarkeit: e.target.value }))} />
+                    </LabelInput>
+                  )}
+                </div>
+                <LabelInput label="Notizen">
+                  <textarea rows={2} className={inputCls} value={standortForm.notizen}
+                    onChange={e => setStandortForm(f => ({ ...f, notizen: e.target.value }))} />
+                </LabelInput>
+                {standortError && <p className="text-sm text-red-500">{standortError}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button type="submit" disabled={savingStandort}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">
+                    {savingStandort ? 'Speichern…' : 'Speichern'}
+                  </button>
+                  {standort && (
+                    <button type="button" onClick={() => setStandortEditing(false)}
+                      className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          ) : standort ? (
+            /* Detailansicht */
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              {standortSaved && (
+                <div className="mb-4 px-3 py-2 bg-emerald-50 text-emerald-700 text-sm rounded-xl">Änderungen gespeichert.</div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                <div>
+                  <p className="text-xs font-medium text-gray-400 mb-0.5">Verfügbarkeitsstatus</p>
+                  {(() => {
+                    const cfg = VERFUEGBARKEIT_CONFIG[standort.verfuegbarkeitsstatus] ?? VERFUEGBARKEIT_CONFIG.verfuegbar;
+                    return <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>{cfg.label}</span>;
+                  })()}
+                </div>
+                {standort.standort && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 mb-0.5">Standort / Depot</p>
+                    <p className="text-gray-900">{standort.standort}</p>
+                  </div>
+                )}
+                {standort.zugewiesen_an && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 mb-0.5">Zugewiesen an</p>
+                    <p className="text-gray-900">{standort.zugewiesen_an}</p>
+                  </div>
+                )}
+                {standort.einsatzgebiet && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 mb-0.5">Einsatzgebiet</p>
+                    <p className="text-gray-900">{standort.einsatzgebiet}</p>
+                  </div>
+                )}
+                {standort.naechste_verfuegbarkeit && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 mb-0.5">Nächste Verfügbarkeit</p>
+                    <p className={datumsStatus(standort.naechste_verfuegbarkeit)?.cls ?? 'text-gray-900'}>
+                      {formatDate(standort.naechste_verfuegbarkeit)}
+                    </p>
+                  </div>
+                )}
+                {standort.notizen && (
+                  <div className="sm:col-span-2">
+                    <p className="text-xs font-medium text-gray-400 mb-0.5">Notizen</p>
+                    <p className="text-gray-700 text-sm whitespace-pre-wrap">{standort.notizen}</p>
+                  </div>
+                )}
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-gray-300">Zuletzt aktualisiert: {formatDate(standort.updated_at)}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
