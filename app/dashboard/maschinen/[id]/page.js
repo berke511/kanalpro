@@ -46,22 +46,19 @@ const PRUEFUNG_ART_OPTIONS = [
   // ── Hebezeuge / Krane ───────────────────────────────────────────────────────
   { value: 'dguv_v52_krane',          label: 'DGUV V52 – Krane' },
   { value: 'dguv_v54_winden',         label: 'DGUV V54 – Winden, Hub- und Zuggeräte' },
-  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebühne / Arbeitsbühne' },
+  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebühne / Arbeitsbøhne' },
   { value: 'lastaufnahmemittel',      label: 'Lastaufnahmemittel-Prüfung (DGUV V54)' },
   // ── Druckgeräte / Hydraulik ─────────────────────────────────────────────────
   { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprüfung (BetrSichV / DGRL 2014/68/EU)' },
   { value: 'druckbehaelter_zuev',     label: 'Druckbehälter – ZÜS-Prüfung (§ 15 BetrSichV)' },
   { value: 'druckpruefung_leitung',   label: 'Druckprüfung Leitung / Hydraulik' },
-  // ── Fahrzeuge / Flurförderzeuge ─────────────────────────────────────────────
-  { value: 'dguv_v68_fahrzeuge',      label: 'DGUV V68/V70 – Fahrzeuge / Flurförderzeuge' },
-  { value: 'hauptuntersuchung',       label: 'Hauptuntersuchung HU (TÜV / § 57a StVZO)' },
-  { value: 'sicherheitspruefung_sp',  label: 'Sicherheitsprüfung SP (§ 29 StVZO)' },
-  { value: 'abgasuntersuchung',       label: 'Abgasuntersuchung AU' },
+  // ── Flurförderzeuge ─────────────────────────────────────────────────────────
+  { value: 'dguv_v68_fahrzeuge',      label: 'DGUV V68/V70 – Flurförderzeuge / Stapler' },
   // ── Rohr- und Kanaltechnik ──────────────────────────────────────────────────
   { value: 'kanalinspektion_tv',      label: 'Kanalinspektion (DIN EN 13508-2 / TV-Inspektion)' },
   { value: 'dichtheitspruefung',      label: 'Dichtheitsprüfung (DIN EN 1610 / § 60 WHG)' },
   { value: 'abscheider_din4040',      label: 'Abscheiderprüfung Fett (DIN 4040-100)' },
-  { value: 'abscheider_lfa_din1999',  label: 'Leichtfløssigkeitsabscheider (DIN 1999-100)' },
+  { value: 'abscheider_lfa_din1999',  label: 'Leichtflüssigkeitsabscheider (DIN 1999-100)' },
   { value: 'eigenüberwachung_ekvo',   label: 'Eigenüberwachung Abwasser (EKVO / SüwVO Abw)' },
   { value: 'schlauchliner_din11296',  label: 'Schlauchliner-Abnahme (DIN EN ISO 11296-4)' },
   { value: 'kurzliner_abnahme',       label: 'Kurzliner-Abnahme (DIN EN 13566)' },
@@ -163,7 +160,7 @@ export default function MaschinenDetailPage() {
   const [deleting, setDeleting]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
 
-  // Prüfungen
+  // Prøfungen
   const [pruefungen, setPruefungen]         = useState([]);
   const [pruefungView, setPruefungView]     = useState('list');
   const [pruefungForm, setPruefungForm]     = useState({});
@@ -396,7 +393,7 @@ export default function MaschinenDetailPage() {
                 <Field label="Anschaffungswert" value={fmtCurrency(maschine.anschaffungswert)} />
                 <Field label="Standort / Lagerort" value={maschine.lagerort} />
                 <Field label="Zustand"          value={ZUSTAND_CONFIG[maschine.zustand]?.label ?? maschine.zustand} />
-                <Field label="Nächste Prüfung"  value={fmtDate(maschine.naechste_pruefung_datum)}
+                <Field label="Nächste Prøfung"  value={fmtDate(maschine.naechste_pruefung_datum)}
                   warn={!!maschine.naechste_pruefung_datum && (new Date(maschine.naechste_pruefung_datum) - new Date()) / 86400000 <= 30} />
                 <Field label="Betriebsstunden"
                   value={maschine.betriebsstunden_aktuell > 0
@@ -501,7 +498,7 @@ export default function MaschinenDetailPage() {
       {activeTab === 'wartungen_pruefungen' && (
         <div className="space-y-6">
 
-          {/* Prüfungen-Karte */}
+          {/* Prøfungen-Karte */}
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
@@ -668,7 +665,7 @@ export default function MaschinenDetailPage() {
                 <LabelInput label="Nächste Wartung bei Bst.">
                   <input type="number" value={wartungForm.naechste_stunden} onChange={e => setWartungForm(f => ({ ...f, naechste_stunden: e.target.value }))} min="0" step="0.1" placeholder="0.0" className={inputCls()} />
                 </LabelInput>
-                <LabelInput label="Werkstatt / Durchgeführt von">
+                <LabelInput label="Werkstatt / Durchgeføhrt von">
                   <input type="text" value={wartungForm.werkstatt} onChange={e => setWartungForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z.B. Intern, Werkstatt Müller" className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Kosten (€)">
