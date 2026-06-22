@@ -283,15 +283,26 @@ export default function NeuesAngebot() {
 
                       {/* Beschreibung + Drop-Up */}
                       <td className="px-2 py-2 relative">
-                        <input
-                          type="text"
-                          value={p.beschreibung}
-                          onChange={e => { onPos(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
-                          onFocus={() => setOpenDrop(i)}
-                          placeholder="Leistung eingeben oder wählen…"
-                          autoComplete="off"
-                          className={INPUT}
-                        />
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={p.beschreibung}
+                            onChange={e => { onPos(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
+                            onFocus={() => setOpenDrop(i)}
+                            placeholder="Leistung wählen oder eingeben…"
+                            autoComplete="off"
+                            className={INPUT + ' pr-8 cursor-pointer'}
+                          />
+                          <button
+                            type="button"
+                            onMouseDown={e => { e.preventDefault(); setOpenDrop(openDrop === i ? null : i); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
                         {showDrop && (
                           <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
                             {filtered.map(l => (
