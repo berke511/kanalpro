@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import PlanGate from '@/components/PlanGate';
 
@@ -13,7 +14,7 @@ const statusConfig = {
 const firmaFelder = [
   { section: 'Firmendaten', items: [
     { name: 'firmenname',   label: 'Firmenname',    placeholder: 'Mustermann Rohrreinigung GmbH' },
-    { name: 'adresse',      label: 'Adresse',       placeholder: 'Musterstraße 1, 40000 Düsseldorf' },
+    { name: 'adresse',      label: 'Adresse',       placeholder: 'MusterstraÃe 1, 40000 DÃ¼sseldorf' },
     { name: 'telefon',      label: 'Telefon',       placeholder: '0211 123456' },
     { name: 'email',        label: 'E-Mail',        placeholder: 'info@musterfirma.de' },
   ]},
@@ -29,6 +30,7 @@ const firmaFelder = [
 ];
 
 export default function Rechnungen() {
+  const router = useRouter();
   const [tab, setTab] = useState('liste');
   const [rechnungen, setRechnungen] = useState([]);
   const [laden, setLaden] = useState(true);
@@ -105,11 +107,11 @@ export default function Rechnungen() {
                 {rechnungen.map(r => {
                   const cfg = statusConfig[r.status] ?? statusConfig.entwurf;
                   return (
-                    <tr key={r.id} className="hover:bg-gray-50 transition">
+                    <tr key={r.id} onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)} className="hover:bg-gray-50 transition cursor-pointer">
                       <td className="px-5 py-3 font-mono font-medium text-gray-900">{r.rechnungsnummer}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? '–'}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}</td>
-                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} €</td>
+                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? 'â'}</td>
+                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}</td>
+                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} â¬</td>
                       <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
                     </tr>
                   );
