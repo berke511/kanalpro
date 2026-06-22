@@ -152,7 +152,7 @@ export default function Angebote() {
   return (
     <div>
       {/* ── Tab-Bar + Action ── */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setTab('angebote')}
@@ -196,7 +196,8 @@ export default function Angebote() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
@@ -225,6 +226,7 @@ export default function Angebote() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}
