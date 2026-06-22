@@ -133,7 +133,7 @@ export default function MaschinenPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Maschinen &amp; Geräte</h1>
           <p className="text-sm text-gray-500 mt-0.5">{maschinen.length} Maschinen erfasst</p>
@@ -164,7 +164,7 @@ export default function MaschinenPage() {
       {showForm && (
         <div className="mb-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Neue Maschine anlegen</h2>
-          <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1">
               <label className="block text-xs font-medium text-gray-600 mb-1">Bezeichnung *</label>
               <input
