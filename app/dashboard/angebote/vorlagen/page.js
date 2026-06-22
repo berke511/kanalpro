@@ -42,7 +42,7 @@ export default function Vorlagen() {
       .from('angebote')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId);
-    const nr = `AN-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(3, '0')}`;
+    const nr = `AM-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(3, '0')}`;
     const { error } = await supabase.from('angebote').insert({
       user_id: userId,
       company_id: companyId,
@@ -139,6 +139,12 @@ export default function Vorlagen() {
                   >
                     {erstellenId === v.id ? 'Wird erstellt…' : 'Angebot erstellen'}
                   </button>
+                  <Link
+                    href={`/dashboard/angebote/vorlagen/${v.id}`}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-blue-50 hover:text-blue-700 transition"
+                  >
+                    Bearbeiten
+                  </Link>
                   <button
                     onClick={() => loeschen(v.id)}
                     className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-lg hover:bg-red-50 hover:text-red-600 transition"
