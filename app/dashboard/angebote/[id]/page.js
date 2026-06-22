@@ -101,7 +101,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprüfung Luft',
+  'Dichtheitsprøfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -112,8 +112,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
-  'Hebeanlagenprüfung',
+  'Røckstausicherungsprüfung',
+  'Hebeanlagenprøfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -463,7 +463,7 @@ export default function AngebotBearbeiten() {
       <div className="flex items-center justify-between">
         <div>
           <Link href="/dashboard/angebote" className="text-xs text-gray-400 hover:text-gray-600 transition">
-            ← Zurøck zu Angebote
+            ← Zurück zu Angebote
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-1">Angebot bearbeiten</h1>
         </div>
@@ -513,11 +513,20 @@ export default function AngebotBearbeiten() {
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
           <div className="p-5 space-y-2" ref={dropRef}>
+            {/* Spaltenüberschriften */}
+            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Preis (€)</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
+              <span></span>
+            </div>
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
               const showDrop = openDrop === i && filtered.length > 0;
               return (
-              <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_32px] gap-2 items-center">
+              <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 items-center">
                 <div className="relative">
                   <input
                     type="text"
@@ -540,13 +549,16 @@ export default function AngebotBearbeiten() {
                 <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} min="0" step="0.5" className={INPUT} />
                 <select value={p.einheit} onChange={e => posChange(i, 'einheit', e.target.value)} className={INPUT}>
                   <option>Pauschal</option>
-                  <option>Stunde</option>
-                  <option>Tag</option>
+                  <option>Stück</option>
+                  <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
-                  <option>Støck</option>
+                  <option>m³</option>
+                  <option>kg</option>
+                  <option>t</option>
                 </select>
-                <input type="number" value={p.preis} onChange={e => posChange(i, 'preis', e.target.value)} placeholder="Preis €" min="0" step="0.01" className={INPUT} />
+                <input type="number" value={p.preis} onChange={e => posChange(i, 'preis', e.target.value)} placeholder="0,00" min="0" step="0.01" className={INPUT} />
+                <span className="text-right text-sm font-medium text-gray-700 tabular-nums pr-1">{fmt(p.menge * p.preis)}</span>
                 <button
                   type="button"
                   onClick={() => removePos(i)}
@@ -567,7 +579,7 @@ export default function AngebotBearbeiten() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              + Position hinzuføgen
+              + Position hinzufügen
             </button>
           </div>
           {/* Summary */}
@@ -597,7 +609,7 @@ export default function AngebotBearbeiten() {
               value={form.notizen}
               onChange={onChange}
               rows={2}
-              placeholder="z. B. Dieses Angebot ist 30 Tage gøltig."
+              placeholder="z. B. Dieses Angebot ist 30 Tage gültig."
               className={INPUT + ' resize-none'}
             />
           </div>
@@ -635,7 +647,7 @@ export default function AngebotBearbeiten() {
           >
             <h3 className="text-base font-semibold text-gray-900 mb-1">Angebot löschen?</h3>
             <p className="text-xs text-gray-400 mb-4">
-              Diese Aktion kann nicht røckgängig gemacht werden.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </p>
             <div className="flex gap-2">
               <button
