@@ -186,7 +186,7 @@ export default function KundeDetail() {
               </div>
             </div>
 
-            <div className={form.kundentyp === 'firma' ? 'grid grid-cols-2 gap-4' : ''}>
+            <div className={form.kundentyp === 'firma' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : ''}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {form.kundentyp === 'firma' ? 'Ansprechpartner *' : 'Name ' + '*'}
@@ -203,7 +203,7 @@ export default function KundeDetail() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
                 <input type="tel" name="telefon" value={form.telefon} onChange={handleChange}
@@ -369,7 +369,8 @@ export default function KundeDetail() {
               <div className="px-5 py-3 border-b border-gray-50 text-xs text-gray-400 font-medium">
                 {auftraege.length} {auftraege.length === 1 ? 'Einsatz' : 'Einsätze'} gesamt
               </div>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
                     <th className="text-left px-5 py-3 font-medium text-gray-500">Auftrag</th>
@@ -401,6 +402,7 @@ export default function KundeDetail() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
