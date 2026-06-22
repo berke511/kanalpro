@@ -358,8 +358,16 @@ export default function AngebotBearbeiten() {
     { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 },
   ]);
   const [fehler, setFehler]   = useState('');
-  const [dropIdx, setDropIdx] = useState(null);
+  const [openDrop, setOpenDrop] = useState(null);
   const dropRef = useRef(null);
+
+  useEffect(() => {
+    function onDown(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -504,37 +512,32 @@ export default function AngebotBearbeiten() {
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
-          <div className="p-5 space-y-2">
-            {positionen.map((p, i) => (
+          <div className="p-5 space-y-2" ref={dropRef}>
+            {positionen.map((p, i) => {
+              const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
+              const showDrop = openDrop === i && filtered.length > 0;
+              return (
               <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_32px] gap-2 items-center">
                 <div className="relative">
                   <input
                     type="text"
                     value={p.beschreibung}
-                    onChange={e => { posChange(i, 'beschreibung', e.target.value); setDropIdx(e.target.value.length > 0 ? i : null); }}
-                    onFocus={() => p.beschreibung.length > 0 && setDropIdx(i)}
-                    onBlur={() => setTimeout(() => setDropIdx(null), 150)}
+                    onChange={e => { posChange(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
+                    onFocus={() => setOpenDrop(i)}
                     placeholder="Leistungsbeschreibung"
+                    autoComplete="off"
                     className={INPUT}
                   />
-                  {dropIdx === i && (
-                    <div ref={dropRef} className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-                      {LEISTUNGEN
-                        .filter(l => l.toLowerCase().includes(p.beschreibung.toLowerCase()))
-                        .map(l => (
-                          <button
-                            key={l}
-                            type="button"
-                            onMouseDown={() => { posChange(i, 'beschreibung', l); setDropIdx(null); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700"
-                          >
-                            {l}
-                          </button>
-                        ))}
-                    </div>
+                  {showDrop && (
+                    <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
+                      {filtered.map(l => (
+                        <li key={l} onMouseDown={e => { e.preventDefault(); posChange(i, 'beschreibung', l); setOpenDrop(null); }}
+                          className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0">{l}</li>
+                      ))}
+                    </ul>
                   )}
                 </div>
-                <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} placeholder="Menge" min="0" step="0.01" className={INPUT} />
+                <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} min="0" step="0.5" className={INPUT} />
                 <select value={p.einheit} onChange={e => posChange(i, 'einheit', e.target.value)} className={INPUT}>
                   <option>Pauschal</option>
                   <option>Stunde</option>
@@ -554,7 +557,8 @@ export default function AngebotBearbeiten() {
                   </svg>
                 </button>
               </div>
-            ))}
+              );
+            })}
             <button
               type="button"
               onClick={addPos}
