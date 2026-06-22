@@ -453,7 +453,7 @@ export default function NeueRechnung() {
               {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Fällig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
@@ -468,7 +468,7 @@ export default function NeueRechnung() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-3">Positionen</h2>
           {/* Spaltenüberschriften */}
-          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
+          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
@@ -476,7 +476,7 @@ export default function NeueRechnung() {
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
             <span></span>
           </div>
-          <div className="space-y-2" ref={dropRef}>
+          <div className="overflow-x-auto space-y-2" ref={dropRef}>
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
               const showDrop = openDrop === i && filtered.length > 0;
