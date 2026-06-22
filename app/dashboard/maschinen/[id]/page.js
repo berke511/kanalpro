@@ -451,7 +451,7 @@ export default function MaschinenDetailPage() {
     <div className="max-w-4xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-6">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/dashboard/maschinen')}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
