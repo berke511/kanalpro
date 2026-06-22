@@ -383,6 +383,7 @@ export default function NeuesAngebot() {
               </div>
             </div>
           </div>
+        </div>
 
         {/* ── Notizen ── */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
