@@ -319,7 +319,7 @@ export default function Dashboard() {
           </div>
           {/* Umsatz-Diagramm */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="flex items-start justify-between mb-5">
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-5">
               <div>
                 <h3 className="font-semibold text-gray-900">Umsatzverlauf {new Date().getFullYear()}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Monatlich aus dem Rechnungsmodul</p>
@@ -384,7 +384,7 @@ export default function Dashboard() {
               href="/dashboard/rechnungen" loading={laden} />
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
               <h3 className="font-semibold text-gray-900">Rechnungsstatus</h3>
               <span className="text-xs bg-amber-50 text-amber-600 px-3 py-1 rounded-lg font-medium">
                 Modul wird bald freigeschaltet
@@ -423,7 +423,7 @@ export default function Dashboard() {
                 <KPICard label="Im Einsatz" value="—" loading={false} sub="Bald verføgbar" />
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                   <h3 className="font-semibold text-gray-900">Mitarbeiterstatus</h3>
                   <span className="text-xs bg-gray-50 text-gray-500 px-3 py-1 rounded-lg">Kommt bald</span>
                 </div>
@@ -456,7 +456,7 @@ export default function Dashboard() {
                 <KPICard label="Im Einsatz" value={fahrzeug.imEinsatz} loading={false} sub="Bald verfügbar" />
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
                   <h3 className="font-semibold text-gray-900">Fahrzeugstatus</h3>
                   <span className="text-xs bg-gray-50 text-gray-500 px-3 py-1 rounded-lg">Kommt bald</span>
                 </div>
