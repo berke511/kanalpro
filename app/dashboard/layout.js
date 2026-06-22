@@ -60,8 +60,9 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     async function load() {
-      const { data: { user: u } } = await supabase.auth.getUser();
-      if (!u) { router.push('/login'); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push('/login'); return; }
+      const u = session.user;
       setUser(u);
 
       // Abo laden + ggf. Trial automatisch herabstufen
@@ -91,18 +92,11 @@ export default function DashboardLayout({ children }) {
         .eq('is_active', true)
         .maybeSingle();
       setUserRole(member?.role ?? null);
-
-      if (sessionStorage.getItem('tempLogin') === '1') {
-        const fn = () => supabase.auth.signOut();
-        window.addEventListener('beforeunload', fn);
-        return () => window.removeEventListener('beforeunload', fn);
-      }
     }
     load();
   }, [router]);
 
   async function handleLogout() {
-    sessionStorage.removeItem('tempLogin');
     await supabase.auth.signOut();
     router.push('/login');
   }
