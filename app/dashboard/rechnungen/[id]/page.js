@@ -19,46 +19,46 @@ const LEISTUNGEN = [
   'Regenwasserleitungsreinigung',
   'Mischwasserkanalreinigung',
   'Drainagereinigung',
-  'DachentwÃ¤sserungsreinigung',
+  'Dachentwässerungsreinigung',
   'Hofablaufreinigung',
   'Sinkkastenreinigung',
-  'StraÃenablaufreinigung',
+  'Straßenablaufreinigung',
   'Schachtreinigung',
   'Pumpenschachtreinigung',
   'Hebeanlagenreinigung',
   'Pumpwerksreinigung',
   'Fettabscheiderreinigung',
-  'Ãlabscheiderreinigung',
+  'Ölabscheiderreinigung',
   'Benzinabscheiderreinigung',
   'Schlammfangreinigung',
   'Sandfangreinigung',
-  'RegenrÃ¼ckhaltebeckenreinigung',
-  'RegenÃ¼berlaufbeckenreinigung',
+  'Regenrückhaltebeckenreinigung',
+  'Regenüberlaufbeckenreinigung',
   'Zisternenreinigung',
-  'BehÃ¤lterreinigung',
+  'Behälterreinigung',
   'Tankreinigung',
-  'RohrnetzspÃ¼lung',
-  'KanalnetzspÃ¼lung',
-  'HochdruckspÃ¼lung',
-  'Kombinierte Saug- und SpÃ¼larbeiten',
+  'Rohrnetzspülung',
+  'Kanalnetzspülung',
+  'Hochdruckspülung',
+  'Kombinierte Saug- und Spülarbeiten',
   'Absaugarbeiten',
   'Schlammentsorgung',
   'Sandabsaugung',
   'Fettabsaugung',
-  'Ãlabsaugung',
+  'Ölabsaugung',
   'Verstopfungsbeseitigung',
   'Wurzelentfernung',
   'Betonentfernung',
-  'MÃ¶rtelentfernung',
+  'Mörtelentfernung',
   'Kalkentfernung',
   'Ablagerungsentfernung',
-  'FremdkÃ¶rperentfernung',
-  'WurzelfrÃ¤sen',
-  'KettenfrÃ¤sen',
+  'Fremdkörperentfernung',
+  'Wurzelfräsen',
+  'Kettenfräsen',
   'Roboterschneiden',
-  'RoboterfrÃ¤sarbeiten',
-  'Ãffnen von ZulÃ¤ufen',
-  'Ãffnen von AnschlÃ¼ssen',
+  'Roboterfräsarbeiten',
+  'Öffnen von Zuläufen',
+  'Öffnen von Anschlüssen',
   'Beseitigung einragender Stutzen',
   'Entfernung von Hindernissen',
   'Sanierungsroboter-Einsatz',
@@ -70,11 +70,11 @@ const LEISTUNGEN = [
   'Kanal-TV-Untersuchung',
   'Hausanschlussinspektion',
   'Schachtinspektion',
-  'GroÃprofilinspektion',
+  'Großprofilinspektion',
   'Vorinspektion',
   'Nachinspektion',
   'Abnahmeinspektion',
-  'GewÃ¤hrleistungsinspektion',
+  'Gewährleistungsinspektion',
   'Schadensaufnahme',
   'Schadensdokumentation',
   'Videodokumentation',
@@ -94,37 +94,37 @@ const LEISTUNGEN = [
   'Leckageortung',
   'Rohrbruchortung',
   'Fremdwasserortung',
-  'Ortung verdeckter SchÃ¤chte',
+  'Ortung verdeckter Schächte',
   'GPS-Vermessung',
   'Kanalvermessung',
   'Schachtvermessung',
-  'HÃ¶henvermessung',
+  'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'DichtheitsprÃ¼fung Luft',
-  'DichtheitsprÃ¼fung Wasser',
-  'KanaldichtheitsprÃ¼fung',
-  'RohrdichtheitsprÃ¼fung',
-  'SchachtdichtheitsprÃ¼fung',
-  'HausanschlussprÃ¼fung',
-  'DruckprÃ¼fung',
-  'FunktionsprÃ¼fung',
-  'AbnahmeprÃ¼fung',
-  'GewÃ¤hrleistungsprÃ¼fung',
-  'InspektionsprÃ¼fung',
-  'RÃ¼ckstausicherungsprÃ¼fung',
-  'HebeanlagenprÃ¼fung',
-  'PumpenprÃ¼fung',
+  'Dichtheitsprüfung Luft',
+  'Dichtheitsprüfung Wasser',
+  'Kanaldichtheitsprüfung',
+  'Rohrdichtheitsprüfung',
+  'Schachtdichtheitsprüfung',
+  'Hausanschlussprüfung',
+  'Druckprüfung',
+  'Funktionsprüfung',
+  'Abnahmeprüfung',
+  'Gewährleistungsprüfung',
+  'Inspektionsprüfung',
+  'Rückstausicherungsprüfung',
+  'Hebeanlagenprüfung',
+  'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
-  'EntwÃ¤sserungsanlagenwartung',
+  'Entwässerungsanlagenwartung',
   'Hebeanlagenwartung',
   'Pumpenwartung',
   'Pumpwerkswartung',
-  'RÃ¼ckstausicherungswartung',
-  'RÃ¼ckstauklappenwartung',
+  'Rückstausicherungswartung',
+  'Rückstauklappenwartung',
   'Fettabscheiderwartung',
-  'Ãlabscheiderwartung',
+  'Ölabscheiderwartung',
   'Schachtwartung',
   'Regelinspektion',
   'Wartungsvertrag',
@@ -160,7 +160,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'SprÃ¼hliner',
+  'Sprühliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -184,17 +184,17 @@ const LEISTUNGEN = [
   'Kanalneubau',
   'Schachtneubau',
   'Austausch von Rohrleitungen',
-  'Austausch von SchÃ¤chten',
+  'Austausch von Schächten',
   'Berstlining',
   'Pipe Bursting',
   'Pipe Eating',
   'Rohrvortrieb',
   'Mikrotunneling',
-  'HorizontalspÃ¼lbohrung',
+  'Horizontalspülbohrung',
   'HDD-Bohrung',
   'Vortriebsarbeiten',
   'Rohrgrabenherstellung',
-  'RohrgrabenverfÃ¼llung',
+  'Rohrgrabenverfüllung',
   'Ausschachtungsarbeiten',
   'Erdarbeiten',
   'Baggerarbeiten',
@@ -203,12 +203,12 @@ const LEISTUNGEN = [
   'Asphaltaufbruch',
   'Pflasteraufbruch',
   'Betonaufbruch',
-  'OberflÃ¤chenwiederherstellung',
+  'Oberflächenwiederherstellung',
   'Asphaltarbeiten',
   'Pflasterarbeiten',
   'Betonarbeiten',
-  'Einbau RÃ¼ckstauklappe',
-  'Einbau RÃ¼ckstausicherung',
+  'Einbau Rückstauklappe',
+  'Einbau Rückstausicherung',
   'Einbau Hebeanlage',
   'Einbau Pumpanlage',
   'Einbau Kontrollschacht',
@@ -217,33 +217,33 @@ const LEISTUNGEN = [
   'Rohrverlegung',
   'Kanalverlegung',
   'Schachtmontage',
-  'FÃ¤kalschlammentsorgung',
+  'Fäkalschlammentsorgung',
   'Fettentsorgung',
-  'Ãlentsorgung',
+  'Ölentsorgung',
   'Sonderabfallentsorgung',
-  'KanalrÃ¼ckstandsentsorgung',
+  'Kanalrückstandsentsorgung',
   'Industrielle Abwasserentsorgung',
-  'BehÃ¤lterentleerung',
+  'Behälterentleerung',
   'Abscheiderentleerung',
   'Kanalzustandsbewertung',
   'Sanierungskonzept',
   'Sanierungsplanung',
   'Kanalnetzplanung',
-  'EntwÃ¤sserungsplanung',
+  'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'BauÃ¼berwachung',
+  'Bauüberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'SpÃ¼lfahrzeugpauschale',
+  'Spülfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
-  'GerÃ¤teeinsatz',
+  'Geräteeinsatz',
   'Baustelleneinrichtung',
   'Verkehrssicherung',
-  'AbsperrmaÃnahmen',
+  'Absperrmaßnahmen',
   'Dokumentationspauschale',
   'Arbeitszeit Helfer',
   'Arbeitszeit Facharbeiter',
@@ -259,9 +259,9 @@ const LEISTUNGEN = [
   '24-Stunden-Notdienst',
   'Notdienst Rohrreinigung',
   'Notdienst Kanalreinigung',
-  'RÃ¼ckstauschutz',
-  'Einbau RÃ¼ckstauverschluss',
-  'RÃ¼ckstauverschlusswartung',
+  'Rückstauschutz',
+  'Einbau Rückstauverschluss',
+  'Rückstauverschlusswartung',
   'Hebeanlageneinbau',
   'Hebeanlagenreparatur',
   'Pumpenreparatur',
@@ -272,12 +272,12 @@ const LEISTUNGEN = [
   'Rohrsanierung',
   'Kanalsanierung',
   'Hausanschlusssanierung',
-  'GrundstÃ¼cksentwÃ¤sserung',
-  'EntwÃ¤sserungsberatung',
+  'Grundstücksentwässerung',
+  'Entwässerungsberatung',
   'Kanalmanagement',
   'Kanalkatasterpflege',
   'Digitale Schadensbewertung',
-  'CAD-BestandsplÃ¤ne',
+  'CAD-Bestandspläne',
   '3D-Kanalmodellierung',
   'Asset-Management Kanalnetz',
   'Regenwassermanagement',
@@ -287,19 +287,19 @@ const LEISTUNGEN = [
   'Regenwasserschachtbau',
   'Pumpenschachtbau',
   'Sonderbauwerksreinigung',
-  'KlÃ¤ranlagenservice',
+  'Kläranlagenservice',
   'Industriekanalservice',
   'Chemieanlagenreinigung',
-  'TunnelentwÃ¤sserung',
-  'FlughafenentwÃ¤sserung',
-  'BahnentwÃ¤sserung',
+  'Tunnelentwässerung',
+  'Flughafenentwässerung',
+  'Bahnentwässerung',
   'Hochwasserschutzanlagen-Service',
-  'RegenÃ¼berlaufbecken-Service',
-  'RegenrÃ¼ckhaltebecken-Service',
-  'GroÃprofilkanalreinigung',
-  'GroÃprofilkanalsanierung',
-  'RohrstatikprÃ¼fung',
-  'KanalstatikprÃ¼fung',
+  'Regenüberlaufbecken-Service',
+  'Regenrückhaltebecken-Service',
+  'Großprofilkanalreinigung',
+  'Großprofilkanalsanierung',
+  'Rohrstatikprüfung',
+  'Kanalstatikprüfung',
   'Zustandsklassifizierung nach DWA',
   'Sanierungsberatung',
   'Versicherungsdokumentation',
@@ -310,19 +310,19 @@ const LEISTUNGEN = [
   'Erstellung Fotobericht',
   'Erstellung Videobericht',
   'Erstellung Sanierungsangebot',
-  'Erstellung MaÃnahmenplan',
-  'SofortmaÃnahmen bei Wasserschaden',
+  'Erstellung Maßnahmenplan',
+  'Sofortmaßnahmen bei Wasserschaden',
   'Notabdichtung',
   'Havariesanierung',
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
-  'FreispÃ¼len von Leitungen',
-  'Reinigung von LÃ¼ftungsleitungen in EntwÃ¤sserungssystemen',
+  'Freispülen von Leitungen',
+  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
-  'RevisionsÃ¶ffnung herstellen',
-  'RevisionsÃ¶ffnung erneuern',
-  'RohrÃ¶ffnung herstellen',
+  'Revisionsöffnung herstellen',
+  'Revisionsöffnung erneuern',
+  'Rohröffnung herstellen',
   'Kanalanschluss herstellen',
   'Kanalanschluss sanieren',
   'Anschlussleitung erneuern',
@@ -415,11 +415,11 @@ export default function RechnungBearbeiten() {
   const netto  = positionen.reduce((s, p) => s + (p.menge ?? 0) * (p.preis ?? 0), 0);
   const mwst   = netto * (Number(form.steuersatz) / 100);
   const brutto = netto + mwst;
-  const fmt    = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' â¬';
+  const fmt    = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
   async function onSubmit(e) {
     e.preventDefault();
-    if (!form.kunden_id) { setFehler('Bitte einen Kunden auswÃ¤hlen.'); return; }
+    if (!form.kunden_id) { setFehler('Bitte einen Kunden auswählen.'); return; }
     setSpeichern(true);
     setFehler('');
     const { error } = await supabase.from('rechnungen').update({
@@ -442,15 +442,15 @@ export default function RechnungBearbeiten() {
     router.push('/dashboard/rechnungen');
   }
 
-  if (laden) return <p className="text-gray-400 text-sm">Wird geladenâ¦</p>;
+  if (laden) return <p className="text-gray-400 text-sm">Wird geladen…</p>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
-      {/* ââ Header ââ */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <Link href="/dashboard/rechnungen" className="text-xs text-gray-400 hover:text-gray-600 transition">
-            â ZurÃ¸ck zu Angebote
+            ← Zurøck zu Angebote
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-1">Rechnung bearbeiten</h1>
         </div>
@@ -459,12 +459,12 @@ export default function RechnungBearbeiten() {
           onClick={() => setDeleteConfirm(true)}
           className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition text-sm"
         >
-          Angebot lÃ¶schen
+          Angebot löschen
         </button>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5">
-        {/* ââ Rechnungsdaten ââ */}
+        {/* ── Rechnungsdaten ── */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Angebotsdaten</h2>
@@ -473,7 +473,7 @@ export default function RechnungBearbeiten() {
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1">Kunde</label>
               <select name="kunde_id" value={form.kunde_id} onChange={onChange} className={INPUT}>
-                <option value="">Kunde auswÃ¤hlenâ¦</option>
+                <option value="">Kunde auswählen…</option>
                 {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
               </select>
             </div>
@@ -482,7 +482,7 @@ export default function RechnungBearbeiten() {
               <input type="date" name="datum" value={form.datum} onChange={onChange} className={INPUT} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Fällig bis</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">F�llig bis</label>
               <input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className={INPUT} />
             </div>
             <div>
@@ -498,7 +498,7 @@ export default function RechnungBearbeiten() {
           </div>
         </div>
 
-        {/* ââ Positionen ââ */}
+        {/* ── Positionen ── */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
@@ -539,10 +539,10 @@ export default function RechnungBearbeiten() {
                   <option>Stunde</option>
                   <option>Tag</option>
                   <option>m</option>
-                  <option>mÂ²</option>
-                  <option>StÃ¸ck</option>
+                  <option>m²</option>
+                  <option>Støck</option>
                 </select>
-                <input type="number" value={p.preis} onChange={e => posChange(i, 'preis', e.target.value)} placeholder="Preis â¬" min="0" step="0.01" className={INPUT} />
+                <input type="number" value={p.preis} onChange={e => posChange(i, 'preis', e.target.value)} placeholder="Preis €" min="0" step="0.01" className={INPUT} />
                 <button
                   type="button"
                   onClick={() => removePos(i)}
@@ -562,7 +562,7 @@ export default function RechnungBearbeiten() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              + Position hinzufÃ¸gen
+              + Position hinzuføgen
             </button>
           </div>
           {/* Summary */}
@@ -581,7 +581,7 @@ export default function RechnungBearbeiten() {
           </div>
         </div>
 
-        {/* ââ Notizen ââ */}
+        {/* ── Notizen ── */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Notizen / Zahlungshinweis</h2>
@@ -592,7 +592,7 @@ export default function RechnungBearbeiten() {
               value={form.notizen}
               onChange={onChange}
               rows={2}
-              placeholder="z. B. Dieses Angebot ist 30 Tage gÃ¸ltig."
+              placeholder="z. B. Dieses Angebot ist 30 Tage gøltig."
               className={INPUT + ' resize-none'}
             />
           </div>
@@ -600,14 +600,14 @@ export default function RechnungBearbeiten() {
 
         {fehler && <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg">{fehler}</p>}
 
-        {/* ââ Aktionen ââ */}
+        {/* ── Aktionen ── */}
         <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
             disabled={speichern}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 text-sm"
           >
-            {speichern ? 'Wird gespeichertâ¦' : 'Ãnderungen speichern'}
+            {speichern ? 'Wird gespeichert…' : 'Änderungen speichern'}
           </button>
           <Link
             href="/dashboard/rechnungen"
@@ -618,7 +618,7 @@ export default function RechnungBearbeiten() {
         </div>
       </form>
 
-      {/* ââ LÃ¶sch-BestÃ¤tigung Modal ââ */}
+      {/* ── Lösch-Bestätigung Modal ── */}
       {deleteConfirm && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -628,9 +628,9 @@ export default function RechnungBearbeiten() {
             className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Angebot lÃ¶schen?</h3>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Angebot löschen?</h3>
             <p className="text-xs text-gray-400 mb-4">
-              Diese Aktion kann nicht rÃ¸ckgÃ¤ngig gemacht werden.
+              Diese Aktion kann nicht røckgängig gemacht werden.
             </p>
             <div className="flex gap-2">
               <button
@@ -638,7 +638,7 @@ export default function RechnungBearbeiten() {
                 disabled={deleting}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50 text-sm"
               >
-                {deleting ? 'Wird gelÃ¶schtâ¦' : 'Ja, lÃ¶schen'}
+                {deleting ? 'Wird gelöscht…' : 'Ja, löschen'}
               </button>
               <button
                 onClick={() => setDeleteConfirm(false)}
