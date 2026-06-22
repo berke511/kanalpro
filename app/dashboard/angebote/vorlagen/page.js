@@ -35,14 +35,15 @@ export default function Vorlagen() {
     load().catch(() => setLaden(false));
   }, []);
 
-  async function angebotErstellen(v) {
+  async function angebotErstellen(e, v) {
+    e.stopPropagation();
     if (!companyId || !userId) return;
     setErstellenId(v.id);
     const { count } = await supabase
       .from('angebote')
       .select('*', { count: 'exact', head: true })
       .eq('company_id', companyId);
-    const nr = `AM-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(3, '0')}`;
+    const nr = `AN-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(3, '0')}`;
     const { error } = await supabase.from('angebote').insert({
       user_id: userId,
       company_id: companyId,
@@ -57,7 +58,8 @@ export default function Vorlagen() {
     if (!error) router.push('/dashboard/angebote');
   }
 
-  async function loeschen(id) {
+  async function loeschen(e, id) {
+    e.stopPropagation();
     if (!confirm('Vorlage wirklich löschen?')) return;
     await supabase.from('angebot_vorlagen').delete().eq('id', id);
     setVorlagen(vs => vs.filter(x => x.id !== id));
@@ -120,7 +122,8 @@ export default function Vorlagen() {
             return (
               <div
                 key={v.id}
-                className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center justify-between gap-4"
+                onClick={() => router.push(`/dashboard/angebote/vorlagen/${v.id}`)}
+                className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex items-center justify-between gap-4 cursor-pointer hover:border-gray-300 hover:shadow-sm transition"
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 text-sm truncate">{v.name}</p>
@@ -133,20 +136,14 @@ export default function Vorlagen() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => angebotErstellen(v)}
+                    onClick={e => angebotErstellen(e, v)}
                     disabled={erstellenId === v.id}
                     className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                   >
                     {erstellenId === v.id ? 'Wird erstellt…' : 'Angebot erstellen'}
                   </button>
-                  <Link
-                    href={`/dashboard/angebote/vorlagen/${v.id}`}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-blue-50 hover:text-blue-700 transition"
-                  >
-                    Bearbeiten
-                  </Link>
                   <button
-                    onClick={() => loeschen(v.id)}
+                    onClick={e => loeschen(e, v.id)}
                     className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-lg hover:bg-red-50 hover:text-red-600 transition"
                   >
                     Löschen
