@@ -556,7 +556,7 @@ export default function FahrzeugDetailPage() {
         <span className="text-gray-600 font-medium">{fahrzeug?.kennzeichen}</span>
       </div>
 
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{fahrzeug?.kennzeichen}</h1>
           {title && <p className="text-sm text-gray-400 mt-0.5">{title}</p>}
