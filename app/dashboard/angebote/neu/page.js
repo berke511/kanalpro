@@ -39,6 +39,9 @@ const LEISTUNGEN = [
   'Anfahrtspauschale',
 ];
 
+const INPUT = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+const LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide';
+
 export default function NeuesAngebot() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
@@ -49,11 +52,13 @@ export default function NeuesAngebot() {
     steuersatz: 19,
     notizen: '',
   });
-  const [positionen, setPositionen] = useState([{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]);
+  const [positionen, setPositionen] = useState([
+    { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 },
+  ]);
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
   const [pdfLaden, setPdfLaden] = useState(false);
-  const [openDrop, setOpenDrop] = useState(null); // index of open dropdown
+  const [openDrop, setOpenDrop] = useState(null);
   const dropRef = useRef(null);
 
   useEffect(() => {
@@ -67,25 +72,29 @@ export default function NeuesAngebot() {
     load();
   }, []);
 
+  // Close autocomplete on outside click
+  useEffect(() => {
+    function onDown(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
+
   function onChange(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
-  function onPosition(i, field, value) {
-    const n = [...positionen];
-    n[i] = { ...n[i], [field]: (field === 'menge' || field === 'preis') ? parseFloat(value) || 0 : value };
-    setPositionen(n);
+
+  function onPos(i, field, value) {
+    const next = [...positionen];
+    next[i] = { ...next[i], [field]: (field === 'menge' || field === 'preis') ? parseFloat(value) || 0 : value };
+    setPositionen(next);
   }
   function addPos() { setPositionen([...positionen, { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]); }
   function removePos(i) { if (positionen.length > 1) setPositionen(positionen.filter((_, j) => j !== i)); }
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e) { if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null); }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
   const netto  = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
   const mwst   = netto * form.steuersatz / 100;
   const brutto = netto + mwst;
+  const fmt = v => v.toFixed(2).replace('.', ',') + ' €';
 
   async function handleSpeichern(e) {
     e.preventDefault(); setFehler(''); setLaden(true);
@@ -127,7 +136,6 @@ export default function NeuesAngebot() {
     const blau = [37, 99, 235], grau = [107, 114, 128];
     const nr = `AN-${new Date().getFullYear()}-XXX`;
 
-    // Header
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text('KanalPro', 15, 18);
@@ -136,18 +144,12 @@ export default function NeuesAngebot() {
     doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.text(`Nr: ${nr}`, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
 
-    // Absender & Empfänger
     doc.setFontSize(8); doc.setTextColor(...grau); doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text('Angebot für:', 15, 55);
     doc.setFont('helvetica', 'normal');
-    if (kunde) {
-      doc.text(kunde.name, 15, 62);
-      if (kunde.adresse) doc.text(kunde.adresse, 15, 68);
-    } else {
-      doc.text('Kein Kunde ausgewählt', 15, 62);
-    }
+    if (kunde) { doc.text(kunde.name, 15, 62); if (kunde.adresse) doc.text(kunde.adresse, 15, 68); }
+    else { doc.text('Kein Kunde ausgewählt', 15, 62); }
 
-    // Datum / Gültigkeit
     doc.setFont('helvetica', 'bold'); doc.text('Datum:', 130, 55); doc.text('Gültig bis:', 130, 62);
     doc.setFont('helvetica', 'normal');
     doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '–', 195, 55, { align: 'right' });
@@ -157,7 +159,6 @@ export default function NeuesAngebot() {
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Wir unterbreiten Ihnen folgendes Angebot:', 15, 82);
 
-    // Positionen
     doc.autoTable({
       startY: 88,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
@@ -176,7 +177,6 @@ export default function NeuesAngebot() {
       margin: { left: 15, right: 15 },
     });
 
-    // Summen
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Nettobetrag:', 140, ty);
@@ -189,14 +189,12 @@ export default function NeuesAngebot() {
     doc.setTextColor(...blau);
     doc.text(`${brutto.toFixed(2).replace('.', ',')} €`, 195, ty + 17, { align: 'right' });
 
-    // Notizen
     if (form.notizen) {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
       doc.text('Hinweis:', 15, ty + 30);
       doc.setTextColor(...grau); doc.text(form.notizen, 15, ty + 37, { maxWidth: 180 });
     }
 
-    // Footer
     doc.setFillColor(249, 250, 251); doc.rect(15, 262, 180, 18, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica', 'normal');
     doc.text('Dieses Angebot ist freibleibend und unverbindlich. Preise inkl. gesetzlicher MwSt.', 105, 270, { align: 'center' });
@@ -208,139 +206,222 @@ export default function NeuesAngebot() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl pb-12">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard/angebote" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
-        <h1 className="text-2xl font-bold text-gray-900">Neues Angebot</h1>
+        <Link href="/dashboard/angebote" className="text-gray-400 hover:text-gray-600 text-sm transition">← Zurück</Link>
+        <span className="text-gray-200">/</span>
+        <h1 className="text-xl font-bold text-gray-900">Neues Angebot</h1>
       </div>
 
-      <form onSubmit={handleSpeichern} className="space-y-5">
-        {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
+      <form onSubmit={handleSpeichern} className="space-y-4">
+        {fehler && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>
+        )}
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-          <h2 className="font-semibold text-gray-800">Angebotsdetails</h2>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
-            <select name="kunde_id" value={form.kunde_id} onChange={onChange}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">— Kein Kunde —</option>
-              {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
-            </select>
+        {/* ── Angebotsdetails ── */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700">Angebotsdetails</h2>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Angebotsdatum</label>
-              <input type="date" name="datum" value={form.datum} onChange={onChange}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="p-5 grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className={LABEL}>Kunde</label>
+              <select name="kunde_id" value={form.kunde_id} onChange={onChange} className={INPUT}>
+                <option value="">— Kein Kunde —</option>
+                {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gültig bis</label>
-              <input type="date" name="gueltig_bis" value={form.gueltig_bis} onChange={onChange}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className={LABEL}>Angebotsdatum</label>
+              <input type="date" name="datum" value={form.datum} onChange={onChange} className={INPUT} />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Steuersatz</label>
-            <select name="steuersatz" value={form.steuersatz} onChange={onChange}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value={19}>19 % (Regelsteuersatz)</option>
-              <option value={7}>7 % (ermäßigt)</option>
-              <option value={0}>0 % (steuerfrei / Kleinunternehmer)</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-semibold text-gray-800 mb-3">Positionen</h2>
-          {/* Column headers */}
-          <div className="grid grid-cols-12 gap-2 mb-1 px-0.5">
-            <div className="col-span-5 text-xs font-medium text-gray-400 uppercase tracking-wide">Leistungsbeschreibung</div>
-            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</div>
-            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</div>
-            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Einzelpreis (€)</div>
-            <div className="col-span-1"></div>
-          </div>
-          <div className="space-y-3" ref={dropRef}>
-            {positionen.map((p, i) => {
-              const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
-              const showDrop = openDrop === i && filtered.length > 0;
-              return (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  {/* Beschreibung with drop-up */}
-                  <div className="col-span-5 relative">
-                    <input
-                      type="text"
-                      value={p.beschreibung}
-                      onChange={e => { onPosition(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
-                      onFocus={() => setOpenDrop(i)}
-                      placeholder="Leistung eingeben oder wählen…"
-                      autoComplete="off"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    {showDrop && (
-                      <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto text-sm">
-                        {filtered.map(l => (
-                          <li
-                            key={l}
-                            onMouseDown={e => { e.preventDefault(); onPosition(i, 'beschreibung', l); setOpenDrop(null); }}
-                            className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate"
-                          >{l}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="col-span-2">
-                    <input type="number" min="0" step="0.5" value={p.menge} onChange={e => onPosition(i, 'menge', e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div className="col-span-2">
-                    <select value={p.einheit} onChange={e => onPosition(i, 'einheit', e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
-                      <option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option>
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <input type="number" min="0" step="0.01" value={p.preis} onChange={e => onPosition(i, 'preis', e.target.value)}
-                      placeholder="0,00"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  </div>
-                  <div className="col-span-1 flex justify-center">
-                    <button type="button" onClick={() => removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzuføgen</button>
-
-          <div className="mt-6 border-t border-gray-100 pt-4 space-y-1 text-sm">
-            <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.', ',')} €</span></div>
-            <div className="flex justify-between text-gray-500"><span>MwSt. {form.steuersatz} %</span><span>{mwst.toFixed(2).replace('.', ',')} €</span></div>
-            <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-200">
-              <span>Gesamt (brutto)</span>
-              <span className="text-blue-600">{brutto.toFixed(2).replace('.', ',')} €</span>
+            <div>
+              <label className={LABEL}>Gültig bis</label>
+              <input type="date" name="gueltig_bis" value={form.gueltig_bis} onChange={onChange} className={INPUT} />
+            </div>
+            <div className="col-span-2">
+              <label className={LABEL}>Steuersatz</label>
+              <select name="steuersatz" value={form.steuersatz} onChange={onChange} className={INPUT}>
+                <option value={19}>19 % — Regelsteuersatz</option>
+                <option value={7}>7 % — ermäßigter Steuersatz</option>
+                <option value={0}>0 % — steuerfrei / Kleinunternehmer</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Hinweise</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2}
-            placeholder="z. B. Dieses Angebot ist 30 Tage gültig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+        {/* ── Positionen ── */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" ref={dropRef}>
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wide w-8">#</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Leistungsbeschreibung</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wide w-24">Menge</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-400 uppercase tracking-wide w-32">Einheit</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase tracking-wide w-32">Einzelpreis €</th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-400 uppercase tracking-wide w-28">Gesamt €</th>
+                  <th className="w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {positionen.map((p, i) => {
+                  const filtered = LEISTUNGEN.filter(l =>
+                    l.toLowerCase().includes((p.beschreibung || '').toLowerCase())
+                  );
+                  const showDrop = openDrop === i && filtered.length > 0;
+                  const gesamt = p.menge * p.preis;
+                  return (
+                    <tr key={i} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-2 text-gray-400 text-xs font-medium">{i + 1}</td>
+
+                      {/* Beschreibung + Drop-Up */}
+                      <td className="px-2 py-2 relative">
+                        <input
+                          type="text"
+                          value={p.beschreibung}
+                          onChange={e => { onPos(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
+                          onFocus={() => setOpenDrop(i)}
+                          placeholder="Leistung eingeben oder wählen…"
+                          autoComplete="off"
+                          className={INPUT}
+                        />
+                        {showDrop && (
+                          <ul className="absolute z-50 bottom-full mb-1 left-2 right-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
+                            {filtered.map(l => (
+                              <li
+                                key={l}
+                                onMouseDown={e => { e.preventDefault(); onPos(i, 'beschreibung', l); setOpenDrop(null); }}
+                                className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0"
+                              >{l}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+
+                      <td className="px-2 py-2">
+                        <input
+                          type="number" min="0" step="0.5"
+                          value={p.menge}
+                          onChange={e => onPos(i, 'menge', e.target.value)}
+                          className={INPUT + ' text-right'}
+                        />
+                      </td>
+
+                      <td className="px-2 py-2">
+                        <select
+                          value={p.einheit}
+                          onChange={e => onPos(i, 'einheit', e.target.value)}
+                          className={INPUT}
+                        >
+                          <option>Pauschal</option>
+                          <option>Stunde</option>
+                          <option>Stück</option>
+                          <option>m</option>
+                          <option>m²</option>
+                        </select>
+                      </td>
+
+                      <td className="px-2 py-2">
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={p.preis}
+                          onChange={e => onPos(i, 'preis', e.target.value)}
+                          placeholder="0,00"
+                          className={INPUT + ' text-right'}
+                        />
+                      </td>
+
+                      <td className="px-4 py-2 text-right font-medium text-gray-700 tabular-nums">
+                        {fmt(gesamt)}
+                      </td>
+
+                      <td className="px-2 py-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => removePos(i)}
+                          className="text-gray-300 hover:text-red-400 text-lg leading-none transition"
+                          title="Position entfernen"
+                        >×</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Add row + Summary */}
+          <div className="px-5 py-4 border-t border-gray-100 flex items-start justify-between gap-4">
+            <button
+              type="button"
+              onClick={addPos}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+            >
+              + Position hinzufügen
+            </button>
+
+            {/* Summary */}
+            <div className="min-w][220px] space-y-1.5 text-sm">
+              <div className="flex justify-between text-gray-500">
+                <span>Netto</span>
+                <span className="tabular-nums">{fmt(netto)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>MwSt. {form.steuersatz} %</span>
+                <span className="tabular-nums">{fmt(mwst)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-1.5">
+                <span>Gesamtbetrag</span>
+                <span className="text-blue-600 tabular-nums">{fmt(brutto)}</span>
+              </div>
+            </div>
+          </div>
+
+        {/* ── Notizen ── */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-700">Notizen / Hinweise</h2>
+          </div>
+          <div className="p-5">
+            <textarea
+              name="notizen"
+              value={form.notizen}
+              onChange={onChange}
+              rows={2}
+              placeholder="z. B. Dieses Angebot ist 30 Tage gøltig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
+              className={INPUT + ' resize-none'}
+            />
+          </div>
         </div>
 
-        <div className="flex gap-3 pb-8">
-          <button type="submit" disabled={laden}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">
+        {/* ── Aktionen ── */}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="submit"
+            disabled={laden}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 text-sm"
+          >
             {laden ? 'Wird gespeichert…' : 'Angebot speichern'}
           </button>
-          <button type="button" onClick={handlePDF} disabled={pdfLaden}
-            className="px-6 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm">
+          <button
+            type="button"
+            onClick={handlePDF}
+            disabled={pdfLaden}
+            className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 text-sm"
+          >
             {pdfLaden ? 'PDF wird erstellt…' : 'PDF Vorschau'}
           </button>
-          <Link href="/dashboard/angebote"
-            className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">
+          <Link
+            href="/dashboard/angebote"
+            className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+          >
             Abbrechen
           </Link>
         </div>
