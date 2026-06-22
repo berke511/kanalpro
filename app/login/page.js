@@ -27,6 +27,12 @@ export default function LoginPage() {
   const [fehler, setFehler]                   = useState('');
   const [laden, setLaden]                     = useState(false);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.replace('/dashboard');
+    });
+  }, [router]);
+
   async function handleLogin(e) {
     e.preventDefault();
     setFehler('');
