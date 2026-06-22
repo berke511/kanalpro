@@ -1,8 +1,43 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+
+const LEISTUNGEN = [
+  'Kanalreinigung (HD-Spülung)',
+  'Kanalspülung (Hochdruck)',
+  'TV-Inspektion / Kamerabefahrung',
+  'Rohrreinigung (mechanisch)',
+  'Verstopfungsbeseitigung',
+  'Abflussreinigung',
+  'Wurzelfräsen',
+  'Roboterfräsen',
+  'Dichtigkeitsprüfung (DIN EN 1610)',
+  'Druckprobe Abwasserleitung',
+  'Schlauch-Inlining (Schlauchliner)',
+  'Kurzliner setzen',
+  'Rohrmanschette setzen',
+  'Grabenlose Kanalsanierung',
+  'Schachtsanierung / Schachtabdichtung',
+  'Anschlusskanal verlegen',
+  'Hausanschluss prüfen',
+  'Regenwasserkanal reinigen',
+  'Sinkkastenreinigung',
+  'Fettabscheider reinigen',
+  'Ölabscheider reinigen',
+  'Leckageortung',
+  'Rohrbruchortung',
+  'Abwasserpumpen-Wartung',
+  'Pumpenwartung / -service',
+  'Schacht reinigen',
+  'Industriereinigung',
+  'Notfalleinsatz / Havarie',
+  'Befahrung nach DIBT-Richtlinie',
+  'Vorreinigung vor Inspektion',
+  'Dokumentation / Berichterstellung',
+  'Anfahrtspauschale',
+];
 
 export default function NeuesAngebot() {
   const router = useRouter();
@@ -18,6 +53,8 @@ export default function NeuesAngebot() {
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
   const [pdfLaden, setPdfLaden] = useState(false);
+  const [openDrop, setOpenDrop] = useState(null); // index of open dropdown
+  const dropRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -38,6 +75,13 @@ export default function NeuesAngebot() {
   }
   function addPos() { setPositionen([...positionen, { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]); }
   function removePos(i) { if (positionen.length > 1) setPositionen(positionen.filter((_, j) => j !== i)); }
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) { if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null); }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const netto  = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
   const mwst   = netto * form.steuersatz / 100;
@@ -207,37 +251,67 @@ export default function NeuesAngebot() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Positionen</h2>
-          <div className="space-y-3">
-            {positionen.map((p, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-5">
-                  <input type="text" value={p.beschreibung} onChange={e => onPosition(i, 'beschreibung', e.target.value)}
-                    placeholder="Leistungsbeschreibung"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div className="col-span-2">
-                  <input type="number" min="0" step="0.5" value={p.menge} onChange={e => onPosition(i, 'menge', e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div className="col-span-2">
-                  <select value={p.einheit} onChange={e => onPosition(i, 'einheit', e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    <option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option>
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <input type="number" min="0" step="0.01" value={p.preis} onChange={e => onPosition(i, 'preis', e.target.value)}
-                    placeholder="€"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  <button type="button" onClick={() => removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button>
-                </div>
-              </div>
-            ))}
+          <h2 className="font-semibold text-gray-800 mb-3">Positionen</h2>
+          {/* Column headers */}
+          <div className="grid grid-cols-12 gap-2 mb-1 px-0.5">
+            <div className="col-span-5 text-xs font-medium text-gray-400 uppercase tracking-wide">Leistungsbeschreibung</div>
+            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</div>
+            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</div>
+            <div className="col-span-2 text-xs font-medium text-gray-400 uppercase tracking-wide">Einzelpreis (€)</div>
+            <div className="col-span-1"></div>
           </div>
-          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzufügen</button>
+          <div className="space-y-3" ref={dropRef}>
+            {positionen.map((p, i) => {
+              const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
+              const showDrop = openDrop === i && filtered.length > 0;
+              return (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                  {/* Beschreibung with drop-up */}
+                  <div className="col-span-5 relative">
+                    <input
+                      type="text"
+                      value={p.beschreibung}
+                      onChange={e => { onPosition(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
+                      onFocus={() => setOpenDrop(i)}
+                      placeholder="Leistung eingeben oder wählen…"
+                      autoComplete="off"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {showDrop && (
+                      <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto text-sm">
+                        {filtered.map(l => (
+                          <li
+                            key={l}
+                            onMouseDown={e => { e.preventDefault(); onPosition(i, 'beschreibung', l); setOpenDrop(null); }}
+                            className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate"
+                          >{l}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="col-span-2">
+                    <input type="number" min="0" step="0.5" value={p.menge} onChange={e => onPosition(i, 'menge', e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-2">
+                    <select value={p.einheit} onChange={e => onPosition(i, 'einheit', e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
+                      <option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <input type="number" min="0" step="0.01" value={p.preis} onChange={e => onPosition(i, 'preis', e.target.value)}
+                      placeholder="0,00"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div className="col-span-1 flex justify-center">
+                    <button type="button" onClick={() => removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzuføgen</button>
 
           <div className="mt-6 border-t border-gray-100 pt-4 space-y-1 text-sm">
             <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.', ',')} €</span></div>
