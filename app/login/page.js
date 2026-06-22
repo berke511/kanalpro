@@ -45,9 +45,7 @@ export default function LoginPage() {
       }
     } else {
       if (!angemeldetBleiben) {
-        sessionStorage.setItem('tempLogin', '1');
-      } else {
-        sessionStorage.removeItem('tempLogin');
+        localStorage.removeItem('sb-ighqrqzespmvafkkqxeu-auth-token');
       }
       router.push('/dashboard');
     }
