@@ -31,8 +31,10 @@ const ICONS = {
   logout:     'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75',
   sparkles:   'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z',
   truck:      'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
-  tag:        'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z',
   tool:       'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z',
+  tag:        'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z',
+  menu:       'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5',
+  x:          'M6 18L18 6M6 6l12 12',
 };
 
 // Nav-Links mit optionalem Feature-Gate und Rollen-Gate
@@ -57,6 +59,12 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null);
   const [abo, setAbo] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Sidebar schließen bei Routenwechsel (Mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     async function load() {
@@ -112,6 +120,91 @@ export default function DashboardLayout({ children }) {
     return null;
   }
 
+  // Sidebar-Inhalt (wiederverwendet für Desktop & Mobile-Drawer)
+  function SidebarContent() {
+    return (
+      <>
+        {/* Logo */}
+        <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">K</span>
+            </div>
+            <span className="font-bold text-lg text-gray-900">KanalPro</span>
+          </div>
+          {/* Schließen-Button nur auf Mobile */}
+          <button
+            className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Menü schließen"
+          >
+            <Icon d={ICONS.x} className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navLinks.map((link) => {
+            const locked = link.feature && !canAccess(plan, link.feature);
+            if (link.minRole && userRole && !hasMinRole(userRole, link.minRole)) return null;
+            const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
+
+            if (locked) {
+              return (
+                <Link
+                  key={link.href}
+                  href="/dashboard/billing"
+                  title="Nicht in deinem aktuellen Plan enthalten"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 transition group min-h-[44px]"
+                >
+                  <Icon d={ICONS[link.iconId]} className="w-4 h-4 opacity-50 shrink-0" />
+                  <span className="flex-1 opacity-60">{link.label}</span>
+                  <Icon d={ICONS.lock} className="w-3.5 h-3.5 opacity-40 group-hover:opacity-60 shrink-0" />
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition min-h-[44px] ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <Icon d={ICONS[link.iconId]} className="w-4 h-4 shrink-0" />
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-3 py-4 border-t border-gray-100">
+          {(isTrialActive || plan === 'starter') && !sub.isPaid && (
+            <Link
+              href="/dashboard/billing"
+              className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition min-h-[44px]"
+            >
+              <Icon d={ICONS.sparkles} className="w-3.5 h-3.5 shrink-0" />
+              Upgrade — ab 29 €/Monat
+            </Link>
+          )}
+          <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition min-h-[44px]"
+          >
+            <Icon d={ICONS.logout} className="w-4 h-4 shrink-0" />
+            Abmelden
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
 
@@ -124,79 +217,49 @@ export default function DashboardLayout({ children }) {
         upgradeHref="/dashboard/billing"
       />
 
-      <div className="flex flex-1">
+      {/* ── Mobile Top-Bar ───────────────────────────────────────── */}
+      <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-40">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Menü öffnen"
+        >
+          <Icon d={ICONS.menu} className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xs">K</span>
+          </div>
+          <span className="font-bold text-base text-gray-900">KanalPro</span>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ── Mobile Overlay ───────────────────────────────────────── */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* ── Sidebar ──────────────────────────────────────────────── */}
-        <aside className="w-56 bg-white border-r border-gray-100 flex flex-col shrink-0">
-          <div className="px-5 py-5 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">K</span>
-              </div>
-              <span className="font-bold text-lg text-gray-900">KanalPro</span>
-            </div>
-          </div>
-
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            {navLinks.map((link) => {
-              const locked = link.feature && !canAccess(plan, link.feature);
-              // Rollen-Gate: Link ausblenden wenn Rolle nicht ausreicht
-              if (link.minRole && userRole && !hasMinRole(userRole, link.minRole)) return null;
-              const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
-
-              if (locked) {
-                return (
-                  <Link
-                    key={link.href}
-                    href="/dashboard/billing"
-                    title="Nicht in deinem aktuellen Plan enthalten"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 transition group"
-                  >
-                    <Icon d={ICONS[link.iconId]} className="w-4 h-4 opacity-50 shrink-0" />
-                    <span className="flex-1 opacity-60">{link.label}</span>
-                    <Icon d={ICONS.lock} className="w-3.5 h-3.5 opacity-40 group-hover:opacity-60 shrink-0" />
-                  </Link>
-                );
-              }
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon d={ICONS[link.iconId]} className="w-4 h-4 shrink-0" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="px-3 py-4 border-t border-gray-100">
-            {(isTrialActive || plan === 'starter') && !sub.isPaid && (
-              <Link
-                href="/dashboard/billing"
-                className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
-              >
-                <Icon d={ICONS.sparkles} className="w-3.5 h-3.5 shrink-0" />
-                Upgrade — ab 29 €/Monat
-              </Link>
-            )}
-            <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition"
-            >
-              <Icon d={ICONS.logout} className="w-4 h-4 shrink-0" />
-              Abmelden
-            </button>
-          </div>
+        {/* Desktop: always visible; Mobile: slide-in drawer */}
+        <aside
+          className={`
+            fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-100 flex flex-col
+            transform transition-transform duration-200 ease-in-out
+            md:relative md:translate-x-0 md:w-56
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          `}
+        >
+          <SidebarContent />
         </aside>
 
-        <main className="flex-1 overflow-auto p-8">{children}</main>
+        {/* ── Hauptinhalt ──────────────────────────────────────────── */}
+        <main className="flex-1 overflow-auto p-4 md:p-8">{children}</main>
       </div>
     </div>
   );
