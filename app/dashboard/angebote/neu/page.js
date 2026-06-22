@@ -60,14 +60,42 @@ export default function NeuesAngebot() {
   const [pdfLaden, setPdfLaden] = useState(false);
   const [openDrop, setOpenDrop] = useState(null);
   const dropRef = useRef(null);
+  const [vorlageModal, setVorlageModal] = useState(false);
+  const [vorlageName, setVorlageName] = useState('');
+  const [vorlageSaved, setVorlageSaved] = useState(false);
+  const [vorlageCompanyId, setVorlageCompanyId] = useState(null);
+  const [vorlageUserId, setVorlageUserId] = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
       if (!member) return;
+      setVorlageCompanyId(member.company_id);
+      setVorlageUserId(user.id);
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('company_id', member.company_id).order('name');
       setKunden(data ?? []);
+      const params = new URLSearchParams(window.location.search);
+      const vorlageId = params.get('vorlage');
+      if (vorlageId) {
+        const { data: vl } = await supabase
+          .from('angebot_vorlagen')
+          .select('*')
+          .eq('id', vorlageId)
+          .single();
+        if (vl) {
+          setPositionen(
+            (vl.positionen ?? []).length > 0
+              ? vl.positionen
+              : [{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]
+          );
+          setForm(f => ({
+            ...f,
+            steuersatz: vl.steuersatz ?? 19,
+            notizen: vl.notizen ?? '',
+          }));
+        }
+      }
     }
     load();
   }, []);
@@ -90,6 +118,24 @@ export default function NeuesAngebot() {
   }
   function addPos() { setPositionen([...positionen, { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]); }
   function removePos(i) { if (positionen.length > 1) setPositionen(positionen.filter((_, j) => j !== i)); }
+
+  async function handleVorlageSpeichern() {
+    if (!vorlageName.trim() || !vorlageCompanyId || !vorlageUserId) return;
+    const { error } = await supabase.from('angebot_vorlagen').insert({
+      user_id: vorlageUserId,
+      company_id: vorlageCompanyId,
+      name: vorlageName.trim(),
+      steuersatz: Number(form.steuersatz),
+      positionen,
+      notizen: form.notizen || null,
+    });
+    if (!error) {
+      setVorlageModal(false);
+      setVorlageName('');
+      setVorlageSaved(true);
+      setTimeout(() => setVorlageSaved(false), 3000);
+    }
+  }
 
   const netto  = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
   const mwst   = netto * form.steuersatz / 100;
@@ -430,6 +476,13 @@ export default function NeuesAngebot() {
           >
             {pdfLaden ? 'PDF wird erstellt…' : 'PDF Vorschau'}
           </button>
+          <button
+            type="button"
+            onClick={() => setVorlageModal(true)}
+            className="px-5 py-2.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg font-medium hover:bg-purple-100 transition text-sm"
+          >
+            Als Vorlage speichern
+          </button>
           <Link
             href="/dashboard/angebote"
             className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
@@ -438,6 +491,58 @@ export default function NeuesAngebot() {
           </Link>
         </div>
       </form>
+
+      {/* ── Vorlage Modal ── */}
+      {vorlageModal && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setVorlageModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Als Vorlage speichern</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              Gib der Vorlage einen Namen für den Schnellzugriff. Die aktuellen Positionen und der Steuersatz werden gespeichert.
+            </p>
+            <input
+              type="text"
+              value={vorlageName}
+              onChange={e => setVorlageName(e.target.value)}
+              placeholder="z. B. Standard Kanalreinigung"
+              className={INPUT}
+              onKeyDown={e => e.key === 'Enter' && handleVorlageSpeichern()}
+              autoFocus
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleVorlageSpeichern}
+                disabled={!vorlageName.trim()}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:opacity-40 text-sm"
+              >
+                Speichern
+              </button>
+              <button
+                onClick={() => { setVorlageModal(false); setVorlageName(''); }}
+                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Vorlage gespeichert Toast ── */}
+      {vorlageSaved && (
+        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Vorlage gespeichert!
+        </div>
+      )}
     </div>
   );
 }
