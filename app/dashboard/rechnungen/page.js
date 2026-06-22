@@ -68,7 +68,7 @@ export default function Rechnungen() {
   return (
     <PlanGate feature="rechnungen">
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
         {tab === 'liste' && (
           <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neue Rechnung</Link>
@@ -93,7 +93,8 @@ export default function Rechnungen() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
@@ -118,6 +119,7 @@ export default function Rechnungen() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}
