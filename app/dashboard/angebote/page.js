@@ -36,7 +36,17 @@ export default function Angebote() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Angebote</h1>
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <span className="px-4 py-1.5 rounded-md text-sm font-medium bg-white text-gray-900 shadow-sm cursor-default">
+            Angebote
+          </span>
+          <Link
+            href="/dashboard/angebote/vorlagen"
+            className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 transition"
+          >
+            Vorlagen
+          </Link>
+        </div>
         <Link href="/dashboard/angebote/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
           + Neues Angebot
         </Link>
