@@ -293,7 +293,7 @@ export default function NeuesAngebot() {
                           className={INPUT}
                         />
                         {showDrop && (
-                          <ul className="absolute z-50 bottom-full mb-1 left-2 right-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
+                          <ul className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
                             {filtered.map(l => (
                               <li
                                 key={l}
