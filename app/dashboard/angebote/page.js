@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
 const statusConfig = {
@@ -11,6 +12,7 @@ const statusConfig = {
 };
 
 export default function Angebote() {
+  const router = useRouter();
   const [angebote, setAngebote] = useState([]);
   const [laden, setLaden] = useState(true);
 
@@ -74,27 +76,22 @@ export default function Angebote() {
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
-                <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {angebote.map(a => {
                 const cfg = statusConfig[a.status] ?? statusConfig.entwurf;
                 return (
-                  <tr key={a.id} className="hover:bg-gray-50 transition">
+                  <tr
+                    key={a.id}
+                    onClick={() => router.push(`/dashboard/angebote/${a.id}`)}
+                    className="hover:bg-gray-50 transition cursor-pointer"
+                  >
                     <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? '–'}</td>
                     <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
                     <td className="px-5 py-3 text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–'}</td>
                     <td className="px-5 py-3 font-medium text-gray-900">{brutto(a).toFixed(2).replace('.', ',')} €</td>
                     <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
-                    <td className="px-5 py-3 text-right">
-                      <Link
-                        href={`/dashboard/angebote/${a.id}`}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-blue-50 hover:text-blue-700 transition"
-                      >
-                        Bearbeiten
-                      </Link>
-                    </td>
                   </tr>
                 );
               })}
