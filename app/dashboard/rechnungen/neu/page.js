@@ -1,8 +1,333 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+
+const LEISTUNGEN = [
+  'Rohrreinigung',
+  'Kanalreinigung',
+  'Grundleitungsreinigung',
+  'Fallstrangreinigung',
+  'Fallleitungsreinigung',
+  'Sammelleitungsreinigung',
+  'Hausanschlussreinigung',
+  'Hauptkanalreinigung',
+  'Schmutzwasserleitungsreinigung',
+  'Regenwasserleitungsreinigung',
+  'Mischwasserkanalreinigung',
+  'Drainagereinigung',
+  'DachentwÃ¤sserungsreinigung',
+  'Hofablaufreinigung',
+  'Sinkkastenreinigung',
+  'StraÃenablaufreinigung',
+  'Schachtreinigung',
+  'Pumpenschachtreinigung',
+  'Hebeanlagenreinigung',
+  'Pumpwerksreinigung',
+  'Fettabscheiderreinigung',
+  'Ãlabscheiderreinigung',
+  'Benzinabscheiderreinigung',
+  'Schlammfangreinigung',
+  'Sandfangreinigung',
+  'RegenrÃ¼ckhaltebeckenreinigung',
+  'RegenÃ¼berlaufbeckenreinigung',
+  'Zisternenreinigung',
+  'BehÃ¤lterreinigung',
+  'Tankreinigung',
+  'RohrnetzspÃ¼lung',
+  'KanalnetzspÃ¼lung',
+  'HochdruckspÃ¼lung',
+  'Kombinierte Saug- und SpÃ¼larbeiten',
+  'Absaugarbeiten',
+  'Schlammentsorgung',
+  'Sandabsaugung',
+  'Fettabsaugung',
+  'Ãlabsaugung',
+  'Verstopfungsbeseitigung',
+  'Wurzelentfernung',
+  'Betonentfernung',
+  'MÃ¶rtelentfernung',
+  'Kalkentfernung',
+  'Ablagerungsentfernung',
+  'FremdkÃ¶rperentfernung',
+  'WurzelfrÃ¤sen',
+  'KettenfrÃ¤sen',
+  'Roboterschneiden',
+  'RoboterfrÃ¤sarbeiten',
+  'Ãffnen von ZulÃ¤ufen',
+  'Ãffnen von AnschlÃ¼ssen',
+  'Beseitigung einragender Stutzen',
+  'Entfernung von Hindernissen',
+  'Sanierungsroboter-Einsatz',
+  'Roboterspachtelarbeiten',
+  'Roboterverpressarbeiten',
+  'TV-Inspektion',
+  'Kamerainspektion',
+  'Rohrkamerauntersuchung',
+  'Kanal-TV-Untersuchung',
+  'Hausanschlussinspektion',
+  'Schachtinspektion',
+  'GroÃprofilinspektion',
+  'Vorinspektion',
+  'Nachinspektion',
+  'Abnahmeinspektion',
+  'GewÃ¤hrleistungsinspektion',
+  'Schadensaufnahme',
+  'Schadensdokumentation',
+  'Videodokumentation',
+  'Fotodokumentation',
+  'Zustandsbewertung',
+  'Kanalzustandserfassung',
+  'Bestandsaufnahme',
+  'Bestandsdokumentation',
+  'Kanalkatastererstellung',
+  'Digitale Dokumentation',
+  'GIS-Erfassung',
+  'Leitungsortung',
+  'Kanalortung',
+  'Schachtortung',
+  'Rohrverlaufsermittlung',
+  'Schadensortung',
+  'Leckageortung',
+  'Rohrbruchortung',
+  'Fremdwasserortung',
+  'Ortung verdeckter SchÃ¤chte',
+  'GPS-Vermessung',
+  'Kanalvermessung',
+  'Schachtvermessung',
+  'HÃ¶henvermessung',
+  'Lagevermessung',
+  '3D-Vermessung',
+  'DichtheitsprÃ¼fung Luft',
+  'DichtheitsprÃ¼fung Wasser',
+  'KanaldichtheitsprÃ¼fung',
+  'RohrdichtheitsprÃ¼fung',
+  'SchachtdichtheitsprÃ¼fung',
+  'HausanschlussprÃ¼fung',
+  'DruckprÃ¼fung',
+  'FunktionsprÃ¼fung',
+  'AbnahmeprÃ¼fung',
+  'GewÃ¤hrleistungsprÃ¼fung',
+  'InspektionsprÃ¼fung',
+  'RÃ¼ckstausicherungsprÃ¼fung',
+  'HebeanlagenprÃ¼fung',
+  'PumpenprÃ¼fung',
+  'Kanalwartung',
+  'Rohrleitungswartung',
+  'EntwÃ¤sserungsanlagenwartung',
+  'Hebeanlagenwartung',
+  'Pumpenwartung',
+  'Pumpwerkswartung',
+  'RÃ¼ckstausicherungswartung',
+  'RÃ¼ckstauklappenwartung',
+  'Fettabscheiderwartung',
+  'Ãlabscheiderwartung',
+  'Schachtwartung',
+  'Regelinspektion',
+  'Wartungsvertrag',
+  'Jahreswartung',
+  'Rohrreparatur',
+  'Kanalreparatur',
+  'Hausanschlussreparatur',
+  'Schadstellenreparatur',
+  'Punktuelle Sanierung',
+  'Rissabdichtung',
+  'Fugenabdichtung',
+  'Injektionsarbeiten',
+  'Verpressarbeiten',
+  'Leckstellenabdichtung',
+  'Kurzlinersanierung',
+  'Partlinersanierung',
+  'Hutprofilsanierung',
+  'Stutzensanierung',
+  'Anschlusssanierung',
+  'Manschettensanierung',
+  'Edelstahlmanschettensanierung',
+  'Innenmanschettenmontage',
+  'Roboter-Sanierung',
+  'Verpresssanierung',
+  'Schlauchlinersanierung',
+  'Inlinersanierung',
+  'UV-Liner-Sanierung',
+  'Warmwasserliner-Sanierung',
+  'Dampfliner-Sanierung',
+  'Hausanschlussliner-Sanierung',
+  'Relining',
+  'Rohr-in-Rohr-Verfahren',
+  'Wickelrohrverfahren',
+  'Close-Fit-Lining',
+  'Tight-Fit-Lining',
+  'SprÃ¼hliner',
+  'Beschichtung',
+  'Innenbeschichtung',
+  'Mineralauskleidung',
+  'Korrosionsschutzbeschichtung',
+  'Schachtabdichtung',
+  'Schachtbeschichtung',
+  'Schachtinstandsetzung',
+  'Schachtauskleidung',
+  'Schachtkopfsanierung',
+  'Schachtrahmensanierung',
+  'Schachtdeckelsanierung',
+  'Gerinnesanierung',
+  'Bermensanierung',
+  'Steigeisensanierung',
+  'Fugensanierung',
+  'Schachtregulierung',
+  'Kanalerneuerung',
+  'Rohrerneuerung',
+  'Hausanschlusserneuerung',
+  'Leitungsneubau',
+  'Kanalneubau',
+  'Schachtneubau',
+  'Austausch von Rohrleitungen',
+  'Austausch von SchÃ¤chten',
+  'Berstlining',
+  'Pipe Bursting',
+  'Pipe Eating',
+  'Rohrvortrieb',
+  'Mikrotunneling',
+  'HorizontalspÃ¼lbohrung',
+  'HDD-Bohrung',
+  'Vortriebsarbeiten',
+  'Rohrgrabenherstellung',
+  'RohrgrabenverfÃ¼llung',
+  'Ausschachtungsarbeiten',
+  'Erdarbeiten',
+  'Baggerarbeiten',
+  'Freilegungsarbeiten',
+  'Aufbrucharbeiten',
+  'Asphaltaufbruch',
+  'Pflasteraufbruch',
+  'Betonaufbruch',
+  'OberflÃ¤chenwiederherstellung',
+  'Asphaltarbeiten',
+  'Pflasterarbeiten',
+  'Betonarbeiten',
+  'Einbau RÃ¼ckstauklappe',
+  'Einbau RÃ¼ckstausicherung',
+  'Einbau Hebeanlage',
+  'Einbau Pumpanlage',
+  'Einbau Kontrollschacht',
+  'Einbau Revisionsschacht',
+  'Einbau Hausanschluss',
+  'Rohrverlegung',
+  'Kanalverlegung',
+  'Schachtmontage',
+  'FÃ¤kalschlammentsorgung',
+  'Fettentsorgung',
+  'Ãlentsorgung',
+  'Sonderabfallentsorgung',
+  'KanalrÃ¼ckstandsentsorgung',
+  'Industrielle Abwasserentsorgung',
+  'BehÃ¤lterentleerung',
+  'Abscheiderentleerung',
+  'Kanalzustandsbewertung',
+  'Sanierungskonzept',
+  'Sanierungsplanung',
+  'Kanalnetzplanung',
+  'EntwÃ¤sserungsplanung',
+  'Ausschreibungserstellung',
+  'Bauleitung',
+  'BauÃ¼berwachung',
+  'Projektsteuerung',
+  'Wirtschaftlichkeitsberechnung',
+  'Werterhaltungskonzept',
+  'Anfahrtspauschale',
+  'Fahrzeugpauschale',
+  'SpÃ¼lfahrzeugpauschale',
+  'Kamerafahrzeugpauschale',
+  'GerÃ¤teeinsatz',
+  'Baustelleneinrichtung',
+  'Verkehrssicherung',
+  'AbsperrmaÃnahmen',
+  'Dokumentationspauschale',
+  'Arbeitszeit Helfer',
+  'Arbeitszeit Facharbeiter',
+  'Arbeitszeit Kanaltechniker',
+  'Arbeitszeit Sanierungstechniker',
+  'Nachtzuschlag',
+  'Wochenendzuschlag',
+  'Feiertagszuschlag',
+  'Notdienstzuschlag',
+  'Havarieeinsatz',
+  'Soforteinsatz',
+  'Bereitschaftsdienst',
+  '24-Stunden-Notdienst',
+  'Notdienst Rohrreinigung',
+  'Notdienst Kanalreinigung',
+  'RÃ¼ckstauschutz',
+  'Einbau RÃ¼ckstauverschluss',
+  'RÃ¼ckstauverschlusswartung',
+  'Hebeanlageneinbau',
+  'Hebeanlagenreparatur',
+  'Pumpenreparatur',
+  'Pumpenaustausch',
+  'Schachtabdeckung erneuern',
+  'Schachtdeckel austauschen',
+  'Geruchsverschlussreinigung',
+  'Rohrsanierung',
+  'Kanalsanierung',
+  'Hausanschlusssanierung',
+  'GrundstÃ¼cksentwÃ¤sserung',
+  'EntwÃ¤sserungsberatung',
+  'Kanalmanagement',
+  'Kanalkatasterpflege',
+  'Digitale Schadensbewertung',
+  'CAD-BestandsplÃ¤ne',
+  '3D-Kanalmodellierung',
+  'Asset-Management Kanalnetz',
+  'Regenwassermanagement',
+  'Versickerungsanlagenbau',
+  'Drainagebau',
+  'Drainagesanierung',
+  'Regenwasserschachtbau',
+  'Pumpenschachtbau',
+  'Sonderbauwerksreinigung',
+  'KlÃ¤ranlagenservice',
+  'Industriekanalservice',
+  'Chemieanlagenreinigung',
+  'TunnelentwÃ¤sserung',
+  'FlughafenentwÃ¤sserung',
+  'BahnentwÃ¤sserung',
+  'Hochwasserschutzanlagen-Service',
+  'RegenÃ¼berlaufbecken-Service',
+  'RegenrÃ¼ckhaltebecken-Service',
+  'GroÃprofilkanalreinigung',
+  'GroÃprofilkanalsanierung',
+  'RohrstatikprÃ¼fung',
+  'KanalstatikprÃ¼fung',
+  'Zustandsklassifizierung nach DWA',
+  'Sanierungsberatung',
+  'Versicherungsdokumentation',
+  'Gutachtenerstellung',
+  'Technische Bestandsanalyse',
+  'Vor-Ort-Beratung',
+  'Baustellenbesichtigung',
+  'Erstellung Fotobericht',
+  'Erstellung Videobericht',
+  'Erstellung Sanierungsangebot',
+  'Erstellung MaÃnahmenplan',
+  'SofortmaÃnahmen bei Wasserschaden',
+  'Notabdichtung',
+  'Havariesanierung',
+  'Rohrbruchbeseitigung',
+  'Wasserschadenservice',
+  'FreispÃ¼len von Leitungen',
+  'Reinigung von LÃ¼ftungsleitungen in EntwÃ¤sserungssystemen',
+  'Hausanschlussortung',
+  'Hausanschlussneubau',
+  'RevisionsÃ¶ffnung herstellen',
+  'RevisionsÃ¶ffnung erneuern',
+  'RohrÃ¶ffnung herstellen',
+  'Kanalanschluss herstellen',
+  'Kanalanschluss sanieren',
+  'Anschlussleitung erneuern',
+  'Anschlussleitung reinigen',
+  'Anschlussleitung inspizieren',
+  'Anschlussleitung sanieren',
+];
 
 export default function NeueRechnung() {
   const router = useRouter();
@@ -12,6 +337,8 @@ export default function NeueRechnung() {
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
   const [pdfLaden, setPdfLaden] = useState(false);
+  const [openDrop, setOpenDrop] = useState(null);
+  const dropRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -20,6 +347,14 @@ export default function NeueRechnung() {
       setKunden(data ?? []);
     }
     load();
+  }, []);
+
+  useEffect(() => {
+    function onDown(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
   function onChange(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
@@ -66,20 +401,20 @@ export default function NeueRechnung() {
     doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.text('RECHNUNG', 195, 18, { align: 'right' });
     doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.text(`Nr: ${nr}`, 195, 26, { align: 'right' });
     doc.setTextColor(0,0,0);
-    doc.setFontSize(8); doc.setTextColor(...grau); doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
-    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('Rechnungsempfänger:', 15, 55);
+    doc.setFontSize(8); doc.setTextColor(...grau); doc.text('Ihr Unternehmen Â· MusterstraÃe 1 Â· 40000 DÃ¼sseldorf', 15, 45);
+    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('RechnungsempfÃ¤nger:', 15, 55);
     doc.setFont('helvetica','normal');
     if (kunde) { doc.text(kunde.name, 15, 62); if (kunde.adresse) doc.text(kunde.adresse, 15, 68); }
-    else { doc.text('Kein Kunde ausgewählt', 15, 62); }
-    doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 55); doc.text('Fällig bis:', 130, 62);
+    else { doc.text('Kein Kunde ausgewÃ¤hlt', 15, 62); }
+    doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 55); doc.text('FÃ¤llig bis:', 130, 62);
     doc.setFont('helvetica','normal');
-    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '–', 195, 55, { align: 'right' });
+    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : 'â', 195, 55, { align: 'right' });
     doc.text(form.faellig_am ? new Date(form.faellig_am).toLocaleDateString('de-DE') : '14 Tage nach Rechnungsdatum', 195, 62, { align: 'right' });
     doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 82, 195, 82);
     doc.autoTable({
       startY: 88,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
-      body: positionen.map((p, i) => [i+1, p.beschreibung||'–', p.menge, p.einheit, `${p.preis.toFixed(2).replace('.',',')} €`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} €`]),
+      body: positionen.map((p, i) => [i+1, p.beschreibung||'â', p.menge, p.einheit, `${p.preis.toFixed(2).replace('.',',')} â¬`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} â¬`]),
       headStyles: { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0:{cellWidth:12}, 4:{halign:'right'}, 5:{halign:'right',fontStyle:'bold'} },
@@ -88,15 +423,15 @@ export default function NeueRechnung() {
     });
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
-    doc.text('Nettobetrag:', 140, ty); doc.text(`${netto.toFixed(2).replace('.',',')} €`, 195, ty, { align: 'right' });
-    doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} €`, 195, ty+7, { align: 'right' });
+    doc.text('Nettobetrag:', 140, ty); doc.text(`${netto.toFixed(2).replace('.',',')} â¬`, 195, ty, { align: 'right' });
+    doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} â¬`, 195, ty+7, { align: 'right' });
     doc.setDrawColor(...grau); doc.line(140, ty+10, 195, ty+10);
     doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, y+17, { align: 'right' });
+    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} â¬`, 195, y+17, { align: 'right' });
     if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(form.notizen, 15, ty+37); }
     doc.setFillColor(249,250,251); doc.rect(15, 260, 180, 22, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Bankverbindung:', 20, 268);
-    doc.setFont('helvetica','normal'); doc.text('IBAN: DE00 0000 0000 0000 0000 00  ·  BIC: XXXXXXXX  ·  [Ihre Bank]', 20, 275);
+    doc.setFont('helvetica','normal'); doc.text('IBAN: DE00 0000 0000 0000 0000 00  Â·  BIC: XXXXXXXX  Â·  [Ihre Bank]', 20, 275);
     doc.setFontSize(7); doc.setTextColor(156,163,175); doc.text('Erstellt mit KanalPro', 105, 285, { align: 'center' });
     doc.save(`Rechnung_${nr}.pdf`);
     setPdfLaden(false);
@@ -105,7 +440,7 @@ export default function NeueRechnung() {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
+        <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">â ZurÃ¼ck</Link>
         <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
       </div>
       <form onSubmit={handleSpeichern} className="space-y-5">
@@ -114,45 +449,64 @@ export default function NeueRechnung() {
           <h2 className="font-semibold text-gray-800">Rechnungsdetails</h2>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
             <select name="kunde_id" value={form.kunde_id} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">— Kein Kunde —</option>
+              <option value="">â Kein Kunde â</option>
               {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Fällig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">FÃ¤llig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Steuersatz</label>
             <select name="steuersatz" value={form.steuersatz} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value={19}>19 % (Regelsteuersatz)</option>
-              <option value={7}>7 % (ermäßigt)</option>
+              <option value={7}>7 % (ermÃ¤Ãigt)</option>
               <option value={0}>0 % (steuerfrei / Kleinunternehmer)</option>
             </select>
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Positionen</h2>
-          <div className="space-y-3">
-            {positionen.map((p, i) => (
+          <div className="space-y-3" ref={dropRef}>
+            {positionen.map((p, i) => {
+              const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
+              const showDrop = openDrop === i && filtered.length > 0;
+              return (
               <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-5"><input type="text" value={p.beschreibung} onChange={e=>onPosition(i,'beschreibung',e.target.value)} placeholder="Leistungsbeschreibung" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+                <div className="col-span-5 relative">
+                  <input type="text" value={p.beschreibung}
+                    onChange={e => { onPosition(i,'beschreibung',e.target.value); setOpenDrop(i); }}
+                    onFocus={() => setOpenDrop(i)}
+                    placeholder="Leistungsbeschreibung"
+                    autoComplete="off"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  {showDrop && (
+                    <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
+                      {filtered.map(l => (
+                        <li key={l} onMouseDown={e => { e.preventDefault(); onPosition(i,'beschreibung',l); setOpenDrop(null); }}
+                          className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0">{l}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
                 <div className="col-span-2"><input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w7-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-                <div className="col-span-2"><select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"><option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option></select></div>
-                <div className="col-span-2"><input type="number" min="0" step="0.01" value={p.preis} onChange={e=>onPosition(i,'preis',e.target.value)} placeholder="€" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-                <div className="col-span-1 flex justify-center"><button type="button" onClick={()=>removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button></div>
+                <div className="col-span-2"><select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"><option>Pauschal</option><option>Stunde</option><option>StÃ¼ck</option><option>m</option><option>mÂ²</option></select></div>
+                <div className="col-span-2"><input type="number" min="0" step="0.01" value={p.preis} onChange={e=>onPosition(i,'preis',e.target.value)} placeholder="â¬" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+                <div className="col-span-1 flex justify-center"><button type="button" onClick={()=>removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">Ã</button></div>
               </div>
-            ))}
+              );
+            })}
           </div>
-          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzufügen</button>
+          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzufÃ¼gen</button>
           <div className="mt-6 border-t border-gray-100 pt-4 space-y-1 text-sm">
-            <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.',',')} €</span></div>
-            <div className="flex justify-between text-gray-500"><span>MwSt. {form.steuersatz} %</span><span>{mwst.toFixed(2).replace('.',',')} €</span></div>
-            <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-200"><span>Gesamt (brutto)</span><span className="text-blue-600">{brutto.toFixed(2).replace('.',',')} €</span></div>
+            <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.',',')} â¬</span></div>
+            <div className="flex justify-between text-gray-500"><span>MwSt. {form.steuersatz} %</span><span>{mwst.toFixed(2).replace('.',',')} â¬</span></div>
+            <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-200"><span>Gesamt (brutto)</span><span className="text-blue-600">{brutto.toFixed(2).replace('.',',')} â¬</span></div>
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte Ã¼berweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
           <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
