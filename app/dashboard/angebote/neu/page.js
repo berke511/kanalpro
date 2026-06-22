@@ -368,7 +368,7 @@ export default function NeuesAngebot() {
             </button>
 
             {/* Summary */}
-            <div className="min-w][220px] space-y-1.5 text-sm">
+            <div className="min-w-[220px] space-y-1.5 text-sm">
               <div className="flex justify-between text-gray-500">
                 <span>Netto</span>
                 <span className="tabular-nums">{fmt(netto)}</span>
