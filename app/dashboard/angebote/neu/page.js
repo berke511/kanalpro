@@ -561,7 +561,7 @@ export default function NeuesAngebot() {
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Angebotsdetails</h2>
           </div>
-          <div className="p-5 grid grid-cols-2 gap-4">
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className={LABEL}>Kunde</label>
               <select name="kunde_id" value={form.kunde_id} onChange={onChange} className={INPUT}>
@@ -594,9 +594,9 @@ export default function NeuesAngebot() {
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
 
-          <div className="p-5 space-y-2" ref={dropRef}>
+          <div className="p-5 overflow-x-auto space-y-2" ref={dropRef}>
             {/* Spaltenüberschriften */}
-            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
+            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
