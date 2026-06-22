@@ -99,7 +99,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprüfung Luft',
+  'Dichtheitsprøfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -110,8 +110,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
-  'Hebeanlagenprüfung',
+  'Røckstausicherungsprüfung',
+  'Hebeanlagenprøfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -236,7 +236,7 @@ const LEISTUNGEN = [
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spülfahrzeugpauschale',
+  'Spølfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -315,7 +315,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -427,7 +427,7 @@ export default function NeueRechnung() {
     doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} €`, 195, ty+7, { align: 'right' });
     doc.setDrawColor(...grau); doc.line(140, ty+10, 195, ty+10);
     doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, y+17, { align: 'right' });
+    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, ty+17, { align: 'right' });
     if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(form.notizen, 15, ty+37); }
     doc.setFillColor(249,250,251); doc.rect(15, 260, 180, 22, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Bankverbindung:', 20, 268);
@@ -466,14 +466,23 @@ export default function NeueRechnung() {
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Positionen</h2>
-          <div className="space-y-3" ref={dropRef}>
+          <h2 className="font-semibold text-gray-800 mb-3">Positionen</h2>
+          {/* Spaltenüberschriften */}
+          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Preis (€)</span>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
+            <span></span>
+          </div>
+          <div className="space-y-2" ref={dropRef}>
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
               const showDrop = openDrop === i && filtered.length > 0;
               return (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-5 relative">
+              <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 items-center">
+                <div className="relative">
                   <input type="text" value={p.beschreibung}
                     onChange={e => { onPosition(i,'beschreibung',e.target.value); setOpenDrop(i); }}
                     onFocus={() => setOpenDrop(i)}
@@ -489,15 +498,25 @@ export default function NeueRechnung() {
                     </ul>
                   )}
                 </div>
-                <div className="col-span-2"><input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w7-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-                <div className="col-span-2"><select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"><option>Pauschal</option><option>Stunde</option><option>Stück</option><option>m</option><option>m²</option></select></div>
-                <div className="col-span-2"><input type="number" min="0" step="0.01" value={p.preis} onChange={e=>onPosition(i,'preis',e.target.value)} placeholder="€" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-                <div className="col-span-1 flex justify-center"><button type="button" onClick={()=>removePos(i)} className="text-gray-300 hover:text-red-400 text-xl leading-none">×</button></div>
+                <input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
+                  <option>Pauschal</option>
+                  <option>Stück</option>
+                  <option>Std.</option>
+                  <option>m</option>
+                  <option>m²</option>
+                  <option>m³</option>
+                  <option>kg</option>
+                  <option>t</option>
+                </select>
+                <input type="number" min="0" step="0.01" value={p.preis} onChange={e=>onPosition(i,'preis',e.target.value)} placeholder="0,00" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <span className="text-right text-sm font-medium text-gray-700 tabular-nums pr-1">{(p.menge * p.preis).toFixed(2).replace('.', ',')} €</span>
+                <button type="button" onClick={()=>removePos(i)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition">×</button>
               </div>
               );
             })}
           </div>
-          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzufügen</button>
+          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzuføgen</button>
           <div className="mt-6 border-t border-gray-100 pt-4 space-y-1 text-sm">
             <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.',',')} €</span></div>
             <div className="flex justify-between text-gray-500"><span>MwSt. {form.steuersatz} %</span><span>{mwst.toFixed(2).replace('.',',')} €</span></div>
