@@ -72,7 +72,7 @@ export default function Kunden() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
           <p className="text-gray-500 mt-1">{kunden.length} Kunden gesamt</p>
@@ -131,7 +131,8 @@ export default function Kunden() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
@@ -221,6 +222,7 @@ export default function Kunden() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
