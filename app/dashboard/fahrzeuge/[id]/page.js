@@ -10,7 +10,8 @@ const TABS = [
   { id: 'wartungen',        label: 'Wartungen' },
   { id: 'kilometerstand',   label: 'Kilometerstand' },
   { id: 'versicherung',     label: 'Versicherung' },
-  { id: 'rechnungen',       label: 'Angebote & Rechnungen' },
+  { id: 'angebote',         label: 'Angebote' },
+  { id: 'rechnungen',       label: 'Rechnungen' },
   { id: 'historie',         label: 'Historie' },
 ];
 
