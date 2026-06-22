@@ -97,7 +97,7 @@ export default function NeuerKunde() {
           </div>
 
           {/* Name / Firmenname */}
-          <div className={form.kundentyp === 'firma' ? 'grid grid-cols-2 gap-4' : ''}>
+          <div className={form.kundentyp === 'firma' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : ''}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {form.kundentyp === 'firma' ? 'Ansprechpartner *' : 'Name *'}
@@ -117,7 +117,7 @@ export default function NeuerKunde() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
               <input type="tel" name="telefon" value={form.telefon} onChange={handleChange}
