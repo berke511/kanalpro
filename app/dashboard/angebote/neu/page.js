@@ -35,7 +35,7 @@ const LEISTUNGEN = [
   'Zisternenreinigung',
   'Behälterreinigung',
   'Tankreinigung',
-  'Rohrnetzspülung',
+  'Rohrnetzspølung',
   'Kanalnetzspülung',
   'Hochdruckspülung',
   'Kombinierte Saug- und Spülarbeiten',
@@ -99,7 +99,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprüfung Luft',
+  'Dichtheitsprøfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -110,8 +110,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
-  'Hebeanlagenprüfung',
+  'Røckstausicherungsprüfung',
+  'Hebeanlagenprøfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -158,7 +158,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprühliner',
+  'Sprøhliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -365,6 +365,7 @@ export default function NeuesAngebot() {
       setVorlageUserId(user.id);
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('company_id', member.company_id).order('name');
       setKunden(data ?? []);
+      // Pre-fill from Vorlage URL param
       const params = new URLSearchParams(window.location.search);
       const vorlageId = params.get('vorlage');
       if (vorlageId) {
@@ -594,13 +595,22 @@ export default function NeuesAngebot() {
           </div>
 
           <div className="p-5 space-y-2" ref={dropRef}>
+            {/* Spaltenüberschriften */}
+            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Preis (€)</span>
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
+              <span></span>
+            </div>
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l =>
                 l.toLowerCase().includes((p.beschreibung || '').toLowerCase())
               );
               const showDrop = openDrop === i && filtered.length > 0;
               return (
-                <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_32px] gap-2 items-center">
+                <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 items-center">
                   <div className="relative">
                     <input
                       type="text"
@@ -626,12 +636,16 @@ export default function NeuesAngebot() {
                   <input type="number" min="0" step="0.5" value={p.menge} onChange={e => onPos(i, 'menge', e.target.value)} className={INPUT} />
                   <select value={p.einheit} onChange={e => onPos(i, 'einheit', e.target.value)} className={INPUT}>
                     <option>Pauschal</option>
-                    <option>Stunde</option>
                     <option>Stück</option>
+                    <option>Std.</option>
                     <option>m</option>
                     <option>m²</option>
+                    <option>m³</option>
+                    <option>kg</option>
+                    <option>t</option>
                   </select>
                   <input type="number" min="0" step="0.01" value={p.preis} onChange={e => onPos(i, 'preis', e.target.value)} placeholder="0,00" className={INPUT} />
+                  <span className="text-right text-sm font-medium text-gray-700 tabular-nums pr-1">{fmt(p.menge * p.preis)}</span>
                   <button type="button" onClick={() => removePos(i)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition" title="Position entfernen">×</button>
                 </div>
               );
@@ -669,7 +683,7 @@ export default function NeuesAngebot() {
               value={form.notizen}
               onChange={onChange}
               rows={2}
-              placeholder="z. B. Dieses Angebot ist 30 Tage gøltig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
+              placeholder="z. B. Dieses Angebot ist 30 Tage gültig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
               className={INPUT + ' resize-none'}
             />
           </div>
@@ -726,7 +740,7 @@ export default function NeuesAngebot() {
               type="text"
               value={vorlageName}
               onChange={e => setVorlageName(e.target.value)}
-              placeholder="z. B. Standard Kanalreinigung"
+              placeholder="z. B. Standard Kanalreinigung"
               className={INPUT}
               onKeyDown={e => e.key === 'Enter' && handleVorlageSpeichern()}
               autoFocus
