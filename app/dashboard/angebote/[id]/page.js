@@ -508,8 +508,8 @@ export default function AngebotBearbeiten() {
         </div>
 
         {/* ── Positionen ── */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
           <div className="p-5 space-y-2" ref={dropRef}>
