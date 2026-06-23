@@ -23,6 +23,9 @@ export default function Angebote() {
   const [selectedId, setSelectedId] = useState('');
   const [pdfLaden, setPdfLaden]     = useState(false);
 
+  // Firmenlogo
+  const [logoUrl, setLogoUrl] = useState(null);
+
   // E-Mail-Versand state
   const [emailSelectedId,  setEmailSelectedId]  = useState('');
   const [emailEmpfaenger,  setEmailEmpfaenger]  = useState('');
@@ -39,6 +42,12 @@ export default function Angebote() {
         .order('erstellt_am', { ascending: false });
       setAngebote(data ?? []);
       setLaden(false);
+      // Logo laden
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      if (member) {
+        const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
+        setLogoUrl(co?.logo_url ?? null);
+      }
     }
     load().catch(() => setLaden(false));
   }, []);
@@ -48,7 +57,7 @@ export default function Angebote() {
     return netto * (1 + (a.steuersatz ?? 19) / 100);
   }
 
-  // Auto-fill E-Mail-Felder beim Auswaehlen eines Angebots
+  // Auto-fill E-Mail-Felder beim Auswählen eines Angebots
   useEffect(() => {
     const a = angebote.find(x => x.id === emailSelectedId);
     if (!a) {
@@ -75,6 +84,22 @@ export default function Angebote() {
 
   const selected = angebote.find(a => a.id === selectedId) ?? null;
 
+  function loadLogoDataUrl(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve({ dataUrl: canvas.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
   async function handlePDF() {
     if (!selected) return;
     setPdfLaden(true);
@@ -94,11 +119,28 @@ export default function Angebote() {
     const brutto = netto + mwst;
     const kunde  = a.kunden ?? null;
 
+    // Logo in dataURL konvertieren
+    let logoImgData = null, logoImgW = 0, logoImgH = 0;
+    if (logoUrl) {
+      const res = await loadLogoDataUrl(logoUrl);
+      if (res) {
+        const maxW = 52, maxH = 22;
+        const ratio = res.w / res.h;
+        if (ratio >= maxW / maxH) { logoImgW = maxW; logoImgH = maxW / ratio; }
+        else { logoImgH = maxH; logoImgW = maxH * ratio; }
+        logoImgData = res.dataUrl;
+      }
+    }
+
     // Header
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22); doc.setFont('helvetica', 'bold');   doc.text('KanalPro', 15, 18);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Rohr- & Kanalservice Verwaltung', 15, 26);
+    if (logoImgData) {
+      doc.addImage(logoImgData, 'PNG', 15, (35 - logoImgH) / 2, logoImgW, logoImgH);
+    } else {
+      doc.setFontSize(22); doc.setFont('helvetica', 'bold');   doc.text('KanalPro', 15, 18);
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Rohr- & Kanalservice Verwaltung', 15, 26);
+    }
     doc.setFontSize(20); doc.setFont('helvetica', 'bold');   doc.text('ANGEBOT', 195, 18, { align: 'right' });
     doc.setFontSize(9);  doc.setFont('helvetica', 'normal'); doc.text('Nr: ' + nr, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
@@ -191,7 +233,7 @@ export default function Angebote() {
   return (
     <div>
       {/* ── Tab-Bar + Action ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setTab('angebote')}
@@ -241,8 +283,7 @@ export default function Angebote() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px] text-sm">
+            <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
@@ -271,7 +312,6 @@ export default function Angebote() {
                 })}
               </tbody>
             </table>
-            </div>
           </div>
         )
       )}
@@ -366,6 +406,7 @@ export default function Angebote() {
       {tab === 'email' && (
         <div className="max-w-xl space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -377,12 +418,14 @@ export default function Angebote() {
                 <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt.</p>
               </div>
             </div>
+
             {laden ? (
               <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
             ) : angebote.length === 0 ? (
               <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
               <>
+                {/* Angebot-Auswahl */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
                   <select
@@ -398,6 +441,8 @@ export default function Angebote() {
                     ))}
                   </select>
                 </div>
+
+                {/* Empfänger */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Empfänger-E-Mail
@@ -413,6 +458,8 @@ export default function Angebote() {
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
+
+                {/* Betreff */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
                   <input
@@ -423,6 +470,8 @@ export default function Angebote() {
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
+
+                {/* Nachricht */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
                   <textarea
@@ -433,6 +482,8 @@ export default function Angebote() {
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
+
+                {/* Hinweis PDF */}
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                   <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
@@ -441,6 +492,8 @@ export default function Angebote() {
                     Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
                   </p>
                 </div>
+
+                {/* Senden-Button */}
                 <button
                   onClick={handleMailto}
                   disabled={!emailSelectedId || !emailEmpfaenger.trim()}
