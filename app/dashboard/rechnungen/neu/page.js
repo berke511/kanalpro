@@ -99,7 +99,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprøfung Luft',
+  'Dichtheitsprüfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -110,8 +110,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Røckstausicherungsprüfung',
-  'Hebeanlagenprøfung',
+  'Rückstausicherungsprüfung',
+  'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -339,7 +339,6 @@ export default function NeueRechnung() {
   const [pdfLaden, setPdfLaden] = useState(false);
   const [openDrop, setOpenDrop] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
-  const dropRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -353,14 +352,6 @@ export default function NeueRechnung() {
       }
     }
     load();
-  }, []);
-
-  useEffect(() => {
-    function onDown(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
   function onChange(e) { setForm({ ...form, [e.target.name]: e.target.value }); }
@@ -464,7 +455,7 @@ export default function NeueRechnung() {
               {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Fällig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
@@ -479,7 +470,7 @@ export default function NeueRechnung() {
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="font-semibold text-gray-800 mb-3">Positionen</h2>
           {/* Spaltenüberschriften */}
-          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
+          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
@@ -487,7 +478,7 @@ export default function NeueRechnung() {
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
             <span></span>
           </div>
-          <div className="overflow-x-auto space-y-2" ref={dropRef}>
+          <div className="space-y-2">
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
               const showDrop = openDrop === i && filtered.length > 0;
@@ -497,13 +488,14 @@ export default function NeueRechnung() {
                   <input type="text" value={p.beschreibung}
                     onChange={e => { onPosition(i,'beschreibung',e.target.value); setOpenDrop(i); }}
                     onFocus={() => setOpenDrop(i)}
+                    onBlur={() => setTimeout(() => setOpenDrop(null), 150)}
                     placeholder="Leistungsbeschreibung"
                     autoComplete="off"
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   {showDrop && (
                     <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
                       {filtered.map(l => (
-                        <li key={l} onMouseDown={e => { e.preventDefault(); onPosition(i,'beschreibung',l); setOpenDrop(null); }}
+                        <li key={l} onClick={() => { onPosition(i,'beschreibung',l); setOpenDrop(null); }}
                           className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0">{l}</li>
                       ))}
                     </ul>
@@ -512,7 +504,7 @@ export default function NeueRechnung() {
                 <input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
                   <option>Pauschal</option>
-                  <option>Stück</option>
+                  <option>Støck</option>
                   <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
@@ -527,7 +519,7 @@ export default function NeueRechnung() {
               );
             })}
           </div>
-          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzuføgen</button>
+          <button type="button" onClick={addPos} className="mt-3 text-sm text-blue-600 hover:underline font-medium">+ Position hinzufügen</button>
           <div className="mt-6 border-t border-gray-100 pt-4 space-y-1 text-sm">
             <div className="flex justify-between text-gray-500"><span>Netto</span><span>{netto.toFixed(2).replace('.',',')} €</span></div>
             <div className="flex justify-between text-gray-500"><span>MwSt. {form.steuersatz} %</span><span>{mwst.toFixed(2).replace('.',',')} €</span></div>
@@ -536,7 +528,7 @@ export default function NeueRechnung() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte øberweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
           <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
