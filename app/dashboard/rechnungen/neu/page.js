@@ -338,13 +338,19 @@ export default function NeueRechnung() {
   const [laden, setLaden] = useState(false);
   const [pdfLaden, setPdfLaden] = useState(false);
   const [openDrop, setOpenDrop] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
   const dropRef = useRef(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('user_id', user.id).order('name');
       setKunden(data ?? []);
+      if (member) {
+        const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
+        setLogoUrl(co?.logo_url ?? null);
+      }
     }
     load();
   }, []);
@@ -439,9 +445,14 @@ export default function NeueRechnung() {
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
-        <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
+          <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
+        </div>
+        {logoUrl && (
+          <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
+        )}
       </div>
       <form onSubmit={handleSpeichern} className="space-y-5">
         {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
