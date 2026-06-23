@@ -348,6 +348,7 @@ export default function NeuesAngebot() {
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
   const [pdfLaden, setPdfLaden] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
   const [openDrop, setOpenDrop] = useState(null);
   const dropRef = useRef(null);
   const [vorlageModal, setVorlageModal] = useState(false);
@@ -365,6 +366,8 @@ export default function NeuesAngebot() {
       setVorlageUserId(user.id);
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('company_id', member.company_id).order('name');
       setKunden(data ?? []);
+      const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
+      setLogoUrl(co?.logo_url ?? null);
       // Pre-fill from Vorlage URL param
       const params = new URLSearchParams(window.location.search);
       const vorlageId = params.get('vorlage');
@@ -545,10 +548,15 @@ export default function NeuesAngebot() {
   return (
     <div className="max-w-3xl pb-12">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard/angebote" className="text-gray-400 hover:text-gray-600 text-sm transition">← Zurück</Link>
-        <span className="text-gray-200">/</span>
-        <h1 className="text-xl font-bold text-gray-900">Neues Angebot</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/angebote" className="text-gray-400 hover:text-gray-600 text-sm transition">← Zurück</Link>
+          <span className="text-gray-200">/</span>
+          <h1 className="text-xl font-bold text-gray-900">Neues Angebot</h1>
+        </div>
+        {logoUrl && (
+          <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
+        )}
       </div>
 
       <form onSubmit={handleSpeichern} className="space-y-4">
