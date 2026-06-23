@@ -32,6 +32,10 @@ export default function Angebote() {
   const [emailBetreff,     setEmailBetreff]     = useState('');
   const [emailNachricht,   setEmailNachricht]   = useState('');
 
+  // Auftrag bestätigen
+  const [confirmAngebot, setConfirmAngebot] = useState(null);
+  const [auftragLaden,   setAuftragLaden]   = useState(false);
+
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,6 +55,10 @@ export default function Angebote() {
     }
     load().catch(() => setLaden(false));
   }, []);
+
+  // Derived lists
+  const offeneAngebote = angebote.filter(a => !a.auftrag);
+  const auftraege      = angebote.filter(a =>  a.auftrag);
 
   function calcBrutto(a) {
     const netto = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
@@ -119,7 +127,6 @@ export default function Angebote() {
     const brutto = netto + mwst;
     const kunde  = a.kunden ?? null;
 
-    // Logo in dataURL konvertieren
     let logoImgData = null, logoImgW = 0, logoImgH = 0;
     if (logoUrl) {
       const res = await loadLogoDataUrl(logoUrl);
@@ -132,7 +139,6 @@ export default function Angebote() {
       }
     }
 
-    // Header
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
     if (logoImgData) {
@@ -145,7 +151,6 @@ export default function Angebote() {
     doc.setFontSize(9);  doc.setFont('helvetica', 'normal'); doc.text('Nr: ' + nr, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
 
-    // Absender + Empfänger
     doc.setFontSize(8); doc.setTextColor(...grau);
     doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold');
@@ -158,20 +163,17 @@ export default function Angebote() {
       doc.text('Kein Kunde zugewiesen', 15, 62);
     }
 
-    // Datum / Gültig bis
     doc.setFont('helvetica', 'bold');
     doc.text('Datum:', 130, 55);
     doc.text('Gültig bis:', 130, 62);
     doc.setFont('helvetica', 'normal');
-    doc.text(a.datum      ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
-    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
+    doc.text(a.datum       ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
+    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE')    : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
 
-    // Divider + Intro
     doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 75, 195, 75);
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Wir unterbreiten Ihnen folgendes Angebot:', 15, 82);
 
-    // Positionen-Tabelle
     doc.autoTable({
       startY: 88,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
@@ -190,7 +192,6 @@ export default function Angebote() {
       margin:             { left: 15, right: 15 },
     });
 
-    // Summen
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Nettobetrag:', 140, ty);
@@ -203,7 +204,6 @@ export default function Angebote() {
     doc.setTextColor(...blau);
     doc.text(brutto.toFixed(2).replace('.', ',') + ' €', 195, ty + 17, { align: 'right' });
 
-    // Notizen
     if (a.notizen) {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
       doc.text('Hinweis:', 15, ty + 30);
@@ -211,7 +211,6 @@ export default function Angebote() {
       doc.text(a.notizen, 15, ty + 37, { maxWidth: 180 });
     }
 
-    // Footer
     doc.setFillColor(249, 250, 251); doc.rect(15, 262, 180, 18, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica', 'normal');
     doc.text('Dieses Angebot ist freibleibend und unverbindlich. Preise inkl. gesetzlicher MwSt.', 105, 270, { align: 'center' });
@@ -230,6 +229,25 @@ export default function Angebote() {
     window.location.href = href;
   }
 
+  async function handleAuftragErstellen() {
+    if (!confirmAngebot) return;
+    setAuftragLaden(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('angebote')
+      .update({ auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' })
+      .eq('id', confirmAngebot.id);
+    if (!error) {
+      setAngebote(prev => prev.map(a =>
+        a.id === confirmAngebot.id
+          ? { ...a, auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' }
+          : a
+      ));
+    }
+    setAuftragLaden(false);
+    setConfirmAngebot(null);
+  }
+
   return (
     <div>
       {/* ── Tab-Bar + Action ── */}
@@ -240,6 +258,15 @@ export default function Angebote() {
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'angebote' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Angebote
+          </button>
+          <button
+            onClick={() => setTab('auftraege')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1.5 ${tab === 'auftraege' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Aufträge
+            {auftraege.length > 0 && (
+              <span className="bg-green-100 text-green-700 text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{auftraege.length}</span>
+            )}
           </button>
           <Link
             href="/dashboard/angebote/vorlagen"
@@ -271,7 +298,7 @@ export default function Angebote() {
       {tab === 'angebote' && (
         laden ? (
           <p className="text-gray-400 text-sm">Wird geladen…</p>
-        ) : angebote.length === 0 ? (
+        ) : offeneAngebote.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
@@ -291,10 +318,11 @@ export default function Angebote() {
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
+                  <th className="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {angebote.map(a => {
+                {offeneAngebote.map(a => {
                   const cfg = statusConfig[a.status] ?? statusConfig.entwurf;
                   return (
                     <tr
@@ -307,9 +335,69 @@ export default function Angebote() {
                       <td className="px-5 py-3 text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–'}</td>
                       <td className="px-5 py-3 font-medium text-gray-900">{fmt(calcBrutto(a))}</td>
                       <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
+                      <td className="px-5 py-3 text-right" onClick={e => e.stopPropagation()}>
+                        {a.status !== 'abgelehnt' && (
+                          <button
+                            onClick={() => setConfirmAngebot(a)}
+                            className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-semibold hover:bg-green-100 transition whitespace-nowrap"
+                          >
+                            Auftrag erstellen
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+
+      {/* ── Aufträge-Tab ── */}
+      {tab === 'auftraege' && (
+        laden ? (
+          <p className="text-gray-400 text-sm">Wird geladen…</p>
+        ) : auftraege.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-500">Noch keine Aufträge</p>
+            <p className="text-xs text-gray-400 mt-1">Bestätige ein Angebot, um hier einen Auftrag zu erstellen.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-5 py-3 font-medium text-gray-500">Referenz</th>
+                  <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
+                  <th className="text-left px-5 py-3 font-medium text-gray-500">Auftrag vom</th>
+                  <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
+                  <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {auftraege.map(a => (
+                  <tr
+                    key={a.id}
+                    onClick={() => router.push(`/dashboard/angebote/${a.id}`)}
+                    className="hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? '–'}</td>
+                    <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
+                    <td className="px-5 py-3 text-gray-500">
+                      {a.auftrag_erstellt_am ? new Date(a.auftrag_erstellt_am).toLocaleDateString('de-DE') : '–'}
+                    </td>
+                    <td className="px-5 py-3 font-medium text-gray-900">{fmt(calcBrutto(a))}</td>
+                    <td className="px-5 py-3">
+                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">Angenommen</span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -402,11 +490,11 @@ export default function Angebote() {
           </div>
         </div>
       )}
+
       {/* ── E-Mail-Versand-Tab ── */}
       {tab === 'email' && (
         <div className="max-w-xl space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -425,7 +513,6 @@ export default function Angebote() {
               <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
               <>
-                {/* Angebot-Auswahl */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
                   <select
@@ -442,7 +529,6 @@ export default function Angebote() {
                   </select>
                 </div>
 
-                {/* Empfänger */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Empfänger-E-Mail
@@ -459,7 +545,6 @@ export default function Angebote() {
                   />
                 </div>
 
-                {/* Betreff */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
                   <input
@@ -471,7 +556,6 @@ export default function Angebote() {
                   />
                 </div>
 
-                {/* Nachricht */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
                   <textarea
@@ -483,7 +567,6 @@ export default function Angebote() {
                   />
                 </div>
 
-                {/* Hinweis PDF */}
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                   <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
@@ -493,7 +576,6 @@ export default function Angebote() {
                   </p>
                 </div>
 
-                {/* Senden-Button */}
                 <button
                   onClick={handleMailto}
                   disabled={!emailSelectedId || !emailEmpfaenger.trim()}
@@ -506,6 +588,42 @@ export default function Angebote() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Auftrag-Bestätigungs-Modal ── */}
+      {confirmAngebot && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Auftrag erstellen</h3>
+            <p className="text-sm text-gray-600 mb-1">
+              Angebot{' '}
+              <span className="font-semibold font-mono text-gray-800">{confirmAngebot.angebotsnummer ?? '–'}</span>
+              {confirmAngebot.kunden?.name && (
+                <> für <span className="font-semibold text-gray-800">{confirmAngebot.kunden.name}</span></>
+              )}{' '}
+              als Auftrag bestätigen?
+            </p>
+            <p className="text-xs text-gray-400 mb-5">
+              Das Angebot wird in den Aufträge-Reiter verschoben und der Status auf „Angenommen" gesetzt.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmAngebot(null)}
+                disabled={auftragLaden}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition text-sm"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleAuftragErstellen}
+                disabled={auftragLaden}
+                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition text-sm disabled:opacity-50"
+              >
+                {auftragLaden ? 'Wird gespeichert…' : 'Als Auftrag bestätigen'}
+              </button>
+            </div>
           </div>
         </div>
       )}
