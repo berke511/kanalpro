@@ -359,6 +359,7 @@ export default function RechnungBearbeiten() {
   ]);
   const [fehler, setFehler]   = useState('');
   const [openDrop, setOpenDrop] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
   const dropRef = useRef(null);
 
   useEffect(() => {
@@ -373,10 +374,14 @@ export default function RechnungBearbeiten() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const [{ data: kundenData }, { data: rechnung }] = await Promise.all([
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+
+      const [{ data: kundenData }, { data: rechnung }, { data: co }] = await Promise.all([
         supabase.from('kunden').select('id, name').eq('user_id', user.id).order('name'),
         supabase.from('rechnungen').select('*').eq('id', id).single(),
+        member ? supabase.from('companies').select('logo_url').eq('id', member.company_id).single() : Promise.resolve({ data: null }),
       ]);
+      setLogoUrl(co?.logo_url ?? null);
 
       setKunden(kundenData ?? []);
 
@@ -455,20 +460,25 @@ export default function RechnungBearbeiten() {
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <Link href="/dashboard/rechnungen" className="text-xs text-gray-400 hover:text-gray-600 transition">
             ← Zurück zu Rechnungen
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-1">Rechnung bearbeiten</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setDeleteConfirm(true)}
-          className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition text-sm"
-        >
-          Rechnung löschen
-        </button>
+        <div className="flex items-center gap-3">
+          {logoUrl && (
+            <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
+          )}
+          <button
+            type="button"
+            onClick={() => setDeleteConfirm(true)}
+            className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition text-sm"
+          >
+            Rechnung löschen
+          </button>
+        </div>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5">
