@@ -25,7 +25,7 @@ const LEISTUNGEN = [
   'Straßenablaufreinigung',
   'Schachtreinigung',
   'Pumpenschachtreinigung',
-  'Hebeanlagenreinigung',
+  'Hebeanlagenreinigune',
   'Pumpwerksreinigung',
   'Fettabscheiderreinigung',
   'Ölabscheiderreinigung',
@@ -101,10 +101,10 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprüfung Luft',
+  'Dichtheitsprøfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
-  'Rohrdichtheitsprüfung',
+  'Rohrdichtheitsprøfung',
   'Schachtdichtheitsprüfung',
   'Hausanschlussprüfung',
   'Druckprüfung',
@@ -112,8 +112,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
-  'Hebeanlagenprüfung',
+  'Røckstausicherungsprüfung',
+  'Hebeanlagenprøfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -160,7 +160,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprühliner',
+  'Sprøhliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -205,7 +205,7 @@ const LEISTUNGEN = [
   'Betonaufbruch',
   'Oberflächenwiederherstellung',
   'Asphaltarbeiten',
-  'Pflasterarbeiten',
+   Pflasterarbeiten',
   'Betonarbeiten',
   'Einbau Rückstauklappe',
   'Einbau Rückstausicherung',
@@ -232,13 +232,13 @@ const LEISTUNGEN = [
   'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'Bauüberwachung',
+  'Bauøberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spülfahrzeugpauschale',
+  'Spølfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -360,15 +360,6 @@ export default function RechnungBearbeiten() {
   const [fehler, setFehler]   = useState('');
   const [openDrop, setOpenDrop] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
-  const dropRef = useRef(null);
-
-  useEffect(() => {
-    function onDown(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, []);
 
   useEffect(() => {
     async function load() {
@@ -487,7 +478,7 @@ export default function RechnungBearbeiten() {
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Rechnungsdaten</h2>
           </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-5 grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1">Kunde</label>
               <select name="kunde_id" value={form.kunde_id} onChange={onChange} className={INPUT}>
@@ -523,7 +514,7 @@ export default function RechnungBearbeiten() {
           </div>
           <div className="p-5">
           {/* Spaltenüberschriften */}
-          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
+          <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
@@ -531,7 +522,7 @@ export default function RechnungBearbeiten() {
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
             <span></span>
           </div>
-          <div className="overflow-x-auto space-y-2" ref={dropRef}>
+          <div className="space-y-2">
             {positionen.map((p, i) => {
               const filtered = LEISTUNGEN.filter(l => l.toLowerCase().includes((p.beschreibung || '').toLowerCase()));
               const showDrop = openDrop === i && filtered.length > 0;
@@ -543,6 +534,7 @@ export default function RechnungBearbeiten() {
                     value={p.beschreibung}
                     onChange={e => { posChange(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
                     onFocus={() => setOpenDrop(i)}
+                    onBlur={() => setTimeout(() => setOpenDrop(null), 150)}
                     placeholder="Leistungsbeschreibung"
                     autoComplete="off"
                     className={INPUT}
@@ -550,7 +542,7 @@ export default function RechnungBearbeiten() {
                   {showDrop && (
                     <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
                       {filtered.map(l => (
-                        <li key={l} onMouseDown={e => { e.preventDefault(); posChange(i, 'beschreibung', l); setOpenDrop(null); }}
+                        <li key={l} onClick={() => { posChange(i, 'beschreibung', l); setOpenDrop(null); }}
                           className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0">{l}</li>
                       ))}
                     </ul>
@@ -559,7 +551,7 @@ export default function RechnungBearbeiten() {
                 <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} min="0" step="0.5" className={INPUT} />
                 <select value={p.einheit} onChange={e => posChange(i, 'einheit', e.target.value)} className={INPUT}>
                   <option>Pauschal</option>
-                  <option>Støck</option>
+                  <option>Stück</option>
                   <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
