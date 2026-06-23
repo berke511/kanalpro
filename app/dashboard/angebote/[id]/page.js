@@ -359,6 +359,7 @@ export default function AngebotBearbeiten() {
   ]);
   const [fehler, setFehler]   = useState('');
   const [openDrop, setOpenDrop] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(null);
   const dropRef = useRef(null);
 
   useEffect(() => {
@@ -379,10 +380,12 @@ export default function AngebotBearbeiten() {
         .single();
       if (!member) return;
 
-      const [{ data: kundenData }, { data: angebot }] = await Promise.all([
+      const [{ data: kundenData }, { data: angebot }, { data: co }] = await Promise.all([
         supabase.from('kunden').select('id, name').eq('company_id', member.company_id).order('name'),
         supabase.from('angebote').select('*').eq('id', id).single(),
+        supabase.from('companies').select('logo_url').eq('id', member.company_id).single(),
       ]);
+      setLogoUrl(co?.logo_url ?? null);
 
       setKunden(kundenData ?? []);
 
@@ -460,20 +463,25 @@ export default function AngebotBearbeiten() {
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <Link href="/dashboard/angebote" className="text-xs text-gray-400 hover:text-gray-600 transition">
             ← Zurück zu Angebote
           </Link>
           <h1 className="text-xl font-bold text-gray-900 mt-1">Angebot bearbeiten</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setDeleteConfirm(true)}
-          className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition text-sm"
-        >
+        <div className="flex items-center gap-3">
+          {logoUrl && (
+            <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
+          )}
+          <button
+            type="button"
+            onClick={() => setDeleteConfirm(true)}
+            className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition text-sm"
+          >
           Angebot löschen
         </button>
+        </div>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5">
