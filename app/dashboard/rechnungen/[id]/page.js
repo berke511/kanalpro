@@ -25,7 +25,7 @@ const LEISTUNGEN = [
   'Straßenablaufreinigung',
   'Schachtreinigung',
   'Pumpenschachtreinigung',
-  'Hebeanlagenreinigune',
+  'Hebeanlagenreinigung',
   'Pumpwerksreinigung',
   'Fettabscheiderreinigung',
   'Ölabscheiderreinigung',
@@ -101,10 +101,10 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprøfung Luft',
+  'Dichtheitsprüfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
-  'Rohrdichtheitsprøfung',
+  'Rohrdichtheitsprüfung',
   'Schachtdichtheitsprüfung',
   'Hausanschlussprüfung',
   'Druckprüfung',
@@ -112,8 +112,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Røckstausicherungsprüfung',
-  'Hebeanlagenprøfung',
+  'Rückstausicherungsprüfung',
+  'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -205,7 +205,7 @@ const LEISTUNGEN = [
   'Betonaufbruch',
   'Oberflächenwiederherstellung',
   'Asphaltarbeiten',
-   Pflasterarbeiten',
+  'Pflasterarbeiten',
   'Betonarbeiten',
   'Einbau Rückstauklappe',
   'Einbau Rückstausicherung',
@@ -232,13 +232,13 @@ const LEISTUNGEN = [
   'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'Bauøberwachung',
+  'Bauüberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spølfahrzeugpauschale',
+  'Spülfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -317,7 +317,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -551,7 +551,7 @@ export default function RechnungBearbeiten() {
                 <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} min="0" step="0.5" className={INPUT} />
                 <select value={p.einheit} onChange={e => posChange(i, 'einheit', e.target.value)} className={INPUT}>
                   <option>Pauschal</option>
-                  <option>Stück</option>
+                  <option>Støck</option>
                   <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
