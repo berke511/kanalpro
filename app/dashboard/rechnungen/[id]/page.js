@@ -160,7 +160,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprøhliner',
+  'Sprühliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -238,7 +238,7 @@ const LEISTUNGEN = [
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spülfahrzeugpauschale',
+  'Spølfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -317,7 +317,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -360,6 +360,9 @@ export default function RechnungBearbeiten() {
   const [fehler, setFehler]   = useState('');
   const [openDrop, setOpenDrop] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
+  const [pdfLaden, setPdfLaden] = useState(false);
+  const [rechnungsnummer, setRechnungsnummer] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -367,16 +370,19 @@ export default function RechnungBearbeiten() {
 
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
 
-      const [{ data: kundenData }, { data: rechnung }, { data: co }] = await Promise.all([
-        supabase.from('kunden').select('id, name').eq('user_id', user.id).order('name'),
+      const [{ data: kundenData }, { data: rechnung }, { data: co }, { data: einst }] = await Promise.all([
+        supabase.from('kunden').select('id, name, adresse, email, telefon').eq('user_id', user.id).order('name'),
         supabase.from('rechnungen').select('*').eq('id', id).single(),
         member ? supabase.from('companies').select('logo_url').eq('id', member.company_id).single() : Promise.resolve({ data: null }),
+        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
       ]);
       setLogoUrl(co?.logo_url ?? null);
+      if (einst) setFirma(einst);
 
       setKunden(kundenData ?? []);
 
       if (!rechnung) { router.push('/dashboard/rechnungen'); return; }
+      setRechnungsnummer(rechnung.rechnungsnummer ?? '');
       setForm({
         kunde_id:   rechnung.kunde_id   ?? '',
         datum:      rechnung.datum      ?? new Date().toISOString().split('T')[0],
@@ -421,6 +427,105 @@ export default function RechnungBearbeiten() {
   const mwst   = netto * (Number(form.steuersatz) / 100);
   const brutto = netto + mwst;
   const fmt    = v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+
+  function safeStr(s) {
+    return (s || '').toString()
+      .replace(/–|—/g, '-')
+      .replace(/[‘’]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/…/g, '...')
+      .replace(/[^ -ÿ]/g, '?');
+  }
+
+  async function handlePDF() {
+    setPdfLaden(true);
+    try {
+      const kunde = kunden.find(k => k.id === form.kunde_id);
+      if (!window.jspdf) {
+        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const blau = [37, 99, 235], grau = [107, 114, 128];
+      const nr = rechnungsnummer || `RE-${id.slice(0,8)}`;
+
+      doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
+      if (logoUrl) {
+        try {
+          const img = await new Promise((res, rej) => { const i = new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=logoUrl; });
+          doc.addImage(img, 'PNG', 12, 5, 0, 24);
+        } catch {}
+      }
+      const firmaName = safeStr(firma.firmenname) || 'Ihr Unternehmen';
+      doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+      doc.text(firmaName, logoUrl ? 50 : 15, 17);
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      if (firma.adresse) doc.text(safeStr(firma.adresse), logoUrl ? 50 : 15, 24);
+      doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.text('RECHNUNG', 195, 17, { align: 'right' });
+      doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.text(`Nr: ${nr}`, 195, 25, { align: 'right' });
+      doc.setTextColor(0,0,0);
+
+      const absenderTeile = [firma.firmenname, firma.adresse, firma.telefon ? `Tel: ${firma.telefon}` : null, firma.email].filter(Boolean).map(safeStr);
+      doc.setFontSize(7.5); doc.setTextColor(...grau);
+      doc.text(absenderTeile.join(' · '), 15, 44);
+
+      doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('Rechnungsempfänger:', 15, 53);
+      doc.setFont('helvetica','normal');
+      if (kunde) {
+        doc.text(safeStr(kunde.name), 15, 60);
+        if (kunde.adresse) doc.text(safeStr(kunde.adresse), 15, 66);
+        if (kunde.email) { doc.setTextColor(...grau); doc.setFontSize(8); doc.text(safeStr(kunde.email), 15, 72); doc.setTextColor(0,0,0); doc.setFontSize(10); }
+      } else {
+        doc.setTextColor(...grau); doc.text('Kein Kunde ausgewählt', 15, 60); doc.setTextColor(0,0,0);
+      }
+
+      doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 53); doc.text('Fällig bis:', 130, 60);
+      if (firma.steuernummer) { doc.text('Steuernr.:', 130, 67); }
+      doc.setFont('helvetica','normal');
+      doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '-', 195, 53, { align: 'right' });
+      doc.text(form.faellig_am ? new Date(form.faellig_am).toLocaleDateString('de-DE') : '14 Tage netto', 195, 60, { align: 'right' });
+      if (firma.steuernummer) { doc.text(firma.steuernummer, 195, 67, { align: 'right' }); }
+
+      doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 80, 195, 80);
+
+      doc.autoTable({
+        startY: 86,
+        head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
+        body: positionen.map((p, i) => [i+1, p.beschreibung||'-', p.menge, p.einheit, `${Number(p.preis).toFixed(2).replace('.',',')} EUR`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} EUR`]),
+        headStyles: { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: { 0:{cellWidth:12}, 4:{halign:'right'}, 5:{halign:'right',fontStyle:'bold'} },
+        alternateRowStyles: { fillColor: [249,250,251] },
+        margin: { left: 15, right: 15 },
+      });
+      const ty = doc.lastAutoTable.finalY + 8;
+      doc.setFontSize(9); doc.setTextColor(...grau);
+      doc.text('Nettobetrag:', 140, ty); doc.text(`${netto.toFixed(2).replace('.',',')} EUR`, 195, ty, { align: 'right' });
+      doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} EUR`, 195, ty+7, { align: 'right' });
+      doc.setDrawColor(...grau); doc.line(140, ty+10, 195, ty+10);
+      doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} EUR`, 195, ty+17, { align: 'right' });
+      if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(safeStr(form.notizen), 15, ty+37, { maxWidth: 170 }); }
+
+      const bankTeile = [
+        firma.iban ? `IBAN: ${firma.iban}` : null,
+        firma.bic  ? `BIC: ${firma.bic}`   : null,
+        firma.bank || null,
+      ].filter(Boolean);
+      doc.setFillColor(249,250,251); doc.rect(15, 260, 180, 22, 'F');
+      doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Bankverbindung:', 20, 268);
+      doc.setFont('helvetica','normal');
+      doc.text(bankTeile.length ? bankTeile.join('  ·  ') : 'Keine Bankdaten hinterlegt', 20, 275);
+      doc.setFontSize(7); doc.setTextColor(156,163,175); doc.text('Erstellt mit KanalPro', 105, 285, { align: 'center' });
+      doc.save(`Rechnung_${nr}.pdf`);
+    } catch (err) {
+      console.error('PDF Fehler:', err);
+      alert('PDF konnte nicht erstellt werden: ' + err.message);
+    } finally {
+      setPdfLaden(false);
+    }
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -513,7 +618,7 @@ export default function RechnungBearbeiten() {
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
           <div className="p-5">
-          {/* Spaltenüberschriften */}
+          {/* Spaltenøberschriften */}
           <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
@@ -551,7 +656,7 @@ export default function RechnungBearbeiten() {
                 <input type="number" value={p.menge} onChange={e => posChange(i, 'menge', e.target.value)} min="0" step="0.5" className={INPUT} />
                 <select value={p.einheit} onChange={e => posChange(i, 'einheit', e.target.value)} className={INPUT}>
                   <option>Pauschal</option>
-                  <option>Støck</option>
+                  <option>Stück</option>
                   <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
@@ -628,6 +733,14 @@ export default function RechnungBearbeiten() {
             className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 text-sm"
           >
             {speichern ? 'Wird gespeichert…' : 'Änderungen speichern'}
+          </button>
+          <button
+            type="button"
+            onClick={handlePDF}
+            disabled={pdfLaden}
+            className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm"
+          >
+            {pdfLaden ? 'PDF wird erstellt...' : 'PDF herunterladen'}
           </button>
           <Link
             href="/dashboard/rechnungen"
