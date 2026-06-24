@@ -33,8 +33,10 @@ export default function Kunden() {
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
-    const abo = await checkAndDowngrade(supabase, user.id);
-    const sub = getSubscriptionStatus(abo);
+    if (!user) { setLaden(false); return; }
+    let abo;
+    try { abo = await checkAndDowngrade(supabase, user.id); } catch(e) { console.error('subscription error', e); }
+    const sub = abo ? getSubscriptionStatus(abo) : { plan: 'free', limit: 0, count: 0, atLimit: false, nearLimit: false };
     const plan = getPlan(sub.plan);
     const limit = plan.limits.kunden;
     const { data } = await supabase
@@ -61,7 +63,7 @@ export default function Kunden() {
   const gefiltert = buchstabe
     ? kunden.filter(k => {
         const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
-        return n.toUpperCase().startsWith(buchstabe);
+        return n && n.toUpperCase().startsWith(buchstabe);
       })
     : kunden;
 
