@@ -32,7 +32,6 @@ export default function Angebote() {
   const [emailBetreff,     setEmailBetreff]     = useState('');
   const [emailNachricht,   setEmailNachricht]   = useState('');
 
-
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,9 +51,6 @@ export default function Angebote() {
     }
     load().catch(() => setLaden(false));
   }, []);
-
-  // Derived lists
-  const offeneAngebote = angebote.filter(a => !a.auftrag);
 
   function calcBrutto(a) {
     const netto = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
@@ -123,6 +119,7 @@ export default function Angebote() {
     const brutto = netto + mwst;
     const kunde  = a.kunden ?? null;
 
+    // Logo in dataURL konvertieren
     let logoImgData = null, logoImgW = 0, logoImgH = 0;
     if (logoUrl) {
       const res = await loadLogoDataUrl(logoUrl);
@@ -135,6 +132,7 @@ export default function Angebote() {
       }
     }
 
+    // Header
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
     if (logoImgData) {
@@ -147,10 +145,11 @@ export default function Angebote() {
     doc.setFontSize(9);  doc.setFont('helvetica', 'normal'); doc.text('Nr: ' + nr, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
 
+    // Absender + Empfänger
     doc.setFontSize(8); doc.setTextColor(...grau);
     doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold');
-    doc.text('Angebot før:', 15, 55);
+    doc.text('Angebot für:', 15, 55);
     doc.setFont('helvetica', 'normal');
     if (kunde) {
       doc.text(kunde.name ?? '', 15, 62);
@@ -159,17 +158,20 @@ export default function Angebote() {
       doc.text('Kein Kunde zugewiesen', 15, 62);
     }
 
+    // Datum / Gültig bis
     doc.setFont('helvetica', 'bold');
     doc.text('Datum:', 130, 55);
     doc.text('Gültig bis:', 130, 62);
     doc.setFont('helvetica', 'normal');
-    doc.text(a.datum       ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
-    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE')    : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
+    doc.text(a.datum      ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
+    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
 
+    // Divider + Intro
     doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 75, 195, 75);
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Wir unterbreiten Ihnen folgendes Angebot:', 15, 82);
 
+    // Positionen-Tabelle
     doc.autoTable({
       startY: 88,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
@@ -188,6 +190,7 @@ export default function Angebote() {
       margin:             { left: 15, right: 15 },
     });
 
+    // Summen
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Nettobetrag:', 140, ty);
@@ -200,6 +203,7 @@ export default function Angebote() {
     doc.setTextColor(...blau);
     doc.text(brutto.toFixed(2).replace('.', ',') + ' €', 195, ty + 17, { align: 'right' });
 
+    // Notizen
     if (a.notizen) {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
       doc.text('Hinweis:', 15, ty + 30);
@@ -207,6 +211,7 @@ export default function Angebote() {
       doc.text(a.notizen, 15, ty + 37, { maxWidth: 180 });
     }
 
+    // Footer
     doc.setFillColor(249, 250, 251); doc.rect(15, 262, 180, 18, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica', 'normal');
     doc.text('Dieses Angebot ist freibleibend und unverbindlich. Preise inkl. gesetzlicher MwSt.', 105, 270, { align: 'center' });
@@ -266,7 +271,7 @@ export default function Angebote() {
       {tab === 'angebote' && (
         laden ? (
           <p className="text-gray-400 text-sm">Wird geladen…</p>
-        ) : offeneAngebote.length === 0 ? (
+        ) : angebote.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
@@ -289,7 +294,7 @@ export default function Angebote() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {offeneAngebote.map(a => {
+                {angebote.map(a => {
                   const cfg = statusConfig[a.status] ?? statusConfig.entwurf;
                   return (
                     <tr
@@ -340,7 +345,7 @@ export default function Angebote() {
                     onChange={e => setSelectedId(e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">— Angebot wählen b��</option>
+                    <option value="">— Angebot wählen —</option>
                     {angebote.map(a => (
                       <option key={a.id} value={a.id}>
                         {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
@@ -360,7 +365,7 @@ export default function Angebote() {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                       <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? '–'}</div></div>
                       <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : '–'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Gøltig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
+                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
                       <div><span className="text-gray-400 text-xs">Positionen</span><div className="mt-0.5">{(selected.positionen ?? []).length}</div></div>
                     </div>
                     <div className="pt-2 border-t border-gray-200 flex justify-between font-semibold text-gray-900">
@@ -397,11 +402,11 @@ export default function Angebote() {
           </div>
         </div>
       )}
-
       {/* ── E-Mail-Versand-Tab ── */}
       {tab === 'email' && (
         <div className="max-w-xl space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -420,6 +425,7 @@ export default function Angebote() {
               <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
               <>
+                {/* Angebot-Auswahl */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
                   <select
@@ -436,6 +442,7 @@ export default function Angebote() {
                   </select>
                 </div>
 
+                {/* Empfänger */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Empfänger-E-Mail
@@ -452,6 +459,7 @@ export default function Angebote() {
                   />
                 </div>
 
+                {/* Betreff */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
                   <input
@@ -463,6 +471,7 @@ export default function Angebote() {
                   />
                 </div>
 
+                {/* Nachricht */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
                   <textarea
@@ -474,6 +483,7 @@ export default function Angebote() {
                   />
                 </div>
 
+                {/* Hinweis PDF */}
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                   <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
@@ -483,6 +493,7 @@ export default function Angebote() {
                   </p>
                 </div>
 
+                {/* Senden-Button */}
                 <button
                   onClick={handleMailto}
                   disabled={!emailSelectedId || !emailEmpfaenger.trim()}
@@ -498,7 +509,6 @@ export default function Angebote() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
