@@ -72,7 +72,7 @@ const LEISTUNGEN = [
   'Vorinspektion',
   'Nachinspektion',
   'Abnahmeinspektion',
-  'Gewährleistungiinspektion',
+  'Gewährleistungsinspektion',
   'Schadensaufnahme',
   'Schadensdokumentation',
   'Videodokumentation',
@@ -110,7 +110,7 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
+  'Røckstausicherungsprüfung',
   'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
@@ -158,7 +158,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprøhliner',
+  'Sprühliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -182,7 +182,7 @@ const LEISTUNGEN = [
   'Kanalneubau',
   'Schachtneubau',
   'Austausch von Rohrleitungen',
-  'Austausch von ScN[�chten',
+  'Austausch von Schächten',
   'Berstlining',
   'Pipe Bursting',
   'Pipe Eating',
@@ -230,13 +230,13 @@ const LEISTUNGEN = [
   'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'Bauøberwachung',
+  'Bauüberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spølfahrzeugpauschale',
+  'Spülfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -315,7 +315,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -340,6 +340,7 @@ export default function NeueRechnung() {
   const [pdfLaden, setPdfLaden] = useState(false);
   const [openDrop, setOpenDrop] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [companyId, setCompanyId] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -352,6 +353,7 @@ export default function NeueRechnung() {
       setKunden(kundenData ?? []);
       if (einst) setFirma(einst);
       if (member) {
+        setCompanyId(member.company_id);
         const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
         setLogoUrl(co?.logo_url ?? null);
       }
@@ -380,6 +382,7 @@ export default function NeueRechnung() {
     const { error } = await supabase.from('rechnungen').insert({
       ...form, kunde_id: form.kunde_id || null, faellig_am: form.faellig_am || null,
       steuersatz: Number(form.steuersatz), positionen, rechnungsnummer: nr, user_id: user.id,
+      company_id: companyId,
     });
     if (error) { setFehler('Fehler beim Speichern.'); } else { router.push('/dashboard/rechnungen'); }
     setLaden(false);
@@ -573,7 +576,7 @@ export default function NeueRechnung() {
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-    0       <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Fällig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Steuersatz</label>
@@ -645,7 +648,7 @@ export default function NeueRechnung() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte øberweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
           <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
