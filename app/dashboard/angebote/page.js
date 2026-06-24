@@ -150,7 +150,7 @@ export default function Angebote() {
     doc.setFontSize(8); doc.setTextColor(...grau);
     doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold');
-    doc.text('Angebot für:', 15, 55);
+    doc.text('Angebot før:', 15, 55);
     doc.setFont('helvetica', 'normal');
     if (kunde) {
       doc.text(kunde.name ?? '', 15, 62);
@@ -244,7 +244,7 @@ export default function Angebote() {
           </Link>
           <button
             onClick={() => setTab('pdf')}
-     0      className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pdf' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pdf' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             PDF-Export
           </button>
@@ -258,7 +258,7 @@ export default function Angebote() {
         {tab === 'angebote' && (
           <Link href="/dashboard/angebote/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
             + Neues Angebot
-    0     </Link>
+          </Link>
         )}
       </div>
 
@@ -340,7 +340,7 @@ export default function Angebote() {
                     onChange={e => setSelectedId(e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">— Angebot wählen —</option>
+                    <option value="">— Angebot wählen b��</option>
                     {angebote.map(a => (
                       <option key={a.id} value={a.id}>
                         {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
@@ -360,7 +360,7 @@ export default function Angebote() {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                       <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? '–'}</div></div>
                       <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : '–'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
+                      <div><span className="text-gray-400 text-xs">Gøltig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
                       <div><span className="text-gray-400 text-xs">Positionen</span><div className="mt-0.5">{(selected.positionen ?? []).length}</div></div>
                     </div>
                     <div className="pt-2 border-t border-gray-200 flex justify-between font-semibold text-gray-900">
@@ -404,7 +404,7 @@ export default function Angebote() {
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-      0         <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                 </svg>
               </div>
@@ -477,7 +477,7 @@ export default function Angebote() {
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                   <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-     0            </svg>
+                  </svg>
                   <p className="text-xs text-amber-700">
                     Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
                   </p>
