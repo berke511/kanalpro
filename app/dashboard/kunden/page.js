@@ -182,7 +182,7 @@ export default function Kunden() {
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-40">{k.email}</a>
                         )}
-                        {!i.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
+                        {!k.telefon && !k.email && <span className="text-gray-300 text-xs">–</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3">
