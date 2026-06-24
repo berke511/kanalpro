@@ -81,8 +81,12 @@ export default function Rechnungen() {
   async function handleFirmaSpeichern(e) {
     e.preventDefault(); setFehler(''); setGespeichert(false);
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('einstellungen').upsert({ ...firma, user_id: user.id }, { onConflict: 'user_id' });
-    if (error) { setFehler('Fehler beim Speichern.'); }
+    const companyId = myMember?.company_id;
+    const { error } = await supabase.from('einstellungen').upsert(
+      { ...firma, user_id: user.id, company_id: companyId },
+      { onConflict: 'user_id' }
+    );
+    if (error) { setFehler('Fehler beim Speichern: ' + error.message); }
     else { setGespeichert(true); setTimeout(() => setGespeichert(false), 3000); }
   }
 
