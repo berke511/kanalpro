@@ -32,9 +32,6 @@ export default function Angebote() {
   const [emailBetreff,     setEmailBetreff]     = useState('');
   const [emailNachricht,   setEmailNachricht]   = useState('');
 
-  // Auftrag bestätigen
-  const [confirmAngebot, setConfirmAngebot] = useState(null);
-  const [auftragLaden,   setAuftragLaden]   = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -58,7 +55,6 @@ export default function Angebote() {
 
   // Derived lists
   const offeneAngebote = angebote.filter(a => !a.auftrag);
-  const auftraege      = angebote.filter(a =>  a.auftrag);
 
   function calcBrutto(a) {
     const netto = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
@@ -229,25 +225,6 @@ export default function Angebote() {
     window.location.href = href;
   }
 
-  async function handleAuftragErstellen() {
-    if (!confirmAngebot) return;
-    setAuftragLaden(true);
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('angebote')
-      .update({ auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' })
-      .eq('id', confirmAngebot.id);
-    if (!error) {
-      setAngebote(prev => prev.map(a =>
-        a.id === confirmAngebot.id
-          ? { ...a, auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' }
-          : a
-      ));
-    }
-    setAuftragLaden(false);
-    setConfirmAngebot(null);
-  }
-
   return (
     <div>
       {/* ── Tab-Bar + Action ── */}
@@ -258,15 +235,6 @@ export default function Angebote() {
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'angebote' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Angebote
-          </button>
-          <button
-            onClick={() => setTab('auftraege')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1.5 ${tab === 'auftraege' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Aufträge
-            {auftraege.length > 0 && (
-              <span className="bg-green-100 text-green-700 text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{auftraege.length}</span>
-            )}
           </button>
           <Link
             href="/dashboard/angebote/vorlagen"
@@ -318,7 +286,6 @@ export default function Angebote() {
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
-                  <th className="px-5 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -328,305 +295,4 @@ export default function Angebote() {
                     <tr
                       key={a.id}
                       onClick={() => router.push(`/dashboard/angebote/${a.id}`)}
-                      className="hover:bg-gray-50 transition cursor-pointer"
-                    >
-                      <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? '–'}</td>
-                      <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
-                      <td className="px-5 py-3 text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–'}</td>
-                      <td className="px-5 py-3 font-medium text-gray-900">{fmt(calcBrutto(a))}</td>
-                      <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
-                      <td className="px-5 py-3 text-right" onClick={e => e.stopPropagation()}>
-                        {a.status !== 'abgelehnt' && (
-                          <button
-                            onClick={() => setConfirmAngebot(a)}
-                            className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-semibold hover:bg-green-100 transition whitespace-nowrap"
-                          >
-                            Auftrag erstellen
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {/* ── Aufträge-Tab ── */}
-      {tab === 'auftraege' && (
-        laden ? (
-          <p className="text-gray-400 text-sm">Wird geladen…</p>
-        ) : auftraege.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0118 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75" />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-gray-500">Noch keine Aufträge</p>
-            <p className="text-xs text-gray-400 mt-1">Bestätige ein Angebot, um hier einen Auftrag zu erstellen.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Referenz</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Auftrag vom</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {auftraege.map(a => (
-                  <tr
-                    key={a.id}
-                    onClick={() => router.push(`/dashboard/angebote/${a.id}`)}
-                    className="hover:bg-gray-50 transition cursor-pointer"
-                  >
-                    <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? '–'}</td>
-                    <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
-                    <td className="px-5 py-3 text-gray-500">
-                      {a.auftrag_erstellt_am ? new Date(a.auftrag_erstellt_am).toLocaleDateString('de-DE') : '–'}
-                    </td>
-                    <td className="px-5 py-3 font-medium text-gray-900">{fmt(calcBrutto(a))}</td>
-                    <td className="px-5 py-3">
-                      <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700">Angenommen</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {/* ── PDF-Export-Tab ── */}
-      {tab === 'pdf' && (
-        <div className="max-w-xl space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Angebot als PDF exportieren</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus und lade es als professionelles PDF herunter.</p>
-              </div>
-            </div>
-
-            {laden ? (
-              <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
-            ) : angebote.length === 0 ? (
-              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
-                  <select
-                    value={selectedId}
-                    onChange={e => setSelectedId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">— Angebot wählen —</option>
-                    {angebote.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selected && (
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-semibold text-gray-900">{selected.angebotsnummer ?? '–'}</span>
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${(statusConfig[selected.status] ?? statusConfig.entwurf).cls}`}>
-                        {(statusConfig[selected.status] ?? statusConfig.entwurf).label}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
-                      <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? '–'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : '–'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Positionen</span><div className="mt-0.5">{(selected.positionen ?? []).length}</div></div>
-                    </div>
-                    <div className="pt-2 border-t border-gray-200 flex justify-between font-semibold text-gray-900">
-                      <span>Gesamtbetrag (brutto)</span>
-                      <span className="text-blue-600">{fmt(calcBrutto(selected))}</span>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handlePDF}
-                  disabled={!selectedId || pdfLaden}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  {pdfLaden ? (
-                    <>
-                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      PDF wird erstellt…
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                      </svg>
-                      Als PDF herunterladen
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── E-Mail-Versand-Tab ── */}
-      {tab === 'email' && (
-        <div className="max-w-xl space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Angebot per E-Mail versenden</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt.</p>
-              </div>
-            </div>
-
-            {laden ? (
-              <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
-            ) : angebote.length === 0 ? (
-              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
-                  <select
-                    value={emailSelectedId}
-                    onChange={e => setEmailSelectedId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">— Angebot wählen —</option>
-                    {angebote.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Empfänger-E-Mail
-                    {emailSelectedId && !angebote.find(a => a.id === emailSelectedId)?.kunden?.email && (
-                      <span className="ml-2 text-xs text-amber-500 font-normal">Keine E-Mail beim Kunden hinterlegt</span>
-                    )}
-                  </label>
-                  <input
-                    type="email"
-                    value={emailEmpfaenger}
-                    onChange={e => setEmailEmpfaenger(e.target.value)}
-                    placeholder="kunde@beispiel.de"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
-                  <input
-                    type="text"
-                    value={emailBetreff}
-                    onChange={e => setEmailBetreff(e.target.value)}
-                    placeholder="Ihr Angebot Nr. … von KanalPro"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
-                  <textarea
-                    value={emailNachricht}
-                    onChange={e => setEmailNachricht(e.target.value)}
-                    rows={9}
-                    placeholder="E-Mail-Text…"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                  <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                  </svg>
-                  <p className="text-xs text-amber-700">
-                    Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleMailto}
-                  disabled={!emailSelectedId || !emailEmpfaenger.trim()}
-                  className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                  </svg>
-                  E-Mail-Programm öffnen
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Auftrag-Bestätigungs-Modal ── */}
-      {confirmAngebot && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="font-bold text-gray-900 text-lg mb-2">Auftrag erstellen</h3>
-            <p className="text-sm text-gray-600 mb-1">
-              Angebot{' '}
-              <span className="font-semibold font-mono text-gray-800">{confirmAngebot.angebotsnummer ?? '–'}</span>
-              {confirmAngebot.kunden?.name && (
-                <> für <span className="font-semibold text-gray-800">{confirmAngebot.kunden.name}</span></>
-              )}{' '}
-              als Auftrag bestätigen?
-            </p>
-            <p className="text-xs text-gray-400 mb-5">
-              Das Angebot wird in den Aufträge-Reiter verschoben und der Status auf „Angenommen" gesetzt.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmAngebot(null)}
-                disabled={auftragLaden}
-                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition text-sm"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleAuftragErstellen}
-                disabled={auftragLaden}
-                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition text-sm disabled:opacity-50"
-              >
-                {auftragLaden ? 'Wird gespeichert…' : 'Als Auftrag bestätigen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                      className="hover:bg-gray-50 transition cursor-pointer
