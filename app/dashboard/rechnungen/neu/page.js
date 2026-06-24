@@ -99,7 +99,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprüfung Luft',
+  'Dichtheitsprøfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -110,7 +110,7 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Rückstausicherungsprüfung',
+  'Røckstausicherungsprüfung',
   'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
@@ -236,7 +236,7 @@ const LEISTUNGEN = [
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spølfahrzeugpauschale',
+  'Spülfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -315,7 +315,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -332,6 +332,7 @@ const LEISTUNGEN = [
 export default function NeueRechnung() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
+  const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
   const [form, setForm] = useState({ kunde_id: '', datum: new Date().toISOString().split('T')[0], faellig_am: '', steuersatz: 19, notizen: '' });
   const [positionen, setPositionen] = useState([{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]);
   const [fehler, setFehler] = useState('');
@@ -343,9 +344,13 @@ export default function NeueRechnung() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
-      const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('user_id', user.id).order('name');
-      setKunden(data ?? []);
+      const [{ data: member }, { data: kundenData }, { data: einst }] = await Promise.all([
+        supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle(),
+        supabase.from('kunden').select('id, name, adresse, email, telefon').eq('user_id', user.id).order('name'),
+        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
+      ]);
+      setKunden(kundenData ?? []);
+      if (einst) setFirma(einst);
       if (member) {
         const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
         setLogoUrl(co?.logo_url ?? null);
@@ -392,24 +397,51 @@ export default function NeueRechnung() {
     const blau = [37, 99, 235], grau = [107, 114, 128];
     const nr = `RE-${new Date().getFullYear()}-XXX`;
 
+    // Header-Block
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(22); doc.setFont('helvetica','bold'); doc.text('KanalPro', 15, 18);
-    doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.text('Rohr- & Kanalservice Verwaltung', 15, 26);
-    doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.text('RECHNUNG', 195, 18, { align: 'right' });
-    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.text(`Nr: ${nr}`, 195, 26, { align: 'right' });
+    if (logoUrl) {
+      try {
+        const img = await new Promise((res, rej) => { const i = new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=logoUrl; });
+        doc.addImage(img, 'PNG', 12, 5, 0, 24);
+      } catch {}
+    }
+    const firmaName = firma.firmenname || 'Ihr Unternehmen';
+    doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.text(firmaName, logoUrl ? 50 : 15, 17);
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    if (firma.adresse) doc.text(firma.adresse, logoUrl ? 50 : 15, 24);
+    doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.text('RECHNUNG', 195, 17, { align: 'right' });
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.text(`Nr: ${nr}`, 195, 25, { align: 'right' });
     doc.setTextColor(0,0,0);
-    doc.setFontSize(8); doc.setTextColor(...grau); doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
-    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('Rechnungsempfänger:', 15, 55);
+
+    // Absender-Zeile (kleine Grauzeile)
+    const absenderTeile = [firma.firmenname, firma.adresse, firma.telefon ? `Tel: ${firma.telefon}` : null, firma.email].filter(Boolean);
+    doc.setFontSize(7.5); doc.setTextColor(...grau);
+    doc.text(absenderTeile.join(' · '), 15, 44);
+
+    // Empfänger
+    doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('Rechnungsempfänger:', 15, 53);
     doc.setFont('helvetica','normal');
-    if (kunde) { doc.text(kunde.name, 15, 62); if (kunde.adresse) doc.text(kunde.adresse, 15, 68); }
-    else { doc.text('Kein Kunde ausgewählt', 15, 62); }
-    doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 55); doc.text('Fällig bis:', 130, 62);
+    if (kunde) {
+      doc.text(kunde.name, 15, 60);
+      if (kunde.adresse) doc.text(kunde.adresse, 15, 66);
+      if (kunde.email) { doc.setTextColor(...grau); doc.setFontSize(8); doc.text(kunde.email, 15, 72); doc.setTextColor(0,0,0); doc.setFontSize(10); }
+    } else {
+      doc.setTextColor(...grau); doc.text('Kein Kunde ausgewählt', 15, 60); doc.setTextColor(0,0,0);
+    }
+
+    // Datum rechts
+    doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 53); doc.text('Fällig bis:', 130, 60);
+    if (firma.steuernummer) { doc.text('Steuernr.:', 130, 67); }
     doc.setFont('helvetica','normal');
-    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '–', 195, 55, { align: 'right' });
-    doc.text(form.faellig_am ? new Date(form.faellig_am).toLocaleDateString('de-DE') : '14 Tage nach Rechnungsdatum', 195, 62, { align: 'right' });
-    doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 82, 195, 82);
+    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '–', 195, 53, { align: 'right' });
+    doc.text(form.faellig_am ? new Date(form.faellig_am).toLocaleDateString('de-DE') : '14 Tage netto', 195, 60, { align: 'right' });
+    if (firma.steuernummer) { doc.text(firma.steuernummer, 195, 67, { align: 'right' }); }
+
+    doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 80, 195, 80);
+
     doc.autoTable({
-      startY: 88,
+      startY: 86,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
       body: positionen.map((p, i) => [i+1, p.beschreibung||'–', p.menge, p.einheit, `${p.preis.toFixed(2).replace('.',',')} €`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} €`]),
       headStyles: { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
@@ -426,27 +458,96 @@ export default function NeueRechnung() {
     doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
     doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, ty+17, { align: 'right' });
     if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(form.notizen, 15, ty+37); }
+
+    // Bankverbindung Footer
+    const bankTeile = [
+      firma.iban ? `IBAN: ${firma.iban}` : null,
+      firma.bic  ? `BIC: ${firma.bic}`   : null,
+      firma.bank || null,
+    ].filter(Boolean);
     doc.setFillColor(249,250,251); doc.rect(15, 260, 180, 22, 'F');
     doc.setTextColor(...grau); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Bankverbindung:', 20, 268);
-    doc.setFont('helvetica','normal'); doc.text('IBAN: DE00 0000 0000 0000 0000 00  ·  BIC: XXXXXXXX  ·  [Ihre Bank]', 20, 275);
+    doc.setFont('helvetica','normal');
+    doc.text(bankTeile.length ? bankTeile.join('  ·  ') : 'Keine Bankdaten hinterlegt', 20, 275);
     doc.setFontSize(7); doc.setTextColor(156,163,175); doc.text('Erstellt mit KanalPro', 105, 285, { align: 'center' });
     doc.save(`Rechnung_${nr}.pdf`);
     setPdfLaden(false);
   }
 
+  const selectedKunde = kunden.find(k => k.id === form.kunde_id) ?? null;
+
   return (
     <div className="max-w-2xl">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
-          <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
-        </div>
-        {logoUrl && (
-          <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
-        )}
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/dashboard/rechnungen" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
+        <h1 className="text-2xl font-bold text-gray-900">Neue Rechnung</h1>
       </div>
       <form onSubmit={handleSpeichern} className="space-y-5">
         {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
+
+        {/* ── Rechnungskopf ──────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {/* Blauer Header-Streifen */}
+          <div className="bg-blue-600 px-6 py-4 flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {logoUrl && (
+                <img src={logoUrl} alt="Logo" className="h-10 max-w-[80px] object-contain bg-white rounded-lg p-1" />
+              )}
+                    <div>
+                <p className="text-white font-bold text-base leading-tight">{firma.firmenname || 'Ihr Unternehmen'}</p>
+                {firma.adresse && <p className="text-blue-100 text-xs mt-0.5">{firma.adresse}</p>}
+                <div className="flex gap-3 mt-0.5">
+                  {firma.telefon && <p className="text-blue-100 text-xs">{firma.telefon}</p>}
+                  {firma.email && <p className="text-blue-100 text-xs">{firma.email}</p>}
+                </div>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-white font-bold text-xl tracking-wide">RECHNUNG</p>
+              {firma.steuernummer && <p className="text-blue-100 text-xs mt-0.5">StNr: {firma.steuernummer}</p>}
+              {firma.ust_id && <p className="text-blue-100 text-xs">USt-Id: {firma.ust_id}</p>}
+            </div>
+          </div>
+
+          {/* Absender → Empfänger Block */}
+          <div className="px-6 py-4 grid grid-cols-2 gap-6 border-b border-gray-100">
+            {/* Absender */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Absender</p>
+              <p className="text-sm font-medium text-gray-800">{firma.firmenname || <span className="text-gray-400 italic">Nicht hinterlegt</span>}</p>
+              {firma.adresse && <p className="text-sm text-gray-500 mt-0.5">{firma.adresse}</p>}
+              {(firma.iban || firma.bank) && (
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {[firma.bank, firma.iban ? `IBAN: ${firma.iban}` : null].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              {!firma.firmenname && (
+                <Link href="/dashboard/rechnungen?tab=firmendaten" className="text-xs text-blue-500 hover:underline mt-1 inline-block">Firmendaten hinterlegen →</Link>
+              )}
+            </div>
+            {/* Empfänger */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">Empfänger</p>
+              {selectedKunde ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{selectedKunde.name}</p>
+                  {selectedKunde.adresse && <p className="text-sm text-gray-500 mt-0.5">{selectedKunde.adresse}</p>}
+                  {selectedKunde.email && <p className="text-xs text-gray-400 mt-1">{selectedKunde.email}</p>}
+                  {selectedKunde.telefon && <p className="text-xs text-gray-400">{selectedKunde.telefon}</p>}
+                </>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Noch kein Kunde ausgewählt</p>
+              )}
+            </div>
+          </div>
+
+          {/* Datum-Zeile */}
+          <div className="px-6 py-3 flex gap-6 text-sm bg-gray-50">
+            <span className="text-gray-400">Datum: <span className="text-gray-700 font-medium">{form.datum ? new Date(form.datum + 'T00:00:00').toLocaleDateString('de-DE') : '–'}</span></span>
+            {form.faellig_am && <span className="text-gray-400">Fällig: <span className="text-gray-700 font-medium">{new Date(form.faellig_am + 'T00:00:00').toLocaleDateString('de-DE')}</span></span>}
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
           <h2 className="font-semibold text-gray-800">Rechnungsdetails</h2>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
@@ -504,7 +605,7 @@ export default function NeueRechnung() {
                 <input type="number" min="0" step="0.5" value={p.menge} onChange={e=>onPosition(i,'menge',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <select value={p.einheit} onChange={e=>onPosition(i,'einheit',e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
                   <option>Pauschal</option>
-                  <option>Støck</option>
+                  <option>Stück</option>
                   <option>Std.</option>
                   <option>m</option>
                   <option>m²</option>
@@ -528,7 +629,7 @@ export default function NeueRechnung() {
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">Notizen / Zahlungshinweis</label>
-          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte øberweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+          <textarea name="notizen" value={form.notizen} onChange={onChange} rows={2} placeholder="z. B. Bitte überweisen Sie den Betrag innerhalb von 14 Tagen..." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
         <div className="flex gap-3 pb-8">
           <button type="submit" disabled={laden} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">{laden ? 'Wird gespeichert...' : 'Speichern'}</button>
