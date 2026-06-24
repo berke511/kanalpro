@@ -67,7 +67,7 @@ export default function Kunden() {
       })
     : kunden;
 
-  const vorhandeneBuchstaben = new Set(kunden.map(k => {
+  const vorhandenenBuchstaben = new Set(kunden.map(k => {
     const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
     return n[0]?.toUpperCase();
   }));
@@ -112,10 +112,10 @@ export default function Kunden() {
           Alle
         </button>
         {ALPHABET.map(b => (
-          <button key={b} onClick={() => vorhandeneBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
+          <button key={b} onClick={() => vorhandenenBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
             className={`w-7 h-7 rounded-md text-xs font-bold transition ${
               buchstabe === b ? 'bg-blue-600 text-white' :
-              vorhandeneBuchstaben.has(b) ? 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700' :
+              vorhandenenBuchstaben.has(b) ? 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700' :
               'bg-gray-50 text-gray-300 cursor-default'
             }`}>
             {b}
