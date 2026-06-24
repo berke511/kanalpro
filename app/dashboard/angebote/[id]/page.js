@@ -101,7 +101,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprøfung Luft',
+  'Dichtheitsprüfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -112,8 +112,8 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Røckstausicherungsprüfung',
-  'Hebeanlagenprøfung',
+  'Rückstausicherungsprüfung',
+  'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
   'Rohrleitungswartung',
@@ -160,7 +160,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprühliner',
+  'Sprøhliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -232,7 +232,7 @@ const LEISTUNGEN = [
   'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'Bauüberwachung',
+  'Bauøberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
@@ -346,6 +346,8 @@ export default function AngebotBearbeiten() {
   const [speichern, setSpeichern]       = useState(false);
   const [deleting, setDeleting]         = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [istAuftrag, setIstAuftrag]     = useState(false);
+  const [auftragLaden, setAuftragLaden] = useState(false);
   const [kunden, setKunden]             = useState([]);
   const [form, setForm] = useState({
     kunden_id: '',
@@ -402,6 +404,7 @@ export default function AngebotBearbeiten() {
           ? angebot.positionen
           : [{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]
       );
+      setIstAuftrag(angebot.auftrag ?? false);
       setLaden(false);
     }
     load().catch(() => setLaden(false));
@@ -458,6 +461,20 @@ export default function AngebotBearbeiten() {
     router.push('/dashboard/angebote');
   }
 
+  async function handleAlsAuftrag() {
+    setAuftragLaden(true);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('angebote')
+      .update({ auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' })
+      .eq('id', id);
+    if (!error) {
+      setIstAuftrag(true);
+      setForm(f => ({ ...f, status: 'angenommen' }));
+    }
+    setAuftragLaden(false);
+  }
+
   if (laden) return <p className="text-gray-400 text-sm">Wird geladen…</p>;
 
   return (
@@ -490,7 +507,7 @@ export default function AngebotBearbeiten() {
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 className="text-sm font-semibold text-gray-700">Angebotsdaten</h2>
           </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-5 grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-xs font-medium text-gray-500 mb-1">Kunde *</label>
               <select name="kunden_id" value={form.kunden_id} onChange={onChange} className={INPUT}>
@@ -520,9 +537,9 @@ export default function AngebotBearbeiten() {
           <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 rounded-t-xl">
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
-          <div className="p-5 overflow-x-auto space-y-2" ref={dropRef}>
+          <div className="p-5 space-y-2" ref={dropRef}>
             {/* Spaltenüberschriften */}
-            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
+            <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
               <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
@@ -634,6 +651,21 @@ export default function AngebotBearbeiten() {
           >
             {speichern ? 'Wird gespeichert…' : 'Änderungen speichern'}
           </button>
+          {!istAuftrag && (
+            <button
+              type="button"
+              onClick={handleAlsAuftrag}
+              disabled={auftragLaden}
+              className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm"
+            >
+              {auftragLaden ? 'Wird gespeichert…' : 'Als Auftrag markieren'}
+            </button>
+          )}
+          {istAuftrag && (
+            <span className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-100">
+              Auftrag bestätigt
+            </span>
+          )}
           <Link
             href="/dashboard/angebote"
             className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
