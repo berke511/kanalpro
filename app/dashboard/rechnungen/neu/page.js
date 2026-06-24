@@ -72,7 +72,7 @@ const LEISTUNGEN = [
   'Vorinspektion',
   'Nachinspektion',
   'Abnahmeinspektion',
-  'Gewährleistungsinspektion',
+  'Gewährleistungiinspektion',
   'Schadensaufnahme',
   'Schadensdokumentation',
   'Videodokumentation',
@@ -99,7 +99,7 @@ const LEISTUNGEN = [
   'Höhenvermessung',
   'Lagevermessung',
   '3D-Vermessung',
-  'Dichtheitsprøfung Luft',
+  'Dichtheitsprüfung Luft',
   'Dichtheitsprüfung Wasser',
   'Kanaldichtheitsprüfung',
   'Rohrdichtheitsprüfung',
@@ -110,7 +110,7 @@ const LEISTUNGEN = [
   'Abnahmeprüfung',
   'Gewährleistungsprüfung',
   'Inspektionsprüfung',
-  'Røckstausicherungsprüfung',
+  'Rückstausicherungsprüfung',
   'Hebeanlagenprüfung',
   'Pumpenprüfung',
   'Kanalwartung',
@@ -158,7 +158,7 @@ const LEISTUNGEN = [
   'Wickelrohrverfahren',
   'Close-Fit-Lining',
   'Tight-Fit-Lining',
-  'Sprühliner',
+  'Sprøhliner',
   'Beschichtung',
   'Innenbeschichtung',
   'Mineralauskleidung',
@@ -182,7 +182,7 @@ const LEISTUNGEN = [
   'Kanalneubau',
   'Schachtneubau',
   'Austausch von Rohrleitungen',
-  'Austausch von Schächten',
+  'Austausch von ScN[�chten',
   'Berstlining',
   'Pipe Bursting',
   'Pipe Eating',
@@ -230,13 +230,13 @@ const LEISTUNGEN = [
   'Entwässerungsplanung',
   'Ausschreibungserstellung',
   'Bauleitung',
-  'Bauüberwachung',
+  'Bauøberwachung',
   'Projektsteuerung',
   'Wirtschaftlichkeitsberechnung',
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spülfahrzeugpauschale',
+  'Spølfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -385,8 +385,19 @@ export default function NeueRechnung() {
     setLaden(false);
   }
 
+
+  function safeStr(s) {
+    return (s || '').toString()
+      .replace(/\u2013|\u2014/g, '-')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/\u2026/g, '...')
+      .replace(/[^\u0000-\u00FF]/g, '?');
+  }
+
   async function handlePDF() {
     setPdfLaden(true);
+    try {
     const kunde = kunden.find(k => k.id === form.kunde_id);
     if (!window.jspdf) {
       await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
@@ -405,17 +416,17 @@ export default function NeueRechnung() {
         doc.addImage(img, 'PNG', 12, 5, 0, 24);
       } catch {}
     }
-    const firmaName = firma.firmenname || 'Ihr Unternehmen';
+    const firmaName = safeStr(firma.firmenname) || 'Ihr Unternehmen';
     doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('helvetica','bold');
     doc.text(firmaName, logoUrl ? 50 : 15, 17);
     doc.setFontSize(8); doc.setFont('helvetica','normal');
-    if (firma.adresse) doc.text(firma.adresse, logoUrl ? 50 : 15, 24);
+    if (firma.adresse) doc.text(safeStr(firma.adresse), logoUrl ? 50 : 15, 24);
     doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.text('RECHNUNG', 195, 17, { align: 'right' });
     doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.text(`Nr: ${nr}`, 195, 25, { align: 'right' });
     doc.setTextColor(0,0,0);
 
     // Absender-Zeile (kleine Grauzeile)
-    const absenderTeile = [firma.firmenname, firma.adresse, firma.telefon ? `Tel: ${firma.telefon}` : null, firma.email].filter(Boolean);
+    const absenderTeile = [firma.firmenname, firma.adresse, firma.telefon ? `Tel: ${firma.telefon}` : null, firma.email].filter(Boolean).map(safeStr);
     doc.setFontSize(7.5); doc.setTextColor(...grau);
     doc.text(absenderTeile.join(' · '), 15, 44);
 
@@ -423,9 +434,9 @@ export default function NeueRechnung() {
     doc.setFontSize(10); doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.text('Rechnungsempfänger:', 15, 53);
     doc.setFont('helvetica','normal');
     if (kunde) {
-      doc.text(kunde.name, 15, 60);
-      if (kunde.adresse) doc.text(kunde.adresse, 15, 66);
-      if (kunde.email) { doc.setTextColor(...grau); doc.setFontSize(8); doc.text(kunde.email, 15, 72); doc.setTextColor(0,0,0); doc.setFontSize(10); }
+      doc.text(safeStr(kunde.name), 15, 60);
+      if (kunde.adresse) doc.text(safeStr(kunde.adresse), 15, 66);
+      if (kunde.email) { doc.setTextColor(...grau); doc.setFontSize(8); doc.text(safeStr(kunde.email), 15, 72); doc.setTextColor(0,0,0); doc.setFontSize(10); }
     } else {
       doc.setTextColor(...grau); doc.text('Kein Kunde ausgewählt', 15, 60); doc.setTextColor(0,0,0);
     }
@@ -434,7 +445,7 @@ export default function NeueRechnung() {
     doc.setFont('helvetica','bold'); doc.text('Datum:', 130, 53); doc.text('Fällig bis:', 130, 60);
     if (firma.steuernummer) { doc.text('Steuernr.:', 130, 67); }
     doc.setFont('helvetica','normal');
-    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '–', 195, 53, { align: 'right' });
+    doc.text(form.datum ? new Date(form.datum).toLocaleDateString('de-DE') : '-', 195, 53, { align: 'right' });
     doc.text(form.faellig_am ? new Date(form.faellig_am).toLocaleDateString('de-DE') : '14 Tage netto', 195, 60, { align: 'right' });
     if (firma.steuernummer) { doc.text(firma.steuernummer, 195, 67, { align: 'right' }); }
 
@@ -443,7 +454,7 @@ export default function NeueRechnung() {
     doc.autoTable({
       startY: 86,
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
-      body: positionen.map((p, i) => [i+1, p.beschreibung||'–', p.menge, p.einheit, `${p.preis.toFixed(2).replace('.',',')} €`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} €`]),
+      body: positionen.map((p, i) => [i+1, p.beschreibung||'-', p.menge, p.einheit, `${p.preis.toFixed(2).replace('.',',')} EUR`, `${(p.menge*p.preis).toFixed(2).replace('.',',')} EUR`]),
       headStyles: { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
       bodyStyles: { fontSize: 9 },
       columnStyles: { 0:{cellWidth:12}, 4:{halign:'right'}, 5:{halign:'right',fontStyle:'bold'} },
@@ -452,12 +463,12 @@ export default function NeueRechnung() {
     });
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
-    doc.text('Nettobetrag:', 140, ty); doc.text(`${netto.toFixed(2).replace('.',',')} €`, 195, ty, { align: 'right' });
-    doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} €`, 195, ty+7, { align: 'right' });
+    doc.text('Nettobetrag:', 140, ty); doc.text(`${netto.toFixed(2).replace('.',',')} EUR`, 195, ty, { align: 'right' });
+    doc.text(`MwSt. ${form.steuersatz}%:`, 140, ty+7); doc.text(`${mwst.toFixed(2).replace('.',',')} EUR`, 195, ty+7, { align: 'right' });
     doc.setDrawColor(...grau); doc.line(140, ty+10, 195, ty+10);
     doc.setTextColor(0,0,0); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} €`, 195, ty+17, { align: 'right' });
-    if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(form.notizen, 15, ty+37); }
+    doc.text('Gesamtbetrag:', 140, ty+17); doc.setTextColor(...blau); doc.text(`${brutto.toFixed(2).replace('.',',')} EUR`, 195, ty+17, { align: 'right' });
+    if (form.notizen) { doc.setFont('helvetica','normal'); doc.setTextColor(0,0,0); doc.setFontSize(9); doc.text('Hinweis:', 15, ty+30); doc.setTextColor(...grau); doc.text(safeStr(form.notizen), 15, ty+37, { maxWidth: 170 }); }
 
     // Bankverbindung Footer
     const bankTeile = [
@@ -471,7 +482,12 @@ export default function NeueRechnung() {
     doc.text(bankTeile.length ? bankTeile.join('  ·  ') : 'Keine Bankdaten hinterlegt', 20, 275);
     doc.setFontSize(7); doc.setTextColor(156,163,175); doc.text('Erstellt mit KanalPro', 105, 285, { align: 'center' });
     doc.save(`Rechnung_${nr}.pdf`);
-    setPdfLaden(false);
+    } catch (err) {
+      console.error('PDF Fehler:', err);
+      alert('PDF konnte nicht erstellt werden: ' + err.message);
+    } finally {
+      setPdfLaden(false);
+    }
   }
 
   const selectedKunde = kunden.find(k => k.id === form.kunde_id) ?? null;
@@ -493,7 +509,7 @@ export default function NeueRechnung() {
               {logoUrl && (
                 <img src={logoUrl} alt="Logo" className="h-10 max-w-[80px] object-contain bg-white rounded-lg p-1" />
               )}
-                    <div>
+              <div>
                 <p className="text-white font-bold text-base leading-tight">{firma.firmenname || 'Ihr Unternehmen'}</p>
                 {firma.adresse && <p className="text-blue-100 text-xs mt-0.5">{firma.adresse}</p>}
                 <div className="flex gap-3 mt-0.5">
@@ -557,7 +573,7 @@ export default function NeueRechnung() {
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+    0       <div><label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label><input type="date" name="datum" value={form.datum} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Fällig bis</label><input type="date" name="faellig_am" value={form.faellig_am} onChange={onChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">Steuersatz</label>
