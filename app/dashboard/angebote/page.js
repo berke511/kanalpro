@@ -360,7 +360,7 @@ export default function Angebote() {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
                       <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? '–'}</div></div>
                       <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : '–'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}|/div></div>
+                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
                       <div><span className="text-gray-400 text-xs">Positionen</span><div className="mt-0.5">{(selected.positionen ?? []).length}</div></div>
                     </div>
                     <div className="pt-2 border-t border-gray-200 flex justify-between font-semibold text-gray-900">
