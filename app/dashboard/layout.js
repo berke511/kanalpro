@@ -33,7 +33,6 @@ const ICONS = {
   truck:      'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
   tool:       'M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z',
   tag:        'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z',
-  bell:      'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
   menu:       'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5',
   x:          'M6 18L18 6M6 6l12 12',
 };
@@ -47,7 +46,12 @@ const navLinks = [
   { href: '/dashboard/fahrzeuge',              label: 'Fahrzeuge',      iconId: 'truck',      feature: null, minRole: null },
   { href: '/dashboard/maschinen',              label: 'Maschinen',      iconId: 'tool',       feature: null, minRole: null },
   { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null },
-  { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null },
+  { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null,
+    children: [
+      { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'Zahlungseingänge' },
+      { href: '/dashboard/rechnungen/pdf-export',        label: 'PDF Export' },
+    ],
+  },
   { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', iconId: 'calendar',   feature: 'einsatzplanung', minRole: null },
   { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null },
   { href: '/dashboard/einstellungen/rollen',   label: 'Rollen & Rechte',iconId: 'shield',     feature: null, minRole: 'administrator' },
@@ -149,6 +153,7 @@ export default function DashboardLayout({ children }) {
             const locked = link.feature && !canAccess(plan, link.feature);
             if (link.minRole && userRole && !hasMinRole(userRole, link.minRole)) return null;
             const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
+            const hasChildren = link.children && link.children.length > 0;
 
             if (locked) {
               return (
@@ -166,18 +171,49 @@ export default function DashboardLayout({ children }) {
             }
 
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition min-h-[44px] ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <Icon d={ICONS[link.iconId]} className="w-4 h-4 shrink-0" />
-                {link.label}
-              </Link>
+              <div key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition min-h-[44px] ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon d={ICONS[link.iconId]} className="w-4 h-4 shrink-0" />
+                  <span className="flex-1">{link.label}</span>
+                  {hasChildren && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                      strokeWidth={2} stroke="currentColor"
+                      className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isActive ? 'rotate-90' : ''}`}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </Link>
+                {hasChildren && isActive && (
+                  <div className="ml-7 mt-0.5 mb-1 space-y-0.5">
+                    {link.children.map(child => {
+                      const childActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                            childActive
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${childActive ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
