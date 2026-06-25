@@ -76,7 +76,15 @@ function buildBriefText(r, firma, stufe) {
 }
 
 async function generatePDF(text, rechnungsnummer, label) {
-  const { jsPDF } = await import('jspdf');
+  if (!window.jspdf) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(11);
   const lines = doc.splitTextToSize(text, 175);
