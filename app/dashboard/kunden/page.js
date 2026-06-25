@@ -33,10 +33,8 @@ export default function Kunden() {
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLaden(false); return; }
-    let abo;
-    try { abo = await checkAndDowngrade(supabase, user.id); } catch(e) { console.error('subscription error', e); }
-    const sub = abo ? getSubscriptionStatus(abo) : { plan: 'free', limit: 0, count: 0, atLimit: false, nearLimit: false };
+    const abo = await checkAndDowngrade(supabase, user.id);
+    const sub = getSubscriptionStatus(abo);
     const plan = getPlan(sub.plan);
     const limit = plan.limits.kunden;
     const { data } = await supabase
@@ -63,11 +61,11 @@ export default function Kunden() {
   const gefiltert = buchstabe
     ? kunden.filter(k => {
         const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
-        return n && n.toUpperCase().startsWith(buchstabe);
+        return n.toUpperCase().startsWith(buchstabe);
       })
     : kunden;
 
-  const vorhandenenBuchstaben = new Set(kunden.map(k => {
+  const vorhandeneBuchstaben = new Set((kunden || []).map(k => {
     const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
     return n[0]?.toUpperCase();
   }));
@@ -111,11 +109,11 @@ export default function Kunden() {
           className={`px-2.5 h-7 rounded-lg text-xs font-bold transition ${!buchstabe ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
           Alle
         </button>
-        {ALPHABET.map(b => (
-          <button key={b} onClick={() => vorhandenenBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
+        {(ALPHABET || []).map(b => (
+          <button key={b} onClick={() => vorhandeneBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
             className={`w-7 h-7 rounded-md text-xs font-bold transition ${
               buchstabe === b ? 'bg-blue-600 text-white' :
-              vorhandenenBuchstaben.has(b) ? 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700' :
+              vorhandeneBuchstaben.has(b) ? 'bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-700' :
               'bg-gray-50 text-gray-300 cursor-default'
             }`}>
             {b}
@@ -145,7 +143,7 @@ export default function Kunden() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {gefiltert.map(k => {
+              {(gefiltert || []).map(k => {
                 const anzeigeName = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
                 const sortiert = (k.auftraege ?? []).slice().sort((a, b) => new Date(b.datum ?? 0) - new Date(a.datum ?? 0));
                 const letzter = sortiert[0];
