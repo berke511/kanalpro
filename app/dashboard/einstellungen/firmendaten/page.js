@@ -214,7 +214,6 @@ export default function FirmendatenEinstellungen() {
             <p className="text-xs text-gray-400 mt-4">Das Logo erscheint automatisch auf deinen Rechnungs- und Angebots-PDFs.</p>
           </div>
         </div>
-      )}
     </div>
   );
 }
