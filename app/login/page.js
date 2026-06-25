@@ -174,12 +174,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Noch kein Konto?{' '}
-            <Link href="/register" className="text-blue-600 font-medium hover:underline">
-              Kostenlos registrieren
-            </Link>
-          </p>
         </div>
       </div>
     </div>
