@@ -36,7 +36,7 @@ export default function KontoEinstellungen() {
     async function handleAbmelden() { await supabase.auth.signOut(); router.push('/login'); }
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl space-y-5">
         <div className="space-y-5 max-w-xl">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-800 mb-4">Konto</h2>
@@ -88,7 +88,6 @@ export default function KontoEinstellungen() {
             <button onClick={handleAbmelden} className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">🚪 Abmelden</button>
           </div>
         </div>
-      )}
     </div>
   );
 }
