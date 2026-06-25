@@ -164,15 +164,15 @@ export default function Rechnungen() {
                   return (
                     <tr key={r.id} onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)} className="hover:bg-gray-50 transition cursor-pointer">
                       <td className="px-5 py-3 font-mono font-medium text-gray-900">{r.rechnungsnummer}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? '–'}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}</td>
-                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} €</td>
+                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? 'â'}</td>
+                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}</td>
+                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} â¬</td>
                       <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
                       <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
                         {kannMahnung && (
                           <button onClick={() => mahnungMarkieren(r.id)}
                             className="px-3 py-1 bg-orange-50 text-orange-700 rounded-md text-xs font-medium hover:bg-orange-100 transition whitespace-nowrap">
-                            → Als Mahnung markieren
+                            â Als Mahnung markieren
                           </button>
                         )}
                       </td>
@@ -182,7 +182,7 @@ export default function Rechnungen() {
               </tbody>
             </table>
           </div>
-        )
+        }
           )
 
 
