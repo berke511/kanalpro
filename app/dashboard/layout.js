@@ -50,11 +50,15 @@ const navLinks = [
     children: [
       { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'Zahlungseingänge' },
       { href: '/dashboard/rechnungen/pdf-export',        label: 'PDF Export' },
+      { href: '/dashboard/mahnungen',                   label: 'Mahnungen' },
     ],
   },
   { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', iconId: 'calendar',   feature: 'einsatzplanung', minRole: null },
-  { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null },
-  { href: '/dashboard/einstellungen/rollen',   label: 'Rollen & Rechte',iconId: 'shield',     feature: null, minRole: 'administrator' },
+  { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null,
+    children: [
+      { href: '/dashboard/einstellungen/rollen', label: 'Rollen & Rechte', iconId: 'shield', feature: null, minRole: 'administrator' },
+    ],
+  },
   { href: '/dashboard/billing',                label: 'Abonnement',     iconId: 'creditcard', feature: null, minRole: null },
 ];
 
