@@ -137,9 +137,12 @@ export default function Rechnungen() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
+        (
           <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neue Rechnung</Link>
       </div>
-        {laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
+
+      (
+        laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="font-medium">Noch keine Rechnungen</p>
             <p className="text-sm mt-1">Erstelle deine erste Rechnung.</p>
@@ -164,15 +167,15 @@ export default function Rechnungen() {
                   return (
                     <tr key={r.id} onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)} className="hover:bg-gray-50 transition cursor-pointer">
                       <td className="px-5 py-3 font-mono font-medium text-gray-900">{r.rechnungsnummer}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? 'â'}</td>
-                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}</td>
-                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} â¬</td>
+                      <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? '–'}</td>
+                      <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}</td>
+                      <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} €</td>
                       <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
                       <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
                         {kannMahnung && (
                           <button onClick={() => mahnungMarkieren(r.id)}
                             className="px-3 py-1 bg-orange-50 text-orange-700 rounded-md text-xs font-medium hover:bg-orange-100 transition whitespace-nowrap">
-                            â Als Mahnung markieren
+                            → Als Mahnung markieren
                           </button>
                         )}
                       </td>
@@ -183,7 +186,7 @@ export default function Rechnungen() {
             </table>
           </div>
         )
-        }
+          )
 
 
     </div>
