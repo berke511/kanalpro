@@ -137,12 +137,9 @@ export default function Rechnungen() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-        (
           <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neue Rechnung</Link>
       </div>
-
-      (
-        laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
+        {laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="font-medium">Noch keine Rechnungen</p>
             <p className="text-sm mt-1">Erstelle deine erste Rechnung.</p>
