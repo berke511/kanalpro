@@ -41,11 +41,21 @@ const ICONS = {
 const navLinks = [
   { href: '/dashboard',                        label: 'Übersicht',      iconId: 'home',       feature: null, minRole: null },
   { href: '/dashboard/kunden',                 label: 'Kunden',         iconId: 'users',      feature: null, minRole: null },
-  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null },
+  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null,
+          children: [
+            { href: '/dashboard/auftraege/einsatzplanung', label: 'Einsatzplanung' },
+          ],
+        },
   { href: '/dashboard/mitarbeiter',            label: 'Mitarbeiter',    iconId: 'workers',    feature: null, minRole: null },
   { href: '/dashboard/fahrzeuge',              label: 'Fahrzeuge',      iconId: 'truck',      feature: null, minRole: null },
   { href: '/dashboard/maschinen',              label: 'Maschinen',      iconId: 'tool',       feature: null, minRole: null },
-  { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null },
+  { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null,
+          children: [
+            { href: '/dashboard/angebote/pdf-export',      label: 'PDF-Export' },
+            { href: '/dashboard/angebote/email-versand',   label: 'E-Mail-Versand' },
+            { href: '/dashboard/angebote/vorlagen',        label: 'Vorlagen' },
+          ],
+        },
   { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null,
     children: [
       { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'Zahlungseingänge' },
@@ -53,9 +63,10 @@ const navLinks = [
       { href: '/dashboard/mahnungen',                   label: 'Mahnungen' },
     ],
   },
-  { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', iconId: 'calendar',   feature: 'einsatzplanung', minRole: null },
   { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null,
     children: [
+            { href: '/dashboard/einstellungen/konto',       label: 'Konto' },
+            { href: '/dashboard/einstellungen/firmendaten', label: 'Firmendaten' },
       { href: '/dashboard/einstellungen/rollen', label: 'Rollen & Rechte', iconId: 'shield', feature: null, minRole: 'administrator' },
     ],
   },
