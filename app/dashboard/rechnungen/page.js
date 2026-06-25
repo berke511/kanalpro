@@ -9,6 +9,7 @@ const statusConfig = {
   entwurf:  { label: 'Entwurf',  cls: 'bg-gray-100 text-gray-600'  },
   gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700'   },
   bezahlt:  { label: 'Bezahlt',  cls: 'bg-green-50 text-green-700' },
+  mahnung:  { label: 'Mahnung',  cls: 'bg-red-50 text-red-700'     },
 };
 
 export default function Rechnungen() {
@@ -23,6 +24,7 @@ export default function Rechnungen() {
         .from('rechnungen')
         .select('*, kunden(name)')
         .eq('user_id', user.id)
+        .neq('status', 'mahnung')
         .order('erstellt_am', { ascending: false });
       setRechnungen(rech ?? []);
       setLaden(false);
@@ -33,6 +35,17 @@ export default function Rechnungen() {
   function brutto(r) {
     const netto = (r.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
     return netto * (1 + r.steuersatz / 100);
+  }
+
+  function istUeberfaellig(r) {
+    if (!r.faellig_am || r.status === 'bezahlt') return false;
+    return new Date(r.faellig_am) < new Date();
+  }
+
+  async function alsMahnungMarkieren(e, id) {
+    e.stopPropagation();
+    await supabase.from('rechnungen').update({ status: 'mahnung' }).eq('id', id);
+    setRechnungen(prev => prev.filter(r => r.id !== id));
   }
 
   return (
@@ -58,11 +71,13 @@ export default function Rechnungen() {
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
+                <th className="text-left px-5 py-3 font-medium text-gray-500">Aktionen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {rechnungen.map(r => {
                 const cfg = statusConfig[r.status] ?? statusConfig.entwurf;
+                const ueberfaellig = istUeberfaellig(r);
                 return (
                   <tr key={r.id} onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)} className="hover:bg-gray-50 transition cursor-pointer">
                     <td className="px-5 py-3 font-mono font-medium text-gray-900">{r.rechnungsnummer}</td>
@@ -70,6 +85,16 @@ export default function Rechnungen() {
                     <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}</td>
                     <td className="px-5 py-3 font-medium text-gray-900">{brutto(r).toFixed(2).replace('.', ',')} €</td>
                     <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
+                    <td className="px-5 py-3">
+                      {ueberfaellig && (
+                        <button
+                          onClick={(e) => alsMahnungMarkieren(e, r.id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition whitespace-nowrap"
+                        >
+                          → Als Mahnung markieren
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
