@@ -182,8 +182,7 @@ export default function Rechnungen() {
               </tbody>
             </table>
           </div>
-        }
-          )
+        )
 
 
     </div>
