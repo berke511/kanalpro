@@ -23,6 +23,7 @@ export default function AngeboteEmailVersand() {
   const [emailEmpfaenger,  setEmailEmpfaenger]  = useState('');
   const [emailBetreff,     setEmailBetreff]     = useState('');
   const [emailNachricht,   setEmailNachricht]   = useState('');
+  const [logoUrl, setLogoUrl] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -74,6 +75,11 @@ export default function AngeboteEmailVersand() {
       `Mit freundlichen Grüßen\nIhr KanalPro-Team`
     );
   }, [emailSelectedId, angebote]);
+
+function handleMailto() {
+const href = 'mailto:' + encodeURIComponent(emailEmpfaenger) + '?subject=' + encodeURIComponent(emailBetreff) + '&body=' + encodeURIComponent(emailNachricht);
+window.location.href = href;
+}
 
   return (
     <div className="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
