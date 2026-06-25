@@ -37,7 +37,6 @@ function isUeberfaellig(r) {
 
 export default function Rechnungen() {
   const router = useRouter();
-  const [tab, setTab] = useState('liste');
   const [rechnungen, setRechnungen] = useState([]);
   const [laden, setLaden] = useState(true);
   const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
@@ -138,24 +137,11 @@ export default function Rechnungen() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Rechnungen</h1>
-        {tab === 'liste' && (
+        (
           <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neue Rechnung</Link>
-        )}
       </div>
 
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-6">
-        {[
-          { key: 'liste',       label: 'Rechnungen' },
-          { key: 'mahnungen',   label: mahnungen.length > 0 ? 'Mahnungen (' + mahnungen.length + ')' : 'Mahnungen' },
-        ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === t.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'liste' && (
+      (
         laden ? <p className="text-gray-400">Wird geladen...</p> : rechnungen.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="font-medium">Noch keine Rechnungen</p>
@@ -200,56 +186,8 @@ export default function Rechnungen() {
             </table>
           </div>
         )
-      )}
+          )
 
-      {tab === 'mahnungen' && (
-        laden ? <p className="text-gray-400">Wird geladen...</p> : mahnungen.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="font-medium">Keine Mahnungen vorhanden</p>
-            <p className="text-sm mt-1">Überfällige gesendete Rechnungen können im Rechnungen-Tab als Mahnung markiert werden.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag (brutto)</th>
-                  <th className="text-left px-5 py-3 font-medium text-gray-500">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {mahnungen.map(r => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition">
-                    <td className="px-5 py-3 font-mono font-medium text-gray-900">{r.rechnungsnummer}</td>
-                    <td className="px-5 py-3 text-gray-500">{r.kunden?.name ?? '–'}</td>
-                    <td className="px-5 py-3 text-gray-500">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}</td>
-                    <td className="px-5 py-3 font-medium text-orange-700">{brutto(r).toFixed(2).replace('.', ',')} €</td>
-                    <td className="px-5 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => mahnbriefPDF(r)}
-                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium hover:bg-blue-100 transition">
-                          📄 Mahnbrief PDF
-                        </button>
-                        <button onClick={() => mahnungMailto(r)}
-                          className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-medium hover:bg-indigo-100 transition">
-                          ✉️ Mahnung per E-Mail
-                        </button>
-                        <button onClick={() => zurueckZuRechnungen(r.id)}
-                          className="px-3 py-1 bg-gray-50 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-100 transition">
-                          ← Zurück zu Rechnungen
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
 
     </div>
     </PlanGate>
