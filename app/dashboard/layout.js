@@ -47,7 +47,6 @@ const navLinks = [
   { href: '/dashboard/fahrzeuge',              label: 'Fahrzeuge',      iconId: 'truck',      feature: null, minRole: null },
   { href: '/dashboard/maschinen',              label: 'Maschinen',      iconId: 'tool',       feature: null, minRole: null },
   { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null },
-  { href: '/dashboard/mahnungen',                  label: 'Mahnungen',       iconId: 'bell',       feature: 'mahnungen',  minRole: null },
   { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null },
   { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', iconId: 'calendar',   feature: 'einsatzplanung', minRole: null },
   { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null },
