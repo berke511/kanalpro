@@ -40,6 +40,7 @@ export default function FirmendatenEinstellungen() {
 
   useEffect(() => {
     async function load() {
+      const { data: { user: u } } = await supabase.auth.getUser();
       const [{ data: einst }, { data: member }] = await Promise.all([
         supabase.from('einstellungen').select('*').eq('user_id', u.id).single(),
         supabase.from('company_members').select('*, companies(id, logo_url)').eq('user_id', u.id).eq('is_active', true).single(),
@@ -49,7 +50,6 @@ export default function FirmendatenEinstellungen() {
         setMyMember(member);
         setLogoUrl(member.companies?.logo_url ?? null);
       }
-    }
     }
     load();
   }, []);
@@ -119,7 +119,7 @@ export default function FirmendatenEinstellungen() {
 
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl space-y-5">
         <div className="space-y-5 max-w-xl">
           <form onSubmit={handleFirmaSpeichern} className="space-y-5">
             {firmaFehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{firmaFehler}</div>}
