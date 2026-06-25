@@ -49,6 +49,24 @@ export default function AngebotePDFExport() {
   }
 
 
+  const selected = angebote.find(a => a.id === selectedId) ?? null;
+
+  function loadLogoDataUrl(url) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve({ dataUrl: canvas.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
   async function handlePDF() {
     if (!selected) return;
     setPdfLaden(true);
@@ -171,13 +189,6 @@ export default function AngebotePDFExport() {
     setPdfLaden(false);
   }
 
-  function handleMailto() {
-    const href =
-      `mailto:${encodeURIComponent(emailEmpfaenger)}` +
-      `?subject=${encodeURIComponent(emailBetreff)}` +
-      `&body=${encodeURIComponent(emailNachricht)}`;
-    window.location.href = href;
-  }
 
 
   return (
