@@ -3,6 +3,19 @@ import Link from 'next/link';
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
+
+      {/* Baustellen-Banner */}
+      <div className="bg-amber-50 border-b border-amber-200">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-amber-600 shrink-0">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <p className="text-sm text-amber-800 font-medium text-center">
+            Diese Website befindet sich noch im Aufbau. Anmeldungen und Registrierungen sind derzeit nicht möglich.
+          </p>
+        </div>
+      </div>
+
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -12,8 +25,8 @@ export default function Home() {
             <span className="font-bold text-xl text-gray-900">KanalPro</span>
           </div>
           <div className="flex gap-3">
-            <Link href="/login" className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium">Anmelden</Link>
-            <Link href="/register" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">Kostenlos starten</Link>
+            <span className="px-4 py-2 text-gray-300 font-medium cursor-not-allowed select-none">Anmelden</span>
+            <span className="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-medium cursor-not-allowed select-none">Kostenlos starten</span>
           </div>
         </div>
       </header>
@@ -31,9 +44,13 @@ export default function Home() {
           KanalPro ist die einfachste Verwaltungssoftware für kleine Rohr- und Kanalservice-Betriebe.
           Kundendaten, Aufträge und Rechnungen — alles an einem Ort.
         </p>
-        <Link href="/register" className="inline-block px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-          Jetzt kostenlos testen →
-        </Link>
+
+        <div className="inline-flex flex-col items-center gap-2">
+          <span className="inline-block px-8 py-4 bg-gray-200 text-gray-400 text-lg font-semibold rounded-xl cursor-not-allowed select-none">
+            Jetzt kostenlos testen →
+          </span>
+          <span className="text-sm text-amber-600 font-medium">Derzeit nicht verfügbar — Website im Aufbau</span>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24 text-left">
           {[
