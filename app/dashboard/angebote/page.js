@@ -11,7 +11,7 @@ const statusConfig = {
   abgelehnt:  { label: 'Abgelehnt',  cls: 'bg-red-50 text-red-600'      },
 };
 
-function fmt(n) { return n.toFixed(2).replace('.', ',') + ' â¬'; }
+function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
 
 export default function Angebote() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function Angebote() {
     return netto * (1 + (a.steuersatz ?? 19) / 100);
   }
 
-  // Auto-fill E-Mail-Felder beim AuswÃ¤hlen eines Angebots
+  // Auto-fill E-Mail-Felder beim Auswählen eines Angebots
   useEffect(() => {
     const a = angebote.find(x => x.id === emailSelectedId);
     if (!a) {
@@ -70,19 +70,19 @@ export default function Angebote() {
       setEmailNachricht('');
       return;
     }
-    const nr     = a.angebotsnummer ?? 'â';
+    const nr     = a.angebotsnummer ?? '–';
     const netto  = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
     const brutto = netto * (1 + (a.steuersatz ?? 19) / 100);
-    const betrag = brutto.toFixed(2).replace('.', ',') + ' â¬';
+    const betrag = brutto.toFixed(2).replace('.', ',') + ' €';
     setEmailEmpfaenger(a.kunden?.email ?? '');
     setEmailBetreff(`Ihr Angebot Nr. ${nr} von KanalPro`);
     setEmailNachricht(
       `Sehr geehrte Damen und Herren,\n\n` +
-      `vielen Dank fÃ¼r Ihr Interesse an unseren Leistungen.\n\n` +
-      `anbei erhalten Sie unser Angebot Nr. ${nr} Ã¼ber ${betrag} (brutto inkl. MwSt.).\n\n` +
-      `Wir wÃ¼rden uns freuen, Ihnen mit diesem Angebot weiterhelfen zu dÃ¼rfen. ` +
-      `Bei RÃ¼ckfragen stehen wir Ihnen jederzeit gerne zur VerfÃ¼gung.\n\n` +
-      `Mit freundlichen GrÃ¼Ãen\nIhr KanalPro-Team`
+      `vielen Dank für Ihr Interesse an unseren Leistungen.\n\n` +
+      `anbei erhalten Sie unser Angebot Nr. ${nr} über ${betrag} (brutto inkl. MwSt.).\n\n` +
+      `Wir würden uns freuen, Ihnen mit diesem Angebot weiterhelfen zu dürfen. ` +
+      `Bei Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.\n\n` +
+      `Mit freundlichen Grüßen\nIhr KanalPro-Team`
     );
   }, [emailSelectedId, angebote]);
 
@@ -116,7 +116,7 @@ export default function Angebote() {
     const blau = [37, 99, 235];
     const grau = [107, 114, 128];
     const a    = selected;
-    const nr   = a.angebotsnummer ?? 'â';
+    const nr   = a.angebotsnummer ?? '–';
     const positionen = a.positionen ?? [];
     const netto  = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
     const mwst   = netto * (a.steuersatz ?? 19) / 100;
@@ -148,9 +148,9 @@ export default function Angebote() {
     doc.setTextColor(0, 0, 0);
 
     doc.setFontSize(8); doc.setTextColor(...grau);
-    doc.text('Ihr Unternehmen Â· MusterstraÃe 1 Â· 40000 DÃ¼sseldorf', 15, 45);
+    doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold');
-    doc.text('Angebot fÃ¼r:', 15, 55);
+    doc.text('Angebot für:', 15, 55);
     doc.setFont('helvetica', 'normal');
     if (kunde) {
       doc.text(kunde.name ?? '', 15, 62);
@@ -161,9 +161,9 @@ export default function Angebote() {
 
     doc.setFont('helvetica', 'bold');
     doc.text('Datum:', 130, 55);
-    doc.text('GÃ¼ltig bis:', 130, 62);
+    doc.text('Gültig bis:', 130, 62);
     doc.setFont('helvetica', 'normal');
-    doc.text(a.datum       ? new Date(a.datum).toLocaleDateString('de-DE')          : 'â', 195, 55, { align: 'right' });
+    doc.text(a.datum       ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
     doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE')    : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
 
     doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 75, 195, 75);
@@ -175,11 +175,11 @@ export default function Angebote() {
       head: [['Pos.', 'Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
       body: positionen.map((p, i) => [
         i + 1,
-        p.beschreibung || 'â',
+        p.beschreibung || '–',
         p.menge,
         p.einheit,
-        p.preis.toFixed(2).replace('.', ',') + ' â¬',
-        (p.menge * p.preis).toFixed(2).replace('.', ',') + ' â¬',
+        p.preis.toFixed(2).replace('.', ',') + ' €',
+        (p.menge * p.preis).toFixed(2).replace('.', ',') + ' €',
       ]),
       headStyles:         { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
       bodyStyles:         { fontSize: 9 },
@@ -191,14 +191,14 @@ export default function Angebote() {
     const ty = doc.lastAutoTable.finalY + 8;
     doc.setFontSize(9); doc.setTextColor(...grau);
     doc.text('Nettobetrag:', 140, ty);
-    doc.text(netto.toFixed(2).replace('.', ',') + ' â¬', 195, ty, { align: 'right' });
+    doc.text(netto.toFixed(2).replace('.', ',') + ' €', 195, ty, { align: 'right' });
     doc.text('MwSt. ' + (a.steuersatz ?? 19) + '%:', 140, ty + 7);
-    doc.text(mwst.toFixed(2).replace('.', ',') + ' â¬', 195, ty + 7, { align: 'right' });
+    doc.text(mwst.toFixed(2).replace('.', ',') + ' €', 195, ty + 7, { align: 'right' });
     doc.setDrawColor(...grau); doc.line(140, ty + 10, 195, ty + 10);
     doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
     doc.text('Angebotssumme:', 140, ty + 17);
     doc.setTextColor(...blau);
-    doc.text(brutto.toFixed(2).replace('.', ',') + ' â¬', 195, ty + 17, { align: 'right' });
+    doc.text(brutto.toFixed(2).replace('.', ',') + ' €', 195, ty + 17, { align: 'right' });
 
     if (a.notizen) {
       doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0); doc.setFontSize(9);
@@ -227,7 +227,7 @@ export default function Angebote() {
 
   return (
     <div>
-      {/* ââ Tab-Bar + Action ââ */}
+      {/* ── Tab-Bar + Action ── */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <button
@@ -262,10 +262,10 @@ export default function Angebote() {
         )}
       </div>
 
-      {/* ââ Angebote-Tab ââ */}
+      {/* ── Angebote-Tab ── */}
       {tab === 'angebote' && (
         laden ? (
-          <p className="text-gray-400 text-sm">Wird geladenâ¦</p>
+          <p className="text-gray-400 text-sm">Wird geladen…</p>
         ) : offeneAngebote.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -297,9 +297,9 @@ export default function Angebote() {
                       onClick={() => router.push(`/dashboard/angebote/${a.id}`)}
                       className="hover:bg-gray-50 transition cursor-pointer"
                     >
-                      <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? 'â'}</td>
-                      <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? 'â'}</td>
-                      <td className="px-5 py-3 text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : 'â'}</td>
+                      <td className="px-5 py-3 font-mono font-medium text-gray-900">{a.angebotsnummer ?? '–'}</td>
+                      <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
+                      <td className="px-5 py-3 text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–'}</td>
                       <td className="px-5 py-3 font-medium text-gray-900">{fmt(calcBrutto(a))}</td>
                       <td className="px-5 py-3"><span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span></td>
                     </tr>
@@ -311,7 +311,7 @@ export default function Angebote() {
         )
       )}
 
-      {/* ââ PDF-Export-Tab ââ */}
+      {/* ── PDF-Export-Tab ── */}
       {tab === 'pdf' && (
         <div className="max-w-xl space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
@@ -323,27 +323,27 @@ export default function Angebote() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Angebot als PDF exportieren</h2>
-                <p className="text-xs text-gray-400 mt-0.5">WÃ¤hle ein Angebot aus und lade es als professionelles PDF herunter.</p>
+                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus und lade es als professionelles PDF herunter.</p>
               </div>
             </div>
 
             {laden ? (
-              <p className="text-gray-400 text-sm">Angebote werden geladenâ¦</p>
+              <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
             ) : angebote.length === 0 ? (
-              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen â</Link></p>
+              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswÃ¤hlen</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
                   <select
                     value={selectedId}
                     onChange={e => setSelectedId(e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">â Angebot wÃ¤hlen â</option>
+                    <option value="">— Angebot wählen —</option>
                     {angebote.map(a => (
                       <option key={a.id} value={a.id}>
-                        {(a.angebotsnummer ?? 'â') + (a.kunden?.name ? ' Â· ' + a.kunden.name : '') + (a.datum ? ' Â· ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
+                        {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
                       </option>
                     ))}
                   </select>
@@ -352,15 +352,15 @@ export default function Angebote() {
                 {selected && (
                   <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-semibold text-gray-900">{selected.angebotsnummer ?? 'â'}</span>
+                      <span className="font-mono font-semibold text-gray-900">{selected.angebotsnummer ?? '–'}</span>
                       <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${(statusConfig[selected.status] ?? statusConfig.entwurf).cls}`}>
                         {(statusConfig[selected.status] ?? statusConfig.entwurf).label}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-600">
-                      <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? 'â'}</div></div>
-                      <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : 'â'}</div></div>
-                      <div><span className="text-gray-400 text-xs">GÃ¼ltig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
+                      <div><span className="text-gray-400 text-xs">Kunde</span><div className="mt-0.5">{selected.kunden?.name ?? '–'}</div></div>
+                      <div><span className="text-gray-400 text-xs">Datum</span><div className="mt-0.5">{selected.datum ? new Date(selected.datum).toLocaleDateString('de-DE') : '–'}</div></div>
+                      <div><span className="text-gray-400 text-xs">Gültig bis</span><div className="mt-0.5">{selected.gueltig_bis ? new Date(selected.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage'}</div></div>
                       <div><span className="text-gray-400 text-xs">Positionen</span><div className="mt-0.5">{(selected.positionen ?? []).length}</div></div>
                     </div>
                     <div className="pt-2 border-t border-gray-200 flex justify-between font-semibold text-gray-900">
@@ -381,7 +381,7 @@ export default function Angebote() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      PDF wird erstelltâ¦
+                      PDF wird erstellt…
                     </>
                   ) : (
                     <>
@@ -398,7 +398,7 @@ export default function Angebote() {
         </div>
       )}
 
-      {/* ââ E-Mail-Versand-Tab ââ */}
+      {/* ── E-Mail-Versand-Tab ── */}
       {tab === 'email' && (
         <div className="max-w-xl space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
@@ -410,27 +410,27 @@ export default function Angebote() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Angebot per E-Mail versenden</h2>
-                <p className="text-xs text-gray-400 mt-0.5">WÃ¤hle ein Angebot aus â Betreff und Text werden automatisch vorausgefÃ¼llt.</p>
+                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt.</p>
               </div>
             </div>
 
             {laden ? (
-              <p className="text-gray-400 text-sm">Angebote werden geladenâ¦</p>
+              <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
             ) : angebote.length === 0 ? (
-              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen â</Link></p>
+              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswÃ¤hlen</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
                   <select
                     value={emailSelectedId}
                     onChange={e => setEmailSelectedId(e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="">â Angebot wÃ¤hlen â</option>
+                    <option value="">— Angebot wählen —</option>
                     {angebote.map(a => (
                       <option key={a.id} value={a.id}>
-                        {(a.angebotsnummer ?? 'â') + (a.kunden?.name ? ' Â· ' + a.kunden.name : '') + (a.datum ? ' Â· ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
+                        {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
                       </option>
                     ))}
                   </select>
@@ -438,7 +438,7 @@ export default function Angebote() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    EmpfÃ¤nger-E-Mail
+                    Empfänger-E-Mail
                     {emailSelectedId && !angebote.find(a => a.id === emailSelectedId)?.kunden?.email && (
                       <span className="ml-2 text-xs text-amber-500 font-normal">Keine E-Mail beim Kunden hinterlegt</span>
                     )}
@@ -458,7 +458,7 @@ export default function Angebote() {
                     type="text"
                     value={emailBetreff}
                     onChange={e => setEmailBetreff(e.target.value)}
-                    placeholder="Ihr Angebot Nr. â¦ von KanalPro"
+                    placeholder="Ihr Angebot Nr. … von KanalPro"
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -469,7 +469,7 @@ export default function Angebote() {
                     value={emailNachricht}
                     onChange={e => setEmailNachricht(e.target.value)}
                     rows={9}
-                    placeholder="E-Mail-Textâ¦"
+                    placeholder="E-Mail-Text…"
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -479,7 +479,7 @@ export default function Angebote() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                   </svg>
                   <p className="text-xs text-amber-700">
-                    Das Angebot wird <strong>nicht automatisch angehÃ¤ngt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hÃ¤nge es manuell in deinem E-Mail-Programm an.
+                    Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
                   </p>
                 </div>
 
@@ -491,7 +491,7 @@ export default function Angebote() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>
-                  E-Mail-Programm Ã¶ffnen
+                  E-Mail-Programm öffnen
                 </button>
               </>
             )}
