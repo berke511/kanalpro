@@ -7,7 +7,7 @@ import { checkAndDowngrade, getSubscriptionStatus, canAccess } from '@/lib/subsc
 import { hasMinRole } from '@/lib/roles';
 import TrialBanner from '@/components/TrialBanner';
 
-// ── SVG-Icons (Heroicons Outline 24px) ──────────────────────────────────────
+// ââ SVG-Icons (Heroicons Outline 24px) ââââââââââââââââââââââââââââââââââââââ
 function Icon({ d, className = 'w-4 h-4' }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -39,9 +39,9 @@ const ICONS = {
 
 // Nav-Links mit optionalem Feature-Gate und Rollen-Gate
 const navLinks = [
-  { href: '/dashboard',                        label: 'Übersicht',      iconId: 'home',       feature: null, minRole: null },
+  { href: '/dashboard',                        label: 'Ãbersicht',      iconId: 'home',       feature: null, minRole: null },
   { href: '/dashboard/kunden',                 label: 'Kunden',         iconId: 'users',      feature: null, minRole: null },
-  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null,
+  { href: '/dashboard/auftraege',              label: 'AuftrÃ¤ge',       iconId: 'clipboard',  feature: null, minRole: null,
           children: [
             { href: '/dashboard/auftraege/einsatzplanung', label: 'Einsatzplanung' },
           ],
@@ -51,14 +51,14 @@ const navLinks = [
   { href: '/dashboard/maschinen',              label: 'Maschinen',      iconId: 'tool',       feature: null, minRole: null },
   { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null,
           children: [
-            { href: '/dashboard/angebote/pdf-export',      label: 'PDF-Export' },
-            { href: '/dashboard/angebote/email-versand',   label: 'E-Mail-Versand' },
             { href: '/dashboard/angebote/vorlagen',        label: 'Vorlagen' },
+            { href: '/dashboard/angebote/email-versand',   label: 'E-Mail-Versand' },
+            { href: '/dashboard/angebote/pdf-export',      label: 'PDF-Export' },
           ],
         },
   { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null,
     children: [
-      { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'Zahlungseingänge' },
+      { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'ZahlungseingÃ¤nge' },
       { href: '/dashboard/rechnungen/pdf-export',        label: 'PDF Export' },
       { href: '/dashboard/mahnungen',                   label: 'Mahnungen' },
     ],
@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Sidebar schließen bei Routenwechsel (Mobile)
+  // Sidebar schlieÃen bei Routenwechsel (Mobile)
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
@@ -134,13 +134,13 @@ export default function DashboardLayout({ children }) {
 
   if (!user) return null;
 
-  // Trial abgelaufen → Billing-Seite erzwingen
+  // Trial abgelaufen â Billing-Seite erzwingen
   if (isExpired && pathname !== '/dashboard/billing' && pathname !== '/dashboard/upgrade') {
     router.push('/dashboard/billing');
     return null;
   }
 
-  // Sidebar-Inhalt (wiederverwendet für Desktop & Mobile-Drawer)
+  // Sidebar-Inhalt (wiederverwendet fÃ¼r Desktop & Mobile-Drawer)
   function SidebarContent() {
     return (
       <>
@@ -152,11 +152,11 @@ export default function DashboardLayout({ children }) {
             </div>
             <span className="font-bold text-lg text-gray-900">KanalPro</span>
           </div>
-          {/* Schließen-Button nur auf Mobile */}
+          {/* SchlieÃen-Button nur auf Mobile */}
           <button
             className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Menü schließen"
+            aria-label="MenÃ¼ schlieÃen"
           >
             <Icon d={ICONS.x} className="w-5 h-5" />
           </button>
@@ -241,7 +241,7 @@ export default function DashboardLayout({ children }) {
               className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition min-h-[44px]"
             >
               <Icon d={ICONS.sparkles} className="w-3.5 h-3.5 shrink-0" />
-              Upgrade — ab 29 €/Monat
+              Upgrade â ab 29 â¬/Monat
             </Link>
           )}
           <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
@@ -260,7 +260,7 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
 
-      {/* ── Trial-Banner ─────────────────────────────────────────── */}
+      {/* ââ Trial-Banner âââââââââââââââââââââââââââââââââââââââââââ */}
       <TrialBanner
         daysLeft={daysLeft}
         isTrialActive={isTrialActive}
@@ -269,12 +269,12 @@ export default function DashboardLayout({ children }) {
         upgradeHref="/dashboard/billing"
       />
 
-      {/* ── Mobile Top-Bar ───────────────────────────────────────── */}
+      {/* ââ Mobile Top-Bar âââââââââââââââââââââââââââââââââââââââââ */}
       <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-40">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-label="Menü öffnen"
+          aria-label="MenÃ¼ Ã¶ffnen"
         >
           <Icon d={ICONS.menu} className="w-5 h-5" />
         </button>
@@ -288,7 +288,7 @@ export default function DashboardLayout({ children }) {
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Mobile Overlay ───────────────────────────────────────── */}
+        {/* ââ Mobile Overlay âââââââââââââââââââââââââââââââââââââââââ */}
         {sidebarOpen && (
           <div
             className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -297,7 +297,7 @@ export default function DashboardLayout({ children }) {
           />
         )}
 
-        {/* ── Sidebar ──────────────────────────────────────────────── */}
+        {/* ââ Sidebar ââââââââââââââââââââââââââââââââââââââââââââââââ */}
         {/* Desktop: always visible; Mobile: slide-in drawer */}
         <aside
           className={`
@@ -310,7 +310,7 @@ export default function DashboardLayout({ children }) {
           <SidebarContent />
         </aside>
 
-        {/* ── Hauptinhalt ──────────────────────────────────────────── */}
+        {/* ââ Hauptinhalt ââââââââââââââââââââââââââââââââââââââââââââ */}
         <main className="flex-1 overflow-auto p-4 md:p-8">{children}</main>
       </div>
     </div>
