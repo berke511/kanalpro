@@ -42,11 +42,7 @@ const ICONS = {
 const navLinks = [
   { href: '/dashboard',                        label: 'Übersicht',      iconId: 'home',       feature: null, minRole: null },
   { href: '/dashboard/kunden',                 label: 'Kunden',         iconId: 'users',      feature: null, minRole: null },
-  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null,
-          children: [
-            { href: '/dashboard/auftraege/einsatzplanung', label: 'Einsatzplanung' },
-          ],
-        },
+  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null },
   { href: '/dashboard/disposition',            label: 'Disposition',    iconId: 'dispatch',   feature: null, minRole: null,
     children: [
       { href: '/dashboard/disposition/tagesplanung',       label: 'Tagesplanung' },
