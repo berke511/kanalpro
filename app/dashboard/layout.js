@@ -42,7 +42,17 @@ const ICONS = {
 const navLinks = [
   { href: '/dashboard',                        label: 'Übersicht',      iconId: 'home',       feature: null, minRole: null },
   { href: '/dashboard/kunden',                 label: 'Kunden',         iconId: 'users',      feature: null, minRole: null },
-  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null },
+  { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null,
+    children: [
+      { href: '/dashboard/auftraege/erstellen',    label: 'Auftrag erstellen' },
+      { href: '/dashboard/auftraege/statussystem', label: 'Statussystem' },
+      { href: '/dashboard/auftraege/zuweisung',    label: 'Mitarbeiter & Fahrzeug zuweisen' },
+      { href: '/dashboard/auftraege/einsatzbericht', label: 'Einsatzbericht' },
+      { href: '/dashboard/auftraege/fotos',        label: 'Fotos & Dokumentation' },
+      { href: '/dashboard/auftraege/material',     label: 'Material & Arbeitszeiten' },
+      { href: '/dashboard/auftraege/unterschrift', label: 'Kundenunterschrift' },
+    ],
+  },
   { href: '/dashboard/disposition',            label: 'Disposition',    iconId: 'dispatch',   feature: null, minRole: null,
     children: [
       { href: '/dashboard/disposition/tagesplanung',       label: 'Tagesplanung' },
