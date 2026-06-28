@@ -729,22 +729,10 @@ function ZuweisungInner() {
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">{ROLLE_LABELS[m.rolle] ?? m.rolle ?? '—'}</p>
                     </div>
-                         cls={`w-4 h-4 ${sel ? 'text-white' : 'text-gray-400'}`}
-                      />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusPill cfg={sCfg} />
+                      {sel && <CheckCircle />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold font-mono truncate
-                        ${sel ? (isNotFree ? 'text-amber-900' : 'text-blue-900') : 'text-gray-800'}`}>
-                        {f.kennzeichen ?? '—'}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">
-                        {name || FZ_TYP_LABELS[f.typ] ?? f.typ ?? '—'}
-                      </p>
-                      <div className="mt-1.5">
-                        <StatusPill cfg={sCfg} />
-                      </div>
-                    </div>
-                    {sel && <CheckCircle />}
                   </button>
                 );
               })}
@@ -754,37 +742,47 @@ function ZuweisungInner() {
       </SectionCard>
 
       {/* ══════════════════════════════════════════════════
-          BEREICH 4 – MASCHINEN & GERÄTE
+          BEREICH 3 – FAHRZEUG ZUWEISEN
       ══════════════════════════════════════════════════ */}
       <SectionCard>
         <SectionHead
-          titel="Maschinen & Geräte"
-          beschreibung="Mehrfachauswahl — wähle alle benötigten Geräte für diesen Einsatz."
-          badge={selMS.size > 0 ? `${selMS.size} ausgewählt` : undefined}
+          titel="Fahrzeug zuweisen"
+          beschreibung="Wähle das Fahrzeug für diesen Einsatz (Einzelauswahl)."
+          badge={selFZ ? '1 ausgewählt' : undefined}
         />
         <div className="px-5 py-4 space-y-3">
-          <FilterPills opts={GERAETE_KATEGORIEN} value={katMS} onChange={setKatMS} />
+          <SearchBox value={sucheFZ} onChange={setSucheFZ} placeholder="Kennzeichen, Marke oder Modell …" />
+          <FilterPills opts={FZ_FILTER_OPTS} value={filterFZ} onChange={setFilterFZ} />
 
           {laden ? (
-            <div className="space-y-2">{[0,1,2].map(i => <SkeletonCard key={i} />)}</div>
-          ) : filteredMS.length === 0 ? (
-            <EmptyState label={katMS !== 'alle' ? 'Keine Geräte in dieser Kategorie.' : 'Noch keine Maschinen oder Geräte angelegt.'} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {[0,1,2].map(i => <SkeletonCard key={i} />)}
+            </div>
+          ) : filteredFZ.length === 0 ? (
+            <EmptyState label={
+              sucheFZ || filterFZ !== 'alle'
+                ? 'Kein Fahrzeug gefunden.'
+                : 'Noch keine Fahrzeuge angelegt.'
+            } />
           ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {filteredMS.map(m => {
-                const sel      = selMS.has(m.id);
-                const sCfg     = MS_STATUS_CFG[m.zustand] ?? MS_STATUS_CFG.aktiv;
-                const konflikt = sel && (m.zustand === 'in_einsatz' || m.zustand === 'wartung' || m.zustand === 'defekt');
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              {filteredFZ.map(f => {
+                const sel   = selFZ === f.id;
+                const z     = f.zustand ?? 'verfügbar';
+                const sCfg  = FZ_STATUS_CFG[z] ?? FZ_STATUS_CFG['verfügbar'];
+                const name  = [f.marke, f.modell].filter(Boolean).join(' ');
+                const isNotFree = z !== 'verfügbar' && z !== 'aktiv';
                 return (
-                  <button key={m.id} onClick={() => toggleMS(m.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition
+                  <button key={f.id} onClick={() => setSelFZ(sel ? null : f.id)}
+                    className={`flex items-start gap-3 p-3 rounded-xl border text-left transition
                       ${sel
-                        ? konflikt ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'
+                        ? isNotFree ? 'border-amber-200 bg-amber-50' : 'border-blue-200 bg-blue-50'
                         : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition
-                      ${sel ? (konflikt ? 'bg-amber-400' : 'bg-blue-600') : 'bg-gray-100'}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition
+                      ${sel ? (isNotFree ? 'bg-amber-400' : 'bg-blue-600') : 'bg-gray-100'}`}>
                       <Svg
-                        d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317               cls={`w-4 h-4 ${sel ? 'text-white' : 'text-gray-400'}`}
+                        d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"
+                        cls={`w-4 h-4 ${sel ? 'text-white' : 'text-gray-400'}`}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1048,7 +1046,7 @@ export default function Zuweisung() {
         ))}
       </div>
     }>
-      <ZuxweiungInner />
+      <ZuweisungInner />
     </Suspense>
   );
 }
