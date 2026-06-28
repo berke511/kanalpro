@@ -791,7 +791,7 @@ function ZuweisungInner() {
                         {f.kennzeichen ?? '—'}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5 truncate">
-                        {name || FZ_TYP_LABELS[f.typ] ?? f.typ ?? '—'}
+                        {name || (FZ_TYP_LABELS[f.typ] ?? f.typ ?? '—')}
                       </p>
                       <div className="mt-1.5">
                         <StatusPill cfg={sCfg} />
