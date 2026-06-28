@@ -1,15 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import supabase from '@/lib/supabase';
 
 /* ─────────────────────────────────────────────────────────────
-   Statische Beispieldaten (Sprint 1 – UI only)
+   Statische Beispieldaten — NUR für Fahrzeuge & Geräte (Sprint 1)
+   Mitarbeiter werden aus der Datenbank geladen.
 ───────────────────────────────────────────────────────────── */
-
-const MITARBEITER = [
-  { id: '1', vorname: 'Max',   nachname: 'Müller',    rolle: 'Techniker', status: 'verfuegbar' },
-  { id: '2', vorname: 'Ahmet', nachname: 'Yilmaz',    rolle: 'Monteur',   status: 'im_einsatz' },
-  { id: '3', vorname: 'Lisa',  nachname: 'Schneider', rolle: 'Büro',      status: 'urlaub'     },
-];
 
 const FAHRZEUGE = [
   { id: '1', kennzeichen: 'KAN-001', typ: 'Spülfahrzeug',    status: 'verfuegbar' },
@@ -31,6 +28,14 @@ const STATUS_CFG = {
   urlaub:     { label: 'Urlaub',     bg: 'bg-blue-50',   text: 'text-blue-600',   dot: 'bg-blue-400'   },
   krank:      { label: 'Krank',      bg: 'bg-red-50',    text: 'text-red-600',    dot: 'bg-red-400'    },
 };
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'alle',       label: 'Alle'       },
+  { value: 'verfuegbar', label: 'Verfügbar'  },
+  { value: 'im_einsatz', label: 'Im Einsatz' },
+  { value: 'urlaub',     label: 'Urlaub'     },
+  { value: 'krank',      label: 'Krank'      },
+];
 
 /* ─────────────────────────────────────────────────────────────
    Hilfskomponenten
@@ -94,12 +99,89 @@ function SectionCard({ title, beschreibung, badge, children }) {
 ───────────────────────────────────────────────────────────── */
 
 export default function ZuweisungPage() {
-  const [selMA,      setSelMA]      = useState(new Set());
-  const [selFZ,      setSelFZ]      = useState(null);
-  const [selGeraete, setSelGeraete] = useState(new Set());
-  const [fehler,     setFehler]     = useState('');
-  const [erfolg,     setErfolg]     = useState(false);
+  const router = useRouter();
 
+  /* ── Mitarbeiter aus Datenbank ── */
+  const [mitarbeiter,   setMitarbeiter]   = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [hatStatus,     setHatStatus]     = useState(false); // true wenn status-Spalte in DB vorhanden
+
+  /* ── Filter & Suche ── */
+  const [suche,         setSuche]         = useState('');
+  const [statusFilter,  setStatusFilter]  = useState('alle');
+
+  /* ── Auswahl ── */
+  const [selMA,         setSelMA]         = useState(new Set());
+  const [selFZ,         setSelFZ]         = useState(null);
+  const [selGeraete,    setSelGeraete]    = useState(new Set());
+
+  /* ── Validierung ── */
+  const [fehler,        setFehler]        = useState('');
+  const [erfolg,        setErfolg]        = useState(false);
+
+  /* ── Mitarbeiter laden ── */
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { router.push('/login'); return; }
+
+        // company_id des aktuell eingeloggten Nutzers ermitteln (Multi-Tenant)
+        const { data: member } = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!member) { setLoading(false); return; }
+
+        // Nur Mitarbeiter der eigenen Firma laden
+        const { data } = await supabase
+          .from('mitarbeiter')
+          .select('id, vorname, nachname, position, status')
+          .eq('company_id', member.company_id)
+          .order('nachname', { ascending: true });
+
+        const rows = data ?? [];
+        setMitarbeiter(rows);
+
+        // Prüfen ob status-Spalte vorhanden ist (Wert ungleich undefined bei mind. einem Eintrag)
+        const statusVorhanden = rows.some(m => 'status' in m && m.status !== undefined);
+        setHatStatus(statusVorhanden);
+      } catch {
+        // Kein Absturz — leere Liste anzeigen
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [router]);
+
+  /* ── Gefilterte Mitarbeiterliste ── */
+  const gefilterteMitarbeiter = useMemo(() => {
+    let liste = mitarbeiter;
+
+    // Suche: Vorname, Nachname, Position
+    if (suche.trim()) {
+      const q = suche.trim().toLowerCase();
+      liste = liste.filter(m =>
+        (m.vorname  ?? '').toLowerCase().includes(q) ||
+        (m.nachname ?? '').toLowerCase().includes(q) ||
+        (m.position ?? '').toLowerCase().includes(q)
+      );
+    }
+
+    // Statusfilter (nur wenn status-Spalte vorhanden)
+    if (hatStatus && statusFilter !== 'alle') {
+      liste = liste.filter(m => m.status === statusFilter);
+    }
+
+    return liste;
+  }, [mitarbeiter, suche, statusFilter, hatStatus]);
+
+  /* ── Toggle-Funktionen ── */
   function toggleMA(id) {
     setSelMA(prev => {
       const next = new Set(prev);
@@ -142,6 +224,9 @@ export default function ZuweisungPage() {
     setErfolg(true);
   }
 
+  /* ── Ausgewählte Mitarbeiter (für Zusammenfassung) ── */
+  const ausgewaehlteMA = mitarbeiter.filter(m => selMA.has(m.id));
+
   const hatAuswahl = selMA.size > 0 || selFZ !== null || selGeraete.size > 0;
 
   return (
@@ -166,43 +251,143 @@ export default function ZuweisungPage() {
         )}
       </div>
 
-      {/* ── Bereich 1: Mitarbeiter ── */}
+      {/* ── Bereich 1: Mitarbeiter (echte Daten) ── */}
       <SectionCard
         title="Mitarbeiter zuweisen"
         beschreibung="Mehrfachauswahl — wähle alle Einsatzkräfte für diesen Auftrag."
         badge={selMA.size > 0 ? `${selMA.size} ausgewählt` : undefined}
       >
-        <div className="space-y-2">
-          {MITARBEITER.map(m => {
-            const sel = selMA.has(m.id);
-            return (
-              <button
-                key={m.id}
-                onClick={() => toggleMA(m.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition
-                  ${sel
-                    ? 'border-blue-200 bg-blue-50'
-                    : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}
-              >
-                <Avatar vorname={m.vorname} nachname={m.nachname} sel={sel} />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate
-                    ${sel ? 'text-blue-900' : 'text-gray-800'}`}>
-                    {m.vorname} {m.nachname}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{m.rolle}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <StatusPill status={m.status} />
-                  {sel && <CheckCircle />}
-                </div>
-              </button>
-            );
-          })}
+        {/* Suche + Statusfilter */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          {/* Suchfeld */}
+          <div className="relative flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              strokeWidth={1.5} stroke="currentColor"
+              className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              value={suche}
+              onChange={e => setSuche(e.target.value)}
+              placeholder="Name oder Position suchen…"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Statusfilter — nur wenn status-Spalte vorhanden */}
+          {hatStatus && (
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700 shrink-0"
+            >
+              {STATUS_FILTER_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          )}
         </div>
+
+        {/* Ausgewählt-Zähler */}
+        {selMA.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-3 px-3 py-2 bg-blue-50 rounded-xl border border-blue-100">
+            <span className="text-xs font-semibold text-blue-700">
+              Ausgewählt: {selMA.size} Mitarbeiter
+            </span>
+            {ausgewaehlteMA.map(m => (
+              <span key={m.id}
+                className="inline-flex items-center px-2 py-0.5 bg-white text-blue-700 text-xs rounded-lg border border-blue-200 font-medium">
+                {m.vorname} {m.nachname}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Ladezustand */}
+        {loading && (
+          <div className="flex items-center justify-center py-10 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2 animate-spin">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span className="text-sm">Mitarbeiter werden geladen …</span>
+          </div>
+        )}
+
+        {/* Empty State — keine Mitarbeiter im System */}
+        {!loading && mitarbeiter.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-500">Noch keine Mitarbeiter angelegt.</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Lege zuerst Mitarbeiter im Bereich{' '}
+              <a href="/dashboard/mitarbeiter" className="text-blue-600 hover:underline font-medium">
+                Mitarbeiter
+              </a>{' '}
+              an.
+            </p>
+          </div>
+        )}
+
+        {/* Keine Treffer bei aktiver Suche/Filter */}
+        {!loading && mitarbeiter.length > 0 && gefilterteMitarbeiter.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <p className="text-sm text-gray-400">Keine Mitarbeiter gefunden.</p>
+            <button
+              onClick={() => { setSuche(''); setStatusFilter('alle'); }}
+              className="mt-2 text-xs text-blue-600 hover:underline"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+        )}
+
+        {/* Mitarbeiterkarten — echte Daten aus DB */}
+        {!loading && gefilterteMitarbeiter.length > 0 && (
+          <div className="space-y-2">
+            {gefilterteMitarbeiter.map(m => {
+              const sel = selMA.has(m.id);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => toggleMA(m.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition
+                    ${sel
+                      ? 'border-blue-200 bg-blue-50'
+                      : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}
+                >
+                  <Avatar vorname={m.vorname} nachname={m.nachname} sel={sel} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold truncate
+                      ${sel ? 'text-blue-900' : 'text-gray-800'}`}>
+                      {m.vorname} {m.nachname}
+                    </p>
+                    {m.position && (
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">{m.position}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Status nur anzeigen wenn Spalte vorhanden */}
+                    {hatStatus && m.status && <StatusPill status={m.status} />}
+                    {sel && <CheckCircle />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </SectionCard>
 
-      {/* ── Bereich 2: Fahrzeug ── */}
+      {/* ── Bereich 2: Fahrzeug (Sprint 1 – statisch) ── */}
       <SectionCard
         title="Fahrzeug zuweisen"
         beschreibung="Einzelauswahl — wähle das Fahrzeug für diesen Einsatz."
@@ -250,7 +435,7 @@ export default function ZuweisungPage() {
         </div>
       </SectionCard>
 
-      {/* ── Bereich 3: Geräte ── */}
+      {/* ── Bereich 3: Geräte (Sprint 1 – statisch) ── */}
       <SectionCard
         title="Maschinen &amp; Geräte"
         beschreibung="Mehrfachauswahl — wähle alle benötigten Geräte für diesen Einsatz."
@@ -304,7 +489,7 @@ export default function ZuweisungPage() {
               <div className="flex items-start gap-3">
                 <span className="text-xs text-gray-400 w-20 shrink-0 pt-0.5">Mitarbeiter</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {MITARBEITER.filter(m => selMA.has(m.id)).map(m => (
+                  {ausgewaehlteMA.map(m => (
                     <span key={m.id}
                       className="inline-flex items-center px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-lg border border-blue-100 font-medium">
                       {m.vorname} {m.nachname}
