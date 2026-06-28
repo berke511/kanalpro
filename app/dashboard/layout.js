@@ -44,13 +44,7 @@ const navLinks = [
   { href: '/dashboard/kunden',                 label: 'Kunden',         iconId: 'users',      feature: null, minRole: null },
   { href: '/dashboard/auftraege',              label: 'Aufträge',       iconId: 'clipboard',  feature: null, minRole: null,
     children: [
-      { href: '/dashboard/auftraege/erstellen',    label: 'Auftrag erstellen' },
-      { href: '/dashboard/auftraege/statussystem', label: 'Statussystem' },
-      { href: '/dashboard/auftraege/zuweisung',    label: 'Mitarbeiter & Fahrzeug zuweisen' },
-      { href: '/dashboard/auftraege/einsatzbericht', label: 'Einsatzbericht' },
-      { href: '/dashboard/auftraege/fotos',        label: 'Fotos & Dokumentation' },
-      { href: '/dashboard/auftraege/material',     label: 'Material & Arbeitszeiten' },
-      { href: '/dashboard/auftraege/unterschrift', label: 'Kundenunterschrift' },
+      { href: '/dashboard/auftraege/erstellen', label: 'Neuer Auftrag' },
     ],
   },
   { href: '/dashboard/disposition',            label: 'Disposition',    iconId: 'dispatch',   feature: null, minRole: null,
@@ -66,27 +60,16 @@ const navLinks = [
   { href: '/dashboard/mitarbeiter',            label: 'Mitarbeiter',    iconId: 'workers',    feature: null, minRole: null },
   { href: '/dashboard/fahrzeuge',              label: 'Fahrzeuge',      iconId: 'truck',      feature: null, minRole: null },
   { href: '/dashboard/maschinen',              label: 'Maschinen',      iconId: 'tool',       feature: null, minRole: null },
-  { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null,
-          children: [
-            { href: '/dashboard/angebote/vorlagen',        label: 'Vorlagen' },
-            { href: '/dashboard/angebote/email-versand',   label: 'E-Mail-Versand' },
-            { href: '/dashboard/angebote/pdf-export',      label: 'PDF-Export' },
-          ],
-        },
+  { href: '/dashboard/angebote',               label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null },
   { href: '/dashboard/rechnungen',             label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null,
     children: [
       { href: '/dashboard/rechnungen/zahlungseingaenge', label: 'Zahlungseingänge' },
       { href: '/dashboard/rechnungen/pdf-export',        label: 'PDF Export' },
-      { href: '/dashboard/mahnungen',                   label: 'Mahnungen' },
     ],
   },
-  { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null,
-    children: [
-            { href: '/dashboard/einstellungen/konto',       label: 'Konto' },
-            { href: '/dashboard/einstellungen/firmendaten', label: 'Firmendaten' },
-      { href: '/dashboard/einstellungen/rollen', label: 'Rollen & Rechte', iconId: 'shield', feature: null, minRole: 'administrator' },
-    ],
-  },
+  { href: '/dashboard/einsatzplanung',         label: 'Einsatzplanung', iconId: 'calendar',   feature: 'einsatzplanung', minRole: null },
+  { href: '/dashboard/einstellungen',          label: 'Einstellungen',  iconId: 'cog',        feature: null, minRole: null },
+  { href: '/dashboard/einstellungen/rollen',   label: 'Rollen & Rechte',iconId: 'shield',     feature: null, minRole: 'administrator' },
   { href: '/dashboard/billing',                label: 'Abonnement',     iconId: 'creditcard', feature: null, minRole: null },
 ];
 
@@ -171,7 +154,7 @@ export default function DashboardLayout({ children }) {
           </div>
           {/* Schließen-Button nur auf Mobile */}
           <button
-            className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bs-gray-100 transition"
             onClick={() => setSidebarOpen(false)}
             aria-label="Menü schließen"
           >
@@ -193,7 +176,7 @@ export default function DashboardLayout({ children }) {
                   key={link.href}
                   href="/dashboard/billing"
                   title="Nicht in deinem aktuellen Plan enthalten"
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-50 transition group min-h-[44px]"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bs-gray-50 transition group min-h-[44px]"
                 >
                   <Icon d={ICONS[link.iconId]} className="w-4 h-4 opacity-50 shrink-0" />
                   <span className="flex-1 opacity-60">{link.label}</span>
@@ -209,7 +192,7 @@ export default function DashboardLayout({ children }) {
                   className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition min-h-[44px] ${
                     isActive
                       ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      : 'text-gray-600 hover:bs-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <Icon d={ICONS[link.iconId]} className="w-4 h-4 shrink-0" />
@@ -235,7 +218,7 @@ export default function DashboardLayout({ children }) {
                           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition ${
                             childActive
                               ? 'bg-blue-100 text-blue-700'
-                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                              : 'text-gray-500 hover:bs-gray-50 hover:text-gray-800'
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${childActive ? 'bg-blue-500' : 'bg-gray-300'}`} />
