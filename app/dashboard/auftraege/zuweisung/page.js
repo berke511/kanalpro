@@ -97,6 +97,8 @@ export default function ZuweisungPage() {
   const [selMA,      setSelMA]      = useState(new Set());
   const [selFZ,      setSelFZ]      = useState(null);
   const [selGeraete, setSelGeraete] = useState(new Set());
+  const [fehler,     setFehler]     = useState('');
+  const [erfolg,     setErfolg]     = useState(false);
 
   function toggleMA(id) {
     setSelMA(prev => {
@@ -118,6 +120,26 @@ export default function ZuweisungPage() {
     setSelMA(new Set());
     setSelFZ(null);
     setSelGeraete(new Set());
+    setFehler('');
+    setErfolg(false);
+  }
+
+  function handleSpeichern() {
+    setErfolg(false);
+    if (selMA.size === 0 && selFZ === null) {
+      setFehler('Bitte wähle mindestens einen Mitarbeiter und ein Fahrzeug aus.');
+      return;
+    }
+    if (selMA.size === 0) {
+      setFehler('Bitte wähle mindestens einen Mitarbeiter aus.');
+      return;
+    }
+    if (selFZ === null) {
+      setFehler('Bitte wähle ein Fahrzeug aus.');
+      return;
+    }
+    setFehler('');
+    setErfolg(true);
   }
 
   const hatAuswahl = selMA.size > 0 || selFZ !== null || selGeraete.size > 0;
@@ -322,6 +344,31 @@ export default function ZuweisungPage() {
       {/* ── Aktionsbereich ── */}
       {hatAuswahl && (
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-5">
+
+          {/* Fehlermeldung */}
+          {fehler && (
+            <div className="flex items-start gap-2.5 px-4 py-3 mb-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mt-0.5 shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              {fehler}
+            </div>
+          )}
+
+          {/* Erfolgsmeldung */}
+          {erfolg && (
+            <div className="flex items-start gap-2.5 px-4 py-3 mb-4 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mt-0.5 shrink-0">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Zuweisung gespeichert. Datenbankanbindung folgt in Sprint 2.
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
               onClick={resetAuswahl}
@@ -331,9 +378,8 @@ export default function ZuweisungPage() {
             </button>
             <div className="flex-1" />
             <button
-              disabled
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold opacity-50 cursor-not-allowed sm:w-auto w-full"
-              title="Speichern folgt in Sprint 2"
+              onClick={handleSpeichern}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition sm:w-auto w-full"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                 strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -343,9 +389,6 @@ export default function ZuweisungPage() {
               Zuweisung speichern
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-3 text-center sm:text-right">
-            Speichern wird in Sprint 2 mit Datenbankanbindung implementiert.
-          </p>
         </div>
       )}
 
