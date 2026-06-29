@@ -25,15 +25,17 @@ export default function NeuerAuftrag() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      const companyId = member?.company_id;
       const abo = await checkAndDowngrade(supabase, user.id);
       const sub = getSubscriptionStatus(abo);
       const plan = getPlan(sub.plan);
       const limit = plan.limits.auftraege;
       if (limit != null && limit !== Infinity) {
-        const { count } = await supabase.from('auftraege').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
+        const { count } = await supabase.from('auftraege').select('id', { count: 'exact', head: true }).eq('company_id', companyId);
         if (count >= limit) { router.push('/dashboard/auftraege'); return; }
       }
-      const { data } = await supabase.from('kunden').select('id, name, firmennamen').eq('user_id', user.id).order('name');
+      const { data } = await supabase.from('kunden').select('id, name, firmenname').eq('company_id', companyId).order('name');
       setKunden(data ?? []);
       if (prefillKundeId) {
         setForm(prev => ({ ...prev, kunde_id: prefillKundeId, objekt_id: prefillObjektId }));
@@ -82,7 +84,7 @@ export default function NeuerAuftrag() {
   // Anzeigename für gewählten Kunden
   const gewaehlterKunde = kunden.find(k => k.id === form.kunde_id);
   const kundeLabel = gewaehlterKunde
-    ? (gewaehlterKunde.firmennamen || gewaehlterKunde.name)
+    ? (gewaehlterKunde.firmenname || gewaehlterKunde.name)
     : null;
 
   return (
@@ -109,7 +111,7 @@ export default function NeuerAuftrag() {
             <select name="kunde_id" value={form.kunde_id} onChange={handleChange}
               className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
               <option value="">— Kein Kunde zugewiesen —</option>
-              {kunden.map(k => <option key={k.id} value={k.id}>{k.firmennamen || k.name}</option>)}
+              {kunden.map(k => <option key={k.id} value={k.id}>{k.firmenname || k.name}</option>)}
             </select>
           </div>
 
