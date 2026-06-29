@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
-export default function NeuerAuftrag() {
+function NeuerAuftragInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillKundeId = searchParams.get('kunde_id') ?? '';
@@ -200,4 +200,8 @@ export default function NeuerAuftrag() {
       </div>
     </div>
   );
+}
+
+export default function NeuerAuftrag() {
+  return <Suspense fallback={null}><NeuerAuftragInner /></Suspense>;
 }
