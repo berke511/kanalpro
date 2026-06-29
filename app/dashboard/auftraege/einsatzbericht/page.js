@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
@@ -863,7 +863,7 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
    HAUPT-KOMPONENTE
 ════════════════════════════════════════════════════════════════ */
 
-export default function EinsatzberichtPage() {
+function EinsatzberichtPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const auftragId    = searchParams.get('id');
@@ -1230,4 +1230,8 @@ export default function EinsatzberichtPage() {
       </div>
     </div>
   );
+}
+
+export default function EinsatzberichtPage() {
+  return <Suspense fallback={null}><EinsatzberichtPageInner /></Suspense>;
 }
