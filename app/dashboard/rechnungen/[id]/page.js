@@ -238,7 +238,7 @@ const LEISTUNGEN = [
   'Werterhaltungskonzept',
   'Anfahrtspauschale',
   'Fahrzeugpauschale',
-  'Spølfahrzeugpauschale',
+  'Spülfahrzeugpauschale',
   'Kamerafahrzeugpauschale',
   'Geräteeinsatz',
   'Baustelleneinrichtung',
@@ -317,7 +317,7 @@ const LEISTUNGEN = [
   'Rohrbruchbeseitigung',
   'Wasserschadenservice',
   'Freispülen von Leitungen',
-  'Reinigung von Løftungsleitungen in Entwässerungssystemen',
+  'Reinigung von Lüftungsleitungen in Entwässerungssystemen',
   'Hausanschlussortung',
   'Hausanschlussneubau',
   'Revisionsöffnung herstellen',
@@ -434,7 +434,7 @@ export default function RechnungBearbeiten() {
       .replace(/[‘’]/g, "'")
       .replace(/[“”]/g, '"')
       .replace(/…/g, '...')
-      .replace(/[^ -ÿ]/g, '?');
+      .replace(/[^\x00-ÿ]/g, '?');
   }
 
   async function handlePDF() {
@@ -618,7 +618,7 @@ export default function RechnungBearbeiten() {
             <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
           </div>
           <div className="p-5">
-          {/* Spaltenøberschriften */}
+          {/* Spaltenüberschriften */}
           <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
