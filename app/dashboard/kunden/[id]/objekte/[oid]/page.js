@@ -18,14 +18,14 @@ const DURCHMESSER = [70, 100, 125, 150, 200, 250, 300, 400, 500, 600];
 
 // ─── Ereignis-Typen ──────────────────────────────────────────────────────────
 const EREIGNIS_CONFIG = {
-  wurzeleinwuchs: { label: 'Wurzeleinwuchs',    icon: '🌿', risikoGewicht: +35 },
-  verstopfung:    { label: 'Verstopfung',       icon: '🚫', risikoGewicht: +25 },
-  riss:           { label: 'Riss / Schaden',    icon: '⚠️', risikoGewicht: +50 },
-  kamera:         { label: 'Kamerabefahrung',   icon: '📷', risikoGewicht:  -5 },
-  reinigung:      { label: 'HD-Reinigung',      icon: '🚿', risikoGewicht: -15 },
-  inspektion:     { label: 'Inspektion',        icon: '🔍', risikoGewicht:  -5 },
-  sanierung:      { label: 'Sanierung/Inliner', icon: '🔧', risikoGewicht: -60 },
-  sonstiges:      { label: 'Sonstiges',         icon: '📝', risikoGewicht:   0 },
+  wurzeleinwuchs: { label: 'Wurzeleinwuchs',    dot: 'bg-orange-400', risikoGewicht: +35 },
+  verstopfung:    { label: 'Verstopfung',       dot: 'bg-red-400',    risikoGewicht: +25 },
+  riss:           { label: 'Riss / Schaden',    dot: 'bg-red-600',    risikoGewicht: +50 },
+  kamera:         { label: 'Kamerabefahrung',   dot: 'bg-blue-400',   risikoGewicht:  -5 },
+  reinigung:      { label: 'HD-Reinigung',      dot: 'bg-cyan-400',   risikoGewicht: -15 },
+  inspektion:     { label: 'Inspektion',        dot: 'bg-green-400',  risikoGewicht:  -5 },
+  sanierung:      { label: 'Sanierung/Inliner', dot: 'bg-emerald-500',risikoGewicht: -60 },
+  sonstiges:      { label: 'Sonstiges',         dot: 'bg-gray-300',   risikoGewicht:   0 },
 };
 
 // ─── Risikoberechnung ────────────────────────────────────────────────────────
@@ -78,44 +78,44 @@ function berechnePragnose(komponente, ereignisse) {
   const alterMalus = alter === null ? 0 : alter > 30 ? 18 : alter > 20 ? 10 : alter > 10 ? 4 : 0;
   const zeitMalus  = jahreSeitletztem > 3 ? 12 : jahreSeitletztem > 1 ? 5 : 0;
 
-  let w, monate, typ, label, icon;
+  let w, monate, typ, label;
 
   if (['verstopfung', 'reinigung'].includes(letztes.ereignis_typ)) {
     const n = (typCount.verstopfung || 0) + (typCount.reinigung || 0);
     w = 38 + n * 11 + materialMalus + materialBonus + alterMalus + zeitMalus;
     monate = Math.max(3, 30 - n * 4 - (alter > 25 ? 4 : 0) - zeitMalus);
-    typ = 'verstopfung'; label = 'Verstopfung'; icon = '🚫';
+    typ = 'verstopfung'; label = 'Verstopfung';
   } else if (letztes.ereignis_typ === 'wurzeleinwuchs') {
     const n = typCount.wurzeleinwuchs || 0;
     w = 50 + n * 10 + (materialMalus > 0 ? 14 : 0) + alterMalus + zeitMalus;
     monate = Math.max(6, 22 - n * 3 - (alter > 25 ? 3 : 0));
-    typ = 'wurzeleinwuchs'; label = 'Wurzeleinwuchs'; icon = '🌿';
+    typ = 'wurzeleinwuchs'; label = 'Wurzeleinwuchs';
   } else if (letztes.ereignis_typ === 'riss') {
     const n = typCount.riss || 0;
     w = 48 + n * 14 + materialMalus + alterMalus + zeitMalus;
     monate = Math.max(6, 18 - n * 2 - (alter > 30 ? 4 : 0));
-    typ = 'riss'; label = 'weitere Rissbildung'; icon = '⚠️';
+    typ = 'riss'; label = 'weitere Rissbildung';
   } else if (letztes.ereignis_typ === 'sanierung') {
     if (jahreSeitletztem < 5) {
-      return { positiv: true, label: 'Kein signifikantes Risiko erwartet', icon: '✅',
+      return { positiv: true, label: 'Kein signifikantes Risiko erwartet',
                sub: `Sanierung vor ${jahreSeitletztem < 1 ? 'weniger als 1' : jahreSeitletztem} Jahr(en) — Anlage in gutem Zustand.` };
     }
     w = 22 + jahreSeitletztem * 4 + alterMalus;
     monate = Math.max(12, 54 - jahreSeitletztem * 4);
-    typ = 'verstopfung'; label = 'Ablagerungen / Verstopfung'; icon = '🚫';
+    typ = 'verstopfung'; label = 'Ablagerungen / Verstopfung';
   } else if (['kamera', 'inspektion'].includes(letztes.ereignis_typ)) {
     if (!alter || alter < 12) return null;
     w = 28 + alterMalus + materialMalus + zeitMalus;
     monate = Math.max(12, 48 - alterMalus);
     typ = alter > 25 && materialMalus > 0 ? 'riss' : 'verstopfung';
     label = typ === 'riss' ? 'strukturelle Schäden' : 'Ablagerungen';
-    icon = '📊';
+
   } else {
     return null;
   }
 
   w = Math.min(95, Math.max(15, Math.round(w)));
-  return { positiv: false, wahrscheinlichkeit: w, monate, typ, label, icon,
+  return { positiv: false, wahrscheinlichkeit: w, monate, typ, label,
            empfehlung: getEmpfehlung(typ) };
 }
 
@@ -166,7 +166,7 @@ export default function ObjektDetail() {
     async function load() {
       const [{ data: o }, { data: k }, { data: inf }, { data: a }] = await Promise.all([
         supabase.from('objekte').select('*').eq('id', oid).single(),
-        supabase.from('kunden').select('id, name, firmennamen').eq('id', id).single(),
+        supabase.from('kunden').select('id, name, firmenname').eq('id', id).single(),
         supabase.from('infrastruktur').select('*').eq('objekt_id', oid).order('typ').order('bezeichnung'),
         supabase.from('auftraege').select('*').eq('objekt_id', oid).order('datum', { ascending: false, nullsFirst: false }),
       ]);
@@ -259,7 +259,7 @@ export default function ObjektDetail() {
 
   if (laden) return <div className="text-gray-400 mt-8">Wird geladen...</div>;
 
-  const anzeigeKunde = kunde?.firmennamen || kunde?.name || '—';
+  const anzeigeKunde = kunde?.firmenname || kunde?.name || '—';
 
   return (
     <div className="max-w-3xl">
@@ -329,7 +329,7 @@ export default function ObjektDetail() {
                           </button>
                           <button onClick={() => deleteKomponente(typ, k.id)}
                             className="text-gray-200 hover:text-red-400 transition text-xs px-1.5 py-1 rounded opacity-0 group-hover:opacity-100">
-                            ✕
+                            ×
                           </button>
                         </div>
 
@@ -338,7 +338,7 @@ export default function ObjektDetail() {
                           <div className="border-t border-blue-100 px-4 pb-4 pt-3">
                             <div className="flex items-center justify-between mb-3">
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                📋 Rohr-Lebenslauf ({kEreignisse.length} Einträge)
+                                Rohr-Lebenslauf ({kEreignisse.length} Einträge)
                               </p>
                               {!formOffen && (
                                 <button
@@ -362,9 +362,7 @@ export default function ObjektDetail() {
                                     <div key={e.id} className="flex items-start gap-3 group/ev">
                                       {/* Zeitleiste */}
                                       <div className="flex flex-col items-center pt-0.5">
-                                        <div className="w-5 h-5 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center text-xs">
-                                          {ecfg.icon}
-                                        </div>
+                                        <div className={`w-3 h-3 rounded-full border-2 border-white ${ecfg.dot ?? 'bg-gray-300'}`} />
                                         {!isLast && <div className="w-0.5 h-4 bg-gray-200 mt-0.5" />}
                                       </div>
                                       <div className="flex-1 min-w-0 pb-1">
@@ -379,7 +377,7 @@ export default function ObjektDetail() {
                                       <button
                                         onClick={() => deleteEreignis(k.id, e.id)}
                                         className="text-gray-200 hover:text-red-400 transition text-xs opacity-0 group-hover/ev:opacity-100 pt-0.5 shrink-0">
-                                        ✕
+                                        ×
                                       </button>
                                     </div>
                                   );
@@ -442,18 +440,18 @@ export default function ObjektDetail() {
                               return (
                                 <div className="mt-3 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100 text-xs">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-semibold text-indigo-700">🔮 KI-Prognose</span>
+                                    <span className="font-semibold text-indigo-700">KI-Prognose</span>
                                     <span className="text-indigo-400">auf Basis von Verlauf + Materialwerten</span>
                                   </div>
                                   {prognose.positiv ? (
-                                    <p className="text-indigo-800 font-medium">{prognose.icon} {prognose.label}</p>
+                                    <p className="text-indigo-800 font-medium">{prognose.label}</p>
                                   ) : (
                                     <>
                                       <p className="text-indigo-800 font-medium">
-                                        {prognose.icon} {prognose.wahrscheinlichkeit}% Wahrscheinlichkeit: {prognose.label}
+                                        {prognose.wahrscheinlichkeit}% Wahrscheinlichkeit: {prognose.label}
                                         {' '}innerhalb der nächsten {prognose.monate} Monate
                                       </p>
-                                      <p className="text-indigo-600 mt-0.5">💡 {prognose.empfehlung}</p>
+                                      <p className="text-indigo-600 mt-0.5">{prognose.empfehlung}</p>
                                     </>
                                   )}
                                 </div>
@@ -472,7 +470,7 @@ export default function ObjektDetail() {
 
           {Object.keys(infrastruktur).length === 0 && !kompFormOffen && (
             <div className="bg-white rounded-xl border border-dashed border-gray-200 p-6 text-center text-gray-400">
-              <p className="text-2xl mb-2">🏗️</p>
+              
               <p className="font-medium text-sm">Noch keine Komponenten erfasst</p>
               <p className="text-xs mt-1">Füge Schächte, Leitungen und mehr hinzu</p>
             </div>
@@ -560,7 +558,6 @@ export default function ObjektDetail() {
         </h2>
         {auftraege.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 p-6 text-center text-gray-400">
-            <p className="text-2xl mb-2">📋</p>
             <p className="text-sm font-medium">Noch keine Einsätze</p>
           </div>
         ) : (
