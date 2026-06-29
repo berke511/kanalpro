@@ -1,61 +1,130 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
 /* ════════════════════════════════════════════════════════════════
-   KONFIGURATION
+   ROLLEN & RECHTE
 ════════════════════════════════════════════════════════════════ */
 
-const STATUS_CFG = {
-  'Neu':           { bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500'   },
-  'Geplant':       { bg: 'bg-yellow-50',  text: 'text-yellow-700', dot: 'bg-yellow-400' },
-  'Zugewiesen':    { bg: 'bg-teal-50',    text: 'text-teal-700',   dot: 'bg-teal-500'   },
-  'Unterwegs':     { bg: 'bg-orange-50',  text: 'text-orange-700', dot: 'bg-orange-400' },
-  'Vor Ort':       { bg: 'bg-sky-50',     text: 'text-sky-700',    dot: 'bg-sky-400'    },
-  'In Arbeit':     { bg: 'bg-amber-50',   text: 'text-amber-800',  dot: 'bg-amber-600'  },
-  'Wartend':       { bg: 'bg-gray-100',   text: 'text-gray-500',   dot: 'bg-gray-400'   },
-  'Abgeschlossen': { bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500'  },
-  'Storniert':     { bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-400'    },
-};
-
-const STATUS_LISTE = Object.keys(STATUS_CFG);
-
-const SCHRITTE = [
-  { nr: 1,  key: 'auftrag',      label: 'Auftragsdaten',       kurz: 'Auftrag'      },
-  { nr: 2,  key: 'planung',      label: 'Planung & Status',    kurz: 'Planung'      },
-  { nr: 3,  key: 'ressourcen',   label: 'Ressourcen zuweisen', kurz: 'Ressourcen'   },
-  { nr: 4,  key: 'einsatz',      label: 'Einsatz starten',     kurz: 'Einsatz'      },
-  { nr: 5,  key: 'bericht',      label: 'Einsatzbericht',      kurz: 'Bericht'      },
-  { nr: 6,  key: 'fotos',        label: 'Fotos & Dokumente',   kurz: 'Fotos'        },
-  { nr: 7,  key: 'material',     label: 'Material & Zeiten',   kurz: 'Material'     },
-  { nr: 8,  key: 'unterschrift', label: 'Kundenunterschrift',  kurz: 'Unterschrift' },
-  { nr: 9,  key: 'abschluss',    label: 'Abschließen',        kurz: 'Abschluss'    },
-  { nr: 10, key: 'rechnung',     label: 'Rechnungsstellung',   kurz: 'Rechnung'     },
-];
-
-function berechneStati(a) {
-  if (!a) return {};
-  const AKTIV = ['Unterwegs', 'Vor Ort', 'In Arbeit', 'Abgeschlossen', 'Storniert'];
+function berechneRechte(rolle) {
+  const alle      = ['inhaber', 'administrator'];
+  const bueroEdit = [...alle, 'buero'];
+  const dispEdit  = [...alle, 'disponent'];
   return {
-    1:  'done',
-    2:  a.status && a.status !== 'Neu'  ? 'done' : 'open',
-    3:  a.mitarbeiter_id                ? 'done' : 'open',
-    4:  AKTIV.includes(a.status)        ? 'done' : 'open',
-    5:  'open',
-    6:  'open',
-    7:  'open',
-    8:  'open',
-    9:  a.status === 'Abgeschlossen'    ? 'done' : 'open',
-    10: 'open',
+    editAuftrag:    bueroEdit.includes(rolle),
+    editRessourcen: dispEdit.includes(rolle),
+    changeStatus:   dispEdit.includes(rolle),
+    abschliessen:   ['inhaber', 'buero'].includes(rolle),
+    addNotizen:     ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'].includes(rolle),
+    sichtbar:       ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'].includes(rolle),
   };
 }
 
 /* ════════════════════════════════════════════════════════════════
-   BASISKOMPONENTEN
+   STATUS-KONFIGURATION
 ════════════════════════════════════════════════════════════════ */
 
-function Ico({ d, cls = 'w-4 h-4' }) {
+const STATUS_CFG = {
+  'Neu':           { bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500',   border: 'border-blue-200'   },
+  'Geplant':       { bg: 'bg-cyan-50',    text: 'text-cyan-700',   dot: 'bg-cyan-500',   border: 'border-cyan-200'   },
+  'Notdienst':     { bg: 'bg-orange-50',  text: 'text-orange-700', dot: 'bg-orange-500', border: 'border-orange-200' },
+  'Zugewiesen':    { bg: 'bg-purple-50',  text: 'text-purple-700', dot: 'bg-purple-500', border: 'border-purple-200' },
+  'In Arbeit':     { bg: 'bg-amber-50',   text: 'text-amber-700',  dot: 'bg-amber-500',  border: 'border-amber-200'  },
+  'Abgeschlossen': { bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500',  border: 'border-green-200'  },
+  'Storniert':     { bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-400',    border: 'border-red-200'    },
+};
+const STATUS_LISTE = Object.keys(STATUS_CFG);
+
+const RESSOURCE_STATUS = {
+  verfuegbar: { label: 'Verfügbar',   dot: 'bg-green-500'  },
+  im_einsatz: { label: 'Im Einsatz',  dot: 'bg-orange-400' },
+  urlaub:     { label: 'Urlaub',      dot: 'bg-blue-400'   },
+  krank:      { label: 'Krank',       dot: 'bg-red-400'    },
+  gut:        { label: 'Gut',         dot: 'bg-green-500'  },
+  in_ordnung: { label: 'OK',          dot: 'bg-green-500'  },
+  ok:         { label: 'OK',          dot: 'bg-green-500'  },
+  defekt:     { label: 'Defekt',      dot: 'bg-red-500'    },
+  wartung:    { label: 'In Wartung',  dot: 'bg-yellow-400' },
+};
+
+/* ════════════════════════════════════════════════════════════════
+   WORKFLOW-KONFIGURATION
+════════════════════════════════════════════════════════════════ */
+
+const WORKFLOW_SCHRITTE = [
+  { key: 'erstellt',      label: 'Auftrag erstellt',      kurz: 'Erstellt'    },
+  { key: 'geplant',       label: 'Auftrag geplant',       kurz: 'Geplant'     },
+  { key: 'ressourcen',    label: 'Ressourcen eingeteilt', kurz: 'Ressourcen'  },
+  { key: 'bearbeiten',    label: 'Auftrag bearbeiten',    kurz: 'Bearbeiten'  },
+  { key: 'dokumentieren', label: 'Einsatz dokumentieren', kurz: 'Doku'        },
+  { key: 'unterschrift',  label: 'Kundenunterschrift',    kurz: 'Unterschrift'},
+  { key: 'abschluss',     label: 'Auftrag abschließen',  kurz: 'Abschluss'   },
+];
+
+function berechneWorkflowStati(auftrag, mitarbeiterList) {
+  if (!auftrag) return {};
+  let meta = {};
+  try { meta = typeof auftrag.notizen === 'string' ? JSON.parse(auftrag.notizen) : (auftrag.notizen ?? {}); } catch { meta = {}; }
+  const hatPlanung   = !!(meta.planungs_datum) || auftrag.status !== 'Neu';
+  const hatRessourcen = mitarbeiterList.length > 0 && !!auftrag.fahrzeug_id;
+  const hatEinsatz   = ['In Arbeit', 'Abgeschlossen', 'Storniert'].includes(auftrag.status);
+  const abgeschlossen = auftrag.status === 'Abgeschlossen';
+  return {
+    erstellt:      'done',
+    geplant:       hatPlanung    ? 'done' : 'open',
+    ressourcen:    hatRessourcen ? 'done' : 'open',
+    bearbeiten:    'current',
+    dokumentieren: hatEinsatz    ? 'done' : 'open',
+    unterschrift:  'open',
+    abschluss:     abgeschlossen ? 'done' : 'open',
+  };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HILFSFUNKTIONEN
+════════════════════════════════════════════════════════════════ */
+
+function kundeAnzeigeName(k) {
+  if (!k) return '—';
+  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? '—') : (k.name ?? '—');
+}
+
+function parseNotizen(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return [{ ts: new Date().toISOString(), text: raw, autor: 'System' }];
+  } catch {
+    return [{ ts: new Date().toISOString(), text: String(raw), autor: 'System' }];
+  }
+}
+
+function fmtDatum(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function fmtZeit(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
+
+function initials(m) {
+  if (!m) return '?';
+  return ((m.vorname?.[0] ?? '') + (m.nachname?.[0] ?? '')).toUpperCase() || '?';
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BASIS-KOMPONENTEN
+════════════════════════════════════════════════════════════════ */
+
+function Svg({ d, cls = 'w-4 h-4' }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
       strokeWidth={1.5} stroke="currentColor" className={cls} aria-hidden="true">
@@ -65,55 +134,119 @@ function Ico({ d, cls = 'w-4 h-4' }) {
 }
 
 function StatusBadge({ status }) {
-  const c = STATUS_CFG[status] ?? STATUS_CFG['Neu'];
+  const c = STATUS_CFG[status] ?? { bg: 'bg-gray-50', text: 'text-gray-500', dot: 'bg-gray-400' };
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${c.bg} ${c.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-      {status}
+      {status || 'Unbekannt'}
     </span>
   );
 }
 
-function Feld({ label, required, children }) {
+function RessourceStatusDot({ status }) {
+  const key = (status ?? '').toLowerCase().replace(/[ -]/g, '_');
+  const cfg = RESSOURCE_STATUS[key];
+  if (!cfg) return null;
   return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-      </label>
-      {children}
-    </div>
+    <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {cfg.label}
+    </span>
   );
 }
 
 function inp(err = false) {
   return `w-full px-3 py-2.5 border rounded-xl text-sm text-gray-900 bg-white placeholder-gray-300
     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition
-    ${err ? 'border-red-300' : 'border-gray-200'}`;
+    ${err ? 'border-red-300 bg-red-50' : 'border-gray-200'}`;
 }
 
-function InfoReihe({ label, wert }) {
+function Karte({ children, className = '' }) {
   return (
-    <div>
-      <dt className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium text-gray-900">{wert || '—'}</dd>
+    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden ${className}`}>
+      {children}
     </div>
   );
 }
 
-function Tipp({ text }) {
+function KarteHeader({ icon, title, badge, badgeVariant = 'blue', action }) {
+  const vars = {
+    blue:   'bg-blue-50 text-blue-500',
+    green:  'bg-green-50 text-green-600',
+    purple: 'bg-purple-50 text-purple-500',
+    amber:  'bg-amber-50 text-amber-600',
+    gray:   'bg-gray-100 text-gray-500',
+  };
   return (
-    <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
-      <Ico d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" cls="w-4 h-4 shrink-0 mt-0.5" />
-      <span>{text}</span>
+    <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2.5">
+      {icon && (
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${vars[badgeVariant] ?? vars.blue}`}>
+          <Svg d={icon} cls="w-3.5 h-3.5" />
+        </div>
+      )}
+      <span className="text-sm font-semibold text-gray-900">{title}</span>
+      {badge !== undefined && (
+        <span className="ml-auto text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100 font-medium">
+          {badge}
+        </span>
+      )}
+      {action && <div className="ml-auto">{action}</div>}
     </div>
   );
 }
 
-function Erfolg({ text }) {
+function InfoZeile({ label, value, fullWidth = false }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
-      <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
-      {text}
+    <div className={fullWidth ? 'col-span-2' : ''}>
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-sm text-gray-900 font-medium">{value || <span className="text-gray-300 font-normal italic">—</span>}</p>
+    </div>
+  );
+}
+
+function EditBtn({ onClick }) {
+  return (
+    <button onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition">
+      <Svg d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" cls="w-3.5 h-3.5" />
+      Bearbeiten
+    </button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SKELETON / FEHLERZUSTÄNDE
+════════════════════════════════════════════════════════════════ */
+
+function Skeleton() {
+  return (
+    <div className="space-y-5 max-w-6xl animate-pulse">
+      <div className="h-8 w-64 bg-gray-100 rounded-xl" />
+      <div className="h-20 bg-gray-100 rounded-2xl" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 space-y-5">
+          <div className="h-52 bg-gray-100 rounded-2xl" />
+          <div className="h-44 bg-gray-100 rounded-2xl" />
+          <div className="h-36 bg-gray-100 rounded-2xl" />
+        </div>
+        <div className="space-y-5">
+          <div className="h-48 bg-gray-100 rounded-2xl" />
+          <div className="h-28 bg-gray-100 rounded-2xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FehlerKarte({ icon, titel, text, button }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto">
+      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+        <Svg d={icon} cls="w-6 h-6 text-gray-400" />
+      </div>
+      <h2 className="text-base font-semibold text-gray-800 mb-1">{titel}</h2>
+      <p className="text-sm text-gray-400 mb-5">{text}</p>
+      {button}
     </div>
   );
 }
@@ -122,714 +255,640 @@ function Erfolg({ text }) {
    WORKFLOW-LEISTE
 ════════════════════════════════════════════════════════════════ */
 
-function WorkflowLeiste({ aktiv, stati, onWechseln }) {
-  const aktuell = SCHRITTE.find(s => s.nr === aktiv);
-  return (
-    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+function WorkflowLeiste({ auftrag, mitarbeiterList }) {
+  const stati = berechneWorkflowStati(auftrag, mitarbeiterList);
 
-      {/* Desktop: horizontal stepper */}
-      <div className="hidden xl:flex items-stretch divide-x divide-gray-100">
-        {SCHRITTE.map(s => {
-          const st = stati[s.nr] ?? 'open';
-          const isAktiv = s.nr === aktiv;
-          const isDone  = st === 'done';
+  return (
+    <Karte>
+      {/* Desktop */}
+      <div className="hidden md:flex items-stretch divide-x divide-gray-100">
+        {WORKFLOW_SCHRITTE.map((s, i) => {
+          const st = stati[s.key] ?? 'open';
+          const isDone    = st === 'done';
+          const isCurrent = st === 'current';
+          const isLast    = i === WORKFLOW_SCHRITTE.length - 1;
           return (
-            <button
-              key={s.nr}
-              onClick={() => onWechseln(s.nr)}
-              title={s.label}
-              className={`flex-1 flex flex-col items-center gap-1.5 px-2 py-3.5 text-center transition-colors
-                ${isAktiv
-                  ? 'bg-blue-50/70 border-b-2 border-blue-600'
-                  : 'border-b-2 border-transparent hover:bg-gray-50'
-                }
-                ${!isDone && !isAktiv ? 'opacity-50' : ''}
-              `}
-            >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors shrink-0
-                ${isAktiv ? 'bg-blue-600 text-white' : isDone ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                {isDone && !isAktiv
-                  ? <Ico d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3" />
-                  : s.nr
+            <div key={s.key} className={`flex-1 flex flex-col items-center gap-1.5 px-2 py-4 relative
+              ${isCurrent ? 'bg-blue-50/60' : 'bg-white'}
+              ${!isLast ? '' : ''}
+            `}>
+              {/* Step circle */}
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors
+                ${isCurrent
+                  ? 'bg-blue-600 text-white ring-4 ring-blue-100'
+                  : isDone
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-400'
+                }`}>
+                {isDone && !isCurrent
+                  ? <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-3.5 h-3.5" />
+                  : <span className="text-[10px] font-bold">{i + 1}</span>
                 }
               </div>
-              <span className={`text-[10px] font-semibold leading-none
-                ${isAktiv ? 'text-blue-700' : isDone ? 'text-gray-600' : 'text-gray-400'}`}>
-                {s.kurz}
+              {/* Label */}
+              <span className={`text-[10px] font-semibold text-center leading-tight
+                ${isCurrent ? 'text-blue-700' : isDone ? 'text-gray-600' : 'text-gray-400'}`}>
+                {s.label}
               </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tablet: compact row */}
-      <div className="hidden sm:flex xl:hidden items-center gap-1 px-4 py-3 overflow-x-auto">
-        {SCHRITTE.map((s, i) => {
-          const st = stati[s.nr] ?? 'open';
-          const isAktiv = s.nr === aktiv;
-          const isDone  = st === 'done';
-          return (
-            <div key={s.nr} className="flex items-center gap-1 shrink-0">
-              <button onClick={() => onWechseln(s.nr)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition
-                  ${isAktiv ? 'bg-blue-600 text-white' : isDone ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
-                {isDone && !isAktiv
-                  ? <Ico d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3" />
-                  : <span>{s.nr}</span>
-                }
-                {isAktiv && <span>{s.kurz}</span>}
-              </button>
-              {i < SCHRITTE.length - 1 && (
-                <div className="w-3 h-px bg-gray-200 shrink-0" />
+              {/* Current indicator */}
+              {isCurrent && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Mobile: current step + prev/next */}
-      <div className="flex sm:hidden items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-            {aktiv}
-          </div>
-          <div>
-            <p className="text-[10px] text-gray-400 font-medium">Schritt {aktiv} / {SCHRITTE.length}</p>
-            <p className="text-sm font-semibold text-gray-900 leading-tight">{aktuell?.label}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => onWechseln(Math.max(1, aktiv - 1))}
-            disabled={aktiv === 1}
-            className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 disabled:opacity-30 hover:bg-gray-50 transition">
-            <Ico d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </button>
-          <button onClick={() => onWechseln(Math.min(SCHRITTE.length, aktiv + 1))}
-            disabled={aktiv === SCHRITTE.length}
-            className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 text-gray-400 disabled:opacity-30 hover:bg-gray-50 transition">
-            <Ico d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </button>
-        </div>
+      {/* Mobile: compact chips */}
+      <div className="flex md:hidden items-center gap-1 px-4 py-3 overflow-x-auto">
+        {WORKFLOW_SCHRITTE.map((s, i) => {
+          const st = stati[s.key] ?? 'open';
+          const isDone    = st === 'done';
+          const isCurrent = st === 'current';
+          return (
+            <div key={s.key} className="flex items-center gap-1 shrink-0">
+              <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold
+                ${isCurrent ? 'bg-blue-600 text-white' : isDone ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                {isDone
+                  ? <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3" />
+                  : <span>{i + 1}</span>
+                }
+                {isCurrent && <span>{s.kurz}</span>}
+              </div>
+              {i < WORKFLOW_SCHRITTE.length - 1 && (
+                <div className="w-2 h-px bg-gray-200 shrink-0" />
+              )}
+            </div>
+          );
+        })}
       </div>
-
-    </div>
+    </Karte>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCHRITT 1: AUFTRAGSDATEN
+   BEREICH 1 – AUFTRAGSINFORMATIONEN
 ════════════════════════════════════════════════════════════════ */
 
-function SchrittAuftrag({ auftrag, onAktualisieren }) {
-  const [edit, setEdit]     = useState(false);
+function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
+  const [edit,   setEdit]   = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm]     = useState({
+  const [erfolg, setErfolg] = useState(false);
+  const [form,   setForm]   = useState({
     typ:             auftrag.typ             ?? '',
     beschreibung:    auftrag.beschreibung    ?? '',
-    interne_notizen: auftrag.interne_notizen ?? '',
+    ansprechpartner: auftrag.ansprechpartner ?? '',
+    einsatzdatum:    auftrag.einsatzdatum    ?? '',
+    startzeit:       auftrag.startzeit       ?? '',
   });
 
   const set = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
 
   async function speichern() {
     setSaving(true);
+    setErfolg(false);
     await supabase.from('auftraege').update({
       typ:             form.typ.trim()             || null,
       beschreibung:    form.beschreibung.trim()    || null,
-      interne_notizen: form.interne_notizen.trim() || null,
+      ansprechpartner: form.ansprechpartner.trim() || null,
+      einsatzdatum:    form.einsatzdatum           || null,
+      startzeit:       form.startzeit              || null,
     }).eq('id', auftrag.id);
+    setErfolg(true);
     setEdit(false);
     setSaving(false);
-    onAktualisieren();
+    onRefresh();
   }
 
-  const ort = [auftrag.einsatzort_strasse, auftrag.einsatzort_plz, auftrag.einsatzort_ort]
-    .filter(Boolean).join(', ');
-  const kname = auftrag.kunden
-    ? (auftrag.kunden.kundentyp === 'firma' ? auftrag.kunden.firmenname : auftrag.kunden.name) ?? ''
-    : '';
+  const kname  = kundeAnzeigeName(auftrag.kunden);
+  const adresse = [auftrag.einsatzort_strasse, auftrag.einsatzort_plz, auftrag.einsatzort_ort].filter(Boolean).join(', ');
+  const telefon = auftrag.kunden?.telefon ?? auftrag.telefon ?? '—';
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-900">Auftragsdaten</h2>
-        {!edit && (
-          <button onClick={() => setEdit(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 transition">
-            <Ico d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" cls="w-3.5 h-3.5" />
-            Bearbeiten
-          </button>
+    <Karte>
+      <KarteHeader
+        icon="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+        title="Auftragsinformationen"
+        badgeVariant="blue"
+        action={rechte.editAuftrag && !edit
+          ? <EditBtn onClick={() => setEdit(true)} />
+          : null
+        }
+      />
+
+      <div className="px-5 py-5">
+        {!edit ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+            <InfoZeile label="Auftragsnummer" value={auftrag.nummer} />
+            <InfoZeile label="Auftragsart"    value={auftrag.typ} />
+            <InfoZeile label="Priorität"      value={auftrag.prioritaet} />
+            <InfoZeile label="Kunde"          value={kname} />
+            <InfoZeile label="Ansprechpartner" value={auftrag.ansprechpartner} />
+            <InfoZeile label="Telefon"        value={telefon} />
+            <InfoZeile label="Einsatzort"     value={adresse || '—'} fullWidth />
+            <InfoZeile label="Einsatzdatum"   value={fmtDatum(auftrag.einsatzdatum)} />
+            <InfoZeile label="Startzeit"      value={auftrag.startzeit ?? '—'} />
+            <InfoZeile label="Erstellungsdatum" value={fmtDatum(auftrag.created_at)} />
+            {auftrag.beschreibung && (
+              <div className="col-span-2 sm:col-span-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Beschreibung</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{auftrag.beschreibung}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Auftragsart
+                </label>
+                <input value={form.typ} onChange={set('typ')}
+                  placeholder="z. B. Kanalreinigung" className={inp()} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Ansprechpartner
+                </label>
+                <input value={form.ansprechpartner} onChange={set('ansprechpartner')}
+                  placeholder="Name" className={inp()} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Einsatzdatum
+                </label>
+                <input type="date" value={form.einsatzdatum} onChange={set('einsatzdatum')} className={inp()} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                  Startzeit
+                </label>
+                <input type="time" value={form.startzeit} onChange={set('startzeit')} className={inp()} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Beschreibung
+              </label>
+              <textarea rows={3} value={form.beschreibung} onChange={set('beschreibung')}
+                placeholder="Auftragsbeschreibung…" className={`${inp()} resize-none`} />
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <button onClick={speichern} disabled={saving}
+                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
+                {saving ? (
+                  <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
+                ) : (
+                  <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
+                )}
+                Speichern
+              </button>
+              <button onClick={() => setEdit(false)}
+                className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
+
+        {erfolg && (
+          <div className="mt-4 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
+            <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 shrink-0" />
+            Auftragsdaten gespeichert.
+          </div>
         )}
       </div>
-
-      {!edit ? (
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 bg-gray-50 rounded-xl p-4">
-          <InfoReihe label="Auftragstyp"      wert={auftrag.typ} />
-          <InfoReihe label="Nummer"           wert={auftrag.nummer} />
-          <InfoReihe label="Priorität"        wert={auftrag.prioritaet} />
-          <InfoReihe label="Status"           wert={<StatusBadge status={auftrag.status} />} />
-          <InfoReihe label="Kunde"            wert={kname} />
-          <InfoReihe label="Ansprechpartner"  wert={auftrag.ansprechpartner} />
-          <InfoReihe label="Einsatzort"       wert={ort || '—'} />
-          <InfoReihe label="Einsatzdatum"     wert={auftrag.einsatzdatum
-            ? new Date(auftrag.einsatzdatum).toLocaleDateString('de-DE') : '—'} />
-          {auftrag.beschreibung && (
-            <div className="sm:col-span-2">
-              <InfoReihe label="Beschreibung" wert={auftrag.beschreibung} />
-            </div>
-          )}
-        </dl>
-      ) : (
-        <div className="space-y-4">
-          <Feld label="Auftragstyp">
-            <input value={form.typ} onChange={set('typ')} placeholder="z. B. Kanalreinigung" className={inp()} />
-          </Feld>
-          <Feld label="Beschreibung">
-            <textarea rows={4} value={form.beschreibung} onChange={set('beschreibung')}
-              placeholder="Problembeschreibung..." className={`${inp()} resize-none`} />
-          </Feld>
-          <Feld label="Interne Notizen">
-            <textarea rows={3} value={form.interne_notizen} onChange={set('interne_notizen')}
-              placeholder="Nur intern sichtbar..." className={`${inp()} resize-none`} />
-          </Feld>
-          <div className="flex gap-3">
-            <button onClick={speichern} disabled={saving}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
-              {saving ? 'Speichern…' : 'Speichern'}
-            </button>
-            <button onClick={() => setEdit(false)}
-              className="px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
-              Abbrechen
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    </Karte>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCHRITT 2: PLANUNG & STATUS
+   BEREICH 2 – RESSOURCEN
 ════════════════════════════════════════════════════════════════ */
 
-function SchrittPlanung({ auftrag, onAktualisieren }) {
-  const [status,    setStatus]    = useState(auftrag.status ?? 'Neu');
-  const [datum,     setDatum]     = useState(auftrag.einsatzdatum ?? '');
-  const [startzeit, setStartzeit] = useState(auftrag.startzeit ?? '');
-  const [dauer,     setDauer]     = useState(auftrag.dauer_stunden ?? '');
-  const [saving,    setSaving]    = useState(false);
-  const [erfolg,    setErfolg]    = useState(false);
+function RessourcenKarte({ auftrag, mitarbeiterList, maschinenList, rechte, auftragId }) {
+  const fahrzeug    = auftrag.fahrzeuge;
+  const einsatzltr  = auftrag.einsatzleiter;
+  const hatDaten    = mitarbeiterList.length > 0 || fahrzeug || maschinenList.length > 0;
 
-  async function speichern() {
-    setSaving(true); setErfolg(false);
-    const { error } = await supabase.from('auftraege').update({
-      status,
-      einsatzdatum:  datum     || null,
-      startzeit:     startzeit || null,
-      dauer_stunden: dauer     ? Number(dauer) : null,
+  return (
+    <Karte>
+      <KarteHeader
+        icon="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+        title="Ressourcen"
+        badgeVariant="purple"
+        badge={hatDaten ? undefined : 'Noch nicht eingeteilt'}
+        action={rechte.editRessourcen ? (
+          <a href={`/dashboard/auftraege/zuweisung?id=${auftragId}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition">
+            <Svg d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" cls="w-3.5 h-3.5" />
+            Bearbeiten
+          </a>
+        ) : null}
+      />
+
+      <div className="px-5 py-5 space-y-5">
+        {!hatDaten && (
+          <div className="text-center py-6">
+            <Svg d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+              cls="w-8 h-8 text-gray-200 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">Noch keine Ressourcen eingeteilt.</p>
+            {rechte.editRessourcen && (
+              <a href={`/dashboard/auftraege/zuweisung?id=${auftragId}`}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium hover:underline">
+                <Svg d="M12 4.5v15m7.5-7.5h-15" cls="w-3.5 h-3.5" />
+                Ressourcen einteilen
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Mitarbeiter */}
+        {mitarbeiterList.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+              Mitarbeiter ({mitarbeiterList.length})
+            </p>
+            <div className="space-y-2">
+              {mitarbeiterList.map(m => (
+                <div key={m.id} className="flex items-center gap-3 py-1">
+                  <div className={`w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0`}>
+                    {initials(m)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {m.vorname} {m.nachname}
+                      {einsatzltr?.id === m.id && (
+                        <span className="ml-2 text-xs bg-yellow-50 text-yellow-700 border border-yellow-100 px-1.5 py-0.5 rounded-full font-medium">
+                          Einsatzleiter
+                        </span>
+                      )}
+                    </p>
+                    {m.position && <p className="text-xs text-gray-400 truncate">{m.position}</p>}
+                  </div>
+                  <div className="ml-auto shrink-0">
+                    <RessourceStatusDot status={m.status} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Fahrzeug */}
+        {fahrzeug && (
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Fahrzeug</p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                <Svg d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"
+                  cls="w-4 h-4 text-gray-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {fahrzeug.marke} {fahrzeug.modell ?? ''}
+                </p>
+                <p className="text-xs text-gray-400">{fahrzeug.kennzeichen}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Maschinen & Geräte */}
+        {maschinenList.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+              Maschinen & Geräte ({maschinenList.length})
+            </p>
+            <div className="space-y-1.5">
+              {maschinenList.map(g => (
+                <div key={g.id} className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                    <Svg d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z"
+                      cls="w-3 h-3 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-700">{g.name}</p>
+                  {g.typ && <span className="text-xs text-gray-400">· {g.typ}</span>}
+                  <div className="ml-auto"><RessourceStatusDot status={g.zustand} /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Karte>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BEREICH 4 – AUFTRAGSNOTIZEN
+════════════════════════════════════════════════════════════════ */
+
+function NotizenKarte({ auftrag, rechte, userName, onRefresh }) {
+  const [notizen, setNotizen]     = useState(() => parseNotizen(auftrag.interne_notizen));
+  const [neuText, setNeuText]     = useState('');
+  const [saving,  setSaving]      = useState(false);
+
+  async function hinzufuegen() {
+    if (!neuText.trim()) return;
+    setSaving(true);
+    const neueNotizen = [
+      ...notizen,
+      { ts: new Date().toISOString(), text: neuText.trim(), autor: userName || 'Unbekannt' },
+    ];
+    await supabase.from('auftraege').update({
+      interne_notizen: JSON.stringify(neueNotizen),
     }).eq('id', auftrag.id);
-    if (!error) { setErfolg(true); onAktualisieren(); }
+    setNotizen(neueNotizen);
+    setNeuText('');
     setSaving(false);
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-base font-semibold text-gray-900">Planung & Status</h2>
+    <Karte>
+      <KarteHeader
+        icon="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+        title="Interne Notizen"
+        badgeVariant="amber"
+        badge={notizen.length > 0 ? `${notizen.length}` : undefined}
+      />
 
-      {/* Status-Grid */}
-      <div>
-        <p className="text-xs font-semibold text-gray-600 mb-3">Auftragsstatus</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {STATUS_LISTE.map(s => {
-            const c = STATUS_CFG[s];
-            const aktiv = status === s;
-            return (
-              <button key={s} onClick={() => setStatus(s)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold border transition
-                  ${aktiv
-                    ? `${c.bg} ${c.text} border-current ring-2 ring-offset-1 ring-blue-400`
-                    : 'border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
-                  }`}>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${aktiv ? c.dot : 'bg-gray-200'}`} />
-                {s}
+      <div className="px-5 py-5 space-y-4">
+        {/* Existing notes */}
+        {notizen.length === 0 ? (
+          <p className="text-sm text-gray-300 italic text-center py-4">Noch keine Notizen vorhanden.</p>
+        ) : (
+          <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+            {notizen.slice().reverse().map((n, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                  {(n.autor?.[0] ?? '?').toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-0.5">
+                    <span className="text-xs font-semibold text-gray-700">{n.autor}</span>
+                    <span className="text-[10px] text-gray-400">{fmtDatum(n.ts)} {fmtZeit(n.ts)}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{n.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add note */}
+        {rechte.addNotizen && (
+          <div className="border-t border-gray-50 pt-4">
+            <textarea
+              rows={3}
+              value={neuText}
+              onChange={e => setNeuText(e.target.value)}
+              placeholder="Notiz hinzufügen…"
+              className={`${inp()} resize-none mb-2`}
+            />
+            <button onClick={hinzufuegen} disabled={saving || !neuText.trim()}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition disabled:opacity-50">
+              {saving
+                ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-3.5 h-3.5 animate-spin" />
+                : <Svg d="M12 4.5v15m7.5-7.5h-15" cls="w-3.5 h-3.5" />
+              }
+              Notiz speichern
+            </button>
+          </div>
+        )}
+      </div>
+    </Karte>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RECHTE SPALTE – STATUS-KARTE
+════════════════════════════════════════════════════════════════ */
+
+function StatusKarte({ auftrag, rechte, onRefresh }) {
+  const [status,  setStatus]  = useState(auftrag.status ?? 'Neu');
+  const [saving,  setSaving]  = useState(false);
+  const [erfolg,  setErfolg]  = useState(false);
+  const changed = status !== auftrag.status;
+
+  async function speichern() {
+    setSaving(true);
+    setErfolg(false);
+    await supabase.from('auftraege').update({ status }).eq('id', auftrag.id);
+    setErfolg(true);
+    setSaving(false);
+    onRefresh();
+  }
+
+  return (
+    <Karte>
+      <KarteHeader
+        icon="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+        title="Auftragsstatus"
+        badgeVariant="green"
+      />
+
+      <div className="px-5 py-5 space-y-4">
+        {/* Current status */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400 font-medium">Aktuell</span>
+          <StatusBadge status={auftrag.status} />
+        </div>
+
+        {/* Status picker */}
+        {rechte.changeStatus && (
+          <>
+            <div className="space-y-1.5">
+              {STATUS_LISTE.map(s => {
+                const c = STATUS_CFG[s];
+                const aktiv = status === s;
+                return (
+                  <button key={s} onClick={() => setStatus(s)}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold border transition text-left
+                      ${aktiv
+                        ? `${c.bg} ${c.text} ${c.border}`
+                        : 'border-gray-100 text-gray-400 hover:border-gray-200 hover:text-gray-600 bg-white'
+                      }`}>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${aktiv ? c.dot : 'bg-gray-200'}`} />
+                    {s}
+                    {aktiv && <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3 ml-auto" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {(changed || erfolg) && (
+              <button onClick={speichern} disabled={saving || !changed}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition
+                  ${changed ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-green-50 text-green-700 border border-green-100 cursor-default'}
+                  disabled:opacity-60`}>
+                {saving
+                  ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
+                  : erfolg && !changed
+                    ? <><Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" /> Status gespeichert</>
+                    : 'Status speichern'
+                }
               </button>
-            );
-          })}
-        </div>
-      </div>
+            )}
+          </>
+        )}
 
-      {/* Termin */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Feld label="Einsatzdatum">
-          <input type="date" value={datum} onChange={e => setDatum(e.target.value)} className={inp()} />
-        </Feld>
-        <Feld label="Startzeit">
-          <input type="time" value={startzeit} onChange={e => setStartzeit(e.target.value)} className={inp()} />
-        </Feld>
-        <Feld label="Dauer (Stunden)">
-          <input type="number" min="0" step="0.5" value={dauer}
-            onChange={e => setDauer(e.target.value)} placeholder="z. B. 4" className={inp()} />
-        </Feld>
-      </div>
-
-      {erfolg && <Erfolg text="Planung gespeichert." />}
-
-      <button onClick={speichern} disabled={saving}
-        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
-        {saving ? 'Speichern…' : 'Planung speichern'}
-      </button>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 3: RESSOURCEN ZUWEISEN
-════════════════════════════════════════════════════════════════ */
-
-function SchrittRessourcen({ auftrag, companyId, onAktualisieren }) {
-  const [mitarbeiter, setMitarbeiter] = useState([]);
-  const [fahrzeuge,   setFahrzeuge]   = useState([]);
-  const [selMA, setSelMA] = useState(auftrag.mitarbeiter_id ?? '');
-  const [selFZ, setSelFZ] = useState(auftrag.fahrzeug_id    ?? '');
-  const [laden,  setLaden]  = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [erfolg, setErfolg] = useState(false);
-
-  useEffect(() => {
-    if (!companyId) return;
-    Promise.all([
-      supabase.from('mitarbeiter').select('id, vorname, nachname, position')
-        .eq('company_id', companyId).order('nachname'),
-      supabase.from('fahrzeuge').select('id, kennzeichen, marke, modell')
-        .eq('company_id', companyId).order('kennzeichen'),
-    ]).then(([{ data: m }, { data: f }]) => {
-      setMitarbeiter(m ?? []);
-      setFahrzeuge(f ?? []);
-      setLaden(false);
-    });
-  }, [companyId]);
-
-  async function speichern() {
-    setSaving(true); setErfolg(false);
-    const { error } = await supabase.from('auftraege').update({
-      mitarbeiter_id: selMA || null,
-      fahrzeug_id:    selFZ || null,
-      status: (auftrag.status === 'Neu' || auftrag.status === 'Geplant') && selMA
-        ? 'Zugewiesen' : auftrag.status,
-    }).eq('id', auftrag.id);
-    if (!error) { setErfolg(true); onAktualisieren(); }
-    setSaving(false);
-  }
-
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Ressourcen zuweisen</h2>
-
-      {laden ? (
-        <div className="space-y-3 animate-pulse">
-          <div className="h-11 bg-gray-100 rounded-xl" />
-          <div className="h-11 bg-gray-100 rounded-xl" />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <Feld label="Hauptmitarbeiter">
-            <select value={selMA} onChange={e => setSelMA(e.target.value)} className={inp()}>
-              <option value="">— Noch nicht zugewiesen —</option>
-              {mitarbeiter.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.vorname} {m.nachname}{m.position ? ` · ${m.position}` : ''}
-                </option>
-              ))}
-            </select>
-          </Feld>
-          <Feld label="Fahrzeug">
-            <select value={selFZ} onChange={e => setSelFZ(e.target.value)} className={inp()}>
-              <option value="">— Kein Fahrzeug zugewiesen —</option>
-              {fahrzeuge.map(f => (
-                <option key={f.id} value={f.id}>
-                  {f.kennzeichen}{f.marke ? ` · ${f.marke} ${f.modell ?? ''}` : ''}
-                </option>
-              ))}
-            </select>
-          </Feld>
-        </div>
-      )}
-
-      {erfolg && <Erfolg text="Ressourcen gespeichert. Status auf Zugewiesen gesetzt." />}
-
-      <button onClick={speichern} disabled={saving || laden}
-        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
-        {saving ? 'Speichern…' : 'Ressourcen speichern'}
-      </button>
-      <Tipp text="Weitere Mitarbeiter und Geräte (Mehrfachzuweisung) folgen in Sprint 2." />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 4: EINSATZ STARTEN
-════════════════════════════════════════════════════════════════ */
-
-function SchrittEinsatz({ auftrag, onAktualisieren }) {
-  const AKTIV = ['Unterwegs', 'Vor Ort', 'In Arbeit', 'Abgeschlossen'];
-  const istGestartet = AKTIV.includes(auftrag.status);
-  const [saving, setSaving] = useState(false);
-
-  async function starten() {
-    setSaving(true);
-    await supabase.from('auftraege').update({ status: 'Unterwegs' }).eq('id', auftrag.id);
-    onAktualisieren();
-    setSaving(false);
-  }
-
-  const CHECKLISTE = [
-    'Auftragsdaten vollständig und korrekt',
-    'Mitarbeiter und Fahrzeug zugewiesen',
-    'Einsatzdatum und Startzeit bestätigt',
-    'Werkzeug und Materialien vorbereitet',
-    'Sicherheitsausrüstung vorhanden',
-    'Anfahrtsroute geprüft',
-  ];
-
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Einsatz starten</h2>
-
-      {istGestartet ? (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl px-4 py-4">
-          <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-green-800">Einsatz läuft — Status: {auftrag.status}</p>
-            <p className="text-xs text-green-600 mt-0.5">Dokumentiere den Fortschritt in den nächsten Schritten.</p>
+        {/* Abschließen */}
+        {rechte.abschliessen && auftrag.status !== 'Abgeschlossen' && (
+          <div className="border-t border-gray-50 pt-3">
+            <button
+              onClick={async () => {
+                setSaving(true);
+                await supabase.from('auftraege').update({ status: 'Abgeschlossen' }).eq('id', auftrag.id);
+                setSaving(false);
+                onRefresh();
+              }}
+              disabled={saving}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition disabled:opacity-60">
+              <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
+              Auftrag abschließen
+            </button>
           </div>
-        </div>
-      ) : (
-        <>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-3">Vor-Abfahrt Checkliste</p>
-            <ul className="space-y-2.5">
-              {CHECKLISTE.map((item, i) => (
-                <li key={i} className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <div className="w-4 h-4 rounded border-2 border-gray-300 bg-white shrink-0" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button onClick={starten} disabled={saving}
-            className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition disabled:opacity-60">
-            <Ico d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-            {saving ? 'Wird gestartet…' : 'Einsatz starten'}
-          </button>
-          <Tipp text='Status wird auf „Unterwegs" gesetzt. Push-Benachrichtigungen für Mitarbeiter folgen in Sprint 2.' />
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 5: EINSATZBERICHT
-════════════════════════════════════════════════════════════════ */
-
-function SchrittBericht({ auftrag }) {
-  const [form, setForm] = useState({
-    taetigkeiten: '', schadensbeschreibung: '', loesung: '', notizen: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [erfolg, setErfolg] = useState(false);
-
-  const set = key => e => setForm(p => ({ ...p, [key]: e.target.value }));
-
-  async function speichern() {
-    setSaving(true);
-    await supabase.from('auftraege').update({
-      interne_notizen: JSON.stringify({ _bericht: form }),
-    }).eq('id', auftrag.id);
-    setErfolg(true);
-    setSaving(false);
-  }
-
-  const FELDER = [
-    { key: 'taetigkeiten',        label: 'Durchgeführte Tätigkeiten', placeholder: 'Was wurde genau gemacht?' },
-    { key: 'schadensbeschreibung', label: 'Schadensbeschreibung',     placeholder: 'Welcher Schaden wurde festgestellt?' },
-    { key: 'loesung',              label: 'Lösung / Maßnahmen',       placeholder: 'Wie wurde das Problem behoben?' },
-    { key: 'notizen',              label: 'Notizen & Hinweise',       placeholder: 'Folgemaßnahmen, Besonderheiten…' },
-  ];
-
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Einsatzbericht</h2>
-      {FELDER.map(f => (
-        <Feld key={f.key} label={f.label}>
-          <textarea rows={3} value={form[f.key]} onChange={set(f.key)}
-            placeholder={f.placeholder} className={`${inp()} resize-none`} />
-        </Feld>
-      ))}
-      {erfolg && <Erfolg text="Bericht gespeichert." />}
-      <button onClick={speichern} disabled={saving}
-        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
-        {saving ? 'Speichern…' : 'Bericht speichern'}
-      </button>
-      <Tipp text="Vollständige Berichtserfassung mit PDF-Export und Zeitstempel in Sprint 2." />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 6: FOTOS & DOKUMENTE
-════════════════════════════════════════════════════════════════ */
-
-function SchrittFotos() {
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Fotos & Dokumentation</h2>
-      <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center bg-gray-50 hover:border-blue-300 transition cursor-pointer">
-        <Ico d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-sm font-semibold text-gray-500">Fotos hierher ziehen oder klicken</p>
-        <p className="text-xs text-gray-400 mt-1">JPG, PNG, HEIC — bis 10 MB pro Datei</p>
-        <button className="mt-4 px-4 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-500 hover:bg-white transition">
-          Fotos auswählen
-        </button>
+        )}
       </div>
-      <Tipp text="Foto-Upload mit automatischer Komprimierung, Geolocation und Zeitstempel in Sprint 2." />
-    </div>
+    </Karte>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCHRITT 7: MATERIAL & ARBEITSZEITEN
+   RECHTE SPALTE – NÄCHSTER SCHRITT (Bereich 5)
 ════════════════════════════════════════════════════════════════ */
 
-function SchrittMaterial() {
-  const [material, setMaterial] = useState([{ bez: '', menge: '', einheit: 'Stk', preis: '' }]);
-  const [stunden,  setStunden]  = useState('');
-
-  const addReihe = () => setMaterial(p => [...p, { bez: '', menge: '', einheit: 'Stk', preis: '' }]);
-  const upd = (i, k, v) => setMaterial(p => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
-  const del = i => setMaterial(p => p.filter((_, j) => j !== i));
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-base font-semibold text-gray-900">Material & Arbeitszeiten</h2>
-
-      <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-        <p className="text-xs font-semibold text-gray-600">Arbeitszeiten</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Feld label="Arbeitsstunden gesamt">
-            <input type="number" min="0" step="0.25" value={stunden}
-              onChange={e => setStunden(e.target.value)} placeholder="z. B. 3.5" className={inp()} />
-          </Feld>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs font-semibold text-gray-600 mb-3">Verbrauchtes Material</p>
-        <div className="space-y-2">
-          <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-gray-400 uppercase px-1">
-            <div className="col-span-5">Bezeichnung</div>
-            <div className="col-span-2">Menge</div>
-            <div className="col-span-2">Einheit</div>
-            <div className="col-span-2">€/Einh.</div>
-          </div>
-          {material.map((r, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-5">
-                <input value={r.bez} onChange={e => upd(i, 'bez', e.target.value)}
-                  placeholder="Bezeichnung" className={inp()} />
-              </div>
-              <div className="col-span-2">
-                <input type="number" value={r.menge} onChange={e => upd(i, 'menge', e.target.value)}
-                  placeholder="0" className={inp()} />
-              </div>
-              <div className="col-span-2">
-                <select value={r.einheit} onChange={e => upd(i, 'einheit', e.target.value)} className={inp()}>
-                  {['Stk', 'm', 'm²', 'm³', 'kg', 'L'].map(u => <option key={u}>{u}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <input type="number" value={r.preis} onChange={e => upd(i, 'preis', e.target.value)}
-                  placeholder="0.00" className={inp()} />
-              </div>
-              <div className="col-span-1 flex justify-end">
-                <button onClick={() => del(i)}
-                  className="w-9 h-9 flex items-center justify-center text-gray-300 hover:text-red-400 rounded-xl transition">
-                  <Ico d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <button onClick={addReihe}
-          className="mt-3 flex items-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-xl text-xs font-semibold text-gray-400 hover:border-blue-300 hover:text-blue-500 transition">
-          <Ico d="M12 4.5v15m7.5-7.5h-15" cls="w-3.5 h-3.5" />
-          Position hinzufügen
-        </button>
-      </div>
-
-      <Tipp text="Automatische Übernahme in Rechnungspositionen und Kostenauswertung in Sprint 2." />
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 8: KUNDENUNTERSCHRIFT
-════════════════════════════════════════════════════════════════ */
-
-function SchrittUnterschrift({ auftrag, onAktualisieren }) {
-  const [name,   setName]   = useState('');
-  const [saving, setSaving] = useState(false);
-  const [erfolg, setErfolg] = useState(false);
-
-  async function bestaetigen() {
-    setSaving(true);
-    await supabase.from('auftraege').update({
-      ansprechpartner: name || auftrag.ansprechpartner,
-    }).eq('id', auftrag.id);
-    setErfolg(true);
-    setSaving(false);
-    onAktualisieren();
-  }
-
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Kundenunterschrift</h2>
-
-      <div className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center bg-gray-50">
-        <Ico d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" cls="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-sm font-semibold text-gray-500">Digitales Unterschriftenfeld</p>
-        <p className="text-xs text-gray-400 mt-1">Touch-Signatur via Tablet in Sprint 2</p>
-      </div>
-
-      <Feld label="Name des Unterzeichners" required>
-        <input type="text" value={name} onChange={e => setName(e.target.value)}
-          placeholder="Name des Kunden / Ansprechpartners" className={inp()} />
-      </Feld>
-
-      {erfolg && <Erfolg text="Bestätigung gespeichert." />}
-
-      <button onClick={bestaetigen} disabled={saving || !name.trim()}
-        className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
-        {saving ? 'Speichern…' : 'Bestätigung speichern'}
-      </button>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   SCHRITT 9: AUFTRAG ABSCHLIEßEN
-════════════════════════════════════════════════════════════════ */
-
-function SchrittAbschluss({ auftrag, onAktualisieren }) {
+function NaechsterSchrittKarte({ auftrag, rechte, router }) {
   const istAbgeschlossen = auftrag.status === 'Abgeschlossen';
-  const [saving, setSaving] = useState(false);
+  const istStorniert     = auftrag.status === 'Storniert';
 
-  async function abschliessen() {
-    setSaving(true);
-    await supabase.from('auftraege').update({ status: 'Abgeschlossen' }).eq('id', auftrag.id);
-    onAktualisieren();
-    setSaving(false);
+  if (istAbgeschlossen) {
+    return (
+      <Karte>
+        <div className="px-5 py-5 text-center">
+          <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-6 h-6 text-green-600" />
+          </div>
+          <p className="text-sm font-semibold text-gray-800 mb-1">Auftrag abgeschlossen</p>
+          <p className="text-xs text-gray-400 mb-4">Bereit zur Rechnungsstellung</p>
+          <button
+            onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag=${auftrag.id}`)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+            <Svg d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" cls="w-4 h-4" />
+            Rechnung erstellen
+          </button>
+        </div>
+      </Karte>
+    );
   }
 
-  const PUNKTE = [
-    { label: 'Einsatzbericht ausgefüllt',   ok: false },
-    { label: 'Fotos hochgeladen',            ok: false },
-    { label: 'Material & Zeiten erfasst',    ok: false },
-    { label: 'Kundenunterschrift vorhanden', ok: false },
-  ];
+  if (istStorniert) {
+    return (
+      <Karte>
+        <div className="px-5 py-5 text-center">
+          <p className="text-sm text-gray-400 italic">Auftrag wurde storniert.</p>
+        </div>
+      </Karte>
+    );
+  }
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Auftrag abschließen</h2>
+    <Karte>
+      <div className="px-5 py-5">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Nächster Schritt</p>
+        <button
+          onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftrag.id}`)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition shadow-sm shadow-blue-200 group">
+          <Svg d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" cls="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+          Einsatz durchführen
+        </button>
+        <p className="text-xs text-gray-400 text-center mt-2">Zur Einsatzdokumentation</p>
 
-      {istAbgeschlossen ? (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-100 rounded-xl px-4 py-4">
-          <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-green-800">Auftrag wurde abgeschlossen</p>
-            <p className="text-xs text-green-600 mt-0.5">Bereit zur Rechnungsstellung im nächsten Schritt.</p>
-          </div>
+        {/* Quick links */}
+        <div className="mt-4 space-y-1.5 border-t border-gray-50 pt-4">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Weitere Aktionen</p>
+          <a href={`/dashboard/auftraege/planen?id=${auftrag.id}`}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition">
+            <Svg d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" cls="w-3.5 h-3.5" />
+            Auftrag planen
+          </a>
+          {rechte.editRessourcen && (
+            <a href={`/dashboard/auftraege/zuweisung?id=${auftrag.id}`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition">
+              <Svg d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" cls="w-3.5 h-3.5" />
+              Ressourcen einteilen
+            </a>
+          )}
+          <a href={`/dashboard/auftraege/fotos?id=${auftrag.id}`}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition">
+            <Svg d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" cls="w-3.5 h-3.5" />
+            Fotos hochladen
+          </a>
         </div>
-      ) : (
-        <>
-          <div className="bg-gray-50 rounded-xl p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-3">Abschluss-Checkliste</p>
-            <ul className="space-y-2.5">
-              {PUNKTE.map((p, i) => (
-                <li key={i} className={`flex items-center gap-2.5 text-sm ${p.ok ? 'text-gray-800' : 'text-gray-400'}`}>
-                  {p.ok
-                    ? <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500 shrink-0" />
-                    : <div className="w-4 h-4 rounded-full border-2 border-gray-300 shrink-0" />
-                  }
-                  {p.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button onClick={abschliessen} disabled={saving}
-            className="flex items-center gap-2 px-5 py-3 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 active:bg-green-800 transition disabled:opacity-60">
-            <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            {saving ? 'Wird abgeschlossen…' : 'Auftrag abschließen'}
-          </button>
-        </>
-      )}
-    </div>
+      </div>
+    </Karte>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   SCHRITT 10: RECHNUNGSSTELLUNG
+   RECHTE SPALTE – AKTIVITÄTSCHRONIK (Vorbereitet)
 ════════════════════════════════════════════════════════════════ */
 
-function SchrittRechnung({ auftrag, router }) {
-  const kname = auftrag.kunden
-    ? (auftrag.kunden.kundentyp === 'firma' ? auftrag.kunden.firmenname : auftrag.kunden.name) ?? '—'
-    : '—';
+function AktivitaetschronikKarte({ auftrag }) {
+  // Placeholder-Einträge — automatische Logik folgt in späteren Sprints
+  const eintraege = [
+    {
+      icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+      text: 'Auftrag erstellt',
+      ts: auftrag.created_at,
+      color: 'text-green-500 bg-green-50',
+    },
+    auftrag.status !== 'Neu' && {
+      icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+      text: 'Auftrag geplant',
+      ts: null,
+      color: 'text-blue-500 bg-blue-50',
+    },
+    auftrag.fahrzeug_id && {
+      icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+      text: 'Ressourcen eingeteilt',
+      ts: null,
+      color: 'text-purple-500 bg-purple-50',
+    },
+  ].filter(Boolean);
 
   return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-gray-900">Bereit zur Rechnungsstellung</h2>
-
-      <div className="bg-green-50 border border-green-100 rounded-xl p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
-            <Ico d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-5 h-5 text-green-600" />
+    <Karte>
+      <KarteHeader
+        icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+        title="Aktivitätschronik"
+        badgeVariant="gray"
+        badge="Vorschau"
+      />
+      <div className="px-5 py-5">
+        {eintraege.length === 0 ? (
+          <p className="text-xs text-gray-300 text-center py-4 italic">Keine Aktivitäten</p>
+        ) : (
+          <div className="space-y-3">
+            {eintraege.map((e, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${e.color}`}>
+                  <Svg d={e.icon} cls="w-3 h-3" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700">{e.text}</p>
+                  {e.ts && <p className="text-[10px] text-gray-400 mt-0.5">{fmtDatum(e.ts)}</p>}
+                </div>
+              </div>
+            ))}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-green-900">Auftrag bereit zur Abrechnung</p>
-            <p className="text-xs text-green-700 mt-0.5">Alle Daten werden automatisch in die Rechnung øbernommen.</p>
-          </div>
-        </div>
-        <dl className="grid grid-cols-2 gap-3">
-          <div>
-            <dt className="text-xs text-green-600">Auftragsnummer</dt>
-            <dd className="text-sm font-semibold text-green-900 mt-0.5">{auftrag.nummer ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-green-600">Auftragstyp</dt>
-            <dd className="text-sm font-semibold text-green-900 mt-0.5">{auftrag.typ ?? '—'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-green-600">Kunde</dt>
-            <dd className="text-sm font-semibold text-green-900 mt-0.5">{kname}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-green-600">Einsatzdatum</dt>
-            <dd className="text-sm font-semibold text-green-900 mt-0.5">
-              {auftrag.einsatzdatum ? new Date(auftrag.einsatzdatum).toLocaleDateString('de-DE') : '—'}
-            </dd>
-          </div>
-        </dl>
+        )}
+        <p className="text-[10px] text-gray-300 mt-4 text-center">
+          Automatische Protokollierung folgt in einem späteren Sprint.
+        </p>
       </div>
-
-      <button
-        onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag=${auftrag.id}`)}
-        className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-        <Ico d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" />
-        Rechnung erstellen
-      </button>
-      <Tipp text="Auftragsdaten, Material und Arbeitszeiten werden als Rechnungspositionen vorgeschlagen (Sprint 2)." />
-    </div>
+    </Karte>
   );
 }
 
@@ -837,14 +896,19 @@ function SchrittRechnung({ auftrag, router }) {
    HAUPTKOMPONENTE
 ════════════════════════════════════════════════════════════════ */
 
-export default function AuftragWorkflow() {
+export default function AuftragBearbeiten() {
   const { id }   = useParams();
   const router   = useRouter();
-  const [auftrag,      setAuftrag]      = useState(null);
-  const [companyId,    setCompanyId]    = useState(null);
-  const [laden,        setLaden]        = useState(true);
-  const [aktiv,        setAktiv]        = useState(1);
-  const [autonavDone,  setAutonavDone]  = useState(false);
+
+  const [auftrag,        setAuftrag]        = useState(null);
+  const [mitarbeiterList, setMitarbeiterList] = useState([]);
+  const [maschinenList,   setMaschinenList]   = useState([]);
+  const [companyId,      setCompanyId]      = useState(null);
+  const [userRolle,      setUserRolle]      = useState(null);
+  const [userName,       setUserName]       = useState('');
+  const [zustand,        setZustand]        = useState('loading'); // loading | forbidden | not_found | ok
+
+  const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
   const ladeDaten = useCallback(async () => {
     try {
@@ -853,129 +917,187 @@ export default function AuftragWorkflow() {
 
       const { data: member } = await supabase
         .from('company_members')
-        .select('company_id')
+        .select('company_id, rolle, mitarbeiter:mitarbeiter_id(vorname, nachname)')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
-      if (!member) { router.push('/dashboard/auftraege'); return; }
+
+      if (!member) { setZustand('forbidden'); return; }
+
+      const rolle    = member.rolle ?? '';
+      const mName    = member.mitarbeiter
+        ? `${member.mitarbeiter.vorname ?? ''} ${member.mitarbeiter.nachname ?? ''}`.trim()
+        : (user.email ?? 'Benutzer');
+
       setCompanyId(member.company_id);
+      setUserRolle(rolle);
+      setUserName(mName || user.email || 'Benutzer');
 
-      const { data, error } = await supabase
-        .from('auftraege')
-        .select(`*, kunden:kunden_id(id, name, firmenname, kundentyp),
-                 mitarbeiter:mitarbeiter_id(id, vorname, nachname),
-                 fahrzeuge:fahrzeug_id(id, kennzeichen, marke)`)
-        .eq('id', id)
-        .eq('company_id', member.company_id)
-        .single();
+      // Prüfe Zugriff
+      const erlaubt = ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'];
+      if (!erlaubt.includes(rolle)) { setZustand('forbidden'); return; }
 
-      if (error || !data) { router.push('/dashboard/auftraege'); return; }
-      setAuftrag(data);
+      // Lade Auftrag + Ressourcen parallel
+      const [
+        { data: auftragData, error: auftragErr },
+        { data: maData },
+        { data: geData },
+      ] = await Promise.all([
+        supabase
+          .from('auftraege')
+          .select(`*,
+            kunden:kunden_id(id, name, firmenname, kundentyp, email, telefon),
+            fahrzeuge:fahrzeug_id(id, kennzeichen, marke, modell),
+            einsatzleiter:verantw_mitarbeiter_id(id, vorname, nachname, position)
+          `)
+          .eq('id', id)
+          .eq('company_id', member.company_id)
+          .maybeSingle(),
+
+        supabase
+          .from('auftrag_mitarbeiter')
+          .select('mitarbeiter:mitarbeiter_id(id, vorname, nachname, position, status)')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id),
+
+        supabase
+          .from('auftrag_maschinen')
+          .select('maschine:maschine_id(id, name, typ, zustand)')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id),
+      ]);
+
+      if (auftragErr || !auftragData) { setZustand('not_found'); return; }
+
+      setAuftrag(auftragData);
+      setMitarbeiterList((maData ?? []).map(r => r.mitarbeiter).filter(Boolean));
+      setMaschinenList((geData ?? []).map(r => r.maschine).filter(Boolean));
+      setZustand('ok');
     } catch {
-      router.push('/dashboard/auftraege');
-    } finally {
-      setLaden(false);
+      setZustand('not_found');
     }
   }, [id, router]);
 
   useEffect(() => { ladeDaten(); }, [ladeDaten]);
 
-  // Auto-navigate to first incomplete step on initial load
-  useEffect(() => {
-    if (!auftrag || autonavDone) return;
-    const stati = berechneStati(auftrag);
-    const erstOffen = SCHRITTE.find(s => stati[s.nr] !== 'done');
-    if (erstOffen) setAktiv(erstOffen.nr);
-    setAutonavDone(true);
-  }, [auftrag, autonavDone]);
+  /* ── States ── */
+  if (zustand === 'loading') return <Skeleton />;
 
-  /* ── Loading ── */
-  if (laden) {
-    return (
-      <div className="space-y-4 animate-pulse max-w-4xl">
-        <div className="h-7 w-52 bg-gray-100 rounded-xl" />
-        <div className="h-28 bg-gray-100 rounded-2xl" />
-        <div className="h-72 bg-gray-100 rounded-2xl" />
-      </div>
-    );
-  }
+  if (zustand === 'forbidden') return (
+    <FehlerKarte
+      icon="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+      titel="Kein Zugriff"
+      text="Du hast keine Berechtigung, diesen Auftrag zu öffnen."
+      button={
+        <button onClick={() => router.push('/dashboard/auftraege')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+          Zurück zur Übersicht
+        </button>
+      }
+    />
+  );
+
+  if (zustand === 'not_found') return (
+    <FehlerKarte
+      icon="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
+      titel="Auftrag nicht gefunden"
+      text="Dieser Auftrag existiert nicht oder wurde gelöscht."
+      button={
+        <button onClick={() => router.push('/dashboard/auftraege')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+          Zurück zur Übersicht
+        </button>
+      }
+    />
+  );
 
   if (!auftrag) return null;
 
-  const stati = berechneStati(auftrag);
-  const kname = auftrag.kunden
-    ? (auftrag.kunden.kundentyp === 'firma' ? auftrag.kunden.firmenname : auftrag.kunden.name) ?? ''
-    : '';
-
-  const renderSchritt = () => {
-    switch (aktiv) {
-      case 1:  return <SchrittAuftrag      auftrag={auftrag} onAktualisieren={ladeDaten} />;
-      case 2:  return <SchrittPlanung      auftrag={auftrag} onAktualisieren={ladeDaten} />;
-      case 3:  return <SchrittRessourcen   auftrag={auftrag} companyId={companyId} onAktualisieren={ladeDaten} />;
-      case 4:  return <SchrittEinsatz      auftrag={auftrag} onAktualisieren={ladeDaten} />;
-      case 5:  return <SchrittBericht      auftrag={auftrag} />;
-      case 6:  return <SchrittFotos />;
-      case 7:  return <SchrittMaterial />;
-      case 8:  return <SchrittUnterschrift auftrag={auftrag} onAktualisieren={ladeDaten} />;
-      case 9:  return <SchrittAbschluss    auftrag={auftrag} onAktualisieren={ladeDaten} />;
-      case 10: return <SchrittRechnung     auftrag={auftrag} router={router} />;
-      default: return null;
-    }
-  };
+  const kname  = kundeAnzeigeName(auftrag.kunden);
+  const nummer = auftrag.nummer ?? 'Auftrag';
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5 max-w-6xl pb-10">
 
-      {/* ── Auftrag-Header ── */}
-      <div className="flex items-start gap-3 min-w-0">
+      {/* ── Header ── */}
+      <div className="flex items-start gap-3">
         <button onClick={() => router.push('/dashboard/auftraege')}
-          className="mt-0.5 text-gray-400 hover:text-gray-600 transition shrink-0">
-          <Ico d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          className="mt-0.5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition shrink-0">
+          <Svg d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" cls="w-4 h-4" />
         </button>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="text-lg font-bold text-gray-900 truncate">
-              {auftrag.nummer ?? 'Auftrag'}
-            </h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-bold text-gray-900 truncate">{nummer}</h1>
             <StatusBadge status={auftrag.status} />
           </div>
           <p className="text-sm text-gray-400 mt-0.5 truncate">
-            {[auftrag.typ, kname, auftrag.einsatzdatum
-              ? new Date(auftrag.einsatzdatum).toLocaleDateString('de-DE') : null
-            ].filter(Boolean).join(' · ')}
+            {[auftrag.typ, kname, fmtDatum(auftrag.einsatzdatum)].filter(Boolean).join(' · ')}
           </p>
+        </div>
+        {/* Header-Aktionen */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftrag.id}`)}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+            <Svg d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" cls="w-4 h-4" />
+            Einsatz starten
+          </button>
         </div>
       </div>
 
-      {/* ── Workflow-Leiste ── */}
-      <WorkflowLeiste aktiv={aktiv} stati={stati} onWechseln={setAktiv} />
+      {/* ── Workflow-Leiste (Bereich 3) ── */}
+      <WorkflowLeiste auftrag={auftrag} mitarbeiterList={mitarbeiterList} />
 
-      {/* ── Schritt-Inhalt ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-7">
-        {renderSchritt()}
+      {/* ── Hauptinhalt: 2-Spalten-Layout ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Linke Spalte (2/3) */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Bereich 1: Auftragsinformationen */}
+          <AuftragInfoKarte
+            auftrag={auftrag}
+            rechte={rechte}
+            onRefresh={ladeDaten}
+          />
+
+          {/* Bereich 2: Ressourcen */}
+          <RessourcenKarte
+            auftrag={auftrag}
+            mitarbeiterList={mitarbeiterList}
+            maschinenList={maschinenList}
+            rechte={rechte}
+            auftragId={id}
+          />
+
+          {/* Bereich 4: Auftragsnotizen */}
+          <NotizenKarte
+            auftrag={auftrag}
+            rechte={rechte}
+            userName={userName}
+            onRefresh={ladeDaten}
+          />
+        </div>
+
+        {/* Rechte Spalte (1/3) */}
+        <div className="space-y-5">
+          {/* Status-Karte */}
+          <StatusKarte
+            auftrag={auftrag}
+            rechte={rechte}
+            onRefresh={ladeDaten}
+          />
+
+          {/* Bereich 5: Nächster Schritt */}
+          <NaechsterSchrittKarte
+            auftrag={auftrag}
+            rechte={rechte}
+            router={router}
+          />
+
+          {/* Aktivitätschronik (vorbereitet) */}
+          <AktivitaetschronikKarte auftrag={auftrag} />
+        </div>
       </div>
-
-      {/* ── Navigation: Zurück / Weiter ── */}
-      <div className="flex items-center justify-between pb-2">
-        <button
-          onClick={() => setAktiv(a => Math.max(1, a - 1))}
-          disabled={aktiv === 1}
-          className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 transition disabled:opacity-30">
-          <Ico d="M15.75 19.5L8.25 12l7.5-7.5" />
-          Zurück
-        </button>
-
-        <span className="text-xs text-gray-400 font-medium">{aktiv} / {SCHRITTE.length}</span>
-
-        <button
-          onClick={() => setAktiv(a => Math.min(SCHRITTE.length, a + 1))}
-          disabled={aktiv === SCHRITTE.length}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-30">
-          Weiter
-          <Ico d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </button>
-      </div>
-
     </div>
   );
 }
