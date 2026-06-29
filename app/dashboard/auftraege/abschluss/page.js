@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
@@ -769,7 +769,7 @@ function AbschlussKarte({ auftrag, dok, allOk, onAbschliessen, onRechnungErstell
    HAUPT-KOMPONENTE
 ════════════════════════════════════════════════════════════════ */
 
-export default function AbschlussPage() {
+function AbschlussPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const auftragId    = searchParams.get('id');
@@ -1106,4 +1106,8 @@ export default function AbschlussPage() {
       </div>
     </div>
   );
+}
+
+export default function AbschlussPage() {
+  return <Suspense fallback={null}><AbschlussPageInner /></Suspense>;
 }
