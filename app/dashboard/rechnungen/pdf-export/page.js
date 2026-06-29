@@ -68,16 +68,15 @@ export default function PdfExport() {
   async function exportUmsatzPdf() {
     setExporting(true);
     try {
-      const { jsPDF } = await (function loadJsPDFFromCDN() {
-  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    s.onload = () => resolve(window.jspdf);
-    s.onerror = () => reject(new Error('jsPDF CDN load failed'));
-    document.head.appendChild(s);
-  });
-})();
+      if (!window.jspdf) {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const firmaname = firma?.firmaname ?? 'Unbekannt';
       const adresse   = firma ? `${firma.strasse}, ${firma.plz} ${firma.ort}` : '';
@@ -147,16 +146,15 @@ export default function PdfExport() {
   async function exportEinzelPdf() {
     setExporting(true);
     try {
-      const { jsPDF } = await (function loadJsPDFFromCDN() {
-  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf);
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    s.onload = () => resolve(window.jspdf);
-    s.onerror = () => reject(new Error('jsPDF CDN load failed'));
-    document.head.appendChild(s);
-  });
-})();
+      if (!window.jspdf) {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       let first = true;
 
