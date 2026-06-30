@@ -6,6 +6,7 @@ import supabase from '@/lib/supabase';
 import {
   ROLE_LABELS, ROLE_COLORS, PERMISSIONS, roleHasPermission,
 } from '@/lib/roles';
+import TabNav from '@/components/ui/TabNav';
 
 const TABS = [
   { id: 'stammdaten',    label: 'Stammdaten' },
@@ -610,21 +611,14 @@ export default function MitarbeiterProfilPage() {
       </div>
 
       {/* Tab-Navigation */}
-      <div className="flex gap-1 mb-6 border-b border-gray-100 overflow-x-auto">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition whitespace-nowrap ${
-              tab === t.id
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabNav
+        id="mitarbeiter-tabs"
+        tabs={TABS}
+        activeTab={tab}
+        onChange={setTab}
+        label="Mitarbeiternavigation"
+        className="mb-6"
+      />
 
       {/* Tab: Stammdaten */}
       {tab === 'stammdaten' && (
@@ -1420,7 +1414,7 @@ export default function MitarbeiterProfilPage() {
             {/* Liste */}
             {zertLaden ? (
               <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
-            ) : zrtifikate.length === 0 ? (
+            ) : zertifikate.length === 0 ? (
               <p className="text-sm text-gray-400 py-6 text-center">Noch keine Zertifikate hinterlegt.</p>
             ) : (
               <div className="space-y-2">
@@ -1449,13 +1443,13 @@ export default function MitarbeiterProfilPage() {
                         </div>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           {z.ausstellende_stelle && (
-                            <span className="text-xs text-gray-400">{z.ausstellende_steelle}</span>
+                            <span className="text-xs text-gray-400">{z.ausstellende_stelle}</span>
                           )}
                           {z.ausgestellt_am && (
                             <span className="text-xs text-gray-400">Ausgestellt: {new Date(z.ausgestellt_am + 'T00:00:00').toLocaleDateString('de-DE')}</span>
                           )}
                           {z.gueltig_bis && (
-                            <span className="text-xs text-gray-400">Gøltig bis: {new Date(z.gueltig_bis + 'T00:00:00').toLocaleDateString('de-DE')}</span>
+                            <span className="text-xs text-gray-400">Gültig bis: {new Date(z.gueltig_bis + 'T00:00:00').toLocaleDateString('de-DE')}</span>
                           )}
                         </div>
                         {z.notiz && (
