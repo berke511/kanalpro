@@ -3,6 +3,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import TabNav from '@/components/ui/TabNav';
+
+const ANGEBOTE_TABS = [
+  { id: 'angebote', label: 'Angebote'      },
+  { id: 'email',    label: 'E-Mail-Versand' },
+  { id: 'pdf',      label: 'PDF-Export'    },
+];
 
 const statusConfig = {
   entwurf:    { label: 'Entwurf',    cls: 'bg-gray-100 text-gray-600'   },
@@ -227,40 +234,28 @@ export default function Angebote() {
 
   return (
     <div>
-      {/* ── Tab-Bar + Action ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setTab('angebote')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'angebote' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Angebote
-          </button>
-          <Link
-            href="/dashboard/angebote/vorlagen"
-            className="px-4 py-1.5 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 transition"
-          >
-            Vorlagen
-          </Link>
-          <button
-            onClick={() => setTab('email')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'email' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            E-Mail-Versand
-          </button>
-          <button
-            onClick={() => setTab('pdf')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${tab === 'pdf' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            PDF-Export
-          </button>
-        </div>
+      {/* ── Tab-Navigation + Actions ── */}
+      <div className="flex items-center justify-between mb-2">
+        <Link
+          href="/dashboard/angebote/vorlagen"
+          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition"
+        >
+          Vorlagen →
+        </Link>
         {tab === 'angebote' && (
           <Link href="/dashboard/angebote/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
             + Neues Angebot
           </Link>
         )}
       </div>
+      <TabNav
+        id="angebote-tabs"
+        tabs={ANGEBOTE_TABS}
+        activeTab={tab}
+        onChange={setTab}
+        label="Angebotsnavigation"
+        className="mb-6"
+      />
 
       {/* ── Angebote-Tab ── */}
       {tab === 'angebote' && (
