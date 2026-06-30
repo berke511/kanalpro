@@ -50,7 +50,6 @@ const navLinks = [
   { href: '/dashboard/angebote',             label: 'Angebote',       iconId: 'tag',        feature: null,         minRole: null },
   { href: '/dashboard/rechnungen',           label: 'Rechnungen',     iconId: 'receipt',    feature: 'rechnungen', minRole: null },
   { href: '/dashboard/einstellungen',        label: 'Einstellungen',  iconId: 'cog',        feature: null,         minRole: null },
-  { href: '/dashboard/einstellungen/rollen', label: 'Rollen & Rechte',iconId: 'shield',     feature: null,         minRole: 'administrator' },
   { href: '/dashboard/billing',              label: 'Abonnement',     iconId: 'creditcard', feature: null,         minRole: null },
 ];
 
