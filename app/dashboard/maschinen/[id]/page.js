@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import TabNav from '@/components/ui/TabNav';
 
 // ── Konstanten ────────────────────────────────────────────────────────────────
 const MASCHINENTYP_OPTIONS = [
@@ -67,12 +68,12 @@ const PRUEFUNG_ART_OPTIONS = [
   // ── Hebezeuge / Krane ───────────────────────────────────────────────────────
   { value: 'dguv_v52_krane',          label: 'DGUV V52 – Krane' },
   { value: 'dguv_v54_winden',         label: 'DGUV V54 – Winden, Hub- und Zuggeräte' },
-  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebøhne / Arbeitsbøhne' },
+  { value: 'betrsichv_hebebuehne',    label: 'BetrSichV – Hebebühne / Arbeitsbühne' },
   { value: 'lastaufnahmemittel',      label: 'Lastaufnahmemittel-Prüfung (DGUV V54)' },
   // ── Druckgeräte / Hydraulik ─────────────────────────────────────────────────
-  { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprøfung (BetrSichV / DGRL 2014/68/EU)' },
+  { value: 'druckgeraet_betrsichv',   label: 'Druckgeräteprüfung (BetrSichV / DGRL 2014/68/EU)' },
   { value: 'druckbehaelter_zuev',     label: 'Druckbehälter – ZÜS-Prüfung (§ 15 BetrSichV)' },
-  { value: 'druckpruefung_leitung',   label: 'Druckprøfung Leitung / Hydraulik' },
+  { value: 'druckpruefung_leitung',   label: 'Druckprüfung Leitung / Hydraulik' },
   // ── Flurförderzeuge ─────────────────────────────────────────────────────────
   { value: 'dguv_v68_fahrzeuge',      label: 'DGUV V68/V70 – Flurförderzeuge / Stapler' },
   // ── Rohr- und Kanaltechnik ──────────────────────────────────────────────────
@@ -80,14 +81,14 @@ const PRUEFUNG_ART_OPTIONS = [
   { value: 'dichtheitspruefung',      label: 'Dichtheitsprüfung (DIN EN 1610 / § 60 WHG)' },
   { value: 'abscheider_din4040',      label: 'Abscheiderprüfung Fett (DIN 4040-100)' },
   { value: 'abscheider_lfa_din1999',  label: 'Leichtflüssigkeitsabscheider (DIN 1999-100)' },
-  { value: 'eigenüuerwachung_ekvo',   label: 'Eigenøberwachung Abwasser (EKVO / SøwVO Abw)' },
+  { value: 'eigenüberwachung_ekvo',   label: 'Eigenüberwachung Abwasser (EKVO / SüwVO Abw)' },
   { value: 'schlauchliner_din11296',  label: 'Schlauchliner-Abnahme (DIN EN ISO 11296-4)' },
   { value: 'kurzliner_abnahme',       label: 'Kurzliner-Abnahme (DIN EN 13566)' },
   { value: 'druckrohrleitung_trbs',   label: 'Druckrohrleitung Abwasser (TRBS 1201 / DGRL)' },
   // ── Allgemein / BetrSichV ───────────────────────────────────────────────────
   { value: 'betrsichv_arbeitsmittel', label: 'Arbeitsmittelprüfung (§ 3 BetrSichV)' },
   { value: 'zuev_pruefung',           label: 'ZÜS-Prüfung – Zugelassene Überwachungsstelle' },
-  { value: 'sachverstaendiger',       label: 'Sachverständigenprøfung (extern)' },
+  { value: 'sachverstaendiger',       label: 'Sachverständigenprüfung (extern)' },
   { value: 'wiederkehrend',           label: 'Wiederkehrende Prüfung (allgemein)' },
   { value: 'interne_pruefung',        label: 'Interne Sicherheitsprüfung' },
   { value: 'sonstiges',               label: 'Sonstige' },
@@ -198,7 +199,7 @@ export default function MaschinenDetailPage() {
   const [savingWartung, setSavingWartung]   = useState(false);
   const [delWartungId, setDelWartungId]     = useState(null);
 
-  // Standort & Verføgbarkeit
+  // Standort & Verfügbarkeit
   const [standort, setStandort]             = useState(null);
 
   const [standortLaden, setStandortLaden]   = useState(false);
@@ -474,18 +475,14 @@ export default function MaschinenDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex gap-1">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
-                activeTab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+      <TabNav
+        id="maschinen-tabs"
+        tabs={TABS}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        label="Maschinennavigation"
+        className="mb-6"
+      />
 
       {/* ── Tab: Geräteverwaltung ─────────────────────────────────────────── */}
       {activeTab === 'geraeteverwaltung' && (
@@ -616,7 +613,7 @@ export default function MaschinenDetailPage() {
       {activeTab === 'wartungen_pruefungen' && (
         <div className="space-y-6">
 
-          {/* Prøfungen-Karte */}
+          {/* Prüfungen-Karte */}
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
@@ -783,7 +780,7 @@ export default function MaschinenDetailPage() {
                 <LabelInput label="Nächste Wartung bei Bst.">
                   <input type="number" value={wartungForm.naechste_stunden} onChange={e => setWartungForm(f => ({ ...f, naechste_stunden: e.target.value }))} min="0" step="0.1" placeholder="0.0" className={inputCls()} />
                 </LabelInput>
-                <LabelInput label="Werkstatt / Durchgeføhrt von">
+                <LabelInput label="Werkstatt / Durchgeführt von">
                   <input type="text" value={wartungForm.werkstatt} onChange={e => setWartungForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z.B. Intern, Werkstatt Müller" className={inputCls()} />
                 </LabelInput>
                 <LabelInput label="Kosten (€)">
@@ -841,7 +838,7 @@ export default function MaschinenDetailPage() {
                       onChange={e => setStandortForm(f => ({ ...f, standort: e.target.value }))}
                       placeholder="z. B. Lager Köln, Baustelle A4" />
                   </LabelInput>
-                  <LabelInput label="Verføgbarkeitsstatus">
+                  <LabelInput label="Verfügbarkeitsstatus">
                     <select className={inputCls()} value={standortForm.verfuegbarkeitsstatus}
                       onChange={e => setStandortForm(f => ({ ...f, verfuegbarkeitsstatus: e.target.value }))}>
                       {Object.entries(VERFUEGBARKEIT_CONFIG).map(([v, c]) => (
@@ -860,7 +857,7 @@ export default function MaschinenDetailPage() {
                       placeholder="z. B. Region Köln, NRW" />
                   </LabelInput>
                   {standortForm.verfuegbarkeitsstatus !== 'verfuegbar' && (
-                    <LabelInput label="Nächste Verføgbarkeit">
+                    <LabelInput label="Nächste Verfügbarkeit">
                       <input type="date" className={inputCls()} value={standortForm.naechste_verfuegbarkeit}
                         onChange={e => setStandortForm(f => ({ ...f, naechste_verfuegbarkeit: e.target.value }))} />
                     </LabelInput>
