@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import TabNav from '@/components/ui/TabNav';
 
 /* ════════════════════════════════════════════════════════════════
    ROLLEN & RECHTE
@@ -51,6 +52,18 @@ const RESSOURCE_STATUS = {
 /* ════════════════════════════════════════════════════════════════
    WORKFLOW-KONFIGURATION
 ════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════
+   TAB-KONFIGURATION
+════════════════════════════════════════════════════════════════ */
+
+const AUFTRAG_TABS = [
+  { id: 'uebersicht',    label: 'Übersicht'            },
+  { id: 'planung',       label: 'Planung'              },
+  { id: 'ressourcen',    label: 'Ressourcen'           },
+  { id: 'einsatz',       label: 'Einsatz & Dokumentation' },
+  { id: 'abschluss',     label: 'Abschluss'            },
+];
 
 const WORKFLOW_SCHRITTE = [
   { key: 'erstellt',      label: 'Auftrag erstellt',      kurz: 'Erstellt'    },
@@ -907,6 +920,7 @@ export default function AuftragBearbeiten() {
   const [userRolle,      setUserRolle]      = useState(null);
   const [userName,       setUserName]       = useState('');
   const [zustand,        setZustand]        = useState('loading'); // loading | forbidden | not_found | ok
+  const [auftragTab,     setAuftragTab]     = useState('uebersicht');
 
   const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
@@ -1048,56 +1062,165 @@ export default function AuftragBearbeiten() {
       {/* ── Workflow-Leiste (Bereich 3) ── */}
       <WorkflowLeiste auftrag={auftrag} mitarbeiterList={mitarbeiterList} />
 
-      {/* ── Hauptinhalt: 2-Spalten-Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* ── Tab-Navigation ── */}
+      <TabNav
+        id="auftrag-tabs"
+        tabs={AUFTRAG_TABS}
+        activeTab={auftragTab}
+        onChange={setAuftragTab}
+        label="Auftragsnavigation"
+        className="mb-5"
+      />
 
-        {/* Linke Spalte (2/3) */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Bereich 1: Auftragsinformationen */}
-          <AuftragInfoKarte
-            auftrag={auftrag}
-            rechte={rechte}
-            onRefresh={ladeDaten}
-          />
+      {/* ── Tab: Übersicht (bestehendes 2-Spalten-Layout) ── */}
+      {auftragTab === 'uebersicht' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* Bereich 2: Ressourcen */}
-          <RessourcenKarte
-            auftrag={auftrag}
-            mitarbeiterList={mitarbeiterList}
-            maschinenList={maschinenList}
-            rechte={rechte}
-            auftragId={id}
-          />
+          {/* Linke Spalte (2/3) */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* Bereich 1: Auftragsinformationen */}
+            <AuftragInfoKarte
+              auftrag={auftrag}
+              rechte={rechte}
+              onRefresh={ladeDaten}
+            />
 
-          {/* Bereich 4: Auftragsnotizen */}
-          <NotizenKarte
-            auftrag={auftrag}
-            rechte={rechte}
-            userName={userName}
-            onRefresh={ladeDaten}
-          />
+            {/* Bereich 2: Ressourcen */}
+            <RessourcenKarte
+              auftrag={auftrag}
+              mitarbeiterList={mitarbeiterList}
+              maschinenList={maschinenList}
+              rechte={rechte}
+              auftragId={id}
+            />
+
+            {/* Bereich 4: Auftragsnotizen */}
+            <NotizenKarte
+              auftrag={auftrag}
+              rechte={rechte}
+              userName={userName}
+              onRefresh={ladeDaten}
+            />
+          </div>
+
+          {/* Rechte Spalte (1/3) */}
+          <div className="space-y-5">
+            {/* Status-Karte */}
+            <StatusKarte
+              auftrag={auftrag}
+              rechte={rechte}
+              onRefresh={ladeDaten}
+            />
+
+            {/* Bereich 5: Nächster Schritt */}
+            <NaechsterSchrittKarte
+              auftrag={auftrag}
+              rechte={rechte}
+              router={router}
+            />
+
+            {/* Aktivitätschronik (vorbereitet) */}
+            <AktivitaetschronikKarte auftrag={auftrag} />
+          </div>
         </div>
+      )}
 
-        {/* Rechte Spalte (1/3) */}
-        <div className="space-y-5">
-          {/* Status-Karte */}
-          <StatusKarte
-            auftrag={auftrag}
-            rechte={rechte}
-            onRefresh={ladeDaten}
-          />
-
-          {/* Bereich 5: Nächster Schritt */}
-          <NaechsterSchrittKarte
-            auftrag={auftrag}
-            rechte={rechte}
-            router={router}
-          />
-
-          {/* Aktivitätschronik (vorbereitet) */}
-          <AktivitaetschronikKarte auftrag={auftrag} />
+      {/* ── Tab: Planung ── */}
+      {auftragTab === 'planung' && (
+        <div className="max-w-lg">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-600" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Planung</h2>
+              <p className="text-sm text-gray-500">Plane Termin, Uhrzeit und Einsatzdauer für diesen Auftrag.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/auftraege/planen?id=${auftrag.id}`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+              Zur Planung
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Tab: Ressourcen ── */}
+      {auftragTab === 'ressourcen' && (
+        <div className="max-w-lg">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-600" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Ressourcen</h2>
+              <p className="text-sm text-gray-500">Teile Mitarbeiter, Fahrzeuge und Geräte für diesen Auftrag ein.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/auftraege/zuweisung?id=${auftrag.id}`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition">
+              Ressourcen einteilen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Einsatz & Dokumentation ── */}
+      {auftragTab === 'einsatz' && (
+        <div className="max-w-lg">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-amber-600" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Einsatz & Dokumentation</h2>
+              <p className="text-sm text-gray-500">Dokumentiere den Einsatz, Material, Zeiten, Fotos und Kundenunterschrift.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftrag.id}`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition">
+              Einsatz dokumentieren
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Abschluss ── */}
+      {auftragTab === 'abschluss' && (
+        <div className="max-w-lg">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+            <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-600" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Abschluss</h2>
+              <p className="text-sm text-gray-500">Prüfe die Dokumentation und schließe den Auftrag ab.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${auftrag.id}`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+              Auftrag abschließen
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
