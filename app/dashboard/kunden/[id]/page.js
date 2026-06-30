@@ -4,9 +4,9 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    KONFIGURATION
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const AUFTRAG_STATUS_CFG = {
   'Neu':           { bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
@@ -35,9 +35,9 @@ const FOTO_KAT_CFG = {
   sonstige: { label: 'Sonstige', bg: 'bg-gray-100',   text: 'text-gray-600'   },
 };
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    HILFSFUNKTIONEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Svg({ d, cls = 'w-4 h-4' }) {
   return (
@@ -49,25 +49,25 @@ function Svg({ d, cls = 'w-4 h-4' }) {
 }
 
 function fmtDatum(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â';
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function fmtBetrag(positionen, steuersatz) {
-  if (!Array.isArray(positionen)) return '—';
+  if (!Array.isArray(positionen)) return 'â';
   const netto = positionen.reduce((s, p) => s + (p.menge ?? 0) * (p.preis ?? 0), 0);
   const brutto = netto * (1 + (steuersatz ?? 19) / 100);
-  return brutto.toFixed(2).replace('.', ',') + ' €';
+  return brutto.toFixed(2).replace('.', ',') + ' â¬';
 }
 
 function anzeigeName(form) {
-  if (!form) return '—';
-  return form.kundentyp === 'firma' && form.firmenname ? form.firmenname : (form.name ?? '—');
+  if (!form) return 'â';
+  return form.kundentyp === 'firma' && form.firmenname ? form.firmenname : (form.name ?? 'â');
 }
 
 function technikerName(auftrag) {
   const mitarbeiter = auftrag.auftrag_mitarbeiter ?? [];
-  if (mitarbeiter.length === 0) return '—';
+  if (mitarbeiter.length === 0) return 'â';
   return mitarbeiter.map(r => {
     const m = r.mitarbeiter ?? r;
     return [m.vorname, m.nachname].filter(Boolean).join(' ');
@@ -78,9 +78,9 @@ function statusCfg(status) {
   return AUFTRAG_STATUS_CFG[status] ?? { bg: 'bg-gray-50', text: 'text-gray-500', dot: 'bg-gray-400' };
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    UI-ATOME
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function StatusBadge({ status, cfgMap }) {
   const c = (cfgMap ?? AUFTRAG_STATUS_CFG)[status] ?? { bg: 'bg-gray-50', text: 'text-gray-500', dot: 'bg-gray-400', label: status };
@@ -138,9 +138,9 @@ function inp() {
   return 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white';
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    KUNDENKOPF
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Kundenkopf({ form, auftraege, rechnungen, objekte }) {
   const name = anzeigeName(form);
@@ -204,7 +204,7 @@ function Kundenkopf({ form, auftraege, rechnungen, objekte }) {
       {/* KPI-Leiste */}
       <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-50">
         {[
-          { label: 'Aufträge', value: auftraege.length, icon: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z', color: 'text-blue-500 bg-blue-50' },
+          { label: 'AuftrÃ¤ge', value: auftraege.length, icon: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z', color: 'text-blue-500 bg-blue-50' },
           { label: 'Rechnungen', value: rechnungen.length, icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z', color: 'text-green-500 bg-green-50' },
           { label: 'Einsatzorte', value: objekte.length, icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z', color: 'text-purple-500 bg-purple-50' },
         ].map(k => (
@@ -221,9 +221,9 @@ function Kundenkopf({ form, auftraege, rechnungen, objekte }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: STAMMDATEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function StammdatenTab({ form, handleChange, handleSave, speichern, erfolg, fehler, loeschen, loeschenBestaetigt, handleDelete, setLoeschen, setLoeschenBestaetigt }) {
   return (
@@ -291,7 +291,7 @@ function StammdatenTab({ form, handleChange, handleSave, speichern, erfolg, fehl
               <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Rechnungsadresse</p>
                 <input type="text" name="rechnung_strasse" value={form.rechnung_strasse} onChange={handleChange}
-                  placeholder="Straße und Hausnummer" className={inp()} />
+                  placeholder="StraÃe und Hausnummer" className={inp()} />
                 <div className="grid grid-cols-3 gap-3">
                   <input type="text" name="rechnung_plz" value={form.rechnung_plz} onChange={handleChange}
                     placeholder="PLZ" className={inp()} />
@@ -324,19 +324,19 @@ function StammdatenTab({ form, handleChange, handleSave, speichern, erfolg, fehl
           <div className="flex items-center gap-3 pt-2 border-t border-gray-50">
             <button type="submit" disabled={speichern}
               className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">
-              {speichern ? 'Wird gespeichert…' : 'Speichern'}
+              {speichern ? 'Wird gespeichertâ¦' : 'Speichern'}
             </button>
             {!loeschen ? (
               <button type="button" onClick={() => setLoeschen(true)}
                 className="ml-auto px-4 py-2.5 text-red-500 hover:bg-red-50 rounded-xl text-sm font-medium transition">
-                Löschen
+                LÃ¶schen
               </button>
             ) : (
               <div className="ml-auto flex items-center gap-2">
-                <span className="text-sm text-red-600 font-medium">Wirklich löschen?</span>
+                <span className="text-sm text-red-600 font-medium">Wirklich lÃ¶schen?</span>
                 <button type="button" onClick={handleDelete}
                   className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${loeschenBestaetigt ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>
-                  {loeschenBestaetigt ? 'Endgültig löschen' : 'Ja, löschen'}
+                  {loeschenBestaetigt ? 'EndgÃ¼ltig lÃ¶schen' : 'Ja, lÃ¶schen'}
                 </button>
                 <button type="button" onClick={() => { setLoeschen(false); setLoeschenBestaetigt(false); }}
                   className="px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition">
@@ -351,14 +351,14 @@ function StammdatenTab({ form, handleChange, handleSave, speichern, erfolg, fehl
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: ANSPRECHPARTNER
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AnsprechpartnerTab({ form }) {
   const felder = [
     { label: 'Name / Ansprechpartner', value: form.name, icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z' },
-    { label: 'Telefon', value: form.telefon, href: form.telefon ? gtel:${form.telefon}` : null, icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z' },
+    { label: 'Telefon', value: form.telefon, href: form.telefon ? `tel:${form.telefon}` : null, icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z' },
     { label: 'E-Mail', value: form.email, href: form.email ? `mailto:${form.email}` : null, icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75' },
     { label: 'Adresse', value: form.adresse, icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z' },
   ];
@@ -391,7 +391,7 @@ function AnsprechpartnerTab({ form }) {
           <div className="mt-2 p-4 rounded-xl border border-blue-100 bg-blue-50">
             <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Rechnungsadresse</p>
             <p className="text-sm text-gray-700">
-              {[form.rechnung_strasse, [form.rechnung_plz, form.rechnung_ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—'}
+              {[form.rechnung_strasse, [form.rechnung_plz, form.rechnung_ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'â'}
             </p>
           </div>
         )}
@@ -407,9 +407,9 @@ function AnsprechpartnerTab({ form }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: EINSATZORTE
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
   const [neuesObjekt, setNeuesObjekt] = useState({ bezeichnung: '', adresse: '' });
@@ -444,7 +444,7 @@ function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
         <EmptyState
           icon="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
           title="Keine Einsatzorte erfasst"
-          text="Füge Immobilien oder Einsatzorte dieses Kunden hinzu."
+          text="FÃ¼ge Immobilien oder Einsatzorte dieses Kunden hinzu."
         />
       )}
 
@@ -457,7 +457,7 @@ function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
             <div className="min-w-0">
               <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition">{o.bezeichnung}|/p>
               {o.adresse && <p className="text-gray-400 text-xs mt-0.5">{o.adresse}</p>}
-              <p className="text-xs text-blue-400 mt-1 opacity-0 group-hover:opacity-100 transition">Digitaler Zwilling →</p>
+              <p className="text-xs text-blue-400 mt-1 opacity-0 group-hover:opacity-100 transition">Digitaler Zwilling â</p>
             </div>
           </Link>
           <button onClick={() => deleteObjekt(o.id)}
@@ -469,10 +469,10 @@ function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
 
       {hinzufuegen ? (
         <div className="bg-white rounded-xl border border-blue-100 p-4 space-y-3 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700">Neuen Einsatzort hinzuføgen</p>
+          <p className="text-sm font-semibold text-gray-700">Neuen Einsatzort hinzufÃ¸gen</p>
           <input type="text" value={neuesObjekt.bezeichnung}
             onChange={e => setNeuesObjekt(p => ({ ...p, bezeichnung: e.target.value }))}
-            placeholder="Bezeichnung (z. B. Betriebsgelände Nord)"
+            placeholder="Bezeichnung (z. B. BetriebsgelÃ¤nde Nord)"
             className={inp()} />
           <input type="text" value={neuesObjekt.adresse}
             onChange={e => setNeuesObjekt(p => ({ ...p, adresse: e.target.value }))}
@@ -481,7 +481,7 @@ function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
           <div className="flex gap-2">
             <button onClick={addObjekt}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-              Hinzuføgen
+              HinzufÃ¸gen
             </button>
             <button onClick={() => { setHinzufuegen(false); setNeuesObjekt({ bezeichnung: '', adresse: '' }); }}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm hover:bg-gray-200 transition">
@@ -492,16 +492,16 @@ function EinsatzorteTab({ kundeId, objekte, setObjekte }) {
       ) : (
         <button onClick={() => setHinzufuegen(true)}
           className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400 hover:border-blue-300 hover:text-blue-600 transition bg-white">
-          + Einsatzort hinzufügen
+          + Einsatzort hinzufÃ¼gen
         </button>
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   TAB: AUFTRÄGE
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   TAB: AUFTRÃGE
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AuftraegeTab({ auftraege, router }) {
   const [suche, setSuche] = useState('');
@@ -557,7 +557,7 @@ function AuftraegeTab({ auftraege, router }) {
             type="text"
             value={suche}
             onChange={e => setSuche(e.target.value)}
-            placeholder="Auftragsnummer, Auftragsart, Einsatzort…"
+            placeholder="Auftragsnummer, Auftragsart, Einsatzortâ¦"
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
         </div>
@@ -568,7 +568,7 @@ function AuftraegeTab({ auftraege, router }) {
         </select>
         <select value={filterZeitraum} onChange={e => setFilterZeitraum(e.target.value)}
           className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-          <option value="">Alle Zeiträume</option>
+          <option value="">Alle ZeitrÃ¤ume</option>
           <option value="30">Letzte 30 Tage</option>
           <option value="90">Letzte 90 Tage</option>
           <option value="365">Letztes Jahr</option>
@@ -578,13 +578,13 @@ function AuftraegeTab({ auftraege, router }) {
       {gefiltert.length === 0 ? (
         <EmptyState
           icon="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"
-          title={suche || filterStatus || filterZeitraum ? 'Keine Aufträge gefunden' : 'Noch keine Aufträge für diesen Kunden'}
+          title={suche || filterStatus || filterZeitraum ? 'Keine AuftrÃ¤ge gefunden' : 'Noch keine AuftrÃ¤ge fÃ¼r diesen Kunden'}
           text={suche || filterStatus || filterZeitraum ? 'Versuche andere Filter.' : ''}
         />
       ) : (
         <Karte>
           <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-medium">{gefiltert.length} {gefiltert.length === 1 ? 'Auftrag' : 'Aufträge'}</span>
+            <span className="text-xs text-gray-400 font-medium">{gefiltert.length} {gefiltert.length === 1 ? 'Auftrag' : 'AuftrÃ¤ge'}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
@@ -613,7 +613,7 @@ function AuftraegeTab({ auftraege, router }) {
                         {fmtDatum(a.einsatzdatum ?? a.datum)}
                       </td>
                       <td className="px-5 py-3.5 text-gray-600">
-                        {a.typ ?? '—'}
+                        {a.typ ?? 'â'}
                       </td>
                       <td className="px-5 py-3.5 text-gray-500 hidden md:table-cell">
                         <span className="text-xs">{technikerName(a)}</span>
@@ -628,7 +628,7 @@ function AuftraegeTab({ auftraege, router }) {
                         <button
                           onClick={e => { e.stopPropagation(); router.push(`/dashboard/auftraege/${a.id}`); }}
                           className="text-xs px-3 py-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-blue-50 hover:text-blue-600 border border-gray-100 transition font-medium">
-                          Öffnen →
+                          Ãffnen â
                         </button>
                       </td>
                     </tr>
@@ -643,9 +643,9 @@ function AuftraegeTab({ auftraege, router }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: HISTORIE (Timeline)
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function HistorieTab({ auftraege, rechnungen }) {
   const ereignisse = useMemo(() => {
@@ -686,7 +686,7 @@ function HistorieTab({ auftraege, rechnungen }) {
         liste.push({
           datum: a.einsatzdatum + 'T12:00:00',
           typ: 'einsatz_durchgefuehrt',
-          titel: 'Einsatz durchgeführt',
+          titel: 'Einsatz durchgefÃ¼hrt',
           beschreibung: a.typ ?? '',
           nummer,
           status: a.status,
@@ -750,7 +750,7 @@ function HistorieTab({ auftraege, rechnungen }) {
       <EmptyState
         icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
         title="Noch keine Historie"
-        text="Erstelle Aufträge und Rechnungen, um die Kundenhistorie aufzubauen."
+        text="Erstelle AuftrÃ¤ge und Rechnungen, um die Kundenhistorie aufzubauen."
       />
     );
   }
@@ -803,9 +803,9 @@ function HistorieTab({ auftraege, rechnungen }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: RECHNUNGEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function RechnungenTab({ rechnungen, router }) {
   const [filterStatus, setFilterStatus] = useState('');
@@ -828,7 +828,7 @@ function RechnungenTab({ rechnungen, router }) {
       <EmptyState
         icon="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
         title="Keine Rechnungen"
-        text="Noch keine Rechnungen für diesen Kunden vorhanden."
+        text="Noch keine Rechnungen fÃ¼r diesen Kunden vorhanden."
       />
     );
   }
@@ -843,7 +843,7 @@ function RechnungenTab({ rechnungen, router }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-orange-700">Offener Betrag</p>
-            <p className="text-xs text-orange-500">{offenBetrag.toFixed(2).replace('.', ',')} € noch nicht bezahlt</p>
+            <p className="text-xs text-orange-500">{offenBetrag.toFixed(2).replace('.', ',')} â¬ noch nicht bezahlt</p>
           </div>
         </div>
       )}
@@ -882,7 +882,7 @@ function RechnungenTab({ rechnungen, router }) {
                   <tr key={r.id} className="hover:bg-gray-50 transition cursor-pointer"
                     onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                     <td className="px-5 py-3.5 font-mono font-semibold text-gray-900">
-                      {r.rechnungsnummer ?? '—'}
+                      {r.rechnungsnummer ?? 'â'}
                     </td>
                     <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
                       {fmtDatum(r.datum ?? r.erstellt_am)}
@@ -895,14 +895,14 @@ function RechnungenTab({ rechnungen, router }) {
                         <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
                           {cfg.label}
                         </span>
-                        {isOverdue && <span className="text-xs text-red-500 font-medium">øberfällig</span>}
+                        {isOverdue && <span className="text-xs text-red-500 font-medium">Ã¸berfÃ¤llig</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <button
                         onClick={e => { e.stopPropagation(); router.push(`/dashboard/rechnungen/${r.id}`); }}
                         className="text-xs px-3 py-1.5 bg-gray-50 text-gray-500 rounded-lg hover:bg-blue-50 hover:text-blue-600 border border-gray-100 transition font-medium">
-                        Öffnen →
+                        Ãffnen â
                       </button>
                     </td>
                   </tr>
@@ -916,9 +916,9 @@ function RechnungenTab({ rechnungen, router }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    TAB: DOKUMENTE (Fotos + Einsatzdokumentation)
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function DokumenteTab({ auftraege, companyId }) {
   const [fotos, setFotos]             = useState([]);
@@ -949,7 +949,7 @@ function DokumenteTab({ auftraege, companyId }) {
     return fotos.filter(f => f.kategorie === fotoFilter);
   }, [fotos, fotoFilter]);
 
-  // Auftrags-Lookup für Auftragsnummer
+  // Auftrags-Lookup fÃ¼r Auftragsnummer
   const auftragMap = useMemo(() => {
     const m = {};
     auftraege.forEach(a => { m[a.id] = a; });
@@ -971,7 +971,7 @@ function DokumenteTab({ auftraege, companyId }) {
       <EmptyState
         icon="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
         title="Noch keine Dokumente"
-        text="Fotos und Dokumentationen werden hier angezeigt, sobald Einsätze abgeschlossen sind."
+        text="Fotos und Dokumentationen werden hier angezeigt, sobald EinsÃ¤tze abgeschlossen sind."
       />
     );
   }
@@ -979,7 +979,7 @@ function DokumenteTab({ auftraege, companyId }) {
   return (
     <div className="space-y-6">
 
-      {/* ── Einsatzdokumentation ── */}
+      {/* ââ Einsatzdokumentation ââ */}
       {dokumentationen.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -989,9 +989,9 @@ function DokumenteTab({ auftraege, companyId }) {
           {dokumentationen.map(dok => {
             const a = auftragMap[dok.auftrag_id];
             const felder = [
-              { label: 'Durchgeführte Arbeiten', value: dok.durchgefuehrte_arbeiten },
+              { label: 'DurchgefÃ¼hrte Arbeiten', value: dok.durchgefuehrte_arbeiten },
               { label: 'Schadensbeschreibung', value: dok.schaden_beschreibung },
-              { label: 'Maßnahmen', value: dok.massnahmen },
+              { label: 'MaÃnahmen', value: dok.massnahmen },
               { label: 'Empfehlungen', value: dok.empfehlungen },
               { label: 'Interne Notizen', value: dok.interne_notizen, intern: true },
             ].filter(f => f.value);
@@ -1004,7 +1004,7 @@ function DokumenteTab({ auftraege, companyId }) {
                       {a ? (a.nummer ?? a.titel ?? `Auftrag ${a.id?.slice(0, 8)}`) : 'Unbekannter Auftrag'}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {a?.typ ?? ''} {a?.einsatzdatum ? `· ${fmtDatum(a.einsatzdatum)}` : ''}
+                      {a?.typ ?? ''} {a?.einsatzdatum ? `Â· ${fmtDatum(a.einsatzdatum)}` : ''}
                     </p>
                   </div>
                   {dok.unterschrift_base64 && (
@@ -1033,9 +1033,9 @@ function DokumenteTab({ auftraege, companyId }) {
                       <Svg d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-blue-500 shrink-0" />
                       <div className="text-sm text-blue-700">
                         <span className="font-semibold">Arbeitszeit: </span>
-                        {dok.arbeit_start ? new Date(dok.arbeit_start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                        {' – '}
-                        {dok.arbeit_ende ? new Date(dok.arbeit_ende).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        {dok.arbeit_start ? new Date(dok.arbeit_start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'â'}
+                        {' â '}
+                        {dok.arbeit_ende ? new Date(dok.arbeit_ende).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'â'}
                         {dok.arbeit_start && dok.arbeit_ende && (() => {
                           const min = Math.round((new Date(dok.arbeit_ende) - new Date(dok.arbeit_start)) / 60000);
                           const h = Math.floor(Math.abs(min) / 60);
@@ -1052,7 +1052,7 @@ function DokumenteTab({ auftraege, companyId }) {
         </div>
       )}
 
-      {/* ── Fotogalerie ── */}
+      {/* ââ Fotogalerie ââ */}
       {fotos.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -1134,9 +1134,9 @@ function DokumenteTab({ auftraege, companyId }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    HAUPTKOMPONENTE
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const BERECHTIGTE_ROLLEN = ['inhaber', 'administrator', 'buero', 'disponent'];
 
@@ -1144,7 +1144,7 @@ const TABS = [
   { key: 'stammdaten',      label: 'Stammdaten'      },
   { key: 'ansprechpartner', label: 'Ansprechpartner' },
   { key: 'einsatzorte',     label: 'Einsatzorte'     },
-  { key: 'auftraege',       label: 'Aufträge'        },
+  { key: 'auftraege',       label: 'AuftrÃ¤ge'        },
   { key: 'historie',        label: 'Historie'        },
   { key: 'rechnungen',      label: 'Rechnungen'      },
   { key: 'dokumente',       label: 'Dokumente'       },
@@ -1279,7 +1279,7 @@ export default function KundeDetail() {
     router.push('/dashboard/kunden');
   }
 
-  /* ── Zustände ── */
+  /* ââ ZustÃ¤nde ââ */
   if (laden) {
     return (
       <div className="space-y-5 max-w-5xl animate-pulse">
@@ -1298,10 +1298,10 @@ export default function KundeDetail() {
           <Svg d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" cls="w-6 h-6 text-red-400" />
         </div>
         <h2 className="text-base font-semibold text-gray-800 mb-1">Kein Zugriff</h2>
-        <p className="text-sm text-gray-400 mb-5">Du hast keine Berechtigung, die vollständige Kundenakte einzusehen.</p>
+        <p className="text-sm text-gray-400 mb-5">Du hast keine Berechtigung, die vollstÃ¤ndige Kundenakte einzusehen.</p>
         <button onClick={() => router.push('/dashboard/kunden')}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-          Zurück zur Übersicht
+          ZurÃ¼ck zur Ãbersicht
         </button>
       </div>
     );
@@ -1309,18 +1309,18 @@ export default function KundeDetail() {
 
   const tabLabel = (key) => {
     if (key === 'einsatzorte') return `Einsatzorte (${objekte.length})`;
-    if (key === 'auftraege')   return `Aufträge (${auftraege.length})`;
+    if (key === 'auftraege')   return `AuftrÃ¤ge (${auftraege.length})`;
     if (key === 'rechnungen')  return `Rechnungen (${rechnungen.length})`;
     return TABS.find(t => t.key === key)?.label ?? key;
   };
 
   return (
     <div className="max-w-5xl pb-10 space-y-0">
-      {/* Zurück-Link */}
+      {/* ZurÃ¼ck-Link */}
       <div className="mb-4">
         <Link href="/dashboard/kunden" className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition">
           <Svg d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" cls="w-4 h-4" />
-          Zurück zur Kundenliste
+          ZurÃ¼ck zur Kundenliste
         </Link>
       </div>
 
