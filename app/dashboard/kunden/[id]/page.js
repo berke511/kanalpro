@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import TabNav from '@/components/ui/TabNav';
 
 /* ════════════════════════════════════════════════════════════════
    KONFIGURATION
@@ -1333,20 +1334,13 @@ export default function KundeDetail() {
       />
 
       {/* Tab-Leiste */}
-      <div className="mb-5 overflow-x-auto">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit min-w-full sm:min-w-0">
-          {TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
-                tab === t.key
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}>
-              {tabLabel(t.key)}
-            </button>
-          ))}
-        </div>
-      </div>
+      <TabNav
+        id="kunden-tabs"
+        tabs={TABS.map(t => ({ id: t.key, label: tabLabel(t.key) }))}
+        activeTab={tab}
+        onChange={setTab}
+        className="mb-5"
+      />
 
       {/* Tab-Inhalte */}
       {tab === 'stammdaten' && (
