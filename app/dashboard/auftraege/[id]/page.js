@@ -1928,10 +1928,57 @@ export default function AuftragBearbeiten() {
               </Karte>
             );
           })()}
+          {/* ── Abschlussbewertung ── */}
+          {(() => {
+            const bewChecks = [
+              { ok: !!einsatzDok },
+              { ok: !!(einsatzDok?.durchgefuehrte_arbeiten) },
+              { ok: !!(einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at) },
+              { ok: einsatzMat.length > 0 },
+              { ok: einsatzFotos.length > 0 },
+              { ok: !!(einsatzDok?.unterschrift_at || einsatzDok?.unterschrift_vorhanden) },
+            ];
+            const bewErfuellt = bewChecks.filter(bw => bw.ok).length;
+            const bewAllOk = bewErfuellt === bewChecks.length;
+            const bewOffen = bewChecks.length - bewErfuellt;
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  title="Abschlussbewertung"
+                  badgeVariant={bewAllOk ? 'green' : 'amber'}
+                />
+                <div className="px-5 py-5">
+                  {bewAllOk ? (
+                    <div className="flex items-start gap-3 p-4 bg-green-50 rounded-xl border border-green-100">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-4 h-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">Auftrag bereit zum Abschluss</p>
+                        <p className="text-sm text-green-700 mt-0.5">Alle erforderlichen Informationen wurden erfasst.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800">Auftrag noch nicht bereit</p>
+                        <p className="text-sm text-amber-700 mt-0.5">Noch {bewOffen} von {bewChecks.length} Punkten offen.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Karte>
+            );
+          })()}
+
           </Karte>
         </div>
       )}
 
     </div>
   );
-} 
+}
