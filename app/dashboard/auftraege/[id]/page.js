@@ -852,61 +852,39 @@ function NaechsterSchrittKarte({ auftrag, rechte, router }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   RECHTE SPALTE – AKTIVITÄTSCHRONIK (Vorbereitet)
+   RECHTE SPALTE – AKTIVITÄTSCHRONIK
 ════════════════════════════════════════════════════════════════ */
 
-function AktivitaetschronikKarte({ auftrag }) {
-  // Placeholder-Einträge — automatische Logik folgt in späteren Sprints
-  const eintraege = [
-    {
-      icon: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-      text: 'Auftrag erstellt',
-      ts: auftrag.created_at,
-      color: 'text-green-500 bg-green-50',
-    },
-    auftrag.status !== 'Neu' && {
-      icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
-      text: 'Auftrag geplant',
-      ts: null,
-      color: 'text-blue-500 bg-blue-50',
-    },
-    auftrag.fahrzeug_id && {
-      icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
-      text: 'Ressourcen eingeteilt',
-      ts: null,
-      color: 'text-purple-500 bg-purple-50',
-    },
-  ].filter(Boolean);
-
+function AktivitaetschronikKarte({ aktivitaeten }) {
   return (
     <Karte>
       <KarteHeader
         icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
         title="Aktivitätschronik"
-        badgeVariant="gray"
-        badge="Vorschau"
       />
       <div className="px-5 py-5">
-        {eintraege.length === 0 ? (
-          <p className="text-xs text-gray-300 text-center py-4 italic">Keine Aktivitäten</p>
+        {aktivitaeten.length === 0 ? (
+          <div className="text-center py-6 space-y-1">
+            <p className="text-sm font-medium text-gray-500">Noch keine Aktivitäten vorhanden</p>
+            <p className="text-xs text-gray-400">Für diesen Auftrag wurden bisher keine Aktivitäten protokolliert.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {eintraege.map((e, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${e.color}`}>
-                  <Svg d={e.icon} cls="w-3 h-3" />
+            {aktivitaeten.map((e) => (
+              <div key={e.id} className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-blue-500 bg-blue-50">
+                  <Svg d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-3 h-3" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700">{e.text}</p>
-                  {e.ts && <p className="text-[10px] text-gray-400 mt-0.5">{fmtDatum(e.ts)}</p>}
+                  <p className="text-xs font-medium text-gray-700">{e.aktion}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    {fmtDatum(e.erstellt_am)} · {fmtZeit(e.erstellt_am)}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         )}
-        <p className="text-[10px] text-gray-300 mt-4 text-center">
-          Automatische Protokollierung folgt in einem späteren Sprint.
-        </p>
       </div>
     </Karte>
   );
@@ -1342,6 +1320,7 @@ export default function AuftragBearbeiten() {
   const [einsatzMat,     setEinsatzMat]     = useState([]);
   const [einsatzFotos,   setEinsatzFotos]   = useState([]);
   const [rechnungen,     setRechnungen]     = useState([]);
+  const [aktivitaeten,   setAktivitaeten]   = useState([]);
 
   const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
@@ -1381,6 +1360,7 @@ export default function AuftragBearbeiten() {
         { data: matData },
         { data: fotosData },
         { data: rechnungenData },
+        { data: aktivitaetenData },
       ] = await Promise.all([
         supabase
           .from('auftraege')
@@ -1430,6 +1410,13 @@ export default function AuftragBearbeiten() {
           .eq('auftrag_id', id)
           .eq('company_id', member.company_id)
           .order('erstellt_am'),
+
+        supabase
+          .from('activity_log')
+          .select('id, aktion, details, erstellt_am')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id)
+          .order('erstellt_am', { ascending: false }),
       ]);
 
       if (auftragErr || !auftragData) { setZustand('not_found'); return; }
@@ -1441,6 +1428,7 @@ export default function AuftragBearbeiten() {
       setEinsatzMat(matData ?? []);
       setEinsatzFotos(fotosData ?? []);
       setRechnungen(rechnungenData ?? []);
+      setAktivitaeten(aktivitaetenData ?? []);
       setZustand('ok');
     } catch {
       setZustand('not_found');
@@ -1575,7 +1563,7 @@ export default function AuftragBearbeiten() {
             />
 
             {/* Aktivitätschronik (vorbereitet) */}
-            <AktivitaetschronikKarte auftrag={auftrag} />
+            <AktivitaetschronikKarte aktivitaeten={aktivitaeten} />
           </div>
         </div>
       )}
