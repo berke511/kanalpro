@@ -1682,6 +1682,37 @@ export default function AuftragBearbeiten() {
               </div>
             </Karte>
           )}
+          {einsatzDok && (
+            <Karte>
+              <KarteHeader icon="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" title="Material" />
+              <div className="px-5 py-5">
+                {einsatzMat.length === 0 ? (
+                  <div className="text-center py-6 space-y-2">
+                    <p className="text-sm font-medium text-gray-500">Kein Material erfasst</p>
+                    <p className="text-xs text-gray-400">Für diesen Auftrag wurde bisher kein Material dokumentiert.</p>
+                    <button
+                      onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                      Vollständige Dokumentation öffnen
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 mb-3">{einsatzMat.length} Position{einsatzMat.length !== 1 ? 'en' : ''} erfasst</p>
+                    {einsatzMat.slice(0,3).map((m,i) => (
+                      <div key={m.id??i} className="flex justify-between items-center text-sm py-1.5 border-b border-gray-50 last:border-0">
+                        <span className="text-gray-800 font-medium">{m.bezeichnung}</span>
+                        <span className="text-gray-500 text-xs">{m.menge} {m.einheit}</span>
+                      </div>
+                    ))}
+                    {einsatzMat.length > 3 && (
+                      <p className="text-xs text-gray-400 pt-1">+ {einsatzMat.length - 3} weitere Position{einsatzMat.length - 3 !== 1 ? 'en' : ''}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Karte>
+          )}
         </div>
       )}
 
