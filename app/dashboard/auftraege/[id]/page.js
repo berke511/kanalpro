@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    ROLLEN & RECHTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function berechneRechte(rolle) {
   const alle      = ['inhaber', 'administrator'];
@@ -22,9 +22,9 @@ function berechneRechte(rolle) {
   };
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    STATUS-KONFIGURATION
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 const STATUS_CFG = {
   'Neu':           { bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500',   border: 'border-blue-200'   },
@@ -38,7 +38,7 @@ const STATUS_CFG = {
 const STATUS_LISTE = Object.keys(STATUS_CFG);
 
 const RESSOURCE_STATUS = {
-  verfuegbar: { label: 'VerfÃ¼gbar',   dot: 'bg-green-500'  },
+  verfuegbar: { label: 'VerfÃÂ¼gbar',   dot: 'bg-green-500'  },
   im_einsatz: { label: 'Im Einsatz',  dot: 'bg-orange-400' },
   urlaub:     { label: 'Urlaub',      dot: 'bg-blue-400'   },
   krank:      { label: 'Krank',       dot: 'bg-red-400'    },
@@ -49,16 +49,16 @@ const RESSOURCE_STATUS = {
   wartung:    { label: 'In Wartung',  dot: 'bg-yellow-400' },
 };
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    WORKFLOW-KONFIGURATION
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    TAB-KONFIGURATION
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 const AUFTRAG_TABS = [
-  { id: 'uebersicht',    label: 'Ãbersicht'            },
+  { id: 'uebersicht',    label: 'ÃÂbersicht'            },
   { id: 'planung',       label: 'Planung'              },
   { id: 'ressourcen',    label: 'Ressourcen'           },
   { id: 'einsatz',       label: 'Einsatz & Dokumentation' },
@@ -72,7 +72,7 @@ const WORKFLOW_SCHRITTE = [
   { key: 'bearbeiten',    label: 'Auftrag bearbeiten',    kurz: 'Bearbeiten'  },
   { key: 'dokumentieren', label: 'Einsatz dokumentieren', kurz: 'Doku'        },
   { key: 'unterschrift',  label: 'Kundenunterschrift',    kurz: 'Unterschrift'},
-  { key: 'abschluss',     label: 'Auftrag abschlieÃen',  kurz: 'Abschluss'   },
+  { key: 'abschluss',     label: 'Auftrag abschlieÃÂen',  kurz: 'Abschluss'   },
 ];
 
 function berechneWorkflowStati(auftrag, mitarbeiterList) {
@@ -94,13 +94,13 @@ function berechneWorkflowStati(auftrag, mitarbeiterList) {
   };
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    HILFSFUNKTIONEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function kundeAnzeigeName(k) {
-  if (!k) return 'â';
-  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? 'â') : (k.name ?? 'â');
+  if (!k) return 'Ã¢ÂÂ';
+  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? 'Ã¢ÂÂ') : (k.name ?? 'Ã¢ÂÂ');
 }
 
 function parseNotizen(raw) {
@@ -115,7 +115,7 @@ function parseNotizen(raw) {
 }
 
 function fmtDatum(iso) {
-  if (!iso) return 'â';
+  if (!iso) return 'Ã¢ÂÂ';
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
@@ -129,7 +129,7 @@ function fmtZeit(iso) {
 }
 
 function minZuHM(min) {
-  if (min == null || isNaN(min)) return 'â';
+  if (min == null || isNaN(min)) return 'Ã¢ÂÂ';
   const h = Math.floor(Math.abs(min) / 60);
   const m = Math.abs(min) % 60;
   return `${h}h ${m}min`;
@@ -140,9 +140,9 @@ function initials(m) {
   return ((m.vorname?.[0] ?? '') + (m.nachname?.[0] ?? '')).toUpperCase() || '?';
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    BASIS-KOMPONENTEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function Svg({ d, cls = 'w-4 h-4' }) {
   return (
@@ -219,7 +219,7 @@ function InfoZeile({ label, value, fullWidth = false }) {
   return (
     <div className={fullWidth ? 'col-span-2' : ''}>
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-sm text-gray-900 font-medium">{value || <span className="text-gray-300 font-normal italic">â</span>}</p>
+      <p className="text-sm text-gray-900 font-medium">{value || <span className="text-gray-300 font-normal italic">Ã¢ÂÂ</span>}</p>
     </div>
   );
 }
@@ -234,9 +234,9 @@ function EditBtn({ onClick }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   SKELETON / FEHLERZUSTÃNDE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   SKELETON / FEHLERZUSTÃÂNDE
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function Skeleton() {
   return (
@@ -271,9 +271,9 @@ function FehlerKarte({ icon, titel, text, button }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    WORKFLOW-LEISTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function WorkflowLeiste({ auftrag, mitarbeiterList }) {
   const stati = berechneWorkflowStati(auftrag, mitarbeiterList);
@@ -346,9 +346,9 @@ function WorkflowLeiste({ auftrag, mitarbeiterList }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   BEREICH 1 â AUFTRAGSINFORMATIONEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   BEREICH 1 Ã¢ÂÂ AUFTRAGSINFORMATIONEN
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
   const [edit,   setEdit]   = useState(false);
@@ -382,7 +382,7 @@ function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
 
   const kname  = kundeAnzeigeName(auftrag.kunden);
   const adresse = [auftrag.einsatzort_strasse, auftrag.einsatzort_plz, auftrag.einsatzort_ort].filter(Boolean).join(', ');
-  const telefon = auftrag.kunden?.telefon ?? auftrag.telefon ?? 'â';
+  const telefon = auftrag.kunden?.telefon ?? auftrag.telefon ?? 'Ã¢ÂÂ';
 
   return (
     <Karte>
@@ -401,13 +401,13 @@ function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
             <InfoZeile label="Auftragsnummer" value={auftrag.nummer} />
             <InfoZeile label="Auftragsart"    value={auftrag.typ} />
-            <InfoZeile label="PrioritÃ¤t"      value={auftrag.prioritaet} />
+            <InfoZeile label="PrioritÃÂ¤t"      value={auftrag.prioritaet} />
             <InfoZeile label="Kunde"          value={kname} />
             <InfoZeile label="Ansprechpartner" value={auftrag.ansprechpartner} />
             <InfoZeile label="Telefon"        value={telefon} />
-            <InfoZeile label="Einsatzort"     value={adresse || 'â'} fullWidth />
+            <InfoZeile label="Einsatzort"     value={adresse || 'Ã¢ÂÂ'} fullWidth />
             <InfoZeile label="Einsatzdatum"   value={fmtDatum(auftrag.einsatzdatum)} />
-            <InfoZeile label="Startzeit"      value={auftrag.startzeit ?? 'â'} />
+            <InfoZeile label="Startzeit"      value={auftrag.startzeit ?? 'Ã¢ÂÂ'} />
             <InfoZeile label="Erstellungsdatum" value={fmtDatum(auftrag.created_at)} />
             {auftrag.beschreibung && (
               <div className="col-span-2 sm:col-span-3">
@@ -451,7 +451,7 @@ function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
                 Beschreibung
               </label>
               <textarea rows={3} value={form.beschreibung} onChange={set('beschreibung')}
-                placeholder="Auftragsbeschreibungâ¦" className={`${inp()} resize-none`} />
+                placeholder="AuftragsbeschreibungÃ¢ÂÂ¦" className={`${inp()} resize-none`} />
             </div>
             <div className="flex items-center gap-3 pt-1">
               <button onClick={speichern} disabled={saving}
@@ -482,9 +482,9 @@ function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   BEREICH 2 â RESSOURCEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   BEREICH 2 Ã¢ÂÂ RESSOURCEN
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function RessourcenKarte({ auftrag, mitarbeiterList, maschinenList, rechte, auftragId }) {
   const fahrzeug    = auftrag.fahrzeuge;
@@ -574,11 +574,11 @@ function RessourcenKarte({ auftrag, mitarbeiterList, maschinenList, rechte, auft
           </div>
         )}
 
-        {/* Maschinen & GerÃ¤te */}
+        {/* Maschinen & GerÃÂ¤te */}
         {maschinenList.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
-              Maschinen & GerÃ¤te ({maschinenList.length})
+              Maschinen & GerÃÂ¤te ({maschinenList.length})
             </p>
             <div className="space-y-1.5">
               {maschinenList.map(g => (
@@ -588,7 +588,7 @@ function RessourcenKarte({ auftrag, mitarbeiterList, maschinenList, rechte, auft
                       cls="w-3 h-3 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-700">{g.name}</p>
-                  {g.typ && <span className="text-xs text-gray-400">Â· {g.typ}</span>}
+                  {g.typ && <span className="text-xs text-gray-400">ÃÂ· {g.typ}</span>}
                   <div className="ml-auto"><RessourceStatusDot status={g.zustand} /></div>
                 </div>
               ))}
@@ -600,9 +600,9 @@ function RessourcenKarte({ auftrag, mitarbeiterList, maschinenList, rechte, auft
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   BEREICH 4 â AUFTRAGSNOTIZEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   BEREICH 4 Ã¢ÂÂ AUFTRAGSNOTIZEN
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function NotizenKarte({ auftrag, rechte, userName, onRefresh }) {
   const [notizen, setNotizen]     = useState(() => parseNotizen(auftrag.interne_notizen));
@@ -663,7 +663,7 @@ function NotizenKarte({ auftrag, rechte, userName, onRefresh }) {
               rows={3}
               value={neuText}
               onChange={e => setNeuText(e.target.value)}
-              placeholder="Notiz hinzufÃ¼genâ¦"
+              placeholder="Notiz hinzufÃÂ¼genÃ¢ÂÂ¦"
               className={`${inp()} resize-none mb-2`}
             />
             <button onClick={hinzufuegen} disabled={saving || !neuText.trim()}
@@ -681,9 +681,9 @@ function NotizenKarte({ auftrag, rechte, userName, onRefresh }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   RECHTE SPALTE â STATUS-KARTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   RECHTE SPALTE Ã¢ÂÂ STATUS-KARTE
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function StatusKarte({ auftrag, rechte, onRefresh }) {
   const [status,  setStatus]  = useState(auftrag.status ?? 'Neu');
@@ -753,7 +753,7 @@ function StatusKarte({ auftrag, rechte, onRefresh }) {
           </>
         )}
 
-        {/* AbschlieÃen */}
+        {/* AbschlieÃÂen */}
         {rechte.abschliessen && auftrag.status !== 'Abgeschlossen' && (
           <div className="border-t border-gray-50 pt-3">
             <button
@@ -766,7 +766,7 @@ function StatusKarte({ auftrag, rechte, onRefresh }) {
               disabled={saving}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition disabled:opacity-60">
               <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
-              Auftrag abschlieÃen
+              Auftrag abschlieÃÂen
             </button>
           </div>
         )}
@@ -775,9 +775,9 @@ function StatusKarte({ auftrag, rechte, onRefresh }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   RECHTE SPALTE â NÃCHSTER SCHRITT (Bereich 5)
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   RECHTE SPALTE Ã¢ÂÂ NÃÂCHSTER SCHRITT (Bereich 5)
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function NaechsterSchrittKarte({ auftrag, rechte, router }) {
   const istAbgeschlossen = auftrag.status === 'Abgeschlossen';
@@ -816,12 +816,12 @@ function NaechsterSchrittKarte({ auftrag, rechte, router }) {
   return (
     <Karte>
       <div className="px-5 py-5">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">NÃ¤chster Schritt</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">NÃÂ¤chster Schritt</p>
         <button
           onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftrag.id}`)}
           className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition shadow-sm shadow-blue-200 group">
           <Svg d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" cls="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-          Einsatz durchfÃ¼hren
+          Einsatz durchfÃÂ¼hren
         </button>
         <p className="text-xs text-gray-400 text-center mt-2">Zur Einsatzdokumentation</p>
 
@@ -851,22 +851,22 @@ function NaechsterSchrittKarte({ auftrag, rechte, router }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
-   RECHTE SPALTE â AKTIVITÃTSCHRONIK
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+   RECHTE SPALTE Ã¢ÂÂ AKTIVITÃÂTSCHRONIK
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 function AktivitaetschronikKarte({ aktivitaeten }) {
   return (
     <Karte>
       <KarteHeader
         icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-        title="AktivitÃ¤tschronik"
+        title="AktivitÃÂ¤tschronik"
       />
       <div className="px-5 py-5">
         {aktivitaeten.length === 0 ? (
           <div className="text-center py-6 space-y-1">
-            <p className="text-sm font-medium text-gray-500">Noch keine AktivitÃ¤ten vorhanden</p>
-            <p className="text-xs text-gray-400">FÃ¼r diesen Auftrag wurden bisher keine AktivitÃ¤ten protokolliert.</p>
+            <p className="text-sm font-medium text-gray-500">Noch keine AktivitÃÂ¤ten vorhanden</p>
+            <p className="text-xs text-gray-400">FÃÂ¼r diesen Auftrag wurden bisher keine AktivitÃÂ¤ten protokolliert.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -878,7 +878,7 @@ function AktivitaetschronikKarte({ aktivitaeten }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-700">{e.aktion}</p>
                   <p className="text-[10px] text-gray-400 mt-0.5">
-                    {fmtDatum(e.erstellt_am)} Â· {fmtZeit(e.erstellt_am)}
+                    {fmtDatum(e.erstellt_am)} ÃÂ· {fmtZeit(e.erstellt_am)}
                   </p>
                 </div>
               </div>
@@ -890,9 +890,9 @@ function AktivitaetschronikKarte({ aktivitaeten }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    EINSATZ-SUMMARY (Tab: Einsatz & Dokumentation)
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 const EINSATZ_STATUS_CFG = {
   'Unterwegs':      { bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
@@ -903,7 +903,7 @@ const EINSATZ_STATUS_CFG = {
 };
 
 function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
-  /* ââ Empty State ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Empty State Ã¢ÂÂÃ¢ÂÂ */
   if (!dok) {
     return (
       <div className="max-w-lg">
@@ -916,7 +916,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-900 mb-1">Noch keine Einsatzdokumentation vorhanden</h2>
-            <p className="text-sm text-gray-400">Der Techniker hat fÃ¼r diesen Auftrag noch keine Dokumentation erfasst.</p>
+            <p className="text-sm text-gray-400">Der Techniker hat fÃÂ¼r diesen Auftrag noch keine Dokumentation erfasst.</p>
           </div>
           <button
             onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftragId}`)}
@@ -929,7 +929,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
     );
   }
 
-  /* ââ Berechnungen ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Berechnungen Ã¢ÂÂÃ¢ÂÂ */
   const statusCfg = EINSATZ_STATUS_CFG[dok.status] ?? { bg: 'bg-gray-50', text: 'text-gray-500', dot: 'bg-gray-400' };
   const dauer = (dok.arbeit_begonnen_at && dok.arbeit_beendet_at)
     ? Math.round((new Date(dok.arbeit_beendet_at) - new Date(dok.arbeit_begonnen_at)) / 60000)
@@ -939,14 +939,14 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
   const ersteFotos  = (fotos   ?? []).slice(0, 3);
 
   function ZeitZeile({ label, iso }) {
-    if (!iso) return <InfoZeile label={label} value="â" />;
+    if (!iso) return <InfoZeile label={label} value="Ã¢ÂÂ" />;
     return <InfoZeile label={label} value={`${fmtDatum(iso)}  ${fmtZeit(iso)}`} />;
   }
 
   return (
     <div className="space-y-5 max-w-3xl">
 
-      {/* 1 â Einsatzstatus */}
+      {/* 1 Ã¢ÂÂ Einsatzstatus */}
       <Karte>
         <KarteHeader
           icon="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
@@ -961,11 +961,11 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
         </div>
       </Karte>
 
-      {/* 2 â ZeitÃ¼bersicht */}
+      {/* 2 Ã¢ÂÂ ZeitÃÂ¼bersicht */}
       <Karte>
         <KarteHeader
           icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-          title="ZeitÃ¼bersicht"
+          title="ZeitÃÂ¼bersicht"
           badgeVariant="blue"
         />
         <div className="px-5 py-5 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
@@ -979,18 +979,18 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
         </div>
       </Karte>
 
-      {/* 3 â TÃ¤tigkeiten */}
+      {/* 3 Ã¢ÂÂ TÃÂ¤tigkeiten */}
       {(dok.taetigkeiten || dok.schaden || dok.massnahmen || dok.empfehlung) && (
         <Karte>
           <KarteHeader
             icon="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-            title="TÃ¤tigkeiten"
+            title="TÃÂ¤tigkeiten"
             badgeVariant="blue"
           />
           <div className="px-5 py-5 space-y-4">
             {dok.taetigkeiten && (
               <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">DurchgefÃ¼hrte Arbeiten</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">DurchgefÃÂ¼hrte Arbeiten</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.taetigkeiten}</p>
               </div>
             )}
@@ -1002,7 +1002,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
             )}
             {dok.massnahmen && (
               <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">DurchgefÃ¼hrte MaÃnahmen</p>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">DurchgefÃÂ¼hrte MaÃÂnahmen</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.massnahmen}</p>
               </div>
             )}
@@ -1016,7 +1016,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
         </Karte>
       )}
 
-      {/* 4 â Material */}
+      {/* 4 Ã¢ÂÂ Material */}
       <Karte>
         <KarteHeader
           icon="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
@@ -1050,7 +1050,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
         </div>
       </Karte>
 
-      {/* 5 â Fotos */}
+      {/* 5 Ã¢ÂÂ Fotos */}
       <Karte>
         <KarteHeader
           icon="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
@@ -1084,7 +1084,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
         </div>
       </Karte>
 
-      {/* 6 â Kundenunterschrift */}
+      {/* 6 Ã¢ÂÂ Kundenunterschrift */}
       <Karte>
         <KarteHeader
           icon="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
@@ -1112,7 +1112,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
           onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftragId}`)}
           className="flex items-center gap-2 px-5 py-3 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition shadow-sm shadow-amber-100">
           <Svg d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" cls="w-4 h-4" />
-          VollstÃ¤ndige Dokumentation Ã¶ffnen
+          VollstÃÂ¤ndige Dokumentation ÃÂ¶ffnen
         </button>
       </div>
 
@@ -1120,20 +1120,20 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    ABSCHLUSS TAB
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 const RECHNUNG_STATUS_CFG = {
   'Entwurf':   { bg: 'bg-gray-100',   text: 'text-gray-600',   dot: 'bg-gray-400'   },
   'Gesendet':  { bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500'   },
   'Bezahlt':   { bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500'  },
-  'ÃberfÃ¤llig':{ bg: 'bg-red-50',     text: 'text-red-700',    dot: 'bg-red-500'    },
+  'ÃÂberfÃÂ¤llig':{ bg: 'bg-red-50',     text: 'text-red-700',    dot: 'bg-red-500'    },
   'Storniert': { bg: 'bg-gray-100',   text: 'text-gray-500',   dot: 'bg-gray-400'   },
 };
 
 function fmtEuro(val) {
-  if (val == null) return 'â';
+  if (val == null) return 'Ã¢ÂÂ';
   return Number(val).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 }
 
@@ -1141,7 +1141,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
   const abgeschlossen = auftrag?.status === 'Abgeschlossen';
   const freigegeben   = !!auftrag?.freigegeben_fuer_rechnung;
 
-  /* ââ Empty State: noch nicht abgeschlossen und keine Rechnung ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ Empty State: noch nicht abgeschlossen und keine Rechnung Ã¢ÂÂÃ¢ÂÂ */
   if (!abgeschlossen && rechnungen.length === 0) {
     return (
       <div className="max-w-lg">
@@ -1155,12 +1155,12 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-900 mb-1">Abschluss</h2>
-            <p className="text-sm text-gray-500">PrÃ¼fe die Dokumentation und schlieÃe den Auftrag ab.</p>
+            <p className="text-sm text-gray-500">PrÃÂ¼fe die Dokumentation und schlieÃÂe den Auftrag ab.</p>
           </div>
           <button
             onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${auftragId}`)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
-            Auftrag abschlieÃen
+            Auftrag abschlieÃÂen
           </button>
         </div>
       </div>
@@ -1170,7 +1170,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
   return (
     <div className="space-y-5 max-w-2xl">
 
-      {/* ââ Abschluss-Status ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Abschluss-Status Ã¢ÂÂÃ¢ÂÂ */}
       <Karte titel="Abschluss-Status">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -1196,7 +1196,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
           )}
 
           <div className="space-y-1">
-            <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Freigabe fÃ¼r Rechnung</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Freigabe fÃÂ¼r Rechnung</p>
             {freigegeben ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
                 <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
@@ -1212,7 +1212,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
 
           {auftrag?.rueckgabe_grund && (
             <div className="sm:col-span-2 space-y-1">
-              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">RÃ¼ckgabegrund</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">RÃÂ¼ckgabegrund</p>
               <p className="text-sm text-gray-700 bg-red-50 rounded-xl px-3 py-2">{auftrag.rueckgabe_grund}</p>
             </div>
           )}
@@ -1229,13 +1229,13 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
                 <path strokeLinecap="round" strokeLinejoin="round"
                   d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Auftrag abschlieÃen
+              Auftrag abschlieÃÂen
             </button>
           </div>
         )}
       </Karte>
 
-      {/* ââ Rechnungen ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Rechnungen Ã¢ÂÂÃ¢ÂÂ */}
       {rechnungen.length > 0 && (
         <Karte titel={`Rechnungen (${rechnungen.length})`}>
           <div className="space-y-3">
@@ -1256,7 +1256,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
                   <div className="text-right shrink-0">
                     <p className="text-sm font-semibold text-gray-900">{fmtEuro(r.betrag_brutto)}</p>
                     <p className="text-xs text-gray-400">
-                      {r.bezahlt_am ? `Bezahlt ${fmtDatum(r.bezahlt_am)}` : r.faellig_am ? `FÃ¤llig ${fmtDatum(r.faellig_am)}` : fmtDatum(r.erstellt_am)}
+                      {r.bezahlt_am ? `Bezahlt ${fmtDatum(r.bezahlt_am)}` : r.faellig_am ? `FÃÂ¤llig ${fmtDatum(r.faellig_am)}` : fmtDatum(r.erstellt_am)}
                     </p>
                   </div>
                 </div>
@@ -1282,7 +1282,7 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
       {rechnungen.length === 0 && abgeschlossen && (
         <Karte titel="Rechnungen">
           <div className="text-center py-6 space-y-3">
-            <p className="text-sm text-gray-400">Noch keine Rechnung fÃ¼r diesen Auftrag erstellt.</p>
+            <p className="text-sm text-gray-400">Noch keine Rechnung fÃÂ¼r diesen Auftrag erstellt.</p>
             <button
               onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag_id=${auftragId}`)}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
@@ -1300,9 +1300,9 @@ function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
    HAUPTKOMPONENTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ */
 
 export default function AuftragBearbeiten() {
   const { id }   = useParams();
@@ -1347,7 +1347,7 @@ export default function AuftragBearbeiten() {
       setUserRolle(rolle);
       setUserName(mName || user.email || 'Benutzer');
 
-      // PrÃ¼fe Zugriff
+      // PrÃÂ¼fe Zugriff
       const erlaubt = ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'];
       if (!erlaubt.includes(rolle)) { setZustand('forbidden'); return; }
 
@@ -1437,18 +1437,18 @@ export default function AuftragBearbeiten() {
 
   useEffect(() => { ladeDaten(); }, [ladeDaten]);
 
-  /* ââ States ââ */
+  /* Ã¢ÂÂÃ¢ÂÂ States Ã¢ÂÂÃ¢ÂÂ */
   if (zustand === 'loading') return <Skeleton />;
 
   if (zustand === 'forbidden') return (
     <FehlerKarte
       icon="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
       titel="Kein Zugriff"
-      text="Du hast keine Berechtigung, diesen Auftrag zu Ã¶ffnen."
+      text="Du hast keine Berechtigung, diesen Auftrag zu ÃÂ¶ffnen."
       button={
         <button onClick={() => router.push('/dashboard/auftraege')}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-          ZurÃ¼ck zur Ãbersicht
+          ZurÃÂ¼ck zur ÃÂbersicht
         </button>
       }
     />
@@ -1458,11 +1458,11 @@ export default function AuftragBearbeiten() {
     <FehlerKarte
       icon="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
       titel="Auftrag nicht gefunden"
-      text="Dieser Auftrag existiert nicht oder wurde gelÃ¶scht."
+      text="Dieser Auftrag existiert nicht oder wurde gelÃÂ¶scht."
       button={
         <button onClick={() => router.push('/dashboard/auftraege')}
           className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-          ZurÃ¼ck zur Ãbersicht
+          ZurÃÂ¼ck zur ÃÂbersicht
         </button>
       }
     />
@@ -1476,7 +1476,7 @@ export default function AuftragBearbeiten() {
   return (
     <div className="space-y-5 max-w-6xl pb-10">
 
-      {/* ââ Header ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Header Ã¢ÂÂÃ¢ÂÂ */}
       <div className="flex items-start gap-3">
         <button onClick={() => router.push('/dashboard/auftraege')}
           className="mt-0.5 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition shrink-0">
@@ -1488,7 +1488,7 @@ export default function AuftragBearbeiten() {
             <StatusBadge status={auftrag.status} />
           </div>
           <p className="text-sm text-gray-400 mt-0.5 truncate">
-            {[auftrag.typ, kname, fmtDatum(auftrag.einsatzdatum)].filter(Boolean).join(' Â· ')}
+            {[auftrag.typ, kname, fmtDatum(auftrag.einsatzdatum)].filter(Boolean).join(' ÃÂ· ')}
           </p>
         </div>
         {/* Header-Aktionen */}
@@ -1502,10 +1502,10 @@ export default function AuftragBearbeiten() {
         </div>
       </div>
 
-      {/* ââ Workflow-Leiste (Bereich 3) ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Workflow-Leiste (Bereich 3) Ã¢ÂÂÃ¢ÂÂ */}
       <WorkflowLeiste auftrag={auftrag} mitarbeiterList={mitarbeiterList} />
 
-      {/* ââ Tab-Navigation ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Tab-Navigation Ã¢ÂÂÃ¢ÂÂ */}
       <TabNav
         id="auftrag-tabs"
         tabs={AUFTRAG_TABS}
@@ -1515,10 +1515,10 @@ export default function AuftragBearbeiten() {
         className="mb-5"
       />
 
-      {/* ââ Tab: Ãbersicht (bestehendes 2-Spalten-Layout) ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Tab: ÃÂbersicht (bestehendes 2-Spalten-Layout) Ã¢ÂÂÃ¢ÂÂ */}
       {auftragTab === 'uebersicht' && (
         <div className="space-y-5">
-          {/* ââ Auftragszusammenfassung ââ */}
+          {/* Ã¢ÂÂÃ¢ÂÂ Auftragszusammenfassung Ã¢ÂÂÃ¢ÂÂ */}
           {(() => {
             const sumChecks = [
               { label: 'Planung',        ok: !!auftrag?.einsatzdatum },
@@ -1553,7 +1553,7 @@ export default function AuftragBearbeiten() {
               </Karte>
             );
           })()}
-          {/* ── Nächster Schritt ── */}
+          {/* ââ NÃ¤chster Schritt ââ */}
           {(() => {
             const hatPlanung = !!auftrag?.einsatzdatum;
             const hatRessourcen = mitarbeiterList.length > 0 || !!auftrag?.fahrzeuge;
@@ -1562,11 +1562,11 @@ export default function AuftragBearbeiten() {
             const istAbgeschlossen = auftrag?.status === 'Abgeschlossen';
             let step = null;
             if (!hatPlanung) {
-              step = { title: 'Planung erforderlich', href: `/dashboard/auftraege/planen?id=${auftrag?.id}`, btnLabel: 'Planung öffnen' };
+              step = { title: 'Planung erforderlich', href: `/dashboard/auftraege/planen?id=${auftrag?.id}`, btnLabel: 'Planung Ã¶ffnen' };
             } else if (!hatRessourcen) {
-              step = { title: 'Ressourcen zuweisen', href: `/dashboard/auftraege/zuweisung?id=${auftrag?.id}`, btnLabel: 'Ressourcen öffnen' };
+              step = { title: 'Ressourcen zuweisen', href: `/dashboard/auftraege/zuweisung?id=${auftrag?.id}`, btnLabel: 'Ressourcen Ã¶ffnen' };
             } else if (!hatDok) {
-              step = { title: 'Einsatz dokumentieren', href: `/dashboard/auftraege/einsatzbericht?id=${auftrag?.id}`, btnLabel: 'Einsatzbericht öffnen' };
+              step = { title: 'Einsatz dokumentieren', href: `/dashboard/auftraege/einsatzbericht?id=${auftrag?.id}`, btnLabel: 'Einsatzbericht Ã¶ffnen' };
             } else if (!hatRechnung && istAbgeschlossen) {
               step = { title: 'Rechnung erstellen', href: `/dashboard/rechnungen/neu?auftrag=${auftrag?.id}`, btnLabel: 'Rechnung erstellen' };
             }
@@ -1574,7 +1574,7 @@ export default function AuftragBearbeiten() {
               <Karte>
                 <KarteHeader
                   icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                  title="Nächster Schritt"
+                  title="NÃ¤chster Schritt"
                   badgeVariant={step ? 'blue' : 'green'}
                 />
                 <div className="px-5 py-5">
@@ -1598,10 +1598,53 @@ export default function AuftragBearbeiten() {
                         <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">Auftrag vollständig abgeschlossen</p>
-                        <p className="text-sm text-gray-400 mt-0.5">Für diesen Auftrag sind aktuell keine weiteren Schritte erforderlich.</p>
+                        <p className="text-sm font-semibold text-gray-800">Auftrag vollstÃ¤ndig abgeschlossen</p>
+                        <p className="text-sm text-gray-400 mt-0.5">FÃ¼r diesen Auftrag sind aktuell keine weiteren Schritte erforderlich.</p>
                       </div>
                     </div>
+                  )}
+                </div>
+              </Karte>
+            );
+          })()}
+          {/* ── Warnhinweise ── */}
+          {(() => {
+            const warnungen = [];
+            if (!auftrag?.einsatzdatum) warnungen.push('Kein Einsatzdatum festgelegt.');
+            if (mitarbeiterList.length === 0) warnungen.push('Keine Mitarbeiter zugewiesen.');
+            if (!einsatzDok) warnungen.push('Keine Einsatzdokumentation vorhanden.');
+            if (einsatzDok && !(einsatzDok.unterschrift_at || einsatzDok.unterschrift_vorhanden)) {
+              warnungen.push('Kundenunterschrift fehlt.');
+            }
+            if (auftrag?.status === 'Abgeschlossen' && rechnungen.length === 0) {
+              warnungen.push('Auftrag abgeschlossen, aber keine Rechnung vorhanden.');
+            }
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  title="Warnhinweise"
+                  badgeVariant={warnungen.length > 0 ? 'amber' : 'green'}
+                />
+                <div className="px-5 py-5">
+                  {warnungen.length === 0 ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                        <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500" />
+                      </div>
+                      <p className="text-sm text-gray-500">Keine offenen Warnhinweise</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {warnungen.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                            <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-3 h-3 text-amber-500" />
+                          </div>
+                          <p className="text-sm text-gray-700">{w}</p>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               </Karte>
@@ -1645,21 +1688,21 @@ export default function AuftragBearbeiten() {
               onRefresh={ladeDaten}
             />
 
-            {/* Bereich 5: NÃ¤chster Schritt */}
+            {/* Bereich 5: NÃÂ¤chster Schritt */}
             <NaechsterSchrittKarte
               auftrag={auftrag}
               rechte={rechte}
               router={router}
             />
 
-            {/* AktivitÃ¤tschronik (vorbereitet) */}
+            {/* AktivitÃÂ¤tschronik (vorbereitet) */}
             <AktivitaetschronikKarte aktivitaeten={aktivitaeten} />
           </div>
         </div>
         </div>
       )}
 
-      {/* ââ Tab: Planung ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Tab: Planung Ã¢ÂÂÃ¢ÂÂ */}
       {auftragTab === 'planung' && (
         <div className="max-w-lg">
           <Karte>
@@ -1711,7 +1754,7 @@ export default function AuftragBearbeiten() {
         </div>
       )}
 
-      {/* ââ Tab: Ressourcen ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Tab: Ressourcen Ã¢ÂÂÃ¢ÂÂ */}
       {auftragTab === 'ressourcen' && (
         <div className="max-w-lg">
           {(() => {
@@ -1724,14 +1767,14 @@ export default function AuftragBearbeiten() {
               <Karte>
                 <KarteHeader
                   icon="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-                  title="RessourcenÃ¼bersicht"
+                  title="RessourcenÃÂ¼bersicht"
                   badgeVariant={hatDaten ? 'purple' : 'gray'}
                 />
                 <div className="px-5 py-5 space-y-5">
                   {!hatDaten ? (
                     <div className="text-center py-6">
                       <p className="text-sm font-semibold text-gray-500 mb-1">Noch keine Ressourcen zugewiesen</p>
-                      <p className="text-sm text-gray-400">FÃ¼r diesen Auftrag wurden noch keine Mitarbeiter, Fahrzeuge oder GerÃ¤te eingeteilt.</p>
+                      <p className="text-sm text-gray-400">FÃÂ¼r diesen Auftrag wurden noch keine Mitarbeiter, Fahrzeuge oder GerÃÂ¤te eingeteilt.</p>
                     </div>
                   ) : (
                     <>
@@ -1775,11 +1818,11 @@ export default function AuftragBearbeiten() {
                           </div>
                         </div>
                       )}
-                      {/* Maschinen & GerÃ¤te */}
+                      {/* Maschinen & GerÃÂ¤te */}
                       {maschinenList.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
-                            Maschinen & GerÃ¤te ({maschinenList.length})
+                            Maschinen & GerÃÂ¤te ({maschinenList.length})
                           </p>
                           <div className="space-y-1.5">
                             {maschinenVisible.map(g => (
@@ -1788,7 +1831,7 @@ export default function AuftragBearbeiten() {
                                   <Svg d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" cls="w-3 h-3 text-gray-400" />
                                 </div>
                                 <p className="text-sm text-gray-700">{g.name}</p>
-                                {g.typ && <span className="text-xs text-gray-400">Â· {g.typ}</span>}
+                                {g.typ && <span className="text-xs text-gray-400">ÃÂ· {g.typ}</span>}
                               </div>
                             ))}
                             {maschinenRest > 0 && (
@@ -1813,7 +1856,7 @@ export default function AuftragBearbeiten() {
         </div>
       )}
 
-{/* ââ Tab: Einsatz & Dokumentation ââ */}
+{/* Ã¢ÂÂÃ¢ÂÂ Tab: Einsatz & Dokumentation Ã¢ÂÂÃ¢ÂÂ */}
       {auftragTab === 'einsatz' && (
         <div className="space-y-4">
           <Karte>
@@ -1822,7 +1865,7 @@ export default function AuftragBearbeiten() {
               {!einsatzDok ? (
                 <div className="text-center py-8 space-y-3">
                   <p className="text-sm font-medium text-gray-500">Noch keine Einsatzdokumentation</p>
-                  <p className="text-xs text-gray-400">FÃ¼r diesen Auftrag wurde noch kein Einsatz begonnen.</p>
+                  <p className="text-xs text-gray-400">FÃÂ¼r diesen Auftrag wurde noch kein Einsatz begonnen.</p>
                   <button
                     onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
@@ -1833,7 +1876,7 @@ export default function AuftragBearbeiten() {
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-500">Status:</span>
                   <span className={({'Unterwegs':'bg-amber-100 text-amber-800','Vor Ort':'bg-blue-100 text-blue-800','In Arbeit':'bg-indigo-100 text-indigo-800','Arbeit beendet':'bg-green-100 text-green-800','Dokumentiert':'bg-emerald-100 text-emerald-800'}[einsatzDok.status]??'bg-gray-100 text-gray-700')+' px-3 py-1 rounded-full text-xs font-semibold'}>
-                    {einsatzDok.status ?? 'â'}
+                    {einsatzDok.status ?? 'Ã¢ÂÂ'}
                   </span>
                 </div>
               )}
@@ -1841,12 +1884,12 @@ export default function AuftragBearbeiten() {
           </Karte>
           {einsatzDok && (
             <Karte>
-              <KarteHeader icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" title="ZeitÃ¼bersicht" />
+              <KarteHeader icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" title="ZeitÃÂ¼bersicht" />
               <div className="px-5 py-5 divide-y divide-gray-50">
                 {[['Einsatz gestartet',einsatzDok.unterwegs_at],['Ankunft beim Kunden',einsatzDok.vor_ort_at],['Arbeitsbeginn',einsatzDok.arbeit_begonnen_at],['Arbeitsende',einsatzDok.arbeit_beendet_at]].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} className="flex justify-between items-center text-sm py-2">
                     <span className="text-gray-500">{l}</span>
-                    <span className="font-medium text-gray-800">{fmtDatum(v)} Â· {fmtZeit(v)}</span>
+                    <span className="font-medium text-gray-800">{fmtDatum(v)} ÃÂ· {fmtZeit(v)}</span>
                   </div>
                 ))}
                 {einsatzDok.arbeit_begonnen_at && einsatzDok.arbeit_beendet_at && (()=>{
@@ -1859,16 +1902,16 @@ export default function AuftragBearbeiten() {
           )}
           {einsatzDok && (
             <Karte>
-              <KarteHeader icon="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" title="TÃ¤tigkeiten" />
+              <KarteHeader icon="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" title="TÃÂ¤tigkeiten" />
               <div className="px-5 py-5">
-                {[['DurchgefÃ¼hrte Arbeiten',einsatzDok.durchgefuehrte_arbeiten],['Festgestellter Schaden',einsatzDok.festgestellter_schaden],['MaÃnahmen',einsatzDok.massnahmen],['Empfehlung',einsatzDok.empfehlung]].filter(([,v])=>v).length===0 ? (
+                {[['DurchgefÃÂ¼hrte Arbeiten',einsatzDok.durchgefuehrte_arbeiten],['Festgestellter Schaden',einsatzDok.festgestellter_schaden],['MaÃÂnahmen',einsatzDok.massnahmen],['Empfehlung',einsatzDok.empfehlung]].filter(([,v])=>v).length===0 ? (
                   <div className="text-center py-6 space-y-1">
-                    <p className="text-sm font-medium text-gray-500">Noch keine TÃ¤tigkeiten dokumentiert</p>
-                    <p className="text-xs text-gray-400">FÃ¼r diesen Auftrag wurden bisher keine TÃ¤tigkeiten erfasst.</p>
+                    <p className="text-sm font-medium text-gray-500">Noch keine TÃÂ¤tigkeiten dokumentiert</p>
+                    <p className="text-xs text-gray-400">FÃÂ¼r diesen Auftrag wurden bisher keine TÃÂ¤tigkeiten erfasst.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {[['DurchgefÃ¼hrte Arbeiten',einsatzDok.durchgefuehrte_arbeiten],['Festgestellter Schaden',einsatzDok.festgestellter_schaden],['MaÃnahmen',einsatzDok.massnahmen],['Empfehlung',einsatzDok.empfehlung]].filter(([,v])=>v).map(([l,v])=>(
+                    {[['DurchgefÃÂ¼hrte Arbeiten',einsatzDok.durchgefuehrte_arbeiten],['Festgestellter Schaden',einsatzDok.festgestellter_schaden],['MaÃÂnahmen',einsatzDok.massnahmen],['Empfehlung',einsatzDok.empfehlung]].filter(([,v])=>v).map(([l,v])=>(
                       <div key={l}>
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{l}</p>
                         <p className="text-sm text-gray-800 whitespace-pre-wrap">{v}</p>
@@ -1886,11 +1929,11 @@ export default function AuftragBearbeiten() {
                 {einsatzMat.length === 0 ? (
                   <div className="text-center py-6 space-y-2">
                     <p className="text-sm font-medium text-gray-500">Kein Material erfasst</p>
-                    <p className="text-xs text-gray-400">FÃ¼r diesen Auftrag wurde bisher kein Material dokumentiert.</p>
+                    <p className="text-xs text-gray-400">FÃÂ¼r diesen Auftrag wurde bisher kein Material dokumentiert.</p>
                     <button
                       onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                      VollstÃ¤ndige Dokumentation Ã¶ffnen
+                      VollstÃÂ¤ndige Dokumentation ÃÂ¶ffnen
                     </button>
                   </div>
                 ) : (
@@ -1917,11 +1960,11 @@ export default function AuftragBearbeiten() {
                 {einsatzFotos.length === 0 ? (
                   <div className="text-center py-6 space-y-2">
                     <p className="text-sm font-medium text-gray-500">Noch keine Fotos hochgeladen</p>
-                    <p className="text-xs text-gray-400">FÃ¼r diesen Auftrag wurden bisher keine Fotos erfasst.</p>
+                    <p className="text-xs text-gray-400">FÃÂ¼r diesen Auftrag wurden bisher keine Fotos erfasst.</p>
                     <button
                       onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                      VollstÃ¤ndige Dokumentation Ã¶ffnen
+                      VollstÃÂ¤ndige Dokumentation ÃÂ¶ffnen
                     </button>
                   </div>
                 ) : (
@@ -1985,7 +2028,7 @@ export default function AuftragBearbeiten() {
         </div>
       )}
 
-      {/* ââ Tab: Abschluss ââ */}
+      {/* Ã¢ÂÂÃ¢ÂÂ Tab: Abschluss Ã¢ÂÂÃ¢ÂÂ */}
       {auftragTab === 'abschluss' && (
         <div className="max-w-2xl space-y-5">
           <Karte>
@@ -2021,10 +2064,10 @@ export default function AuftragBearbeiten() {
               <button
                 onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${id}`)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                Abschluss prÃ¼fen
+                Abschluss prÃÂ¼fen
               </button>
             </div>
-          {/* ââ Rechnungsstatus ââ */}
+          {/* Ã¢ÂÂÃ¢ÂÂ Rechnungsstatus Ã¢ÂÂÃ¢ÂÂ */}
           {(() => {
             const rechnung = rechnungen?.[0] ?? null;
             return (
@@ -2044,7 +2087,7 @@ export default function AuftragBearbeiten() {
                       <div className="space-y-2">
                         <div>
                           <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Rechnungsnummer</p>
-                          <p className="text-sm font-medium text-gray-800">{rechnung.nummer ?? 'â'}</p>
+                          <p className="text-sm font-medium text-gray-800">{rechnung.nummer ?? 'Ã¢ÂÂ'}</p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Rechnungsdatum</p>
@@ -2054,14 +2097,14 @@ export default function AuftragBearbeiten() {
                           <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Status</p>
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${RECHNUNG_STATUS_CFG[rechnung.status]?.bg ?? 'bg-gray-100'} ${RECHNUNG_STATUS_CFG[rechnung.status]?.text ?? 'text-gray-600'}`}>
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${RECHNUNG_STATUS_CFG[rechnung.status]?.dot ?? 'bg-gray-400'}`} />
-                            {rechnung.status ?? 'â'}
+                            {rechnung.status ?? 'Ã¢ÂÂ'}
                           </span>
                         </div>
                       </div>
                       <button
                         onClick={() => router.push(`/dashboard/rechnungen/${rechnung.id}`)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                        Rechnung Ã¶ffnen
+                        Rechnung ÃÂ¶ffnen
                       </button>
                     </>
                   ) : (
@@ -2070,7 +2113,7 @@ export default function AuftragBearbeiten() {
                         <Svg d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" cls="w-4 h-4" />
                         Noch keine Rechnung erstellt
                       </span>
-                      <p className="text-sm text-gray-500">FÃ¼r diesen Auftrag wurde noch keine Rechnung erstellt.</p>
+                      <p className="text-sm text-gray-500">FÃÂ¼r diesen Auftrag wurde noch keine Rechnung erstellt.</p>
                       <button
                         onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag=${id}`)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
@@ -2082,11 +2125,11 @@ export default function AuftragBearbeiten() {
               </Karte>
             );
           })()}
-          {/* ââ Abschluss-Checkliste ââ */}
+          {/* Ã¢ÂÂÃ¢ÂÂ Abschluss-Checkliste Ã¢ÂÂÃ¢ÂÂ */}
           {(() => {
             const checks = [
               { label: 'Einsatzdokumentation vorhanden', ok: !!einsatzDok },
-              { label: 'TÃ¤tigkeiten dokumentiert',       ok: !!(einsatzDok?.durchgefuehrte_arbeiten) },
+              { label: 'TÃÂ¤tigkeiten dokumentiert',       ok: !!(einsatzDok?.durchgefuehrte_arbeiten) },
               { label: 'Arbeitszeit vorhanden',          ok: !!(einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at) },
               { label: 'Material erfasst',               ok: einsatzMat.length > 0 },
               { label: 'Fotos vorhanden',                ok: einsatzFotos.length > 0 },
@@ -2118,14 +2161,14 @@ export default function AuftragBearbeiten() {
                   ))}
                   <div className="pt-2 border-t border-gray-100">
                     <p className={`text-sm font-semibold ${allOk ? 'text-green-700' : 'text-gray-500'}`}>
-                      {erfuelltCount} von {checks.length} Punkten erfÃ¼llt
+                      {erfuelltCount} von {checks.length} Punkten erfÃÂ¼llt
                     </p>
                   </div>
                 </div>
               </Karte>
             );
           })()}
-          {/* ââ Abschlussbewertung ââ */}
+          {/* Ã¢ÂÂÃ¢ÂÂ Abschlussbewertung Ã¢ÂÂÃ¢ÂÂ */}
           {(() => {
             const bewChecks = [
               { ok: !!einsatzDok },
