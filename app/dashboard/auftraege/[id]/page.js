@@ -1618,32 +1618,49 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Einsatz & Dokumentation ── */}
       {auftragTab === 'einsatz' && (
-        <Karte>
-          <KarteHeader
-            icon="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
-            title="Einsatzstatus"
-          />
-          <div className="px-5 py-5">
-            {!einsatzDok ? (
-              <div className="text-center py-8 space-y-3">
-                <p className="text-sm font-medium text-gray-500">Noch keine Einsatzdokumentation</p>
-                <p className="text-xs text-gray-400">Für diesen Auftrag wurde noch kein Einsatz begonnen.</p>
-                <button
-                  onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-                  Einsatz dokumentieren
-                </button>
+        <div className="space-y-4">
+          <Karte>
+            <KarteHeader icon="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" title="Einsatzstatus" />
+            <div className="px-5 py-5">
+              {!einsatzDok ? (
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm font-medium text-gray-500">Noch keine Einsatzdokumentation</p>
+                  <p className="text-xs text-gray-400">Für diesen Auftrag wurde noch kein Einsatz begonnen.</p>
+                  <button
+                    onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                    Einsatz dokumentieren
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-500">Status:</span>
+                  <span className={({'Unterwegs':'bg-amber-100 text-amber-800','Vor Ort':'bg-blue-100 text-blue-800','In Arbeit':'bg-indigo-100 text-indigo-800','Arbeit beendet':'bg-green-100 text-green-800','Dokumentiert':'bg-emerald-100 text-emerald-800'}[einsatzDok.status]??'bg-gray-100 text-gray-700')+' px-3 py-1 rounded-full text-xs font-semibold'}>
+                    {einsatzDok.status ?? '–'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Karte>
+          {einsatzDok && (
+            <Karte>
+              <KarteHeader icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" title="Zeitübersicht" />
+              <div className="px-5 py-5 divide-y divide-gray-50">
+                {[['Einsatz gestartet',einsatzDok.unterwegs_at],['Ankunft beim Kunden',einsatzDok.vor_ort_at],['Arbeitsbeginn',einsatzDok.arbeit_begonnen_at],['Arbeitsende',einsatzDok.arbeit_beendet_at]].filter(([,v])=>v).map(([l,v])=>(
+                  <div key={l} className="flex justify-between items-center text-sm py-2">
+                    <span className="text-gray-500">{l}</span>
+                    <span className="font-medium text-gray-800">{fmtDatum(v)} · {fmtZeit(v)}</span>
+                  </div>
+                ))}
+                {einsatzDok.arbeit_begonnen_at && einsatzDok.arbeit_beendet_at && (()=>{
+                  const min=Math.max(0,Math.round((new Date(einsatzDok.arbeit_beendet_at)-new Date(einsatzDok.arbeit_begonnen_at))/60000));
+                  const h=Math.floor(min/60),m=min%60;
+                  return <div className="flex justify-between items-center text-sm py-3 mt-1 border-t-2 border-gray-100"><span className="text-gray-600 font-medium">Gesamtdauer</span><span className="font-bold text-gray-900">{h>0?h+' Std. ':''}{m} Min.</span></div>;
+                })()}
               </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500">Status:</span>
-                <span className={({'Unterwegs':'bg-amber-100 text-amber-800','Vor Ort':'bg-blue-100 text-blue-800','In Arbeit':'bg-indigo-100 text-indigo-800','Arbeit beendet':'bg-green-100 text-green-800','Dokumentiert':'bg-emerald-100 text-emerald-800'}[einsatzDok.status]??'bg-gray-100 text-gray-700')+' px-3 py-1 rounded-full text-xs font-semibold'}>
-                  {einsatzDok.status ?? '–'}
-                </span>
-              </div>
-            )}
-          </div>
-        </Karte>
+            </Karte>
+          )}
+        </div>
       )}
 
       {/* ── Tab: Abschluss ── */}
