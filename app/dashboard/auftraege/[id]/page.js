@@ -1885,10 +1885,53 @@ export default function AuftragBearbeiten() {
               </Karte>
             );
           })()}
+          {/* ── Abschluss-Checkliste ── */}
+          {(() => {
+            const checks = [
+              { label: 'Einsatzdokumentation vorhanden', ok: !!einsatzDok },
+              { label: 'Tätigkeiten dokumentiert',       ok: !!(einsatzDok?.durchgefuehrte_arbeiten) },
+              { label: 'Arbeitszeit vorhanden',          ok: !!(einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at) },
+              { label: 'Material erfasst',               ok: einsatzMat.length > 0 },
+              { label: 'Fotos vorhanden',                ok: einsatzFotos.length > 0 },
+              { label: 'Kundenunterschrift vorhanden',   ok: !!(einsatzDok?.unterschrift_at || einsatzDok?.unterschrift_vorhanden) },
+            ];
+            const erfuelltCount = checks.filter(ch => ch.ok).length;
+            const allOk = erfuelltCount === checks.length;
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  title="Abschluss-Checkliste"
+                  badgeVariant={allOk ? 'green' : erfuelltCount > 0 ? 'amber' : 'gray'}
+                />
+                <div className="px-5 py-5 space-y-3">
+                  {checks.map((ch, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      {ch.ok ? (
+                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                          <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3 text-green-600" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border-2 border-gray-200 bg-gray-50 shrink-0" />
+                      )}
+                      <span className={`text-sm ${ch.ok ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                        {ch.label}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className={`text-sm font-semibold ${allOk ? 'text-green-700' : 'text-gray-500'}`}>
+                      {erfuelltCount} von {checks.length} Punkten erfüllt
+                    </p>
+                  </div>
+                </div>
+              </Karte>
+            );
+          })()}
           </Karte>
         </div>
       )}
 
     </div>
   );
-}
+} 
