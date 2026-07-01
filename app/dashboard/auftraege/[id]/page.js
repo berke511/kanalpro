@@ -1618,7 +1618,7 @@ export default function AuftragBearbeiten() {
             </div>
           </Karte>
         </div>
-      )}}
+      )}
 
       {/* ── Tab: Ressourcen ── */}
       {auftragTab === 'ressourcen' && (
