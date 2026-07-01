@@ -1517,7 +1517,43 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Übersicht (bestehendes 2-Spalten-Layout) ── */}
       {auftragTab === 'uebersicht' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="space-y-5">
+          {/* ── Auftragszusammenfassung ── */}
+          {(() => {
+            const sumChecks = [
+              { label: 'Planung',        ok: !!auftrag?.einsatzdatum },
+              { label: 'Ressourcen',     ok: mitarbeiterList.length > 0 || !!auftrag?.fahrzeuge },
+              { label: 'Dokumentation',  ok: !!einsatzDok },
+              { label: 'Rechnung',       ok: rechnungen.length > 0 },
+              { label: 'Abschluss',      ok: auftrag?.status === 'Abgeschlossen' },
+            ];
+            const sumErfuellt = sumChecks.filter(s => s.ok).length;
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  title="Auftragszusammenfassung"
+                  badgeVariant={sumErfuellt === sumChecks.length ? 'green' : sumErfuellt > 0 ? 'blue' : 'gray'}
+                />
+                <div className="px-5 py-4">
+                  <div className="flex flex-wrap gap-x-6 gap-y-2 mb-3">
+                    {sumChecks.map(s => (
+                      <div key={s.label} className="flex items-center gap-1.5">
+                        {s.ok ? (
+                          <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500 shrink-0" />
+                        ) : (
+                          <Svg d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" cls="w-4 h-4 text-gray-300 shrink-0" />
+                        )}
+                        <span className={`text-sm ${s.ok ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400">{sumErfuellt} von {sumChecks.length} Bereichen abgeschlossen</p>
+                </div>
+              </Karte>
+            );
+          })()}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Linke Spalte (2/3) */}
           <div className="lg:col-span-2 space-y-5">
@@ -1565,6 +1601,7 @@ export default function AuftragBearbeiten() {
             {/* Aktivitätschronik (vorbereitet) */}
             <AktivitaetschronikKarte aktivitaeten={aktivitaeten} />
           </div>
+        </div>
         </div>
       )}
 
