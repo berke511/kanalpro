@@ -1002,7 +1002,7 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
       </Karte>
 
       {/* 3 — Tätigkeiten */}
-      {(dok.taetigkeiten || dok.schaden || dok.massnahmen || dok.empfehlung) && (
+      x(dok.taetigkeiten || dok.schaden || dok.massnahmen || dok.empfehlung) && (
         <Karte>
           <KarteHeader
             icon="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
@@ -1143,6 +1143,186 @@ function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   ABSCHLUSS TAB
+════════════════════════════════════════════════════════════════ */
+
+const RECHNUNG_STATUS_CFG = {
+  'Entwurf':   { bg: 'bg-gray-100',   text: 'text-gray-600',   dot: 'bg-gray-400'   },
+  'Gesendet':  { bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500'   },
+  'Bezahlt':   { bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500'  },
+  'Überfällig':{ bg: 'bg-red-50',     text: 'text-red-700',    dot: 'bg-red-500'    },
+  'Storniert': { bg: 'bg-gray-100',   text: 'text-gray-500',   dot: 'bg-gray-400'   },
+};
+
+function fmtEuro(val) {
+  if (val == null) return '—';
+  return Number(val).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+}
+
+function AbschlussTabKarte({ auftrag, rechnungen, auftragId, router }) {
+  const abgeschlossen = auftrag?.status === 'Abgeschlossen';
+  const freigegeben   = !!auftrag?.freigegeben_fuer_rechnung;
+
+  /* ── Empty State: noch nicht abgeschlossen und keine Rechnung ── */
+  if (!abgeschlossen && rechnungen.length === 0) {
+    return (
+      <div className="max-w-lg">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+          <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+              strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-600" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900 mb-1">Abschluss</h2>
+            <p className="text-sm text-gray-500">Prüfe die Dokumentation und schließe den Auftrag ab.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${auftragId}`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+            Auftrag abschließen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5 max-w-2xl">
+
+      {/* ── Abschluss-Status ── */}
+      <Karte titel="Abschluss-Status">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Status</p>
+            {abgeschlossen ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-700 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                Abgeschlossen
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                Offen
+              </span>
+            )}
+          </div>
+
+          {abgeschlossen && auftrag.abschluss_datum && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Abgeschlossen am</p>
+              <p className="text-sm font-medium text-gray-800">{fmtDatum(auftrag.abschluss_datum)}</p>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Freigabe für Rechnung</p>
+            {freigegeben ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                Freigegeben
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-50 text-gray-500 text-sm font-medium">
+                <span className="w-2 h-2 rounded-full bg-gray-400 shrink-0" />
+                Nicht freigegeben
+              </span>
+            )}
+          </div>
+
+          {auftrag?.rueckgabe_grund && (
+            <div className="sm:col-span-2 space-y-1">
+              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Rückgabegrund</p>
+              <p className="text-sm text-gray-700 bg-red-50 rounded-xl px-3 py-2">{auftrag.rueckgabe_grund}</p>
+            </div>
+          )}
+        </div>
+
+        {/* CTA zum Abschluss-Modul */}
+        {!abgeschlossen && (
+          <div className="mt-5 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${auftragId}`)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Auftrag abschließen
+            </button>
+          </div>
+        )}
+      </Karte>
+
+      {/* ── Rechnungen ── */}
+      {rechnungen.length > 0 && (
+        <Karte titel={`Rechnungen (${rechnungen.length})`}>
+          <div className="space-y-3">
+            {rechnungen.map(r => {
+              const cfg = RECHNUNG_STATUS_CFG[r.status] ?? RECHNUNG_STATUS_CFG['Entwurf'];
+              return (
+                <div
+                  key={r.id}
+                  onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer transition">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text} shrink-0`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                      {r.status}
+                    </span>
+                    <span className="text-sm font-medium text-gray-800 truncate">{r.nummer ?? `Rechnung`}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold text-gray-900">{fmtEuro(r.betrag_brutto)}</p>
+                    <p className="text-xs text-gray-400">
+                      {r.bezahlt_am ? `Bezahlt ${fmtDatum(r.bezahlt_am)}` : r.faellig_am ? `Fällig ${fmtDatum(r.faellig_am)}` : fmtDatum(r.erstellt_am)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag_id=${auftragId}`)}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Neue Rechnung erstellen
+            </button>
+          </div>
+        </Karte>
+      )}
+
+      {/* Rechnung erstellen wenn noch keine vorhanden */}
+      {rechnungen.length === 0 && abgeschlossen && (
+        <Karte titel="Rechnungen">
+          <div className="text-center py-6 space-y-3">
+            <p className="text-sm text-gray-400">Noch keine Rechnung für diesen Auftrag erstellt.</p>
+            <button
+              onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag_id=${auftragId}`)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                strokeWidth={1.5} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Rechnung erstellen
+            </button>
+          </div>
+        </Karte>
+      )}
+
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    HAUPTKOMPONENTE
 ════════════════════════════════════════════════════════════════ */
 
@@ -1161,6 +1341,7 @@ export default function AuftragBearbeiten() {
   const [einsatzDok,     setEinsatzDok]     = useState(null);
   const [einsatzMat,     setEinsatzMat]     = useState([]);
   const [einsatzFotos,   setEinsatzFotos]   = useState([]);
+  const [rechnungen,     setRechnungen]     = useState([]);
 
   const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
@@ -1199,6 +1380,7 @@ export default function AuftragBearbeiten() {
         { data: dokData },
         { data: matData },
         { data: fotosData },
+        { data: rechnungenData },
       ] = await Promise.all([
         supabase
           .from('auftraege')
@@ -1241,6 +1423,13 @@ export default function AuftragBearbeiten() {
           .select('*')
           .eq('auftrag_id', id)
           .eq('company_id', member.company_id),
+
+        supabase
+          .from('rechnungen')
+          .select('id, nummer, status, betrag_netto, betrag_brutto, erstellt_am, faellig_am, bezahlt_am')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id)
+          .order('erstellt_am'),
       ]);
 
       if (auftragErr || !auftragData) { setZustand('not_found'); return; }
@@ -1251,6 +1440,7 @@ export default function AuftragBearbeiten() {
       setEinsatzDok(dokData ?? null);
       setEinsatzMat(matData ?? []);
       setEinsatzFotos(fotosData ?? []);
+      setRechnungen(rechnungenData ?? []);
       setZustand('ok');
     } catch {
       setZustand('not_found');
@@ -1343,7 +1533,7 @@ export default function AuftragBearbeiten() {
 
           {/* Linke Spalte (2/3) */}
           <div className="lg:col-span-2 space-y-5">
-           {/* Bereich 1: Auftragsinformationen */}
+            {/* Bereich 1: Auftragsinformationen */}
             <AuftragInfoKarte
               auftrag={auftrag}
               rechte={rechte}
@@ -1451,26 +1641,12 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Abschluss ── */}
       {auftragTab === 'abschluss' && (
-        <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-green-600" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Abschluss</h2>
-              <p className="text-sm text-gray-500">Prüfe die Dokumentation und schließe den Auftrag ab.</p>
-            </div>
-            <button
-              onClick={() => router.push(`/dashboard/auftraege/abschluss?id=${auftrag.id}`)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition">
-              Auftrag abschließen
-            </button>
-          </div>
-        </div>
+        <AbschlussTabKarte
+          auftrag={auftrag}
+          rechnungen={rechnungen}
+          auftragId={id}
+          router={router}
+        />
       )}
 
     </div>
