@@ -1571,26 +1571,54 @@ export default function AuftragBearbeiten() {
       {/* ── Tab: Planung ── */}
       {auftragTab === 'planung' && (
         <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-blue-600" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-              </svg>
+          <Karte>
+            <KarteHeader
+              icon="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
+              title="Planungsdaten"
+              badgeVariant={auftrag?.einsatzdatum ? 'blue' : 'gray'}
+            />
+            <div className="px-5 py-5 space-y-3">
+              {auftrag?.einsatzdatum && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Einsatzdatum</p>
+                  <p className="text-sm font-medium text-gray-800">{fmtDatum(auftrag.einsatzdatum)}</p>
+                </div>
+              )}
+              {auftrag?.startzeit && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Startzeit</p>
+                  <p className="text-sm font-medium text-gray-800">{auftrag.startzeit}</p>
+                </div>
+              )}
+              {(auftrag?.auftragsart || auftrag?.typ) && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Auftragsart</p>
+                  <p className="text-sm font-medium text-gray-800">{auftrag.auftragsart ?? auftrag.typ}</p>
+                </div>
+              )}
+              {auftrag?.status && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Status</p>
+                  <p className="text-sm font-medium text-gray-800">{auftrag.status}</p>
+                </div>
+              )}
+              {(auftrag?.einsatzort_strasse || auftrag?.einsatzort_ort) && (
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Einsatzort</p>
+                  <p className="text-sm font-medium text-gray-800">{[auftrag.einsatzort_strasse, auftrag.einsatzort_plz, auftrag.einsatzort_ort].filter(Boolean).join(', ')}</p>
+                </div>
+              )}
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => router.push(`/dashboard/auftraege/planen?id=${auftrag.id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                  Planung bearbeiten
+                </button>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Planung</h2>
-              <p className="text-sm text-gray-500">Plane Termin, Uhrzeit und Einsatzdauer für diesen Auftrag.</p>
-            </div>
-            <button
-              onClick={() => router.push(`/dashboard/auftraege/planen?id=${auftrag.id}`)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
-              Zur Planung
-            </button>
-          </div>
+          </Karte>
         </div>
-      )}
+      )}}
 
       {/* ── Tab: Ressourcen ── */}
       {auftragTab === 'ressourcen' && (
