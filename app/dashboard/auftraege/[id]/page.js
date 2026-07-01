@@ -1618,13 +1618,32 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Einsatz & Dokumentation ── */}
       {auftragTab === 'einsatz' && (
-        <EinsatzSummaryKarte
-          dok={einsatzDok}
-          material={einsatzMat}
-          fotos={einsatzFotos}
-          auftragId={id}
-          router={router}
-        />
+        <Karte>
+          <KarteHeader
+            icon="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+            title="Einsatzstatus"
+          />
+          <div className="px-5 py-5">
+            {!einsatzDok ? (
+              <div className="text-center py-8 space-y-3">
+                <p className="text-sm font-medium text-gray-500">Noch keine Einsatzdokumentation</p>
+                <p className="text-xs text-gray-400">Für diesen Auftrag wurde noch kein Einsatz begonnen.</p>
+                <button
+                  onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                  Einsatz dokumentieren
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">Status:</span>
+                <span className={({'Unterwegs':'bg-amber-100 text-amber-800','Vor Ort':'bg-blue-100 text-blue-800','In Arbeit':'bg-indigo-100 text-indigo-800','Arbeit beendet':'bg-green-100 text-green-800','Dokumentiert':'bg-emerald-100 text-emerald-800'}[einsatzDok.status]??'bg-gray-100 text-gray-700')+' px-3 py-1 rounded-full text-xs font-semibold'}>
+                  {einsatzDok.status ?? '–'}
+                </span>
+              </div>
+            )}
+          </div>
+        </Karte>
       )}
 
       {/* ── Tab: Abschluss ── */}
