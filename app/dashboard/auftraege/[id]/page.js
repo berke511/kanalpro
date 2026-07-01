@@ -1753,6 +1753,38 @@ export default function AuftragBearbeiten() {
               </div>
             </Karte>
           )}
+          {einsatzDok && (
+            <Karte>
+              <KarteHeader
+                icon="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+                title="Kundenunterschrift"
+                badgeVariant={(einsatzDok.unterschrift_at || einsatzDok.unterschrift_vorhanden) ? 'green' : 'gray'}
+              />
+              <div className="px-5 py-5 space-y-3">
+                {(einsatzDok.unterschrift_at || einsatzDok.unterschrift_vorhanden) ? (
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
+                    <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
+                    Unterschrift vorhanden
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+                    <Svg d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" cls="w-4 h-4" />
+                    Unterschrift fehlt
+                  </span>
+                )}
+                <p className="text-sm text-gray-500">
+                  {(einsatzDok.unterschrift_at || einsatzDok.unterschrift_vorhanden)
+                    ? 'Kundenunterschrift wurde erfasst.'
+                    : 'Kundenunterschrift wurde noch nicht erfasst.'}
+                </p>
+                <button
+                  onClick={() => router.push(`/dashboard/auftraege/unterschrift?id=${id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                  Unterschrift erfassen
+                </button>
+              </div>
+            </Karte>
+          )}
         </div>
       )}
 
