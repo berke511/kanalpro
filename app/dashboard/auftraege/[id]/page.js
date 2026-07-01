@@ -1623,28 +1623,106 @@ export default function AuftragBearbeiten() {
       {/* ── Tab: Ressourcen ── */}
       {auftragTab === 'ressourcen' && (
         <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-purple-600" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Ressourcen</h2>
-              <p className="text-sm text-gray-500">Teile Mitarbeiter, Fahrzeuge und Geräte für diesen Auftrag ein.</p>
-            </div>
-            <button
-              onClick={() => router.push(`/dashboard/auftraege/zuweisung?id=${auftrag.id}`)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition">
-              Ressourcen einteilen
-            </button>
-          </div>
+          {(() => {
+            const fahrzeug = auftrag?.fahrzeuge;
+            const einsatzltr = auftrag?.einsatzleiter;
+            const hatDaten = mitarbeiterList.length > 0 || !!fahrzeug || maschinenList.length > 0;
+            const maschinenVisible = maschinenList.slice(0, 5);
+            const maschinenRest = maschinenList.length - 5;
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
+                  title="Ressourcenübersicht"
+                  badgeVariant={hatDaten ? 'purple' : 'gray'}
+                />
+                <div className="px-5 py-5 space-y-5">
+                  {!hatDaten ? (
+                    <div className="text-center py-6">
+                      <p className="text-sm font-semibold text-gray-500 mb-1">Noch keine Ressourcen zugewiesen</p>
+                      <p className="text-sm text-gray-400">Für diesen Auftrag wurden noch keine Mitarbeiter, Fahrzeuge oder Geräte eingeteilt.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Mitarbeiter */}
+                      {mitarbeiterList.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+                            Mitarbeiter ({mitarbeiterList.length})
+                          </p>
+                          <div className="space-y-2">
+                            {mitarbeiterList.map(m => (
+                              <div key={m.id} className="flex items-center gap-3 py-1">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+                                  {initials(m)}
+                                </div>
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {m.vorname} {m.nachname}
+                                  {einsatzltr?.id === m.id && (
+                                    <span className="ml-2 text-xs bg-yellow-50 text-yellow-700 border border-yellow-100 px-1.5 py-0.5 rounded-full font-medium">
+                                      Einsatzleiter
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Fahrzeug */}
+                      {fahrzeug && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Fahrzeug</p>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                              <Svg d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" cls="w-4 h-4 text-gray-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{fahrzeug.marke} {fahrzeug.modell ?? ''}</p>
+                              <p className="text-xs text-gray-400">{fahrzeug.kennzeichen}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {/* Maschinen & Geräte */}
+                      {maschinenList.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+                            Maschinen & Geräte ({maschinenList.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {maschinenVisible.map(g => (
+                              <div key={g.id} className="flex items-center gap-2.5">
+                                <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                  <Svg d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" cls="w-3 h-3 text-gray-400" />
+                                </div>
+                                <p className="text-sm text-gray-700">{g.name}</p>
+                                {g.typ && <span className="text-xs text-gray-400">· {g.typ}</span>}
+                              </div>
+                            ))}
+                            {maschinenRest > 0 && (
+                              <p className="text-xs text-gray-400 pl-8">+ {maschinenRest} weitere</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => router.push(`/dashboard/auftraege/zuweisung?id=${auftrag.id}`)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition">
+                      Ressourcen bearbeiten
+                    </button>
+                  </div>
+                </div>
+              </Karte>
+            );
+          })()}
         </div>
       )}
 
-      {/* ── Tab: Einsatz & Dokumentation ── */}
+{/* ── Tab: Einsatz & Dokumentation ── */}
       {auftragTab === 'einsatz' && (
         <div className="space-y-4">
           <Karte>
