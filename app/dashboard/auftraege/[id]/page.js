@@ -1790,7 +1790,7 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Abschluss ── */}
       {auftragTab === 'abschluss' && (
-        <div className="max-w-2xl">
+        <div className="max-w-2xl space-y-5">
           <Karte>
             <KarteHeader
               icon="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
@@ -1827,6 +1827,64 @@ export default function AuftragBearbeiten() {
                 Abschluss prüfen
               </button>
             </div>
+          {/* ── Rechnungsstatus ── */}
+          {(() => {
+            const rechnung = rechnungen?.[0] ?? null;
+            return (
+              <Karte>
+                <KarteHeader
+                  icon="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                  title="Rechnungsstatus"
+                  badgeVariant={rechnung ? (rechnung.status === 'Bezahlt' ? 'green' : 'blue') : 'gray'}
+                />
+                <div className="px-5 py-5 space-y-3">
+                  {rechnung ? (
+                    <>
+                      <span className="inline-flex items-center gap-2 text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
+                        <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
+                        Rechnung vorhanden
+                      </span>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Rechnungsnummer</p>
+                          <p className="text-sm font-medium text-gray-800">{rechnung.nummer ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Rechnungsdatum</p>
+                          <p className="text-sm font-medium text-gray-800">{fmtDatum(rechnung.erstellt_am)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Status</p>
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${RECHNUNG_STATUS_CFG[rechnung.status]?.bg ?? 'bg-gray-100'} ${RECHNUNG_STATUS_CFG[rechnung.status]?.text ?? 'text-gray-600'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${RECHNUNG_STATUS_CFG[rechnung.status]?.dot ?? 'bg-gray-400'}`} />
+                            {rechnung.status ?? '—'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => router.push(`/dashboard/rechnungen/${rechnung.id}`)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                        Rechnung öffnen
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+                        <Svg d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" cls="w-4 h-4" />
+                        Noch keine Rechnung erstellt
+                      </span>
+                      <p className="text-sm text-gray-500">Für diesen Auftrag wurde noch keine Rechnung erstellt.</p>
+                      <button
+                        onClick={() => router.push(`/dashboard/rechnungen/neu?auftrag=${id}`)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                        Rechnung erstellen
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Karte>
+            );
+          })()}
           </Karte>
         </div>
       )}
