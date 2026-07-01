@@ -128,6 +128,13 @@ function fmtZeit(iso) {
   }
 }
 
+function minZuHM(min) {
+  if (min == null || isNaN(min)) return '—';
+  const h = Math.floor(Math.abs(min) / 60);
+  const m = Math.abs(min) % 60;
+  return `${h}h ${m}min`;
+}
+
 function initials(m) {
   if (!m) return '?';
   return ((m.vorname?.[0] ?? '') + (m.nachname?.[0] ?? '')).toUpperCase() || '?';
@@ -906,6 +913,236 @@ function AktivitaetschronikKarte({ auftrag }) {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   EINSATZ-SUMMARY (Tab: Einsatz & Dokumentation)
+════════════════════════════════════════════════════════════════ */
+
+const EINSATZ_STATUS_CFG = {
+  'Unterwegs':      { bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
+  'Vor Ort':        { bg: 'bg-cyan-50',   text: 'text-cyan-700',   dot: 'bg-cyan-500'   },
+  'In Arbeit':      { bg: 'bg-amber-50',  text: 'text-amber-700',  dot: 'bg-amber-500'  },
+  'Arbeit beendet': { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
+  'Dokumentiert':   { bg: 'bg-green-50',  text: 'text-green-700',  dot: 'bg-green-500'  },
+};
+
+function EinsatzSummaryKarte({ dok, material, fotos, auftragId, router }) {
+  /* ── Empty State ── */
+  if (!dok) {
+    return (
+      <div className="max-w-lg">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+            <Svg
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+              cls="w-6 h-6 text-amber-500"
+            />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900 mb-1">Noch keine Einsatzdokumentation vorhanden</h2>
+            <p className="text-sm text-gray-400">Der Techniker hat für diesen Auftrag noch keine Dokumentation erfasst.</p>
+          </div>
+          <button
+            onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftragId}`)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition">
+            <Svg d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" cls="w-4 h-4" />
+            Einsatz dokumentieren
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Berechnungen ── */
+  const statusCfg = EINSATZ_STATUS_CFG[dok.status] ?? { bg: 'bg-gray-50', text: 'text-gray-500', dot: 'bg-gray-400' };
+  const dauer = (dok.arbeit_begonnen_at && dok.arbeit_beendet_at)
+    ? Math.round((new Date(dok.arbeit_beendet_at) - new Date(dok.arbeit_begonnen_at)) / 60000)
+    : null;
+  const hatUnterschrift = !!(dok.unterschrift_at || dok.unterschrift_vorhanden);
+  const ersteMat    = (material ?? []).slice(0, 3);
+  const ersteFotos  = (fotos   ?? []).slice(0, 3);
+
+  function ZeitZeile({ label, iso }) {
+    if (!iso) return <InfoZeile label={label} value="—" />;
+    return <InfoZeile label={label} value={`${fmtDatum(iso)}  ${fmtZeit(iso)}`} />;
+  }
+
+  return (
+    <div className="space-y-5 max-w-3xl">
+
+      {/* 1 — Einsatzstatus */}
+      <Karte>
+        <KarteHeader
+          icon="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+          title="Einsatzstatus"
+          badgeVariant="amber"
+        />
+        <div className="px-5 py-4">
+          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold ${statusCfg.bg} ${statusCfg.text}`}>
+            <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+            {dok.status ?? 'Unbekannt'}
+          </span>
+        </div>
+      </Karte>
+
+      {/* 2 — Zeitübersicht */}
+      <Karte>
+        <KarteHeader
+          icon="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+          title="Zeitübersicht"
+          badgeVariant="blue"
+        />
+        <div className="px-5 py-5 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+          <ZeitZeile label="Einsatz gestartet"   iso={dok.unterwegs_at}      />
+          <ZeitZeile label="Ankunft beim Kunden" iso={dok.vor_ort_at}         />
+          <ZeitZeile label="Arbeitsbeginn"        iso={dok.arbeit_begonnen_at} />
+          <ZeitZeile label="Arbeitsende"          iso={dok.arbeit_beendet_at}  />
+          {dauer !== null && (
+            <InfoZeile label="Gesamtdauer" value={minZuHM(dauer)} />
+          )}
+        </div>
+      </Karte>
+
+      {/* 3 — Tätigkeiten */}
+      {(dok.taetigkeiten || dok.schaden || dok.massnahmen || dok.empfehlung) && (
+        <Karte>
+          <KarteHeader
+            icon="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+            title="Tätigkeiten"
+            badgeVariant="blue"
+          />
+          <div className="px-5 py-5 space-y-4">
+            {dok.taetigkeiten && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Durchgeführte Arbeiten</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.taetigkeiten}</p>
+              </div>
+            )}
+            {dok.schaden && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Festgestellter Schaden</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.schaden}</p>
+              </div>
+            )}
+            {dok.massnahmen && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Durchgeführte Maßnahmen</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.massnahmen}</p>
+              </div>
+            )}
+            {dok.empfehlung && (
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Empfehlung</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{dok.empfehlung}</p>
+              </div>
+            )}
+          </div>
+        </Karte>
+      )}
+
+      {/* 4 — Material */}
+      <Karte>
+        <KarteHeader
+          icon="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"
+          title="Material"
+          badgeVariant="purple"
+          badge={material.length > 0 ? `${material.length} Position${material.length !== 1 ? 'en' : ''}` : undefined}
+        />
+        <div className="px-5 py-5">
+          {dok.kein_material_verwendet ? (
+            <p className="text-sm text-gray-400 italic">Kein Material verwendet.</p>
+          ) : material.length === 0 ? (
+            <p className="text-sm text-gray-300 italic">Noch kein Material erfasst.</p>
+          ) : (
+            <div className="space-y-2">
+              {ersteMat.map((m, i) => (
+                <div key={i} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
+                  <div className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                    <Svg d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5" cls="w-3 h-3 text-purple-400" />
+                  </div>
+                  <p className="text-sm text-gray-700 flex-1 truncate">{m.bezeichnung}</p>
+                  <span className="text-xs text-gray-400 shrink-0">{m.menge} {m.einheit}</span>
+                </div>
+              ))}
+              {material.length > 3 && (
+                <p className="text-xs text-gray-400 pt-1">
+                  + {material.length - 3} weitere Position{material.length - 3 !== 1 ? 'en' : ''}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </Karte>
+
+      {/* 5 — Fotos */}
+      <Karte>
+        <KarteHeader
+          icon="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+          title="Fotos"
+          badgeVariant="gray"
+          badge={fotos.length > 0 ? `${fotos.length} Foto${fotos.length !== 1 ? 's' : ''}` : undefined}
+        />
+        <div className="px-5 py-5">
+          {fotos.length === 0 ? (
+            <p className="text-sm text-gray-300 italic">Noch keine Fotos hochgeladen.</p>
+          ) : (
+            <div className="flex items-start gap-3 flex-wrap">
+              {ersteFotos.map((f, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={f.url} alt={f.dateiname ?? 'Foto'} className="w-full h-full object-cover" />
+                  {f.kategorie && (
+                    <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] font-semibold bg-black/40 text-white py-0.5 capitalize">
+                      {f.kategorie}
+                    </span>
+                  )}
+                </div>
+              ))}
+              {fotos.length > 3 && (
+                <div className="w-20 h-20 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-semibold text-gray-400">+{fotos.length - 3}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Karte>
+
+      {/* 6 — Kundenunterschrift */}
+      <Karte>
+        <KarteHeader
+          icon="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"
+          title="Kundenunterschrift"
+          badgeVariant={hatUnterschrift ? 'green' : 'gray'}
+        />
+        <div className="px-5 py-4">
+          {hatUnterschrift ? (
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-green-700 bg-green-50 px-3 py-1.5 rounded-full">
+              <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4" />
+              Unterschrift vorhanden
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+              <Svg d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" cls="w-4 h-4" />
+              Unterschrift fehlt
+            </span>
+          )}
+        </div>
+      </Karte>
+
+      {/* CTA */}
+      <div className="pt-1">
+        <button
+          onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftragId}`)}
+          className="flex items-center gap-2 px-5 py-3 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition shadow-sm shadow-amber-100">
+          <Svg d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" cls="w-4 h-4" />
+          Vollständige Dokumentation öffnen
+        </button>
+      </div>
+
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════
    HAUPTKOMPONENTE
 ════════════════════════════════════════════════════════════════ */
 
@@ -921,6 +1158,9 @@ export default function AuftragBearbeiten() {
   const [userName,       setUserName]       = useState('');
   const [zustand,        setZustand]        = useState('loading'); // loading | forbidden | not_found | ok
   const [auftragTab,     setAuftragTab]     = useState('uebersicht');
+  const [einsatzDok,     setEinsatzDok]     = useState(null);
+  const [einsatzMat,     setEinsatzMat]     = useState([]);
+  const [einsatzFotos,   setEinsatzFotos]   = useState([]);
 
   const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
@@ -951,11 +1191,14 @@ export default function AuftragBearbeiten() {
       const erlaubt = ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'];
       if (!erlaubt.includes(rolle)) { setZustand('forbidden'); return; }
 
-      // Lade Auftrag + Ressourcen parallel
+      // Lade Auftrag + Ressourcen + Einsatzdaten parallel
       const [
         { data: auftragData, error: auftragErr },
         { data: maData },
         { data: geData },
+        { data: dokData },
+        { data: matData },
+        { data: fotosData },
       ] = await Promise.all([
         supabase
           .from('auftraege')
@@ -979,6 +1222,25 @@ export default function AuftragBearbeiten() {
           .select('maschine:maschine_id(id, name, typ, zustand)')
           .eq('auftrag_id', id)
           .eq('company_id', member.company_id),
+
+        supabase
+          .from('einsatz_dokumentation')
+          .select('*')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id)
+          .maybeSingle(),
+
+        supabase
+          .from('einsatz_material')
+          .select('*')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id),
+
+        supabase
+          .from('einsatz_fotos')
+          .select('*')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id),
       ]);
 
       if (auftragErr || !auftragData) { setZustand('not_found'); return; }
@@ -986,6 +1248,9 @@ export default function AuftragBearbeiten() {
       setAuftrag(auftragData);
       setMitarbeiterList((maData ?? []).map(r => r.mitarbeiter).filter(Boolean));
       setMaschinenList((geData ?? []).map(r => r.maschine).filter(Boolean));
+      setEinsatzDok(dokData ?? null);
+      setEinsatzMat(matData ?? []);
+      setEinsatzFotos(fotosData ?? []);
       setZustand('ok');
     } catch {
       setZustand('not_found');
@@ -1078,7 +1343,7 @@ export default function AuftragBearbeiten() {
 
           {/* Linke Spalte (2/3) */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Bereich 1: Auftragsinformationen */}
+           {/* Bereich 1: Auftragsinformationen */}
             <AuftragInfoKarte
               auftrag={auftrag}
               rechte={rechte}
@@ -1175,26 +1440,13 @@ export default function AuftragBearbeiten() {
 
       {/* ── Tab: Einsatz & Dokumentation ── */}
       {auftragTab === 'einsatz' && (
-        <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-amber-600" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Einsatz & Dokumentation</h2>
-              <p className="text-sm text-gray-500">Dokumentiere den Einsatz, Material, Zeiten, Fotos und Kundenunterschrift.</p>
-            </div>
-            <button
-              onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${auftrag.id}`)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition">
-              Einsatz dokumentieren
-            </button>
-          </div>
-        </div>
+        <EinsatzSummaryKarte
+          dok={einsatzDok}
+          material={einsatzMat}
+          fotos={einsatzFotos}
+          auftragId={id}
+          router={router}
+        />
       )}
 
       {/* ── Tab: Abschluss ── */}
