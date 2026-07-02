@@ -618,6 +618,61 @@ export default function FahrzeugDetailPage() {
               );
             })()}
           </div>
+
+          {/* ── Nächster Schritt ── */}
+          {(() => {
+            const hasPruefungDanger = warnungen.some(w => w.status?.severity === 'danger');
+            const hasWartungWarn = (wartDatumStatus && (wartDatumStatus.severity === 'danger' || wartDatumStatus.severity === 'warn')) ||
+                                   (wartKmStatus && (wartKmStatus.severity === 'danger' || wartKmStatus.severity === 'warn'));
+            const hasVersWarn = versAblaufStatus && (versAblaufStatus.severity === 'danger' || versAblaufStatus.severity === 'warn');
+
+            let schritt = null;
+            if (hasPruefungDanger) {
+              schritt = { titel: 'Prüfung durchführen', text: 'Eine oder mehrere Fahrzeugprüfungen sind überfällig oder laufen bald ab.', btn: 'TÜV & UVV öffnen', tab: 'tuev_uvv', color: 'red' };
+            } else if (hasWartungWarn) {
+              schritt = { titel: 'Wartung durchführen', text: 'Die nächste Wartung ist fällig oder steht kurz bevor.', btn: 'Wartungen öffnen', tab: 'wartungen', color: 'amber' };
+            } else if (hasVersWarn) {
+              schritt = { titel: 'Versicherung prüfen', text: 'Die Fahrzeugversicherung läuft bald ab oder ist bereits abgelaufen.', btn: 'Versicherung öffnen', tab: 'versicherung', color: 'amber' };
+            }
+
+            if (!schritt) {
+              return (
+                <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                  <div className="flex items-center gap-2 pb-4 border-b border-gray-100 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-emerald-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-semibold text-gray-800">Nächster Schritt</h2>
+                  </div>
+                  <p className="text-sm font-semibold text-emerald-700 mb-1">Fahrzeug einsatzbereit</p>
+                  <p className="text-sm text-gray-500">Für dieses Fahrzeug sind aktuell keine Maßnahmen erforderlich.</p>
+                </div>
+              );
+            }
+
+            const colorMap = {
+              red:   { border: 'border-red-100',   bg: 'bg-red-50',   iconBg: 'bg-red-100',   iconCls: 'text-red-600',   titleCls: 'text-red-700',   btnCls: 'bg-red-600 hover:bg-red-700' },
+              amber: { border: 'border-amber-100', bg: 'bg-amber-50', iconBg: 'bg-amber-100', iconCls: 'text-amber-600', titleCls: 'text-amber-700', btnCls: 'bg-amber-500 hover:bg-amber-600' },
+            };
+            const c = colorMap[schritt.color];
+            return (
+              <div className={`rounded-2xl border ${c.border} ${c.bg} p-6`}>
+                <div className="flex items-center gap-2 pb-4 border-b border-gray-200 mb-4">
+                  <div className={`w-7 h-7 rounded-lg ${c.iconBg} flex items-center justify-center`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-4 h-4 ${c.iconCls}`}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-sm font-semibold text-gray-800">Nächster Schritt</h2>
+                </div>
+                <p className={`text-sm font-semibold ${c.titleCls} mb-1`}>{schritt.titel}</p>
+                <p className="text-sm text-gray-600 mb-4">{schritt.text}</p>
+                <button type="button" onClick={() => setActiveTab(schritt.tab)} className={`px-4 py-2 ${c.btnCls} text-white text-sm font-medium rounded-xl transition`}>{schritt.btn}</button>
+              </div>
+            );
+          })()}
         </div>
       )}
 
