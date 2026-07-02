@@ -1475,6 +1475,43 @@ export default function KundeDetail() {
                 </div>
               </Karte>
             );
+
+
+          {/* ── Kunden-Kennzahlen ── */}
+          {(() => {
+            const auftraegeGesamt = auftraege.length;
+            const auftraegeAbgeschlossen = auftraege.filter(a => a.status === 'Abgeschlossen').length;
+            const rechnungenGesamt = rechnungen.length;
+            const offenerBetrag = rechnungen
+              .filter(r => r.status !== 'bezahlt')
+              .reduce((sum, r) => {
+                if (!Array.isArray(r.positionen)) return sum;
+                const netto = r.positionen.reduce((s, p) => s + (p.menge ?? 0) * (p.preis ?? 0), 0);
+                return sum + netto * (1 + ((r.steuersatz ?? 19) / 100));
+              }, 0);
+            const einsatzorte = objekte.length;
+            const kennzahlen = [
+              { label: 'Aufträge gesamt',  value: String(auftraegeGesamt) },
+              { label: 'Abgeschlossen',    value: String(auftraegeAbgeschlossen) },
+              { label: 'Rechnungen gesamt', value: String(rechnungenGesamt) },
+              { label: 'Offener Betrag',   value: offenerBetrag.toFixed(2).replace('.', ',') + ' €', small: true },
+              { label: 'Einsatzorte',      value: String(einsatzorte) },
+            ];
+            return (
+              <Karte>
+                <KarteHeader icon="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" title="Kunden-Kennzahlen" badgeVariant="blue" />
+                <div className="px-5 py-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {kennzahlen.map(k => (
+                      <div key={k.label} className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                        <span className={`font-bold text-gray-800 ${k.small ? 'text-base' : 'text-2xl'}`}>{k.value}</span>
+                        <span className="text-xs text-gray-500 mt-1">{k.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Karte>
+            );
           })()}
         </div>
       )}
