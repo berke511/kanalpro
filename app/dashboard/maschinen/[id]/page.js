@@ -555,6 +555,52 @@ export default function MaschinenDetailPage() {
               Prüfung bald fällig
             </div>
           )}
+          {/* ── Nächster Schritt ───────────────────────────────────────────────────── */}
+          {(() => {
+            const heute = new Date(); heute.setHours(0, 0, 0, 0);
+            const pruefDatum = maschine.naechste_pruefung_datum
+              ? new Date(maschine.naechste_pruefung_datum) : null;
+            const diffTage = pruefDatum
+              ? Math.floor((pruefDatum - heute) / 86400000) : null;
+            let titel, text, buttonLabel, buttonAktion;
+            let bgCls = 'bg-green-50 border-green-200';
+            let txtCls = 'text-green-700';
+            if (maschine.zustand === 'defekt') {
+              titel = 'Maschine prüfen';
+              text = 'Diese Maschine ist als defekt markiert. Bitte den Zustand überprüfen und notwendige Maßnahmen einleiten.';
+              buttonLabel = 'Geräteverwaltung öffnen';
+              buttonAktion = () => setActiveTab('geraeteverwaltung');
+              bgCls = 'bg-red-50 border-red-200'; txtCls = 'text-red-700';
+            } else if (pruefDatum && diffTage < 0) {
+              titel = 'Prüfung durchführen';
+              text = `Die nächste Prüfung war am ${fmtDate(maschine.naechste_pruefung_datum)} fällig und ist überfällig.`;
+              buttonLabel = 'Wartungen & Prüfungen öffnen';
+              buttonAktion = () => setActiveTab('wartungen_pruefungen');
+              bgCls = 'bg-red-50 border-red-200'; txtCls = 'text-red-700';
+            } else if (pruefDatum && diffTage <= 30) {
+              titel = 'Prüfung bald fällig';
+              text = `Die nächste Prüfung ist am ${fmtDate(maschine.naechste_pruefung_datum)} fällig – noch ${diffTage} Tag${diffTage === 1 ? '' : 'e'}.`;
+              buttonLabel = 'Wartungen & Prüfungen öffnen';
+              buttonAktion = () => setActiveTab('wartungen_pruefungen');
+              bgCls = 'bg-yellow-50 border-yellow-200'; txtCls = 'text-yellow-700';
+            } else {
+              titel = 'Maschine einsatzbereit';
+              text = 'Für diese Maschine sind aktuell keine Maßnahmen erforderlich.';
+              buttonLabel = null;
+            }
+            return (
+              <div className={`rounded-2xl border p-5 ${bgCls}`}>
+                <p className={`text-sm font-semibold mb-1 ${txtCls}`}>{titel}</p>
+                <p className={`text-sm ${txtCls} opacity-80`}>{text}</p>
+                {buttonLabel && (
+                  <button onClick={buttonAktion}
+                    className={`mt-3 px-4 py-1.5 text-sm font-medium rounded-xl border ${txtCls} border-current hover:opacity-70 transition`}>
+                    {buttonLabel}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
           {/* ── Stammdaten-Karte ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           {!editing ? (
