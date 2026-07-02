@@ -6,6 +6,7 @@ import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 
 const TABS = [
+  { id: 'uebersicht',       label: 'Übersicht' },
   { id: 'fahrzeugdaten',    label: 'Fahrzeugdaten' },
   { id: 'tuev_uvv',         label: 'TÜV & UVV' },
   { id: 'wartungen',        label: 'Wartungen' },
@@ -215,7 +216,7 @@ export default function FahrzeugDetailPage() {
   const router = useRouter();
   const { id } = useParams();
 
-  const [activeTab, setActiveTab] = useState('fahrzeugdaten');
+  const [activeTab, setActiveTab] = useState('uebersicht');
   const [fahrzeug, setFahrzeug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -574,6 +575,51 @@ export default function FahrzeugDetailPage() {
         label="Fahrzeugnavigation"
         className="mb-6"
       />
+
+      {/* ── ÜBERSICHT ── */}
+      {activeTab === 'uebersicht' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center gap-2 pb-4 border-b border-gray-100 mb-5">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                </svg>
+              </div>
+              <h2 className="text-sm font-semibold text-gray-800">Fahrzeug-Zusammenfassung</h2>
+              <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${zustandCls}`}>{ZUSTAND_OPTIONS.find(o => o.value === form.zustand)?.label ?? form.zustand}</span>
+            </div>
+            {(() => {
+              const felder = [
+                fahrzeug.kennzeichen ? { label: 'Kennzeichen', value: fahrzeug.kennzeichen } : null,
+                fahrzeug.marke ? { label: 'Marke', value: fahrzeug.marke } : null,
+                fahrzeug.modell ? { label: 'Modell', value: fahrzeug.modell } : null,
+                fahrzeug.typ ? { label: 'Fahrzeugtyp', value: TYP_OPTIONS.find(o => o.value === fahrzeug.typ)?.label ?? fahrzeug.typ } : null,
+                fahrzeug.baujahr ? { label: 'Baujahr', value: String(fahrzeug.baujahr) } : null,
+                fahrzeug.kraftstoff ? { label: 'Kraftstoff', value: KRAFTSTOFF_OPTIONS.find(o => o.value === fahrzeug.kraftstoff)?.label ?? fahrzeug.kraftstoff } : null,
+                fahrzeug.km_stand != null ? { label: 'Kilometerstand', value: fahrzeug.km_stand.toLocaleString('de-DE') + ' km' } : null,
+                fahrzeug.standort ? { label: 'Standort', value: fahrzeug.standort } : null,
+                fahrzeug.tuev_bis ? { label: 'TÜV bis', value: formatDate(fahrzeug.tuev_bis) } : null,
+                fahrzeug.hu_bis ? { label: 'HU bis', value: formatDate(fahrzeug.hu_bis) } : null,
+                fahrzeug.uvv_bis ? { label: 'UVV bis', value: formatDate(fahrzeug.uvv_bis) } : null,
+                fahrzeug.naechste_wartung_datum ? { label: 'Nächste Wartung', value: formatDate(fahrzeug.naechste_wartung_datum) } : null,
+                fahrzeug.naechste_wartung_km != null ? { label: 'Nächste Wartung (km)', value: fahrzeug.naechste_wartung_km.toLocaleString('de-DE') + ' km' } : null,
+                fahrzeug.versicherungs_ablauf ? { label: 'Versicherung bis', value: formatDate(fahrzeug.versicherungs_ablauf) } : null,
+              ].filter(Boolean);
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                  {felder.map(f => (
+                    <div key={f.label}>
+                      <p className="text-xs text-gray-400">{f.label}</p>
+                      <p className="text-sm font-medium text-gray-800 mt-0.5">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* ── FAHRZEUGDATEN ── */}
       {activeTab === 'fahrzeugdaten' && (
