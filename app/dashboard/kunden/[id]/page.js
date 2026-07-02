@@ -1475,6 +1475,7 @@ export default function KundeDetail() {
                 </div>
               </Karte>
             );
+          })()}
 
 
           {/* ── Kunden-Kennzahlen ── */}
