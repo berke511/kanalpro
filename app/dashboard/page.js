@@ -203,6 +203,8 @@ export default function Dashboard() {
   const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
   // Ereignisse
   const [events, setEvents] = useState([]);
+// Angebote
+const [angebote, setAngebote] = useState([]);
 
   const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
@@ -317,7 +319,26 @@ export default function Dashboard() {
         setFahrzeugeRaw(fahrzeugeData);
       }
 
-      setLaden(false);
+      
+
+// Angebote
+const { data: angeboteData } = await supabase
+  .from('angebote')
+  .select('id, angebotsnummer, status, positionen, steuersatz, datum')
+  .order('datum', { ascending: false })
+  .limit(20);
+
+if (angeboteData) {
+  const offene = angeboteData
+    .filter(a => !['angenommen', 'abgelehnt', 'storniert'].includes(a.status))
+    .map(a => {
+      const netto = (a.positionen ?? []).reduce((s, p) => s + (p.menge || 0) * (p.preis || 0), 0);
+      return { ...a, betrag: netto * (1 + (a.steuersatz ?? 19) / 100) };
+    });
+  setAngebote(offene);
+}
+
+setLaden(false);
     }
     init();
   }, []);
@@ -639,7 +660,38 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* ══ SCHNELLZUGRIFF (unterste Zeile) ════════════════════════════════ */}
+      {/* ── Offene-Angebote-Karte ── */}
+<div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+  <div className="flex items-center justify-between mb-3">
+    <div>
+      <h3 className="font-semibold text-gray-800">Offene Angebote</h3>
+      <p className="text-sm text-gray-500 mt-0.5">
+        {angebote.length} offen · {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(angebote.reduce((s, a) => s + (a.betrag || 0), 0))}
+      </p>
+    </div>
+    <a href="/dashboard/angebote" className="text-sm text-blue-600 hover:underline">Angebote öffnen →</a>
+  </div>
+  {angebote.length === 0 ? (
+    <p className="text-sm text-gray-500">Keine offenen Angebote</p>
+  ) : (
+    <ul className="space-y-2">
+      {angebote.slice(0, 5).map(a => (
+        <li key={a.id} className="flex items-center justify-between text-sm border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+          <div>
+            <p className="font-medium text-gray-800">{a.angebotsnummer || `#${a.id?.slice(0,8)}`}</p>
+            <p className="text-xs text-gray-500">{a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–'}</p>
+          </div>
+          <div className="text-right">
+            <p className="font-medium text-gray-700">{new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(a.betrag || 0)}</p>
+            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{a.status || '–'}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
+{/* ══ SCHNELLZUGRIFF (unterste Zeile) ════════════════════════════════ */}
       <section>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Schnellzugriff</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
