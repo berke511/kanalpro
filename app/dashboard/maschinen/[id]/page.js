@@ -672,6 +672,75 @@ export default function MaschinenDetailPage() {
               </div>
             </div>
           </div>
+{/* ── Quick-Actions-Karte ── */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              {/* Geräteverwaltung */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('geraeteverwaltung')}
+                className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors text-left w-full"
+              >
+                <svg className="w-6 h-6 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-gray-900">Geräteverwaltung öffnen</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Stammdaten und Gerätedaten bearbeiten</p>
+                </div>
+              </button>
+
+              {/* Wartungen */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('wartungen_pruefungen')}
+                className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors text-left w-full"
+              >
+                <svg className="w-6 h-6 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-gray-900">Wartungen &amp; Prüfungen öffnen</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Prüfungen und Wartungen verwalten</p>
+                </div>
+              </button>
+
+              {/* Standort */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('standort')}
+                className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors text-left w-full"
+              >
+                <svg className="w-6 h-6 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-gray-900">Standort öffnen</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Standort und Verfügbarkeit bearbeiten</p>
+                </div>
+              </button>
+
+              {/* Historie */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('historie')}
+                className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors text-left w-full"
+              >
+                <svg className="w-6 h-6 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="font-semibold text-gray-900">Historie öffnen</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Änderungsprotokoll anzeigen</p>
+                </div>
+              </button>
+
+            </div>
+          </div>
 {/* ── Stammdaten-Karte ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           {!editing ? (
