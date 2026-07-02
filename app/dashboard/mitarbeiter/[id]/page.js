@@ -623,6 +623,17 @@ export default function MitarbeiterProfilPage() {
       {/* Tab: Stammdaten */}
       {tab === 'stammdaten' && (
         <form onSubmit={handleSave} className="space-y-6">
+          {zertifikate.filter(z => {
+            const s = zertStatus(z.gueltig_bis);
+            return s && (s.cls.includes('red') || s.cls.includes('amber') || s.cls.includes('yellow'));
+          }).map((z, i) => {
+            const s = zertStatus(z.gueltig_bis);
+            return (
+              <div key={i} className={`rounded-xl border p-4 text-sm mb-2 ${s.cls.includes('red') ? 'bg-red-50 border-red-200 text-red-800' : 'bg-yellow-50 border-yellow-200 text-yellow-800'}`}>
+                {s.cls.includes('red') ? `${z.name} ist abgelaufen.` : `${z.name} läuft bald ab.`}
+              </div>
+            );
+          })}
           {FELDER.map(({ section, fields }) => (
             <div key={section} className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-700 mb-4">{section}</h2>
