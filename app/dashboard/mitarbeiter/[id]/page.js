@@ -720,6 +720,32 @@ export default function MitarbeiterProfilPage() {
             </div>
           );
         })()}
+        {/* ── Warnhinweise-Karte ── */}
+        {(() => {
+          const warnungen = [];
+          zertifikate.forEach(z => {
+            const { label, cls } = zertStatus(z.gueltig_bis);
+            if (cls.includes('red')) {
+              warnungen.push({ typ: 'error', text: `Zertifikat „${z.name}“ ist abgelaufen (${label})` });
+            } else if (cls.includes('amber') || cls.includes('yellow')) {
+              warnungen.push({ typ: 'warning', text: `Zertifikat „${z.name}“ läuft bald ab (${label})` });
+            }
+          });
+          if (warnungen.length === 0) return null;
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+              <h3 className="font-semibold text-gray-700 mb-3">Warnhinweise</h3>
+              <ul className="space-y-2">
+                {warnungen.map((w, i) => (
+                  <li key={i} className={`flex items-start gap-2 text-sm rounded-lg px-3 py-2 ${w.typ === 'error' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                    <span>{w.typ === 'error' ? '🔴' : '🟡'}</span>
+                    <span>{w.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
         </>
       )}
 
