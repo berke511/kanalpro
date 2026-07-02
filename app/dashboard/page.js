@@ -195,15 +195,13 @@ export default function Dashboard() {
   // Mitarbeiter
   const [mitarbeiter, setMitarbeiter] = useState({ total: 0 });
   // Rechnungen (Modul noch nicht vorhanden)
-  const [rechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
+  const [rechnung, setRechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
   // Fahrzeuge (Modul noch nicht vorhanden)
   const [fahrzeug] = useState({ total: 0, imEinsatz: 0, verfuegbar: 0, werkstatt: 0 });
   // Umsatz
-  const [umsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
+  const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
   // Ereignisse
   const [events, setEvents] = useState([]);
-  const [rechnung, setRechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
-  const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: [] });
 
   const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
