@@ -206,6 +206,7 @@ export default function Dashboard() {
 // Angebote
 const [angebote, setAngebote] = useState([]);
   const [maschinenKritisch, setMaschinenKritisch] = useState([]);
+  const [zertifikateKritisch, setZertifikateKritisch] = useState([]);
 
   const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
@@ -353,6 +354,23 @@ if (maschinenData) {
     (m.naechste_pruefung_datum && new Date(m.naechste_pruefung_datum) <= in30)
   );
   setMaschinenKritisch(kritisch);
+}
+
+// Zertifikate
+const { data: zertData } = await supabase
+  .from('zertifikate')
+  .select('id, name, gueltig_bis, mitarbeiter(vorname, nachname, company_id)')
+  .order('gueltig_bis', { ascending: true })
+  .limit(50);
+
+if (zertData) {
+  const heute = new Date();
+  const in30 = new Date(); in30.setDate(heute.getDate() + 30);
+  const kritisch = zertData
+    .filter(z => z.mitarbeiter?.company_id === companyId)
+    .filter(z => z.gueltig_bis && new Date(z.gueltig_bis) <= in30)
+    .slice(0, 5);
+  setZertifikateKritisch(kritisch);
 }
 
 setLaden(false);
@@ -743,6 +761,46 @@ setLaden(false);
               <div>
                 <p className="font-medium text-gray-800 text-sm">{m.name || '–'}{m.typ ? ` · ${m.typ}` : ''}</p>
                 <p className="text-xs text-gray-600">{m.gruende.join(' · ')}{m.lagerort ? ` · ${m.lagerort}` : ''}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+})()}
+
+{/* ── Ablaufende-Zertifikate-Karte ── */}
+{(() => {
+  const heute = new Date();
+  const liste = zertifikateKritisch.slice(0, 5).map(z => {
+    const d = z.gueltig_bis ? new Date(z.gueltig_bis) : null;
+    const abgelaufen = d && d < heute;
+    const name = z.mitarbeiter
+      ? `${z.mitarbeiter.vorname || ''} ${z.mitarbeiter.nachname || ''}`.trim()
+      : '–';
+    return { ...z, abgelaufen, mitarbeiterName: name };
+  });
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-800">Ablaufende Zertifikate</h3>
+        <a href="/dashboard/mitarbeiter" className="text-sm text-blue-600 hover:underline">Mitarbeiter öffnen →</a>
+      </div>
+      {liste.length === 0 ? (
+        <p className="text-sm text-gray-500">Keine ablaufenden Zertifikate</p>
+      ) : (
+        <ul className="space-y-2">
+          {liste.map(z => (
+            <li key={z.id} className={`flex items-start gap-3 rounded-lg px-3 py-2 ${z.abgelaufen ? 'bg-red-50' : 'bg-yellow-50'}`}>
+              <span className="mt-0.5 text-base">{z.abgelaufen ? '🔴' : '🟡'}</span>
+              <div>
+                <p className="font-medium text-gray-800 text-sm">{z.name || z.bezeichnung || '–'}</p>
+                <p className="text-xs text-gray-600">
+                  {z.mitarbeiterName}
+                  {z.gueltig_bis ? ` · ${new Date(z.gueltig_bis).toLocaleDateString('de-DE')}` : ''}
+                </p>
               </div>
             </li>
           ))}
