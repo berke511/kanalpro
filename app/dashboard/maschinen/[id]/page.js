@@ -601,6 +601,49 @@ export default function MaschinenDetailPage() {
               </div>
             );
           })()}
+
+          {/* ── Warnhinweise-Karte ── */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Warnhinweise</h2>
+            {(() => {
+              const warnungen = [];
+              if (maschine.zustand === 'defekt') {
+                warnungen.push({ text: 'Maschine defekt', farbe: 'red' });
+              }
+              if (maschine.naechste_pruefung_datum && new Date(maschine.naechste_pruefung_datum) < new Date()) {
+                warnungen.push({ text: 'Prüfung überfällig', farbe: 'red' });
+              }
+              if (maschine.naechste_pruefung_datum) {
+                const diff = Math.floor((new Date(maschine.naechste_pruefung_datum) - new Date()) / 86400000);
+                if (diff >= 0 && diff <= 30) {
+                  warnungen.push({ text: 'Prüfung bald fällig', farbe: 'yellow' });
+                }
+              }
+              if (warnungen.length === 0) {
+                return (
+                  <div className="flex items-center gap-2 text-sm text-green-700">
+                    <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                    Keine offenen Warnhinweise
+                  </div>
+                );
+              }
+              return (
+                <ul className="space-y-2">
+                  {warnungen.map((w, i) => (
+                    <li key={i} className={`flex items-center gap-2 text-sm font-medium rounded-xl px-4 py-2.5 ${
+                      w.farbe === 'red'
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${w.farbe === 'red' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                      {w.text}
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+          </div>
+
           {/* ── Stammdaten-Karte ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           {!editing ? (
