@@ -197,7 +197,7 @@ export default function Dashboard() {
   // Rechnungen (Modul noch nicht vorhanden)
   const [rechnung, setRechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
   // Fahrzeuge (Modul noch nicht vorhanden)
-  const [fahrzeug] = useState({ total: 0, imEinsatz: 0, verfuegbar: 0, werkstatt: 0 });
+  const [fahrzeug, setFahrzeug] = useState({ total: 0, imEinsatz: 0, verfuegbar: 0, werkstatt: 0 });
   // Umsatz
   const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
   // Ereignisse
@@ -300,6 +300,19 @@ export default function Dashboard() {
           setRechnung({ offen, bezahlt, ueberfaellig, betrag: monatsumsatz });
           setUmsatz(prev => ({ ...prev, monat: monatsumsatz, jahr: jahresumsatz }));
         }
+      }
+
+      // Fahrzeuge
+      const { data: fahrzeugeData } = await supabase
+        .from('fahrzeuge')
+        .select('id, zustand');
+
+      if (fahrzeugeData) {
+        const total      = fahrzeugeData.length;
+        const imEinsatz  = fahrzeugeData.filter(f => f.zustand === 'aktiv').length;
+        const verfuegbar = fahrzeugeData.filter(f => f.zustand === 'reserviert').length;
+        const werkstatt  = fahrzeugeData.filter(f => f.zustand === 'wartung').length;
+        setFahrzeug({ total, imEinsatz, verfuegbar, werkstatt });
       }
 
       setLaden(false);
