@@ -9,6 +9,7 @@ import {
 import TabNav from '@/components/ui/TabNav';
 
 const TABS = [
+  { id: 'uebersicht', label: 'Übersicht' },
   { id: 'stammdaten',    label: 'Stammdaten' },
   { id: 'rollen',        label: 'Rollen & Rechte' },
   { id: 'arbeitszeiten', label: 'Arbeitszeiten' },
@@ -154,7 +155,7 @@ function formatDatum(datum) {
 export default function MitarbeiterProfilPage() {
   const router = useRouter();
   const { id } = useParams();
-  const [tab, setTab] = useState('stammdaten');
+  const [tab, setTab] = useState('uebersicht');
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -620,7 +621,70 @@ export default function MitarbeiterProfilPage() {
         className="mb-6"
       />
 
-      {/* Tab: Stammdaten */}
+      {/* Tab: Übersicht */}
+      {tab === 'uebersicht' && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">Mitarbeiter-Zusammenfassung</h2>
+          <div className="space-y-3">
+            {form?.vorname && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Vorname</span>
+                <span className="text-sm font-medium text-gray-800">{form.vorname}</span>
+              </div>
+            )}
+            {form?.nachname && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Nachname</span>
+                <span className="text-sm font-medium text-gray-800">{form.nachname}</span>
+              </div>
+            )}
+            {form?.email && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">E-Mail</span>
+                <span className="text-sm font-medium text-gray-800">{form.email}</span>
+              </div>
+            )}
+            {form?.telefon && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Telefon</span>
+                <span className="text-sm font-medium text-gray-800">{form.telefon}</span>
+              </div>
+            )}
+            {form?.position && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Position</span>
+                <span className="text-sm font-medium text-gray-800">{form.position}</span>
+              </div>
+            )}
+            {rolle && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Rolle</span>
+                <span className="text-sm font-medium text-gray-800">{rolle}</span>
+              </div>
+            )}
+            {form?.eintrittsdatum && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Eintrittsdatum</span>
+                <span className="text-sm font-medium text-gray-800">{new Date(form.eintrittsdatum).toLocaleDateString('de-DE')}</span>
+              </div>
+            )}
+            {form?.fuehrerschein && (
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-500">Führerscheinklasse</span>
+                <span className="text-sm font-medium text-gray-800">{form.fuehrerschein}</span>
+              </div>
+            )}
+            {form?.notizen && (
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-gray-500">Notizen</span>
+                <span className="text-sm font-medium text-gray-800">{form.notizen}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+            {/* Tab: Stammdaten */}
       {tab === 'stammdaten' && (
         <form onSubmit={handleSave} className="space-y-6">
           {zertifikate.filter(z => {
