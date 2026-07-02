@@ -1397,6 +1397,49 @@ export default function KundeDetail() {
               )}
             </div>
           </Karte>
+
+          {/* ── Nächster Schritt ── */}
+          {(() => {
+            const hatOffeneRechnungen = rechnungen.some(r => r.status !== 'bezahlt');
+            let step = null;
+            if (!form.telefon && !form.email) {
+              step = { title: 'Kontaktdaten ergänzen', btnLabel: 'Stammdaten bearbeiten', onBtn: () => setTab('stammdaten') };
+            } else if (auftraege.length === 0) {
+              step = { title: 'Ersten Auftrag anlegen', btnLabel: 'Auftrag erstellen', onBtn: () => router.push(`/dashboard/auftraege/neu?kunde=${id}`) };
+            } else if (hatOffeneRechnungen) {
+              step = { title: 'Offene Rechnungen prüfen', btnLabel: 'Rechnungen öffnen', onBtn: () => setTab('rechnungen') };
+            }
+            return (
+              <Karte>
+                <KarteHeader icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" title="Nächster Schritt" badgeVariant={step ? 'blue' : 'green'} />
+                <div className="px-5 py-5">
+                  {step ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                          <Svg d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" cls="w-4 h-4 text-blue-500" />
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800">{step.title}</p>
+                      </div>
+                      <button onClick={step.onBtn} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition shrink-0">
+                        {step.btnLabel}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                        <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">Kundenakte vollständig</p>
+                        <p className="text-sm text-gray-400 mt-0.5">Für diesen Kunden sind aktuell keine nächsten Schritte erforderlich.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Karte>
+            );
+          })()}
         </div>
       )}
       {tab === 'stammdaten' && (
