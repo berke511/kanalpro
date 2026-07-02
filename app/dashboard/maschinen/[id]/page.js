@@ -486,7 +486,27 @@ export default function MaschinenDetailPage() {
 
       {/* ── Tab: Geräteverwaltung ─────────────────────────────────────────── */}
       {activeTab === 'geraeteverwaltung' && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div className="space-y-4">
+          {/* ── Warn-Banner ── */}
+          {maschine.zustand === 'defekt' && (
+            <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3 text-sm font-medium text-red-800">
+              Maschine defekt
+            </div>
+          )}
+          {maschine.naechste_pruefung_datum && new Date(maschine.naechste_pruefung_datum) < new Date() && (
+            <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3 text-sm font-medium text-red-800">
+              Prüfung überfällig
+            </div>
+          )}
+          {maschine.naechste_pruefung_datum &&
+            (new Date(maschine.naechste_pruefung_datum) - new Date()) / 86400000 >= 0 &&
+            (new Date(maschine.naechste_pruefung_datum) - new Date()) / 86400000 <= 30 && (
+            <div className="border border-yellow-200 bg-yellow-50 rounded-xl px-4 py-3 text-sm font-medium text-yellow-800">
+              Prüfung bald fällig
+            </div>
+          )}
+          {/* ── Stammdaten-Karte ── */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           {!editing ? (
             <>
               <div className="flex items-center justify-between mb-5">
@@ -606,6 +626,7 @@ export default function MaschinenDetailPage() {
               </form>
             </>
           )}
+          </div>
         </div>
       )}
 
