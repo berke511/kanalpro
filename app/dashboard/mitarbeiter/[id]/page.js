@@ -623,6 +623,7 @@ export default function MitarbeiterProfilPage() {
 
       {/* Tab: Übersicht */}
       {tab === 'uebersicht' && (
+        <>
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Mitarbeiter-Zusammenfassung</h2>
           <div className="space-y-3">
@@ -682,6 +683,44 @@ export default function MitarbeiterProfilPage() {
             )}
           </div>
         </div>
+
+        {/* ── Nächster-Schritt-Karte ── */}
+        {(() => {
+          const abgelaufen = zertifikate.filter(z => zertStatus(z.gueltig_bis).cls.includes('red'));
+          const laeuftAb = zertifikate.filter(z => {
+            const c = zertStatus(z.gueltig_bis).cls;
+            return c.includes('amber') || c.includes('yellow');
+          });
+
+          let bg, border, icon, titel, text;
+          if (abgelaufen.length > 0) {
+            bg = 'bg-red-50'; border = 'border-red-300'; icon = '🔴';
+            titel = 'Zertifikat abgelaufen';
+            text = abgelaufen.map(z => z.name).join(', ') + ' – bitte sofort erneuern.';
+          } else if (laeuftAb.length > 0) {
+            bg = 'bg-yellow-50'; border = 'border-yellow-300'; icon = '🟡';
+            titel = 'Zertifikat läuft bald ab';
+            text = laeuftAb.map(z => z.name).join(', ') + ' – demnächst erneuern.';
+          } else {
+            bg = 'bg-green-50'; border = 'border-green-300'; icon = '🟢';
+            titel = 'Alles in Ordnung';
+            text = zertifikate.length > 0 ? 'Alle Zertifikate sind gültig.' : 'Keine Zertifikate hinterlegt.';
+          }
+
+          return (
+            <div className={`rounded-xl border ${border} ${bg} p-4 mb-4`}>
+              <h3 className="font-semibold text-gray-700 mb-2">Nächster Schritt</h3>
+              <div className="flex items-start gap-2">
+                <span className="text-lg">{icon}</span>
+                <div>
+                  <p className="font-medium text-gray-800">{titel}</p>
+                  <p className="text-sm text-gray-600 mt-0.5">{text}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+        </>
       )}
 
             {/* Tab: Stammdaten */}
