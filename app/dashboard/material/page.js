@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import supabase from '@/lib/supabase';
 import Link from 'next/link';
 
 export default function MaterialPage() {
-  const supabase = createClientComponentClient();
-
   const [materialien, setMaterialien] = useState([]);
   const [laden, setLaden] = useState(true);
   const [companyId, setCompanyId] = useState(null);
@@ -24,10 +22,11 @@ export default function MaterialPage() {
   }, []);
 
   async function ladeMaterialien() {
+    const { data: { user } } = await supabase.auth.getUser();
     const { data: member } = await supabase
       .from('company_members')
       .select('company_id')
-      .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+      .eq('user_id', user.id)
       .single();
     const cid = member.company_id;
     setCompanyId(cid);
