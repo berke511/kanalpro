@@ -253,11 +253,17 @@ const [angebote, setAngebote] = useState([]);
         setAuftrag({ total: auftraegeData.length, offen, inBearbeitung, abgeschlossen, heute: heuteCount, ueberfaellig });
 
         // Ereignisse: neueste 8 Aufträge
-        setEvents(auftraegeData.slice(0, 8).map(a => ({
+        const eventsAuftraege = (auftraegeData || []).slice(0, 5).map(a => ({
+          id: a.id,
           text: a.titel ?? '(kein Titel)',
-          zeit: a.erstellt_am,
+          zeit: a.erstellt_am || a.datum,
           status: a.status,
-        })));
+          quelle: 'auftrag'
+        }));
+        const alleEvents = [...eventsAuftraege]
+          .sort((a, b) => new Date(b.zeit) - new Date(a.zeit))
+          .slice(0, 8);
+        setEvents(alleEvents);
       }
 
       // Kunden
@@ -687,6 +693,7 @@ setLaden(false);
                       {e.status === 'abgeschlossen' ? 'Abgeschlossen' :
                        e.status === 'in_bearbeitung' ? 'In Bearbeitung' : 'Offen'}
                     </span>
+                    {e.quelle && <span className="text-xs text-gray-400 ml-1">{e.quelle === 'auftrag' ? '📋' : ''}</span>}
                   </div>
                 ))}
               </div>
@@ -832,6 +839,18 @@ setLaden(false);
               </div>
             </Link>
           ))}
+        </div>
+        {/* ── Schnellaktionen ── */}
+        <div className="flex flex-wrap gap-2 mt-3">
+          <a href="/dashboard/auftraege/neu" className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+            ＋ Neuer Auftrag
+          </a>
+          <a href="/dashboard/rechnungen/neu" className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+            ＋ Neue Rechnung
+          </a>
+          <a href="/dashboard/kunden/neu" className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+            ＋ Neuer Kunde
+          </a>
         </div>
       </section>
 
