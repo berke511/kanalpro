@@ -644,7 +644,35 @@ export default function MaschinenDetailPage() {
             })()}
           </div>
 
-          {/* ── Stammdaten-Karte ── */}
+                    {/* ── Maschinen-Kennzahlen ── */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Maschinen-Kennzahlen</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">
+                  {maschine.betriebsstunden_aktuell != null ? Number(maschine.betriebsstunden_aktuell).toLocaleString('de-DE') : '–'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Betriebsstunden</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{pruefungen.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Prüfungen</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{wartungen.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Wartungen</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{historieEintraege.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Historieneinträge</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{maschine.baujahr ?? '–'}</p>
+                <p className="text-xs text-gray-500 mt-1">Baujahr</p>
+              </div>
+            </div>
+          </div>
+{/* ── Stammdaten-Karte ── */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           {!editing ? (
             <>
