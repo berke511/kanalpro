@@ -773,6 +773,19 @@ export default function MitarbeiterProfilPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Quick-Actions-Karte ── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+          <h3 className="font-semibold text-gray-700 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setTab('stammdaten')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">📋 Stammdaten</button>
+            <button onClick={() => setTab('rollen')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">🔑 Rollen & Rechte</button>
+            <button onClick={() => setTab('arbeitszeiten')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">⏱️ Arbeitszeiten</button>
+            <button onClick={() => setTab('urlaub')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">🏖️ Urlaub</button>
+            <button onClick={() => setTab('zertifikate')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">📜 Zertifikate</button>
+            <button onClick={() => setTab('fahrzeuge')} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2 px-3 rounded-lg text-left transition-colors">🚗 Fahrzeuge</button>
+          </div>
+        </div>
         </>
       )}
 
