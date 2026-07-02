@@ -6,9 +6,9 @@ import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 
 const TABS = [
-  { id: 'uebersicht',       label: 'Ãbersicht' },
+  { id: 'uebersicht',       label: 'Übersicht' },
   { id: 'fahrzeugdaten',    label: 'Fahrzeugdaten' },
-  { id: 'tuev_uvv',         label: 'TÃV & UVV' },
+  { id: 'tuev_uvv',         label: 'TÜV & UVV' },
   { id: 'wartungen',        label: 'Wartungen' },
   { id: 'kilometerstand',   label: 'Kilometerstand' },
   { id: 'versicherung',     label: 'Versicherung' },
@@ -18,23 +18,23 @@ const TABS = [
 const FAHRZEUG_FELD_LABELS = {
   kennzeichen: 'Kennzeichen', marke: 'Marke', modell: 'Modell', typ: 'Typ',
   baujahr: 'Baujahr', farbe: 'Farbe', kraftstoff: 'Kraftstoff',
-  km_stand: 'Kilometerstand', tuev_bis: 'TÃV bis', hu_bis: 'HU bis',
+  km_stand: 'Kilometerstand', tuev_bis: 'TÜV bis', hu_bis: 'HU bis',
   uvv_bis: 'UVV bis', versicherung: 'Versicherung', zustand: 'Zustand', notizen: 'Notizen',
 };
 
 
 const TYP_OPTIONS = [
-  { value: '', label: 'â Bitte wÃ¤hlen â' },
+  { value: '', label: '— Bitte wählen —' },
   { value: 'pkw', label: 'PKW' },
   { value: 'lkw', label: 'LKW' },
   { value: 'transporter', label: 'Transporter' },
   { value: 'kleintransporter', label: 'Kleintransporter' },
-  { value: 'anhÃ¤nger', label: 'AnhÃ¤nger' },
+  { value: 'anhänger', label: 'Anhänger' },
   { value: 'sonstiges', label: 'Sonstiges' },
 ];
 
 const KRAFTSTOFF_OPTIONS = [
-  { value: '', label: 'â Bitte wÃ¤hlen â' },
+  { value: '', label: '— Bitte wählen —' },
   { value: 'benzin', label: 'Benzin' },
   { value: 'diesel', label: 'Diesel' },
   { value: 'elektro', label: 'Elektro' },
@@ -47,7 +47,7 @@ const ZUSTAND_OPTIONS = [
   { value: 'aktiv', label: 'Aktiv' },
   { value: 'wartung', label: 'In Wartung' },
   { value: 'reserviert', label: 'Reserviert' },
-  { value: 'ausser_betrieb', label: 'AuÃer Betrieb' },
+  { value: 'ausser_betrieb', label: 'Außer Betrieb' },
 ];
 
 const ZUSTAND_COLORS = {
@@ -58,16 +58,16 @@ const ZUSTAND_COLORS = {
 };
 
 const ART_LABELS = {
-  tuev: 'TÃV',
+  tuev: 'TÜV',
   hu: 'HU (Hauptuntersuchung)',
-  uvv: 'UVV-PrÃ¼fung',
-  sonstiges: 'Sonstige PrÃ¼fung',
+  uvv: 'UVV-Prüfung',
+  sonstiges: 'Sonstige Prüfung',
 };
 
 const ERGEBNIS_OPTIONS = [
-  { value: '', label: 'â Ergebnis wÃ¤hlen â' },
+  { value: '', label: '— Ergebnis wählen —' },
   { value: 'bestanden', label: 'Bestanden' },
-  { value: 'mit_maengeln', label: 'Bestanden mit MÃ¤ngeln' },
+  { value: 'mit_maengeln', label: 'Bestanden mit Mängeln' },
   { value: 'nicht_bestanden', label: 'Nicht bestanden' },
 ];
 
@@ -78,11 +78,11 @@ const ERGEBNIS_COLORS = {
 };
 
 const WARTUNG_ART_OPTIONS = [
-  { value: 'oelwechsel', label: 'Ãlwechsel' },
-  { value: 'oelfilter', label: 'Ãlfilter' },
+  { value: 'oelwechsel', label: 'Ölwechsel' },
+  { value: 'oelfilter', label: 'Ölfilter' },
   { value: 'luftfilter', label: 'Luftfilter' },
   { value: 'kraftstofffilter', label: 'Kraftstofffilter' },
-  { value: 'bremsen', label: 'Bremsen / BremsbelÃ¤ge' },
+  { value: 'bremsen', label: 'Bremsen / Bremsbeläge' },
   { value: 'reifen', label: 'Reifen / Reifenwechsel' },
   { value: 'batterie', label: 'Batterie' },
   { value: 'zahnriemen', label: 'Zahnriemen / Steuerkette' },
@@ -116,10 +116,10 @@ function datumsStatus(datum) {
   const heute = new Date(); heute.setHours(0, 0, 0, 0);
   const d = new Date(datum);
   const diffTage = Math.ceil((d - heute) / (1000 * 60 * 60 * 24));
-  if (diffTage < 0) return { label: 'ÃberfÃ¤llig', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
-  if (diffTage <= 30) return { label: `In ${diffTage} Tagen fÃ¤llig`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
-  if (diffTage <= 90) return { label: `In ${diffTage} Tagen fÃ¤llig`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `In ${diffTage} Tagen fÃ¤llig`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  if (diffTage < 0) return { label: 'Überfällig', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
+  if (diffTage <= 30) return { label: `In ${diffTage} Tagen fällig`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
+  if (diffTage <= 90) return { label: `In ${diffTage} Tagen fällig`, diffTage, cls: 'text-amber-600', severity: 'warn' };
+  return { label: `In ${diffTage} Tagen fällig`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function pruefDatumsStatus(datum) {
@@ -128,22 +128,22 @@ function pruefDatumsStatus(datum) {
   const d = new Date(datum);
   const diffTage = Math.ceil((d - heute) / (1000 * 60 * 60 * 24));
   if (diffTage < 0) return { label: 'Abgelaufen', diffTage, cls: 'text-red-600 font-medium', severity: 'danger' };
-  if (diffTage <= 30) return { label: `LÃ¤uft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
-  if (diffTage <= 90) return { label: `LÃ¤uft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
-  return { label: `GÃ¼ltig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
+  if (diffTage <= 30) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-red-500 font-medium', severity: 'danger' };
+  if (diffTage <= 90) return { label: `Läuft in ${diffTage} Tagen ab`, diffTage, cls: 'text-amber-600', severity: 'warn' };
+  return { label: `Gültig noch ${diffTage} Tage`, diffTage, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function kmStatus(naechsteKm, aktuellerKm) {
   if (!naechsteKm || !aktuellerKm) return null;
   const diff = naechsteKm - aktuellerKm;
-  if (diff <= 0) return { label: `ÃberfÃ¤llig (${Math.abs(diff).toLocaleString('de-DE')} km Ã¼berschritten)`, cls: 'text-red-600 font-medium', severity: 'danger' };
+  if (diff <= 0) return { label: `Überfällig (${Math.abs(diff).toLocaleString('de-DE')} km überschritten)`, cls: 'text-red-600 font-medium', severity: 'danger' };
   if (diff <= 1000) return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-red-500 font-medium', severity: 'danger' };
   if (diff <= 3000) return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-amber-600', severity: 'warn' };
   return { label: `Noch ${diff.toLocaleString('de-DE')} km`, cls: 'text-emerald-600', severity: 'ok' };
 }
 
 function formatDate(d) {
-  if (!d) return 'â';
+  if (!d) return '—';
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
@@ -154,7 +154,7 @@ function formatMonthKey(d) {
 
 function formatMonthLabel(key) {
   const [year, month] = key.split('-');
-  const names = ['Januar', 'Februar', 'MÃ¤rz', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  const names = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
   return `${names[parseInt(month) - 1]} ${year}`;
 }
 
@@ -232,7 +232,7 @@ export default function FahrzeugDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({ kennzeichen: '', marke: '', modell: '', typ: '', baujahr: '', farbe: '', kraftstoff: '', km_stand: '', tuev_bis: '', hu_bis: '', uvv_bis: '', versicherung: '', zustand: 'aktiv', notizen: '' });
 
-  // TÃV & UVV
+  // TÜV & UVV
   const [pruefungen, setPruefungen] = useState([]);
   const [pruefLaden, setPruefLaden] = useState(false);
   const [pruefNeuShown, setPruefNeuShown] = useState(false);
@@ -354,7 +354,7 @@ export default function FahrzeugDetailPage() {
     if (!form.kennzeichen.trim()) { setSaveError('Kennzeichen ist Pflichtfeld.'); return; }
     setSaving(true);
 
-    // Detect changed fields for Ãnderungsprotokoll
+    // Detect changed fields for Änderungsprotokoll
     const neuWerte = { kennzeichen: form.kennzeichen.trim().toUpperCase(), marke: form.marke.trim() || null, modell: form.modell.trim() || null, typ: form.typ || null, baujahr: form.baujahr ? parseInt(form.baujahr) : null, farbe: form.farbe.trim() || null, kraftstoff: form.kraftstoff || null, km_stand: form.km_stand ? parseInt(form.km_stand) : null, tuev_bis: form.tuev_bis || null, hu_bis: form.hu_bis || null, uvv_bis: form.uvv_bis || null, versicherung: form.versicherung.trim() || null, zustand: form.zustand, notizen: form.notizen.trim() || null };
     const changedFields = Object.keys(FAHRZEUG_FELD_LABELS).reduce((acc, key) => {
       const alt = fahrzeug?.[key] ?? null;
@@ -369,7 +369,7 @@ export default function FahrzeugDetailPage() {
 
     // Write history entry
     if (changedFields.length > 0 && companyId) {
-      await supabase.from('fahrzeug_historie').insert({ fahrzeug_id: id, company_id: companyId, benutzer_id: userId || null, benutzer_name: userName || null, aktion: 'Ãnderung', felder: changedFields });
+      await supabase.from('fahrzeug_historie').insert({ fahrzeug_id: id, company_id: companyId, benutzer_id: userId || null, benutzer_name: userName || null, aktion: 'Änderung', felder: changedFields });
       if (activeTab === 'historie') loadHistorie();
     }
 
@@ -398,7 +398,7 @@ export default function FahrzeugDetailPage() {
 
   async function handlePruefNeu(e) {
     e.preventDefault(); setPruefNeuError('');
-    if (!pruefForm.pruef_datum) { setPruefNeuError('PrÃ¼fdatum ist Pflichtfeld.'); return; }
+    if (!pruefForm.pruef_datum) { setPruefNeuError('Prüfdatum ist Pflichtfeld.'); return; }
     setPruefNeuSaving(true);
     const { error } = await supabase.from('fahrzeug_pruefungen').insert({ fahrzeug_id: id, company_id: companyId, art: pruefForm.art, pruef_datum: pruefForm.pruef_datum, gueltig_bis: pruefForm.gueltig_bis || null, pruefstelle: pruefForm.pruefstelle.trim() || null, ergebnis: pruefForm.ergebnis || null, notiz: pruefForm.notiz.trim() || null });
     if (!error && pruefForm.gueltig_bis) {
@@ -481,7 +481,7 @@ export default function FahrzeugDetailPage() {
     const rows = [['Datum', 'km-Start', 'km-Ende', 'Gefahrene km', 'Fahrer', 'Zweck', 'Notiz']];
     sorted.forEach(e => { const tripKm = (e.km_start != null && e.km_stand != null) ? e.km_stand - e.km_start : ''; rows.push([formatDate(e.datum), e.km_start ?? '', e.km_stand ?? '', tripKm, e.fahrer_name ?? '', ZWECK_OPTIONS.find(z => z.value === e.zweck)?.label ?? e.zweck, e.notiz ?? '']); });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
-    const blob = new Blob(['ï»¿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `fahrtenbuch_${fahrzeug?.kennzeichen ?? id}${monatKey ? '_' + monatKey : ''}.csv`; a.click(); URL.revokeObjectURL(url);
   }
 
@@ -533,13 +533,13 @@ export default function FahrzeugDetailPage() {
     return { monate, gesamtKm: Object.values(monate).reduce((s, m) => s + m.km, 0), gesamtFahrten: kmEintraege.length };
   }, [kmEintraege]);
 
-  if (loading) return <div className="flex items-center justify-center h-48"><p className="text-gray-400 text-sm">LÃ¤dtâ¦</p></div>;
-  if (notFound) return <div className="max-w-2xl"><p className="text-sm text-gray-500">Fahrzeug nicht gefunden.</p><Link href="/dashboard/fahrzeuge" className="text-sm text-blue-600 hover:underline mt-2 inline-block">â ZurÃ¼ck zur Liste</Link></div>;
+  if (loading) return <div className="flex items-center justify-center h-48"><p className="text-gray-400 text-sm">Lädt…</p></div>;
+  if (notFound) return <div className="max-w-2xl"><p className="text-sm text-gray-500">Fahrzeug nicht gefunden.</p><Link href="/dashboard/fahrzeuge" className="text-sm text-blue-600 hover:underline mt-2 inline-block">← Zurück zur Liste</Link></div>;
 
   const title = fahrzeug ? [fahrzeug.marke, fahrzeug.modell].filter(Boolean).join(' ') : '';
   const zustandCls = ZUSTAND_COLORS[form.zustand] ?? 'bg-gray-50 text-gray-500';
-  const warnungen = [{ label: 'TÃV', datum: fristenForm.tuev_bis }, { label: 'HU', datum: fristenForm.hu_bis }, { label: 'UVV', datum: fristenForm.uvv_bis }].map(w => ({ ...w, status: pruefDatumsStatus(w.datum) })).filter(w => w.datum && w.status && w.status.severity !== 'ok');
-  const naechste = [{ label: 'TÃV', datum: fristenForm.tuev_bis }, { label: 'HU', datum: fristenForm.hu_bis }, { label: 'UVV', datum: fristenForm.uvv_bis }].filter(w => w.datum).sort((a, b) => new Date(a.datum) - new Date(b.datum))[0];
+  const warnungen = [{ label: 'TÜV', datum: fristenForm.tuev_bis }, { label: 'HU', datum: fristenForm.hu_bis }, { label: 'UVV', datum: fristenForm.uvv_bis }].map(w => ({ ...w, status: pruefDatumsStatus(w.datum) })).filter(w => w.datum && w.status && w.status.severity !== 'ok');
+  const naechste = [{ label: 'TÜV', datum: fristenForm.tuev_bis }, { label: 'HU', datum: fristenForm.hu_bis }, { label: 'UVV', datum: fristenForm.uvv_bis }].filter(w => w.datum).sort((a, b) => new Date(a.datum) - new Date(b.datum))[0];
   const aktKm = fahrzeug?.km_stand;
   const wartDatumStatus = datumsStatus(naechsteWart.datum);
   const wartKmStatus = kmStatus(naechsteWart.km ? parseInt(naechsteWart.km) : null, aktKm);
@@ -576,7 +576,7 @@ export default function FahrzeugDetailPage() {
         className="mb-6"
       />
 
-      {/* ââ ÃBERSICHT ââ */}
+      {/* ── ÜBERSICHT ── */}
       {activeTab === 'uebersicht' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -599,11 +599,11 @@ export default function FahrzeugDetailPage() {
                 fahrzeug.kraftstoff ? { label: 'Kraftstoff', value: KRAFTSTOFF_OPTIONS.find(o => o.value === fahrzeug.kraftstoff)?.label ?? fahrzeug.kraftstoff } : null,
                 fahrzeug.km_stand != null ? { label: 'Kilometerstand', value: fahrzeug.km_stand.toLocaleString('de-DE') + ' km' } : null,
                 fahrzeug.standort ? { label: 'Standort', value: fahrzeug.standort } : null,
-                fahrzeug.tuev_bis ? { label: 'TÃV bis', value: formatDate(fahrzeug.tuev_bis) } : null,
+                fahrzeug.tuev_bis ? { label: 'TÜV bis', value: formatDate(fahrzeug.tuev_bis) } : null,
                 fahrzeug.hu_bis ? { label: 'HU bis', value: formatDate(fahrzeug.hu_bis) } : null,
                 fahrzeug.uvv_bis ? { label: 'UVV bis', value: formatDate(fahrzeug.uvv_bis) } : null,
-                fahrzeug.naechste_wartung_datum ? { label: 'NÃ¤chste Wartung', value: formatDate(fahrzeug.naechste_wartung_datum) } : null,
-                fahrzeug.naechste_wartung_km != null ? { label: 'NÃ¤chste Wartung (km)', value: fahrzeug.naechste_wartung_km.toLocaleString('de-DE') + ' km' } : null,
+                fahrzeug.naechste_wartung_datum ? { label: 'Nächste Wartung', value: formatDate(fahrzeug.naechste_wartung_datum) } : null,
+                fahrzeug.naechste_wartung_km != null ? { label: 'Nächste Wartung (km)', value: fahrzeug.naechste_wartung_km.toLocaleString('de-DE') + ' km' } : null,
                 fahrzeug.versicherungs_ablauf ? { label: 'Versicherung bis', value: formatDate(fahrzeug.versicherungs_ablauf) } : null,
               ].filter(Boolean);
               return (
@@ -619,7 +619,7 @@ export default function FahrzeugDetailPage() {
             })()}
           </div>
 
-          {/* ââ NÃ¤chster Schritt ââ */}
+          {/* ── Nächster Schritt ── */}
           {(() => {
             const hasPruefungDanger = warnungen.some(w => w.status?.severity === 'danger');
             const hasWartungWarn = (wartDatumStatus && (wartDatumStatus.severity === 'danger' || wartDatumStatus.severity === 'warn')) ||
@@ -628,11 +628,11 @@ export default function FahrzeugDetailPage() {
 
             let schritt = null;
             if (hasPruefungDanger) {
-              schritt = { titel: 'PrÃ¼fung durchfÃ¼hren', text: 'Eine oder mehrere FahrzeugprÃ¼fungen sind Ã¼berfÃ¤llig oder laufen bald ab.', btn: 'TÃV & UVV Ã¶ffnen', tab: 'tuev_uvv', color: 'red' };
+              schritt = { titel: 'Prüfung durchführen', text: 'Eine oder mehrere Fahrzeugprüfungen sind überfällig oder laufen bald ab.', btn: 'TÜV & UVV öffnen', tab: 'tuev_uvv', color: 'red' };
             } else if (hasWartungWarn) {
-              schritt = { titel: 'Wartung durchfÃ¼hren', text: 'Die nÃ¤chste Wartung ist fÃ¤llig oder steht kurz bevor.', btn: 'Wartungen Ã¶ffnen', tab: 'wartungen', color: 'amber' };
+              schritt = { titel: 'Wartung durchführen', text: 'Die nächste Wartung ist fällig oder steht kurz bevor.', btn: 'Wartungen öffnen', tab: 'wartungen', color: 'amber' };
             } else if (hasVersWarn) {
-              schritt = { titel: 'Versicherung prÃ¼fen', text: 'Die Fahrzeugversicherung lÃ¤uft bald ab oder ist bereits abgelaufen.', btn: 'Versicherung Ã¶ffnen', tab: 'versicherung', color: 'amber' };
+              schritt = { titel: 'Versicherung prüfen', text: 'Die Fahrzeugversicherung läuft bald ab oder ist bereits abgelaufen.', btn: 'Versicherung öffnen', tab: 'versicherung', color: 'amber' };
             }
 
             if (!schritt) {
@@ -644,10 +644,10 @@ export default function FahrzeugDetailPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h2 className="text-sm font-semibold text-gray-800">NÃ¤chster Schritt</h2>
+                    <h2 className="text-sm font-semibold text-gray-800">Nächster Schritt</h2>
                   </div>
                   <p className="text-sm font-semibold text-emerald-700 mb-1">Fahrzeug einsatzbereit</p>
-                  <p className="text-sm text-gray-500">FÃ¼r dieses Fahrzeug sind aktuell keine MaÃnahmen erforderlich.</p>
+                  <p className="text-sm text-gray-500">Für dieses Fahrzeug sind aktuell keine Maßnahmen erforderlich.</p>
                 </div>
               );
             }
@@ -665,7 +665,7 @@ export default function FahrzeugDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
                   </div>
-                  <h2 className="text-sm font-semibold text-gray-800">NÃ¤chster Schritt</h2>
+                  <h2 className="text-sm font-semibold text-gray-800">Nächster Schritt</h2>
                 </div>
                 <p className={`text-sm font-semibold ${c.titleCls} mb-1`}>{schritt.titel}</p>
                 <p className="text-sm text-gray-600 mb-4">{schritt.text}</p>
@@ -674,21 +674,21 @@ export default function FahrzeugDetailPage() {
             );
           })()}
 
-          {/* ── Warnhinweise ── */}
+          {/*    Warnhinweise    */}
           {(() => {
             const alle = [
               ...warnungen.map(w => ({
-                text: w.label + ' — ' + w.status.label + (w.datum ? ' (' + formatDate(w.datum) + ')' : ''),
+                text: w.label + '  ' + w.status.label + (w.datum ? ' (' + formatDate(w.datum) + ')' : ''),
                 severity: w.status.severity,
               })),
               ...(wartDatumStatus && (wartDatumStatus.severity === 'danger' || wartDatumStatus.severity === 'warn')
-                ? [{ text: 'Wartung nach Datum — ' + wartDatumStatus.label + (naechsteWart.datum ? ' (' + formatDate(naechsteWart.datum) + ')' : ''), severity: wartDatumStatus.severity }]
+                ? [{ text: 'Wartung nach Datum  ' + wartDatumStatus.label + (naechsteWart.datum ? ' (' + formatDate(naechsteWart.datum) + ')' : ''), severity: wartDatumStatus.severity }]
                 : []),
               ...(wartKmStatus && (wartKmStatus.severity === 'danger' || wartKmStatus.severity === 'warn')
-                ? [{ text: 'Wartung nach Kilometer — ' + wartKmStatus.label, severity: wartKmStatus.severity }]
+                ? [{ text: 'Wartung nach Kilometer  ' + wartKmStatus.label, severity: wartKmStatus.severity }]
                 : []),
               ...(versAblaufStatus && (versAblaufStatus.severity === 'danger' || versAblaufStatus.severity === 'warn')
-                ? [{ text: 'Versicherung — ' + versAblaufStatus.label, severity: versAblaufStatus.severity }]
+                ? [{ text: 'Versicherung  ' + versAblaufStatus.label, severity: versAblaufStatus.severity }]
                 : []),
             ];
             return (
@@ -721,19 +721,19 @@ export default function FahrzeugDetailPage() {
         </div>
       )}
 
-      {/* ââ FAHRZEUGDATEN ââ */}
+      {/* ── FAHRZEUGDATEN ── */}
       {activeTab === 'fahrzeugdaten' && (
         <form onSubmit={handleSave} className="space-y-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">Fahrzeug-Kennzahlen</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '–'}</p>
+                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : ''}</p>
                 <p className="text-xs text-gray-500 mt-1">Kilometerstand</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-gray-900">{pruefungen.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Prüfungen</p>
+                <p className="text-xs text-gray-500 mt-1">Pr�fungen</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-gray-900">{wartungen.length}</p>
@@ -741,10 +741,10 @@ export default function FahrzeugDetailPage() {
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-center">
                 <p className="text-2xl font-bold text-gray-900">{kmEintraege.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Kilometer-Einträge</p>
+                <p className="text-xs text-gray-500 mt-1">Kilometer-Eintr�ge</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.baujahr ?? '–'}</p>
+                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.baujahr ?? ''}</p>
                 <p className="text-xs text-gray-500 mt-1">Baujahr</p>
               </div>
             </div>
@@ -759,7 +759,7 @@ export default function FahrzeugDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <LabelInput label="Fahrzeugtyp"><select value={form.typ} onChange={set('typ')} className={inputCls}>{TYP_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput>
               <LabelInput label="Baujahr"><input type="number" value={form.baujahr} onChange={set('baujahr')} placeholder="z. B. 2020" min="1900" max={new Date().getFullYear() + 1} className={inputCls} /></LabelInput>
-              <LabelInput label="Farbe"><input type="text" value={form.farbe} onChange={set('farbe')} placeholder="z. B. WeiÃ" className={inputCls} /></LabelInput>
+              <LabelInput label="Farbe"><input type="text" value={form.farbe} onChange={set('farbe')} placeholder="z. B. Weiß" className={inputCls} /></LabelInput>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
@@ -770,9 +770,9 @@ export default function FahrzeugDetailPage() {
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">PrÃ¼ffristen</h2>
+            <h2 className="text-sm font-semibold text-gray-700">Prüffristen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div><LabelInput label="TÃV bis"><input type="date" value={form.tuev_bis} onChange={set('tuev_bis')} className={inputCls} /></LabelInput>{form.tuev_bis && (() => { const s = pruefDatumsStatus(form.tuev_bis); return s && s.severity !== 'ok' ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
+              <div><LabelInput label="TÜV bis"><input type="date" value={form.tuev_bis} onChange={set('tuev_bis')} className={inputCls} /></LabelInput>{form.tuev_bis && (() => { const s = pruefDatumsStatus(form.tuev_bis); return s && s.severity !== 'ok' ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
               <div><LabelInput label="HU bis"><input type="date" value={form.hu_bis} onChange={set('hu_bis')} className={inputCls} /></LabelInput>{form.hu_bis && (() => { const s = pruefDatumsStatus(form.hu_bis); return s && s.severity !== 'ok' ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
               <div><LabelInput label="UVV bis"><input type="date" value={form.uvv_bis} onChange={set('uvv_bis')} className={inputCls} /></LabelInput>{form.uvv_bis && (() => { const s = pruefDatumsStatus(form.uvv_bis); return s && s.severity !== 'ok' ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
             </div>
@@ -786,36 +786,36 @@ export default function FahrzeugDetailPage() {
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Notizen</h2>
-            <textarea value={form.notizen} onChange={set('notizen')} rows={4} placeholder="Interne Notizen zum Fahrzeugâ¦" className={inputCls + ' resize-none'} />
+            <textarea value={form.notizen} onChange={set('notizen')} rows={4} placeholder="Interne Notizen zum Fahrzeug…" className={inputCls + ' resize-none'} />
           </div>
           {saveError && <p className="text-xs text-red-500">{saveError}</p>}
-          {saveSuccess && <p className="text-xs text-emerald-600">Gespeichert â</p>}
+          {saveSuccess && <p className="text-xs text-emerald-600">Gespeichert ✓</p>}
           <div className="flex items-center justify-between">
-            <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{saving ? 'Speichertâ¦' : 'Speichern'}</button>
-            <div>{!confirmDelete ? <button type="button" onClick={() => setConfirmDelete(true)} className="px-4 py-2 text-sm text-red-500 rounded-xl hover:bg-red-50 transition">Fahrzeug lÃ¶schen</button> : <div className="flex items-center gap-2"><span className="text-xs text-gray-500">Wirklich lÃ¶schen?</span><button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 transition">{deleting ? 'LÃ¶schtâ¦' : 'Ja, lÃ¶schen'}</button><button type="button" onClick={() => setConfirmDelete(false)} className="px-3 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>}</div>
+            <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{saving ? 'Speichert…' : 'Speichern'}</button>
+            <div>{!confirmDelete ? <button type="button" onClick={() => setConfirmDelete(true)} className="px-4 py-2 text-sm text-red-500 rounded-xl hover:bg-red-50 transition">Fahrzeug löschen</button> : <div className="flex items-center gap-2"><span className="text-xs text-gray-500">Wirklich löschen?</span><button type="button" onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 transition">{deleting ? 'Löscht…' : 'Ja, löschen'}</button><button type="button" onClick={() => setConfirmDelete(false)} className="px-3 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>}</div>
           </div>
         </form>
       )}
 
-      {/* ââ TÃV & UVV ââ */}
+      {/* ── TÜV & UVV ── */}
       {activeTab === 'tuev_uvv' && (
         <div className="space-y-5">
-          {warnungen.length > 0 && <div className="space-y-2">{warnungen.map(w => <div key={w.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${w.status.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={w.status.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={w.status.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>{w.label}</strong> â {w.status.label}{w.datum ? ` (${formatDate(w.datum)})` : ''}</span></div>)}</div>}
-          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">NÃ¤chste fÃ¤llige PrÃ¼fung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
+          {warnungen.length > 0 && <div className="space-y-2">{warnungen.map(w => <div key={w.label} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${w.status.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={w.status.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={w.status.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>{w.label}</strong> — {w.status.label}{w.datum ? ` (${formatDate(w.datum)})` : ''}</span></div>)}</div>}
+          {naechste && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-1">Nächste fällige Prüfung</p><div className="flex items-baseline gap-2"><span className="text-lg font-bold text-gray-900">{naechste.label}</span><span className="text-sm text-gray-500">{formatDate(naechste.datum)}</span>{(() => { const s = pruefDatumsStatus(naechste.datum); return s ? <span className={`text-xs ${s.cls}`}>{s.label}</span> : null; })()}</div></div>}
           <form onSubmit={handleFristenSave} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Aktuelle PrÃ¼ffristen</h2>
+            <h2 className="text-sm font-semibold text-gray-700">Aktuelle Prüffristen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div><LabelInput label="TÃV gÃ¼ltig bis"><input type="date" value={fristenForm.tuev_bis} onChange={e => setFristenForm(f => ({ ...f, tuev_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.tuev_bis && (() => { const s = pruefDatumsStatus(fristenForm.tuev_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
-              <div><LabelInput label="HU gÃ¼ltig bis"><input type="date" value={fristenForm.hu_bis} onChange={e => setFristenForm(f => ({ ...f, hu_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.hu_bis && (() => { const s = pruefDatumsStatus(fristenForm.hu_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
-              <div><LabelInput label="UVV gÃ¼ltig bis"><input type="date" value={fristenForm.uvv_bis} onChange={e => setFristenForm(f => ({ ...f, uvv_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.uvv_bis && (() => { const s = pruefDatumsStatus(fristenForm.uvv_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
+              <div><LabelInput label="TÜV gültig bis"><input type="date" value={fristenForm.tuev_bis} onChange={e => setFristenForm(f => ({ ...f, tuev_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.tuev_bis && (() => { const s = pruefDatumsStatus(fristenForm.tuev_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
+              <div><LabelInput label="HU gültig bis"><input type="date" value={fristenForm.hu_bis} onChange={e => setFristenForm(f => ({ ...f, hu_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.hu_bis && (() => { const s = pruefDatumsStatus(fristenForm.hu_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
+              <div><LabelInput label="UVV gültig bis"><input type="date" value={fristenForm.uvv_bis} onChange={e => setFristenForm(f => ({ ...f, uvv_bis: e.target.value }))} className={inputCls} /></LabelInput>{fristenForm.uvv_bis && (() => { const s = pruefDatumsStatus(fristenForm.uvv_bis); return s ? <p className={`text-xs mt-1 ${s.cls}`}>{s.label}</p> : null; })()}</div>
             </div>
             {fristenError && <p className="text-xs text-red-500">{fristenError}</p>}
-            {fristenSuccess && <p className="text-xs text-emerald-600">Fristen gespeichert â</p>}
-            <button type="submit" disabled={fristenSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{fristenSaving ? 'Speichertâ¦' : 'Fristen speichern'}</button>
+            {fristenSuccess && <p className="text-xs text-emerald-600">Fristen gespeichert ✓</p>}
+            <button type="submit" disabled={fristenSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{fristenSaving ? 'Speichert…' : 'Fristen speichern'}</button>
           </form>
-          <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">PrÃ¼fhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufÃ¼gen</button></div>
-          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen PrÃ¼feintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="PrÃ¼fungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÃV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-PrÃ¼fung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="PrÃ¼fdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="GÃ¼ltig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="PrÃ¼fstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÃV MÃ¼nchen" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungenâ¦" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichertâ¦' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">LÃ¤dtâ¦</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine PrÃ¼feintrÃ¤ge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">GÃ¼ltig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
+          <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Prüfhistorie</h2><button type="button" onClick={() => setPruefNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Eintrag hinzufügen</button></div>
+          {pruefNeuShown && <form onSubmit={handlePruefNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Neuen Prüfeintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Prüfungsart"><select value={pruefForm.art} onChange={e => setPruefForm(f => ({ ...f, art: e.target.value }))} className={inputCls}><option value="tuev">TÜV</option><option value="hu">HU (Hauptuntersuchung)</option><option value="uvv">UVV-Prüfung</option><option value="sonstiges">Sonstige</option></select></LabelInput><LabelInput label="Prüfdatum" required><input type="date" required value={pruefForm.pruef_datum} onChange={e => setPruefForm(f => ({ ...f, pruef_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Gültig bis"><input type="date" value={pruefForm.gueltig_bis} onChange={e => setPruefForm(f => ({ ...f, gueltig_bis: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Prüfstelle / Werkstatt"><input type="text" value={pruefForm.pruefstelle} onChange={e => setPruefForm(f => ({ ...f, pruefstelle: e.target.value }))} placeholder="z. B. TÜV München" className={inputCls} /></LabelInput></div><LabelInput label="Ergebnis"><select value={pruefForm.ergebnis} onChange={e => setPruefForm(f => ({ ...f, ergebnis: e.target.value }))} className={inputCls}>{ERGEBNIS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Notiz"><textarea value={pruefForm.notiz} onChange={e => setPruefForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{pruefNeuError && <p className="text-xs text-red-500">{pruefNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={pruefNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{pruefNeuSaving ? 'Speichert…' : 'Eintrag speichern'}</button><button type="button" onClick={() => setPruefNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {pruefLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : pruefungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Prüfeinträge erfasst.</p></div> : <div className="space-y-2">{pruefungen.map(p => { const s = p.gueltig_bis ? pruefDatumsStatus(p.gueltig_bis) : null; return <div key={p.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{ART_LABELS[p.art] ?? p.art}</span><span className="text-xs text-gray-400">{formatDate(p.pruef_datum)}</span>{p.ergebnis && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ERGEBNIS_COLORS[p.ergebnis] ?? 'bg-gray-50 text-gray-500'}`}>{ERGEBNIS_OPTIONS.find(o => o.value === p.ergebnis)?.label ?? p.ergebnis}</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{p.pruefstelle && <span className="text-xs text-gray-400">{p.pruefstelle}</span>}{p.gueltig_bis && <span className="text-xs text-gray-400">Gültig bis {formatDate(p.gueltig_bis)}{s && s.severity !== 'ok' && <span className={`ml-1 ${s.cls}`}>({s.label})</span>}</span>}</div>{p.notiz && <p className="text-xs text-gray-400 mt-1 italic">{p.notiz}</p>}</div><button type="button" onClick={() => handlePruefDelete(p.id)} disabled={deletingPruefId === p.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">Quick Actions</h2>
@@ -826,19 +826,19 @@ export default function FahrzeugDetailPage() {
               </button>
               <button type="button" onClick={() => setActiveTab('tuev_uvv')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">TÜV & UVV öffnen</p><p className="text-xs text-gray-400">Prüfungen verwalten und neue Einträge erfassen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">T�V & UVV �ffnen</p><p className="text-xs text-gray-400">Pr�fungen verwalten und neue Eintr�ge erfassen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('wartungen')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Wartungen öffnen</p><p className="text-xs text-gray-400">Wartungen anzeigen oder hinzufügen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Wartungen �ffnen</p><p className="text-xs text-gray-400">Wartungen anzeigen oder hinzuf�gen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('kilometerstand')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Kilometerstand öffnen</p><p className="text-xs text-gray-400">Kilometerstände erfassen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Kilometerstand �ffnen</p><p className="text-xs text-gray-400">Kilometerst�nde erfassen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('historie')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group sm:col-span-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Historie öffnen</p><p className="text-xs text-gray-400">Alle Änderungen und Einträge anzeigen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Historie �ffnen</p><p className="text-xs text-gray-400">Alle �nderungen und Eintr�ge anzeigen</p></div>
               </button>
             </div>
           </div>
@@ -853,58 +853,58 @@ export default function FahrzeugDetailPage() {
               </button>
               <button type="button" onClick={() => setActiveTab('tuev_uvv')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.745 3.745 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.745 3.745 0 013.296-1.043A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.296 1.043 3.745 3.745 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">TÜV & UVV öffnen</p><p className="text-xs text-gray-400">Prüfungen verwalten und neue Einträge erfassen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">T�V & UVV �ffnen</p><p className="text-xs text-gray-400">Pr�fungen verwalten und neue Eintr�ge erfassen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('wartungen')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Wartungen öffnen</p><p className="text-xs text-gray-400">Wartungen anzeigen oder hinzufügen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Wartungen �ffnen</p><p className="text-xs text-gray-400">Wartungen anzeigen oder hinzuf�gen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('kilometerstand')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Kilometerstand öffnen</p><p className="text-xs text-gray-400">Kilometerstände erfassen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Kilometerstand �ffnen</p><p className="text-xs text-gray-400">Kilometerst�nde erfassen</p></div>
               </button>
               <button type="button" onClick={() => setActiveTab('historie')} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition text-left group sm:col-span-2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 group-hover:text-blue-500 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Historie öffnen</p><p className="text-xs text-gray-400">Alle Änderungen und Einträge anzeigen</p></div>
+                <div><p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Historie �ffnen</p><p className="text-xs text-gray-400">Alle �nderungen und Eintr�ge anzeigen</p></div>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ââ WARTUNGEN ââ */}
+      {/* ── WARTUNGEN ── */}
       {activeTab === 'wartungen' && (
         <div className="space-y-5">
-          {(wartDatumStatus && (wartDatumStatus.severity === 'danger' || wartDatumStatus.severity === 'warn')) && <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${wartDatumStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={wartDatumStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={wartDatumStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>Wartung nach Datum</strong> â {wartDatumStatus.label} ({formatDate(naechsteWart.datum)})</span></div>}
-          {(wartKmStatus && (wartKmStatus.severity === 'danger' || wartKmStatus.severity === 'warn')) && <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${wartKmStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={wartKmStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={wartKmStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>Wartung nach Kilometerstand</strong> â {wartKmStatus.label} (fÃ¤llig bei {parseInt(naechsteWart.km).toLocaleString('de-DE')} km)</span></div>}
-          {(naechsteWart.datum || naechsteWart.km) && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-2">NÃ¤chste fÃ¤llige Wartung</p><div className="flex flex-wrap gap-6">{naechsteWart.datum && <div><p className="text-xs text-gray-400">Nach Datum</p><p className="text-base font-bold text-gray-900">{formatDate(naechsteWart.datum)}</p>{(() => { const s = datumsStatus(naechsteWart.datum); return s ? <p className={`text-xs ${s.cls}`}>{s.label}</p> : null; })()}</div>}{naechsteWart.km && <div><p className="text-xs text-gray-400">Nach Kilometerstand</p><p className="text-base font-bold text-gray-900">{parseInt(naechsteWart.km).toLocaleString('de-DE')} km</p>{aktKm && (() => { const s = kmStatus(parseInt(naechsteWart.km), aktKm); return s ? <p className={`text-xs ${s.cls}`}>{s.label}</p> : null; })()}</div>}</div></div>}
+          {(wartDatumStatus && (wartDatumStatus.severity === 'danger' || wartDatumStatus.severity === 'warn')) && <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${wartDatumStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={wartDatumStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={wartDatumStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>Wartung nach Datum</strong> — {wartDatumStatus.label} ({formatDate(naechsteWart.datum)})</span></div>}
+          {(wartKmStatus && (wartKmStatus.severity === 'danger' || wartKmStatus.severity === 'warn')) && <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${wartKmStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}><WarnIcon cls={wartKmStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} /><span className={wartKmStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}><strong>Wartung nach Kilometerstand</strong> — {wartKmStatus.label} (fällig bei {parseInt(naechsteWart.km).toLocaleString('de-DE')} km)</span></div>}
+          {(naechsteWart.datum || naechsteWart.km) && <div className="bg-white rounded-2xl border border-gray-100 p-5"><p className="text-xs font-medium text-gray-400 mb-2">Nächste fällige Wartung</p><div className="flex flex-wrap gap-6">{naechsteWart.datum && <div><p className="text-xs text-gray-400">Nach Datum</p><p className="text-base font-bold text-gray-900">{formatDate(naechsteWart.datum)}</p>{(() => { const s = datumsStatus(naechsteWart.datum); return s ? <p className={`text-xs ${s.cls}`}>{s.label}</p> : null; })()}</div>}{naechsteWart.km && <div><p className="text-xs text-gray-400">Nach Kilometerstand</p><p className="text-base font-bold text-gray-900">{parseInt(naechsteWart.km).toLocaleString('de-DE')} km</p>{aktKm && (() => { const s = kmStatus(parseInt(naechsteWart.km), aktKm); return s ? <p className={`text-xs ${s.cls}`}>{s.label}</p> : null; })()}</div>}</div></div>}
           <form onSubmit={handleNaechsteWartSave} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">NÃ¤chste Wartung festlegen</h2>
+            <h2 className="text-sm font-semibold text-gray-700">Nächste Wartung festlegen</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <LabelInput label="Datum der nÃ¤chsten Wartung"><input type="date" value={naechsteWart.datum} onChange={e => setNaechsteWart(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput>
-              <LabelInput label="Kilometerstand bei nÃ¤chster Wartung"><div className="relative"><input type="number" value={naechsteWart.km} onChange={e => setNaechsteWart(f => ({ ...f, km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput>
+              <LabelInput label="Datum der nächsten Wartung"><input type="date" value={naechsteWart.datum} onChange={e => setNaechsteWart(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput>
+              <LabelInput label="Kilometerstand bei nächster Wartung"><div className="relative"><input type="number" value={naechsteWart.km} onChange={e => setNaechsteWart(f => ({ ...f, km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput>
             </div>
             {naechsteWartError && <p className="text-xs text-red-500">{naechsteWartError}</p>}
-            {naechsteWartSuccess && <p className="text-xs text-emerald-600">Gespeichert â</p>}
-            <button type="submit" disabled={naechsteWartSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{naechsteWartSaving ? 'Speichertâ¦' : 'Speichern'}</button>
+            {naechsteWartSuccess && <p className="text-xs text-emerald-600">Gespeichert ✓</p>}
+            <button type="submit" disabled={naechsteWartSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{naechsteWartSaving ? 'Speichert…' : 'Speichern'}</button>
           </form>
           <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-gray-700">Wartungshistorie</h2><button type="button" onClick={() => setWartNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Wartung erfassen</button></div>
-          {wartNeuShown && <form onSubmit={handleWartNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Wartungseintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Art der Wartung"><select value={wartForm.art} onChange={e => setWartForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>{WARTUNG_ART_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Datum" required><input type="date" required value={wartForm.datum} onChange={e => setWartForm(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Kilometerstand bei Wartung"><div className="relative"><input type="number" value={wartForm.km_stand} onChange={e => setWartForm(f => ({ ...f, km_stand: e.target.value }))} placeholder="z. B. 45000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput><LabelInput label="Werkstatt"><input type="text" value={wartForm.werkstatt} onChange={e => setWartForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z. B. Autohaus MÃ¼ller" className={inputCls} /></LabelInput><LabelInput label="Kosten (â¬)"><div className="relative"><input type="text" value={wartForm.kosten} onChange={e => setWartForm(f => ({ ...f, kosten: e.target.value }))} placeholder="z. B. 180,00" className={inputCls + ' pr-6'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">â¬</span></div></LabelInput><div /></div><div className="border-t border-gray-100 pt-3"><p className="text-xs font-medium text-gray-500 mb-3">NÃ¤chste Wartung fÃ¤llig (optional)</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Datum nÃ¤chste Wartung"><input type="date" value={wartForm.naechste_datum} onChange={e => setWartForm(f => ({ ...f, naechste_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Km nÃ¤chste Wartung"><div className="relative"><input type="number" value={wartForm.naechste_km} onChange={e => setWartForm(f => ({ ...f, naechste_km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput></div></div><LabelInput label="Notiz"><textarea value={wartForm.notiz} onChange={e => setWartForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungenâ¦" className={inputCls + ' resize-none'} /></LabelInput>{wartNeuError && <p className="text-xs text-red-500">{wartNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={wartNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{wartNeuSaving ? 'Speichertâ¦' : 'Wartung speichern'}</button><button type="button" onClick={() => setWartNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
-          {wartLaden ? <p className="text-sm text-gray-400 py-4 text-center">LÃ¤dtâ¦</p> : wartungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine WartungseintrÃ¤ge vorhanden.</p></div> : <div className="space-y-2">{wartungen.map(w => { const artLabel = WARTUNG_ART_OPTIONS.find(o => o.value === w.art)?.label ?? w.art; return <div key={w.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{artLabel}</span><span className="text-xs text-gray-400">{formatDate(w.datum)}</span>{w.km_stand != null && <span className="text-xs text-gray-400">{w.km_stand.toLocaleString('de-DE')} km</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{w.werkstatt && <span className="text-xs text-gray-400">{w.werkstatt}</span>}{w.kosten != null && <span className="text-xs text-gray-500 font-medium">{parseFloat(w.kosten).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}{w.naechste_datum && <span className="text-xs text-gray-400">NÃ¤chste: {formatDate(w.naechste_datum)}</span>}{w.naechste_km != null && <span className="text-xs text-gray-400">NÃ¤chste: {w.naechste_km.toLocaleString('de-DE')} km</span>}</div>{w.notiz && <p className="text-xs text-gray-400 mt-1 italic">{w.notiz}</p>}</div><button type="button" onClick={() => handleWartDelete(w.id)} disabled={deletingWartId === w.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
+          {wartNeuShown && <form onSubmit={handleWartNeu} className="bg-white rounded-2xl border border-blue-100 p-5 space-y-4"><h3 className="text-xs font-semibold text-gray-600">Wartungseintrag erfassen</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Art der Wartung"><select value={wartForm.art} onChange={e => setWartForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>{WARTUNG_ART_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></LabelInput><LabelInput label="Datum" required><input type="date" required value={wartForm.datum} onChange={e => setWartForm(f => ({ ...f, datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Kilometerstand bei Wartung"><div className="relative"><input type="number" value={wartForm.km_stand} onChange={e => setWartForm(f => ({ ...f, km_stand: e.target.value }))} placeholder="z. B. 45000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput><LabelInput label="Werkstatt"><input type="text" value={wartForm.werkstatt} onChange={e => setWartForm(f => ({ ...f, werkstatt: e.target.value }))} placeholder="z. B. Autohaus Müller" className={inputCls} /></LabelInput><LabelInput label="Kosten (€)"><div className="relative"><input type="text" value={wartForm.kosten} onChange={e => setWartForm(f => ({ ...f, kosten: e.target.value }))} placeholder="z. B. 180,00" className={inputCls + ' pr-6'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span></div></LabelInput><div /></div><div className="border-t border-gray-100 pt-3"><p className="text-xs font-medium text-gray-500 mb-3">Nächste Wartung fällig (optional)</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><LabelInput label="Datum nächste Wartung"><input type="date" value={wartForm.naechste_datum} onChange={e => setWartForm(f => ({ ...f, naechste_datum: e.target.value }))} className={inputCls} /></LabelInput><LabelInput label="Km nächste Wartung"><div className="relative"><input type="number" value={wartForm.naechste_km} onChange={e => setWartForm(f => ({ ...f, naechste_km: e.target.value }))} placeholder="z. B. 60000" min="0" className={inputCls + ' pr-10'} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div></LabelInput></div></div><LabelInput label="Notiz"><textarea value={wartForm.notiz} onChange={e => setWartForm(f => ({ ...f, notiz: e.target.value }))} rows={2} placeholder="Optionale Anmerkungen…" className={inputCls + ' resize-none'} /></LabelInput>{wartNeuError && <p className="text-xs text-red-500">{wartNeuError}</p>}<div className="flex gap-2"><button type="submit" disabled={wartNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{wartNeuSaving ? 'Speichert…' : 'Wartung speichern'}</button><button type="button" onClick={() => setWartNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div></form>}
+          {wartLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : wartungen.length === 0 ? <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center"><p className="text-sm text-gray-400">Noch keine Wartungseinträge vorhanden.</p></div> : <div className="space-y-2">{wartungen.map(w => { const artLabel = WARTUNG_ART_OPTIONS.find(o => o.value === w.art)?.label ?? w.art; return <div key={w.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4"><div className="flex items-start justify-between gap-3"><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold text-gray-900">{artLabel}</span><span className="text-xs text-gray-400">{formatDate(w.datum)}</span>{w.km_stand != null && <span className="text-xs text-gray-400">{w.km_stand.toLocaleString('de-DE')} km</span>}</div><div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5">{w.werkstatt && <span className="text-xs text-gray-400">{w.werkstatt}</span>}{w.kosten != null && <span className="text-xs text-gray-500 font-medium">{parseFloat(w.kosten).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>}{w.naechste_datum && <span className="text-xs text-gray-400">Nächste: {formatDate(w.naechste_datum)}</span>}{w.naechste_km != null && <span className="text-xs text-gray-400">Nächste: {w.naechste_km.toLocaleString('de-DE')} km</span>}</div>{w.notiz && <p className="text-xs text-gray-400 mt-1 italic">{w.notiz}</p>}</div><button type="button" onClick={() => handleWartDelete(w.id)} disabled={deletingWartId === w.id} className="text-gray-300 hover:text-red-400 transition shrink-0 mt-0.5 disabled:opacity-40"><TrashIcon /></button></div></div>; })}</div>}
         </div>
       )}
 
-      {/* ââ KILOMETERSTAND ââ */}
+      {/* ── KILOMETERSTAND ── */}
       {activeTab === 'kilometerstand' && (
         <div className="space-y-5">
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-xs font-medium text-gray-400 mb-1">Aktueller Kilometerstand</p>
             <div className="flex items-end gap-4 flex-wrap">
-              <div><p className="text-3xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : 'â'}</p><p className="text-xs text-gray-400 mt-0.5">km</p></div>
+              <div><p className="text-3xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '—'}</p><p className="text-xs text-gray-400 mt-0.5">km</p></div>
               <form onSubmit={handleAktKmSave} className="flex items-center gap-2 mb-0.5">
                 <div className="relative"><input type="number" value={aktKmWert} onChange={e => setAktKmWert(e.target.value)} min="0" placeholder="Neuer km-Stand" className="w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">km</span></div>
-                <button type="submit" disabled={aktKmSaving} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">{aktKmSaving ? 'â¦' : 'Aktualisieren'}</button>
-                {aktKmSuccess && <span className="text-xs text-emerald-600">â</span>}
+                <button type="submit" disabled={aktKmSaving} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">{aktKmSaving ? '…' : 'Aktualisieren'}</button>
+                {aktKmSuccess && <span className="text-xs text-emerald-600">✓</span>}
               </form>
             </div>
           </div>
@@ -912,10 +912,10 @@ export default function FahrzeugDetailPage() {
           {kmAnsicht === 'overview' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div><h2 className="text-sm font-semibold text-gray-700">Monatliche FahrtenbÃ¼cher</h2>{kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate Â· {kmStats.gesamtFahrten} Fahrten gesamt</p>}</div>
+                <div><h2 className="text-sm font-semibold text-gray-700">Monatliche Fahrtenbücher</h2>{kmEintraege.length > 0 && <p className="text-xs text-gray-400 mt-0.5">{Object.keys(kmStats.monate).length} Monate · {kmStats.gesamtFahrten} Fahrten gesamt</p>}</div>
                 <button type="button" onClick={() => { setEingabeMonat(currentMonthValue()); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Monat erfassen</button>
               </div>
-              {kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">LÃ¤dtâ¦</p> : Object.keys(kmStats.monate).length === 0 ? (
+              {kmLaden ? <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p> : Object.keys(kmStats.monate).length === 0 ? (
                 <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center"><div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-300"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg></div><p className="text-sm font-medium text-gray-500">Noch kein Fahrtenbuch erfasst</p></div>
               ) : (
                 <div className="space-y-2">{Object.entries(kmStats.monate).sort(([a], [b]) => b.localeCompare(a)).map(([key, m]) => (
@@ -929,10 +929,10 @@ export default function FahrzeugDetailPage() {
 
           {kmAnsicht === 'eingabe' && (
             <div className="space-y-5">
-              <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Ãbersicht</button><h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2></div>
+              <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-700">Fahrtenbuch erfassen</h2></div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5"><LabelInput label="Monat" required><input type="month" value={eingabeMonat} onChange={e => setEingabeMonat(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" /></LabelInput></div>
               <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-                <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3><span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} vollstÃ¤ndig</span></div>
+                <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-semibold text-gray-600">Fahrten des Monats</h3><span className="text-xs text-gray-400">{eingabeValidRows} von {eingabeZeilen.length} vollständig</span></div>
                 <div className="overflow-x-auto -mx-1 px-1">
                   <div className="min-w-[580px]">
                     <div className="grid grid-cols-[100px_82px_82px_50px_110px_110px_28px] gap-1.5 px-1 mb-1.5">
@@ -944,20 +944,20 @@ export default function FahrzeugDetailPage() {
                           <input type="date" value={z.datum} onChange={e => updateZeile(z.rowId, 'datum', e.target.value)} className={cellInputCls} />
                           <input type="number" value={z.km_start} onChange={e => updateZeile(z.rowId, 'km_start', e.target.value)} placeholder="Start" min="0" className={cellInputCls} />
                           <input type="number" value={z.km_stand} onChange={e => updateZeile(z.rowId, 'km_stand', e.target.value)} placeholder="Ende" min="0" className={cellInputCls} />
-                          <div className="text-center">{km != null && km >= 0 ? <span className="text-xs font-semibold text-blue-600">{km}</span> : <span className="text-xs text-gray-300">â</span>}</div>
+                          <div className="text-center">{km != null && km >= 0 ? <span className="text-xs font-semibold text-blue-600">{km}</span> : <span className="text-xs text-gray-300">—</span>}</div>
                           <input type="text" value={z.fahrer_name} onChange={e => updateZeile(z.rowId, 'fahrer_name', e.target.value)} placeholder="Fahrer" className={cellInputCls} />
                           <select value={z.zweck} onChange={e => updateZeile(z.rowId, 'zweck', e.target.value)} className={cellInputCls}>{ZWECK_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
                           <button type="button" onClick={() => removeZeile(z.rowId)} disabled={eingabeZeilen.length === 1} className="text-gray-300 hover:text-red-400 transition disabled:opacity-20 flex items-center justify-center"><TrashIcon /></button>
                         </div>
                       ); })}
                     </div>
-                    <button type="button" onClick={addZeile} className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"><PlusIcon /> Zeile hinzufÃ¼gen</button>
+                    <button type="button" onClick={addZeile} className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition px-1"><PlusIcon /> Zeile hinzufügen</button>
                   </div>
                 </div>
                 {eingabeTotalKm > 0 && <div className="border-t border-gray-100 pt-3 flex flex-wrap gap-6"><div><p className="text-xs text-gray-400">Gesamt km</p><p className="text-lg font-bold text-blue-600">{eingabeTotalKm.toLocaleString('de-DE')} km</p></div></div>}
               </div>
               {eingabeError && <p className="text-xs text-red-500">{eingabeError}</p>}
-              <div className="flex gap-2"><button type="button" onClick={handleEingabeSave} disabled={eingabeSaving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{eingabeSaving ? 'Speichertâ¦' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}</button><button type="button" onClick={() => setKmAnsicht('overview')} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>
+              <div className="flex gap-2"><button type="button" onClick={handleEingabeSave} disabled={eingabeSaving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{eingabeSaving ? 'Speichert…' : `Fahrtenbuch speichern (${eingabeValidRows} Fahrt${eingabeValidRows !== 1 ? 'en' : ''})`}</button><button type="button" onClick={() => setKmAnsicht('overview')} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button></div>
             </div>
           )}
 
@@ -968,18 +968,18 @@ export default function FahrzeugDetailPage() {
             return (
               <div className="space-y-5">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Ãbersicht</button><h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2></div>
-                  <div className="flex gap-2"><button type="button" onClick={() => handleExport(detailMonat)} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"><DownloadIcon /> CSV</button><button type="button" onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Fahrten ergÃ¤nzen</button></div>
+                  <div className="flex items-center gap-3"><button type="button" onClick={() => setKmAnsicht('overview')} className="text-xs text-gray-400 hover:text-gray-600 transition flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>Übersicht</button><h2 className="text-sm font-semibold text-gray-900">{formatMonthLabel(detailMonat)}</h2></div>
+                  <div className="flex gap-2"><button type="button" onClick={() => handleExport(detailMonat)} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-xl hover:bg-gray-50 transition"><DownloadIcon /> CSV</button><button type="button" onClick={() => { setEingabeMonat(detailMonat); setEingabeZeilen([newZeile()]); setEingabeError(''); setKmAnsicht('eingabe'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition"><PlusIcon /> Fahrten ergänzen</button></div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3"><div className="bg-blue-50 rounded-xl p-4 text-center"><p className="text-xs text-blue-600 font-medium">Gesamt km</p><p className="text-xl font-bold text-blue-800">{m.km.toLocaleString('de-DE')}</p></div><div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Fahrten</p><p className="text-xl font-bold text-gray-900">{m.fahrten}</p></div>{m.dienst > 0 && <div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Dienstfahrten</p><p className="text-lg font-bold text-blue-600">{m.dienst.toLocaleString('de-DE')} km</p></div>}{m.privat > 0 && <div className="bg-white rounded-xl border border-gray-100 p-4 text-center"><p className="text-xs text-gray-400">Privatfahrten</p><p className="text-lg font-bold text-purple-600">{m.privat.toLocaleString('de-DE')} km</p></div>}</div>
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[500px]"><thead><tr className="border-b border-gray-100"><th className="text-left text-xs font-medium text-gray-400 px-5 py-3">Datum</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Start</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Ende</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Fahrer</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Zweck</th><th className="px-3 py-3"></th></tr></thead><tbody className="divide-y divide-gray-50">{sorted.map(e => { const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck); return (<tr key={e.id} className="hover:bg-gray-50/50 transition"><td className="px-5 py-3 text-sm text-gray-700">{formatDate(e.datum)}</td><td className="px-3 py-3 text-sm text-right text-gray-500">{e.km_start != null ? e.km_start.toLocaleString('de-DE') : 'â'}</td><td className="px-3 py-3 text-sm text-right text-gray-700 font-medium">{e.km_stand != null ? e.km_stand.toLocaleString('de-DE') : 'â'}</td><td className="px-3 py-3 text-sm text-right font-semibold text-blue-600">{e.tripKm != null && e.tripKm >= 0 ? e.tripKm.toLocaleString('de-DE') : 'â'}</td><td className="px-3 py-3 text-sm text-gray-500">{e.fahrer_name ?? 'â'}</td><td className="px-3 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>{zweckOpt?.label ?? e.zweck}</span></td><td className="px-3 py-3"><button type="button" onClick={() => handleKmDelete(e.id)} disabled={deletingKmId === e.id} className="text-gray-300 hover:text-red-400 transition disabled:opacity-40"><TrashIcon /></button></td></tr>); })}</tbody><tfoot><tr className="border-t border-gray-100 bg-gray-50/50"><td colSpan={3} className="px-5 py-3 text-xs font-medium text-gray-500">Gesamt</td><td className="px-3 py-3 text-sm font-bold text-blue-700 text-right">{m.km.toLocaleString('de-DE')} km</td><td colSpan={3}></td></tr></tfoot></table></div></div>
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto"><table className="w-full min-w-[500px]"><thead><tr className="border-b border-gray-100"><th className="text-left text-xs font-medium text-gray-400 px-5 py-3">Datum</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Start</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km-Ende</th><th className="text-right text-xs font-medium text-gray-400 px-3 py-3">km</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Fahrer</th><th className="text-left text-xs font-medium text-gray-400 px-3 py-3">Zweck</th><th className="px-3 py-3"></th></tr></thead><tbody className="divide-y divide-gray-50">{sorted.map(e => { const zweckOpt = ZWECK_OPTIONS.find(z => z.value === e.zweck); return (<tr key={e.id} className="hover:bg-gray-50/50 transition"><td className="px-5 py-3 text-sm text-gray-700">{formatDate(e.datum)}</td><td className="px-3 py-3 text-sm text-right text-gray-500">{e.km_start != null ? e.km_start.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-right text-gray-700 font-medium">{e.km_stand != null ? e.km_stand.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-right font-semibold text-blue-600">{e.tripKm != null && e.tripKm >= 0 ? e.tripKm.toLocaleString('de-DE') : '—'}</td><td className="px-3 py-3 text-sm text-gray-500">{e.fahrer_name ?? '—'}</td><td className="px-3 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${zweckOpt?.cls ?? 'bg-gray-50 text-gray-500'}`}>{zweckOpt?.label ?? e.zweck}</span></td><td className="px-3 py-3"><button type="button" onClick={() => handleKmDelete(e.id)} disabled={deletingKmId === e.id} className="text-gray-300 hover:text-red-400 transition disabled:opacity-40"><TrashIcon /></button></td></tr>); })}</tbody><tfoot><tr className="border-t border-gray-100 bg-gray-50/50"><td colSpan={3} className="px-5 py-3 text-xs font-medium text-gray-500">Gesamt</td><td className="px-3 py-3 text-sm font-bold text-blue-700 text-right">{m.km.toLocaleString('de-DE')} km</td><td colSpan={3}></td></tr></tfoot></table></div></div>
               </div>
             );
           })()}
         </div>
       )}
 
-      {/* ââ VERSICHERUNG ââ */}
+      {/* ── VERSICHERUNG ── */}
       {activeTab === 'versicherung' && (
         <div className="space-y-5">
 
@@ -988,12 +988,12 @@ export default function FahrzeugDetailPage() {
             <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm ${versAblaufStatus.severity === 'danger' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'}`}>
               <WarnIcon cls={versAblaufStatus.severity === 'danger' ? 'text-red-500' : 'text-amber-500'} />
               <span className={versAblaufStatus.severity === 'danger' ? 'text-red-700' : 'text-amber-700'}>
-                <strong>Versicherung lÃ¤uft ab</strong> â {versAblaufStatus.label} ({formatDate(aktuelleVers.ablauf_datum)})
+                <strong>Versicherung läuft ab</strong> — {versAblaufStatus.label} ({formatDate(aktuelleVers.ablauf_datum)})
               </span>
             </div>
           )}
 
-          {/* Aktuelle Versicherung â prominente Karte */}
+          {/* Aktuelle Versicherung — prominente Karte */}
           {!versLaden && aktuelleVers && (
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
               <div className="flex items-start justify-between gap-4 mb-5">
@@ -1007,7 +1007,7 @@ export default function FahrzeugDetailPage() {
                 </div>
                 {aktuelleVers.jahrespraemie && (
                   <div className="text-right shrink-0">
-                    <p className="text-xs text-gray-400">JahresprÃ¤mie</p>
+                    <p className="text-xs text-gray-400">Jahresprämie</p>
                     <p className="text-xl font-bold text-gray-900">{formatEuro(aktuelleVers.jahrespraemie)}</p>
                   </div>
                 )}
@@ -1048,7 +1048,7 @@ export default function FahrzeugDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700">Versicherungshistorie</h2>
             <button type="button" onClick={() => setVersNeuShown(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-xl hover:bg-blue-700 transition">
-              <PlusIcon /> Versicherung hinzufÃ¼gen
+              <PlusIcon /> Versicherung hinzufügen
             </button>
           </div>
 
@@ -1058,7 +1058,7 @@ export default function FahrzeugDetailPage() {
               <h3 className="text-xs font-semibold text-gray-600">Versicherung erfassen</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <LabelInput label="Versicherungsgesellschaft" required>
-                  <input type="text" required value={versForm.gesellschaft} onChange={e => setVersForm(f => ({ ...f, gesellschaft: e.target.value }))} placeholder="z. B. ADAC, Allianz, HUK-Coburgâ¦" className={inputCls} />
+                  <input type="text" required value={versForm.gesellschaft} onChange={e => setVersForm(f => ({ ...f, gesellschaft: e.target.value }))} placeholder="z. B. ADAC, Allianz, HUK-Coburg…" className={inputCls} />
                 </LabelInput>
                 <LabelInput label="Versicherungsart">
                   <select value={versForm.art} onChange={e => setVersForm(f => ({ ...f, art: e.target.value }))} className={inputCls}>
@@ -1075,16 +1075,16 @@ export default function FahrzeugDetailPage() {
                 <LabelInput label="Ablaufdatum">
                   <input type="date" value={versForm.ablauf_datum} onChange={e => setVersForm(f => ({ ...f, ablauf_datum: e.target.value }))} className={inputCls} />
                 </LabelInput>
-                <LabelInput label="JahresprÃ¤mie (â¬)">
+                <LabelInput label="Jahresprämie (€)">
                   <div className="relative">
                     <input type="text" value={versForm.jahrespraemie} onChange={e => setVersForm(f => ({ ...f, jahrespraemie: e.target.value }))} placeholder="z. B. 1.200,00" className={inputCls + ' pr-6'} />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">â¬</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
                   </div>
                 </LabelInput>
-                <LabelInput label="Selbstbeteiligung (â¬)">
+                <LabelInput label="Selbstbeteiligung (€)">
                   <div className="relative">
                     <input type="text" value={versForm.selbstbeteiligung} onChange={e => setVersForm(f => ({ ...f, selbstbeteiligung: e.target.value }))} placeholder="z. B. 500,00" className={inputCls + ' pr-6'} />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">â¬</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
                   </div>
                 </LabelInput>
                 <LabelInput label="Ansprechpartner">
@@ -1099,7 +1099,7 @@ export default function FahrzeugDetailPage() {
               </LabelInput>
               {versNeuError && <p className="text-xs text-red-500">{versNeuError}</p>}
               <div className="flex gap-2">
-                <button type="submit" disabled={versNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{versNeuSaving ? 'Speichertâ¦' : 'Versicherung speichern'}</button>
+                <button type="submit" disabled={versNeuSaving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">{versNeuSaving ? 'Speichert…' : 'Versicherung speichern'}</button>
                 <button type="button" onClick={() => setVersNeuShown(false)} className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 transition">Abbrechen</button>
               </div>
             </form>
@@ -1107,7 +1107,7 @@ export default function FahrzeugDetailPage() {
 
           {/* History-Liste */}
           {versLaden ? (
-            <p className="text-sm text-gray-400 py-4 text-center">LÃ¤dtâ¦</p>
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
           ) : versicherungen.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
               <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -1116,7 +1116,7 @@ export default function FahrzeugDetailPage() {
                 </svg>
               </div>
               <p className="text-sm font-medium text-gray-500">Noch keine Versicherung erfasst</p>
-              <p className="text-xs text-gray-400 mt-1">FÃ¼ge die aktuelle Versicherung Ã¼ber den Button oben hinzu.</p>
+              <p className="text-xs text-gray-400 mt-1">Füge die aktuelle Versicherung über den Button oben hinzu.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -1144,14 +1144,14 @@ export default function FahrzeugDetailPage() {
                           )}
                           {v.jahrespraemie && <span className="text-xs text-gray-500 font-medium">{formatEuro(v.jahrespraemie)}/Jahr</span>}
                           {v.selbstbeteiligung && <span className="text-xs text-gray-400">SB: {formatEuro(v.selbstbeteiligung)}</span>}
-                          {v.ansprechpartner && <span className="text-xs text-gray-400">{v.ansprechpartner}{v.telefon ? ` Â· ${v.telefon}` : ''}</span>}
+                          {v.ansprechpartner && <span className="text-xs text-gray-400">{v.ansprechpartner}{v.telefon ? ` · ${v.telefon}` : ''}</span>}
                         </div>
                         {v.notiz && <p className="text-xs text-gray-400 mt-1 italic">{v.notiz}</p>}
                       </div>
                       <div className="shrink-0 flex items-center gap-1">
                         {isConfirmDel ? (
                           <>
-                            <button type="button" onClick={() => handleVersDelete(v.id)} disabled={deletingVersId === v.id} className="px-2.5 py-1 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition">{deletingVersId === v.id ? 'â¦' : 'LÃ¶schen'}</button>
+                            <button type="button" onClick={() => handleVersDelete(v.id)} disabled={deletingVersId === v.id} className="px-2.5 py-1 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition">{deletingVersId === v.id ? '…' : 'Löschen'}</button>
                             <button type="button" onClick={() => setConfirmDeleteVersId(null)} className="px-2.5 py-1 text-xs text-gray-500 rounded-lg hover:bg-gray-100 transition">Abbruch</button>
                           </>
                         ) : (
@@ -1167,17 +1167,17 @@ export default function FahrzeugDetailPage() {
         </div>
       )}
 
-      {/* ââ HISTORIE ââ */}
+      {/* ── HISTORIE ── */}
       {activeTab === 'historie' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700">Ãnderungsprotokoll</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Alle Ãnderungen an den Fahrzeugdaten</p>
+              <h2 className="text-sm font-semibold text-gray-700">Änderungsprotokoll</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Alle Änderungen an den Fahrzeugdaten</p>
             </div>
           </div>
           {historieLaden ? (
-            <p className="text-sm text-gray-400 py-4 text-center">LÃ¤dtâ¦</p>
+            <p className="text-sm text-gray-400 py-4 text-center">Lädt…</p>
           ) : historieEintraege.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
               <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -1185,8 +1185,8 @@ export default function FahrzeugDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-gray-500">Noch keine Ãnderungen protokolliert</p>
-              <p className="text-xs text-gray-400 mt-1">Ãnderungen an den Fahrzeugdaten werden hier aufgezeichnet.</p>
+              <p className="text-sm font-medium text-gray-500">Noch keine Änderungen protokolliert</p>
+              <p className="text-xs text-gray-400 mt-1">Änderungen an den Fahrzeugdaten werden hier aufgezeichnet.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1199,7 +1199,7 @@ export default function FahrzeugDetailPage() {
                         <span className="text-xs text-gray-400">
                           {new Date(eintrag.zeitpunkt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
-                        {eintrag.benutzer_name && <span className="text-xs text-gray-400">Â· {eintrag.benutzer_name}</span>}
+                        {eintrag.benutzer_name && <span className="text-xs text-gray-400">· {eintrag.benutzer_name}</span>}
                       </div>
                       <div className="space-y-1.5">
                         {(eintrag.felder ?? []).map((f, i) => (
