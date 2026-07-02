@@ -481,7 +481,11 @@ export default function MaschinenDetailPage() {
         tabs={TABS}
         activeTab={activeTab}
         onChange={setActiveTab}
-        label="Maschinen      {/* ── Tab: Übersicht ────────────────────────────────────── */}
+        label="Maschinennavigation"
+        className="mb-6"
+      />
+
+      {/* ── Tab: Übersicht ────────────────────────────────────── */}
       {activeTab === 'uebersicht' && (
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -529,10 +533,6 @@ export default function MaschinenDetailPage() {
           </div>
         </div>
       )}
-
-navigation"
-        className="mb-6"
-      />
 
       {/* ── Tab: Geräteverwaltung ─────────────────────────────────────────── */}
       {activeTab === 'geraeteverwaltung' && (
