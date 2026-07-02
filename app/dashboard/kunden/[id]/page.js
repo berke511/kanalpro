@@ -1440,6 +1440,42 @@ export default function KundeDetail() {
               </Karte>
             );
           })()}
+
+          {/* ── Warnhinweise ── */}
+          {(() => {
+            const warnungen = [];
+            if (!form.telefon) warnungen.push('Telefonnummer fehlt.');
+            if (!form.email) warnungen.push('E-Mail-Adresse fehlt.');
+            if (objekte.length === 0) warnungen.push('Keine Einsatzorte vorhanden.');
+            if (rechnungen.some(r => r.status !== 'bezahlt')) warnungen.push('Offene Rechnungen vorhanden.');
+            if (auftraege.length === 0) warnungen.push('Kunde hat noch keinen Auftrag.');
+            return (
+              <Karte>
+                <KarteHeader icon="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" title="Warnhinweise" badgeVariant={warnungen.length > 0 ? 'amber' : 'green'} />
+                <div className="px-5 py-5">
+                  {warnungen.length === 0 ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+                        <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-500" />
+                      </div>
+                      <p className="text-sm text-gray-500">Keine offenen Warnhinweise</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {warnungen.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <div className="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                            <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-3 h-3 text-amber-500" />
+                          </div>
+                          <p className="text-sm text-gray-700">{w}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </Karte>
+            );
+          })()}
         </div>
       )}
       {tab === 'stammdaten' && (
