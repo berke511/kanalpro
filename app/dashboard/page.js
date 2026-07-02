@@ -198,6 +198,7 @@ export default function Dashboard() {
   const [rechnung, setRechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
   // Fahrzeuge (Modul noch nicht vorhanden)
   const [fahrzeug, setFahrzeug] = useState({ total: 0, imEinsatz: 0, verfuegbar: 0, werkstatt: 0 });
+  const [fahrzeugeRaw, setFahrzeugeRaw] = useState([]);
   // Umsatz
   const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
   // Ereignisse
@@ -305,7 +306,7 @@ export default function Dashboard() {
       // Fahrzeuge
       const { data: fahrzeugeData } = await supabase
         .from('fahrzeuge')
-        .select('id, zustand');
+        .select('id, zustand, company_id, kennzeichen, bezeichnung, marke, modell, tuev_datum, naechste_wartung')
 
       if (fahrzeugeData) {
         const total      = fahrzeugeData.length;
@@ -313,6 +314,7 @@ export default function Dashboard() {
         const verfuegbar = fahrzeugeData.filter(f => f.zustand === 'reserviert').length;
         const werkstatt  = fahrzeugeData.filter(f => f.zustand === 'wartung').length;
         setFahrzeug({ total, imEinsatz, verfuegbar, werkstatt });
+        setFahrzeugeRaw(fahrzeugeData);
       }
 
       setLaden(false);
@@ -498,6 +500,59 @@ export default function Dashboard() {
                 <KPICard label="Fahrzeuge gesamt" value={fahrzeug.total} loading={false} />
                 <KPICard label="Im Einsatz" value={fahrzeug.imEinsatz} loading={false} sub="Bald verfügbar" />
               </div>
+              {(() => {
+                const heute = new Date();
+                const in30 = new Date(); in30.setDate(heute.getDate() + 30);
+
+                const kritisch = fahrzeugeRaw
+                  .filter(f => {
+                    if (['ausser_betrieb', 'wartung'].includes(f.zustand)) return true;
+                    if (f.tuev_datum && new Date(f.tuev_datum) <= in30) return true;
+                    if (f.naechste_wartung && new Date(f.naechste_wartung) < heute) return true;
+                    return false;
+                  })
+                  .slice(0, 5)
+                  .map(f => {
+                    const gruende = [];
+                    if (['ausser_betrieb', 'wartung'].includes(f.zustand))
+                      gruende.push(f.zustand === 'ausser_betrieb' ? 'Außer Betrieb' : 'In Wartung');
+                    if (f.tuev_datum) {
+                      const d = new Date(f.tuev_datum);
+                      if (d < heute) gruende.push('TÜV überfällig');
+                      else if (d <= in30) gruende.push('TÜV fällig in < 30 Tagen');
+                    }
+                    if (f.naechste_wartung && new Date(f.naechste_wartung) < heute)
+                      gruende.push('Wartung überfällig');
+                    const istRot = f.zustand === 'ausser_betrieb' ||
+                      (f.tuev_datum && new Date(f.tuev_datum) < heute) ||
+                      (f.naechste_wartung && new Date(f.naechste_wartung) < heute);
+                    return { ...f, gruende, istRot };
+                  });
+
+                return (
+                  <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-800">Kritische Fahrzeuge</h3>
+                      <a href="/dashboard/fahrzeuge" className="text-sm text-blue-600 hover:underline">Fahrzeuge öffnen →</a>
+                    </div>
+                    {kritisch.length === 0 ? (
+                      <p className="text-sm text-gray-500">Keine kritischen Fahrzeuge</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {kritisch.map(f => (
+                          <li key={f.id} className={`flex items-start gap-3 rounded-lg px-3 py-2 ${f.istRot ? 'bg-red-50' : 'bg-yellow-50'}`}>
+                            <span className="mt-0.5 text-base">{f.istRot ? '🔴' : '🟡'}</span>
+                            <div>
+                              <p className="font-medium text-gray-800 text-sm">{f.kennzeichen || f.bezeichnung || f.marke || '–'}</p>
+                              <p className="text-xs text-gray-600">{f.gruende.join(' · ')}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
               <div className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
                   <h3 className="font-semibold text-gray-900">Fahrzeugstatus</h3>
