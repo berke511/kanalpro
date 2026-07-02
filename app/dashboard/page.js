@@ -202,6 +202,8 @@ export default function Dashboard() {
   const [umsatz] = useState({ monat: 0, jahr: 0, verlauf: Array(12).fill(0) });
   // Ereignisse
   const [events, setEvents] = useState([]);
+  const [rechnung, setRechnung] = useState({ offen: 0, bezahlt: 0, ueberfaellig: 0, betrag: 0 });
+  const [umsatz, setUmsatz] = useState({ monat: 0, jahr: 0, verlauf: [] });
 
   const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
@@ -270,6 +272,36 @@ export default function Dashboard() {
           .eq('company_id', member.company_id)
           .eq('is_active', true);
         setMitarbeiter({ total: mCount ?? 0 });
+      }
+
+      // Rechnungen
+      if (member?.company_id) {
+        const { data: rechnungenData } = await supabase
+          .from('rechnungen')
+          .select('id, status, betrag, faellig_am, datum, company_id')
+          .eq('company_id', member.company_id);
+
+        if (rechnungenData) {
+          const heute = new Date();
+          const monatStart = new Date(heute.getFullYear(), heute.getMonth(), 1);
+          const jahrStart  = new Date(heute.getFullYear(), 0, 1);
+
+          const offen        = rechnungenData.filter(r => r.status !== 'bezahlt').length;
+          const bezahlt      = rechnungenData.filter(r => r.status === 'bezahlt').length;
+          const ueberfaellig = rechnungenData.filter(r =>
+            r.status !== 'bezahlt' && r.faellig_am && new Date(r.faellig_am) < heute
+          ).length;
+
+          const monatsumsatz = rechnungenData
+            .filter(r => r.status === 'bezahlt' && r.datum && new Date(r.datum) >= monatStart)
+            .reduce((s, r) => s + (r.betrag || 0), 0);
+          const jahresumsatz = rechnungenData
+            .filter(r => r.status === 'bezahlt' && r.datum && new Date(r.datum) >= jahrStart)
+            .reduce((s, r) => s + (r.betrag || 0), 0);
+
+          setRechnung({ offen, bezahlt, ueberfaellig, betrag: monatsumsatz });
+          setUmsatz(prev => ({ ...prev, monat: monatsumsatz, jahr: jahresumsatz }));
+        }
       }
 
       setLaden(false);
