@@ -205,6 +205,7 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
 // Angebote
 const [angebote, setAngebote] = useState([]);
+  const [maschinenKritisch, setMaschinenKritisch] = useState([]);
 
   const MONATE = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
@@ -336,6 +337,22 @@ if (angeboteData) {
       return { ...a, betrag: netto * (1 + (a.steuersatz ?? 19) / 100) };
     });
   setAngebote(offene);
+}
+
+// Maschinen
+const { data: maschinenData } = await supabase
+  .from('maschinen')
+  .select('id, name, typ, lagerort, zustand, naechste_pruefung_datum, company_id')
+  .eq('company_id', companyId);
+
+if (maschinenData) {
+  const heute = new Date();
+  const in30 = new Date(); in30.setDate(heute.getDate() + 30);
+  const kritisch = maschinenData.filter(m =>
+    ['defekt', 'ausser_betrieb'].includes(m.zustand) ||
+    (m.naechste_pruefung_datum && new Date(m.naechste_pruefung_datum) <= in30)
+  );
+  setMaschinenKritisch(kritisch);
 }
 
 setLaden(false);
@@ -690,6 +707,50 @@ setLaden(false);
     </ul>
   )}
 </div>
+
+{/* ── Kritische-Maschinen-Karte ── */}
+{(() => {
+  const heute = new Date();
+  const in30 = new Date(); in30.setDate(heute.getDate() + 30);
+
+  const liste = maschinenKritisch.slice(0, 5).map(m => {
+    const gruende = [];
+    if (m.zustand === 'defekt') gruende.push('Defekt');
+    if (m.zustand === 'ausser_betrieb') gruende.push('Außer Betrieb');
+    if (m.naechste_pruefung_datum) {
+      const d = new Date(m.naechste_pruefung_datum);
+      if (d < heute) gruende.push('Prüfung überfällig');
+      else if (d <= in30) gruende.push('Prüfung fällig in < 30 Tagen');
+    }
+    const istRot = m.zustand === 'defekt' || m.zustand === 'ausser_betrieb' ||
+      (m.naechste_pruefung_datum && new Date(m.naechste_pruefung_datum) < heute);
+    return { ...m, gruende, istRot };
+  });
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-800">Kritische Maschinen</h3>
+        <a href="/dashboard/maschinen" className="text-sm text-blue-600 hover:underline">Maschinen öffnen →</a>
+      </div>
+      {liste.length === 0 ? (
+        <p className="text-sm text-gray-500">Keine kritischen Maschinen</p>
+      ) : (
+        <ul className="space-y-2">
+          {liste.map(m => (
+            <li key={m.id} className={`flex items-start gap-3 rounded-lg px-3 py-2 ${m.istRot ? 'bg-red-50' : 'bg-yellow-50'}`}>
+              <span className="mt-0.5 text-base">{m.istRot ? '🔴' : '🟡'}</span>
+              <div>
+                <p className="font-medium text-gray-800 text-sm">{m.name || '–'}{m.typ ? ` · ${m.typ}` : ''}</p>
+                <p className="text-xs text-gray-600">{m.gruende.join(' · ')}{m.lagerort ? ` · ${m.lagerort}` : ''}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+})()}
 
 {/* ══ SCHNELLZUGRIFF (unterste Zeile) ════════════════════════════════ */}
       <section>
