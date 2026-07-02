@@ -746,6 +746,33 @@ export default function MitarbeiterProfilPage() {
             </div>
           );
         })()}
+
+        {/* ── Kennzahlen-Karte ── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+          <h3 className="font-semibold text-gray-700 mb-3">Mitarbeiter-Kennzahlen</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-800">{zertifikate.length}</p>
+              <p className="text-xs text-gray-500 mt-1">Zertifikate</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-800">0</p>
+              <p className="text-xs text-gray-500 mt-1">Fahrzeuge</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-800">{abwesenheiten.length}</p>
+              <p className="text-xs text-gray-500 mt-1">Abwesenheiten</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-800">{eintraege.length}</p>
+              <p className="text-xs text-gray-500 mt-1">Arbeitszeit-Eintr&#228;ge</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-gray-800">{form?.position || '–'}</p>
+              <p className="text-xs text-gray-500 mt-1">Position</p>
+            </div>
+          </div>
+        </div>
         </>
       )}
 
