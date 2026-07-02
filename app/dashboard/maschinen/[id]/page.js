@@ -34,6 +34,7 @@ const ZUSTAND_CONFIG = {
 };
 
 const TABS = [
+  { id: 'uebersicht',           label: 'Übersicht' },
   { id: 'geraeteverwaltung',    label: 'Geräteverwaltung' },
   { id: 'wartungen_pruefungen', label: 'Wartungen & Prüfungen' },
   { id: 'standort',             label: 'Standort & Verfügbarkeit' },
@@ -172,7 +173,7 @@ export default function MaschinenDetailPage() {
 
   const [maschine, setMaschine]     = useState(null);
   const [loading, setLoading]       = useState(true);
-  const [activeTab, setActiveTab]   = useState('geraeteverwaltung');
+  const [activeTab, setActiveTab]   = useState('uebersicht');
   const [companyId, setCompanyId]   = useState(null);
   const [userId, setUserId]         = useState(null);
   const [userName, setUserName]     = useState('');
@@ -480,7 +481,56 @@ export default function MaschinenDetailPage() {
         tabs={TABS}
         activeTab={activeTab}
         onChange={setActiveTab}
-        label="Maschinennavigation"
+        label="Maschinen      {/* ── Tab: Übersicht ────────────────────────────────────── */}
+      {activeTab === 'uebersicht' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center gap-2 pb-4 border-b border-gray-100 mb-5">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+                </svg>
+              </div>
+              <h2 className="text-sm font-semibold text-gray-800">Maschinen-Zusammenfassung</h2>
+              {maschine.zustand && (
+                <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${ZUSTAND_CONFIG[maschine.zustand]?.bg ?? 'bg-gray-100'} ${ZUSTAND_CONFIG[maschine.zustand]?.text ?? 'text-gray-600'}`}>
+                  {ZUSTAND_CONFIG[maschine.zustand]?.label ?? maschine.zustand}
+                </span>
+              )}
+            </div>
+            {(() => {
+              const felder = [
+                maschine.name                  ? { label: 'Name',              value: maschine.name } : null,
+                maschine.typ                   ? { label: 'Typ',               value: MASCHINENTYP_OPTIONS.find(o => o.value === maschine.typ)?.label ?? maschine.typ } : null,
+                maschine.hersteller            ? { label: 'Hersteller',        value: maschine.hersteller } : null,
+                maschine.modell                ? { label: 'Modell',            value: maschine.modell } : null,
+                maschine.inventarnummer        ? { label: 'Inventarnummer',    value: maschine.inventarnummer } : null,
+                maschine.seriennummer          ? { label: 'Seriennummer',      value: maschine.seriennummer } : null,
+                maschine.baujahr               ? { label: 'Baujahr',           value: String(maschine.baujahr) } : null,
+                maschine.lagerort              ? { label: 'Lagerort',          value: maschine.lagerort } : null,
+                maschine.betriebsstunden_aktuell != null && maschine.betriebsstunden_aktuell > 0
+                  ? { label: 'Betriebsstunden', value: `${Number(maschine.betriebsstunden_aktuell).toLocaleString('de-DE')} Bst.` } : null,
+                maschine.naechste_pruefung_datum ? { label: 'Nächste Prüfung', value: fmtDate(maschine.naechste_pruefung_datum) } : null,
+                maschine.kaufdatum             ? { label: 'Kaufdatum',         value: fmtDate(maschine.kaufdatum) } : null,
+                maschine.anschaffungswert != null ? { label: 'Anschaffungswert', value: fmtCurrency(maschine.anschaffungswert) } : null,
+                maschine.notiz                 ? { label: 'Notiz',             value: maschine.notiz } : null,
+              ].filter(Boolean);
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                  {felder.map(f => (
+                    <div key={f.label}>
+                      <p className="text-xs text-gray-400">{f.label}</p>
+                      <p className="text-sm font-medium text-gray-800 mt-0.5">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+navigation"
         className="mb-6"
       />
 
