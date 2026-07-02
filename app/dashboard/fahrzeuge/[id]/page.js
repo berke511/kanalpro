@@ -724,6 +724,31 @@ export default function FahrzeugDetailPage() {
       {/* ââ FAHRZEUGDATEN ââ */}
       {activeTab === 'fahrzeugdaten' && (
         <form onSubmit={handleSave} className="space-y-6">
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">Fahrzeug-Kennzahlen</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.km_stand != null ? fahrzeug.km_stand.toLocaleString('de-DE') : '–'}</p>
+                <p className="text-xs text-gray-500 mt-1">Kilometerstand</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-gray-900">{pruefungen.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Prüfungen</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-gray-900">{wartungen.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Wartungen</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-gray-900">{kmEintraege.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Kilometer-Einträge</p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 text-center">
+                <p className="text-2xl font-bold text-gray-900">{fahrzeug?.baujahr ?? '–'}</p>
+                <p className="text-xs text-gray-500 mt-1">Baujahr</p>
+              </div>
+            </div>
+          </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Fahrzeugidentifikation</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
