@@ -1369,7 +1369,7 @@ export default function AuftragBearbeiten() {
           .select(`*,
             kunden:kunden_id(id, name, firmenname, kundentyp, email, telefon),
             fahrzeuge:fahrzeug_id(id, kennzeichen, marke, modell),
-            einsatzleiter:verantw_mitarbeiter_id(id, vorname, nachname, position)
+            einsatzleiter:verantw_mitarbeiter_id(id, vorname, nachname, position, stundensatz)
           `)
           .eq('id', id)
           .eq('company_id', member.company_id)
@@ -2378,9 +2378,9 @@ export default function AuftragBearbeiten() {
             const rechnungsbetrag = rechnungen.reduce((s, r) => s + (r.betrag_brutto || 0), 0);
 
             let internLohnkosten = null;
-            if (einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at && einsatzDok?.stundensatz) {
+            if (einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at && auftrag?.einsatzleiter?.stundensatz) {
               const ms = new Date(einsatzDok.arbeit_beendet_at) - new Date(einsatzDok.arbeit_begonnen_at);
-              internLohnkosten = (ms / 1000 / 3600) * einsatzDok.stundensatz;
+              internLohnkosten = (ms / 1000 / 3600) * auftrag.einsatzleiter.stundensatz;
             }
 
             return (
@@ -2401,7 +2401,12 @@ export default function AuftragBearbeiten() {
                   </div>
                                     <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
                     <span className="text-gray-600">Interne Lohnkosten</span>
-                    <span className="font-medium text-gray-800">Nicht verfügbar</span>
+                    <span className="font-medium text-gray-800">{internLohnkosten !== null
+                        ? `€ ${internLohnkosten.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : auftrag?.einsatzleiter && !auftrag.einsatzleiter.stundensatz
+                          ? 'Nicht hinterlegt'
+                          : '–'}
+                    </span>
                   </div>
 <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
                     <span className="text-gray-600">Rechnungsbetrag</span>
