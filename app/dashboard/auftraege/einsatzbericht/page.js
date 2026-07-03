@@ -899,6 +899,14 @@ function EinsatzberichtPageInner() {
   const [abschlFehler,   setAbschlFehler]   = useState('');
   const [globalErr,      setGlobalErr]      = useState('');
 
+  // ── Auftrag-Material ──
+  const [materialListe,   setMaterialListe]   = useState([]);
+  const [auftragMaterial, setAuftragMaterial] = useState([]);
+  const [matForm,         setMatForm]         = useState({ material_id: '', menge: '' });
+  const [matFehler,       setMatFehler]       = useState('');
+  const [matLaden,        setMatLaden]        = useState(false);
+  const [matDialog,       setMatDialog]       = useState(false);
+
   /* ── Daten laden ── */
   const ladeDaten = useCallback(async () => {
     if (!auftragId) { setZustand('not_found'); return; }
@@ -988,6 +996,23 @@ function EinsatzberichtPageInner() {
       }
 
       setZustand('ok');
+
+      // Materialliste für Dropdown
+      const { data: matList } = await supabase
+        .from('materialien')
+        .select('id, name, bestand_aktuell, einheit, einzelpreis')
+        .eq('company_id', member.company_id)
+        .order('name');
+      setMaterialListe(matList || []);
+
+      // Bereits gebuchtes Material für diesen Auftrag
+      const { data: amList } = await supabase
+        .from('auftrag_material')
+        .select('*, materialien(name, einheit)')
+        .eq('auftrag_id', auftragId)
+        .eq('company_id', member.company_id)
+        .order('created_at', { ascending: false });
+      setAuftragMaterial(amList || []);
     } catch (e) {
       console.error(e);
       setZustand('not_found');
@@ -1105,6 +1130,59 @@ function EinsatzberichtPageInner() {
     setSaving(false);
   }
 
+  /* ── Material auf Auftrag buchen ── */
+  async function materialBuchen(e) {
+    e.preventDefault();
+    setMatFehler('');
+    const menge = Number(matForm.menge);
+    if (!matForm.material_id) { setMatFehler('Bitte Material wählen.'); return; }
+    if (!menge || menge <= 0) { setMatFehler('Bitte eine gültige Menge eingeben.'); return; }
+
+    const mat = materialListe.find(m => m.id === matForm.material_id);
+    if (!mat) { setMatFehler('Material nicht gefunden.'); return; }
+    if (menge > mat.bestand_aktuell) { setMatFehler('Nicht genügend Bestand vorhanden.'); return; }
+
+    setMatLaden(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const gesamtpreis = mat.einzelpreis ? menge * mat.einzelpreis : null;
+
+    await supabase.from('auftrag_material').insert({
+      company_id: companyId,
+      auftrag_id: auftragId,
+      material_id: matForm.material_id,
+      menge,
+      einheit: mat.einheit || null,
+      einzelpreis: mat.einzelpreis || null,
+      gesamtpreis,
+      erstellt_von: user?.id,
+    });
+
+    // Bestand reduzieren
+    await supabase.from('materialien')
+      .update({ bestand_aktuell: mat.bestand_aktuell - menge })
+      .eq('id', mat.id);
+
+    // Reload
+    const { data: amList } = await supabase
+      .from('auftrag_material')
+      .select('*, materialien(name, einheit)')
+      .eq('auftrag_id', auftragId)
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+    setAuftragMaterial(amList || []);
+
+    const { data: matList2 } = await supabase
+      .from('materialien')
+      .select('id, name, bestand_aktuell, einheit, einzelpreis')
+      .eq('company_id', companyId)
+      .order('name');
+    setMaterialListe(matList2 || []);
+
+    setMatForm({ material_id: '', menge: '' });
+    setMatDialog(false);
+    setMatLaden(false);
+  }
+
   /* ── Render-Guards ── */
   if (zustand === 'loading') return <Skeleton />;
 
@@ -1187,6 +1265,78 @@ function EinsatzberichtPageInner() {
           onKeinMaterial={handleKeinMaterial}
           saving={saving}
         />
+
+        {/* ── Auftrag-Material ── */}
+        <div className="mt-4">
+          {auftragMaterial.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-3">
+              <h4 className="font-medium text-gray-700 mb-2 text-sm">Gebuchtes Material</h4>
+              <ul className="space-y-1">
+                {auftragMaterial.map(am => (
+                  <li key={am.id} className="flex justify-between text-sm text-gray-700 border-b border-gray-100 pb-1 last:border-0">
+                    <span>{am.materialien?.name} — {am.menge} {am.einheit || ''}</span>
+                    {am.gesamtpreis != null && (
+                      <span className="text-gray-500">{am.gesamtpreis.toFixed(2)} €</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {auftragMaterial.some(am => am.gesamtpreis != null) && (
+                <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-sm font-medium">
+                  <span>Materialkosten gesamt</span>
+                  <span>{auftragMaterial.reduce((s, am) => s + (am.gesamtpreis || 0), 0).toFixed(2)} €</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button onClick={() => setMatDialog(true)}
+            className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+            + Material hinzufügen
+          </button>
+        </div>
+
+        {/* ── Material-Dialog ── */}
+        {matDialog && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-lg p-5 w-full max-w-sm">
+              <h3 className="font-semibold text-gray-800 mb-4">Material auswählen</h3>
+              <form onSubmit={materialBuchen} className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Material</label>
+                  <select value={matForm.material_id}
+                    onChange={e => setMatForm(p => ({ ...p, material_id: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
+                    <option value="">— bitte wählen —</option>
+                    {materialListe.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} (Bestand: {m.bestand_aktuell} {m.einheit || ''})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Menge</label>
+                  <input type="number" min="0.01" step="0.01" value={matForm.menge}
+                    onChange={e => setMatForm(p => ({ ...p, menge: e.target.value }))}
+                    placeholder="z.B. 5" required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                {matFehler && <p className="text-sm text-red-600">{matFehler}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button type="button" onClick={() => { setMatDialog(false); setMatFehler(''); }}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    Abbrechen
+                  </button>
+                  <button type="submit" disabled={matLaden}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                    {matLaden ? 'Wird gebucht…' : 'Buchen'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         <ArbeitszeitenSektion
           form={zeitForm}
