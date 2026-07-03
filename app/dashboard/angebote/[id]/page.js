@@ -404,6 +404,7 @@ export default function AngebotBearbeiten() {
           ? angebot.positionen
           : [{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]
       );
+      setAuftragId(angebot.auftrag_id ?? null);
       setIstAuftrag(angebot.auftrag ?? false);
       setLaden(false);
     }
@@ -514,9 +515,10 @@ export default function AngebotBearbeiten() {
       // Angebot erst nach erfolgreichem Auftrag aktualisieren
       await supabase
         .from('angebote')
-        .update({ auftrag: true, auftrag_erstellt_am: new Date().toISOString(), status: 'angenommen' })
+        .update({ auftrag: true, auftrag_erstellt_am: new Date().toISOString(), auftrag_id: neuerAuftrag.id, status: 'in_auftrag' })
         .eq('id', id);
 
+      setAuftragId(neuerAuftrag.id);
       setIstAuftrag(true);
       router.push('/dashboard/auftraege/' + neuerAuftrag.id);
     } catch (e) {
@@ -703,14 +705,25 @@ export default function AngebotBearbeiten() {
             {speichern ? 'Wird gespeichert…' : 'Änderungen speichern'}
           </button>
           {!istAuftrag && (
-            <button
-              type="button"
-              onClick={handleAlsAuftrag}
-              disabled={auftragLaden}
-              className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-60 text-sm"
-            >
-              {auftragLaden ? 'Wird gespeichert…' : 'Als Auftrag markieren'}
-            </button>
+            {istAuftrag ? (
+              <button
+                type="button"
+                onClick={() => auftragId && router.push('/dashboard/auftraege/' + auftragId)}
+                disabled={!auftragId}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {auftragId ? 'Auftrag öffnen' : 'Auftrag erstellt'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAlsAuftrag}
+                disabled={auftragLaden}
+                className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
+              >
+                {auftragLaden ? 'Wird erstellt...' : 'Als Auftrag markieren'}
+              </button>
+            )}
           )}
           {istAuftrag && (
             <span className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-100">
