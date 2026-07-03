@@ -870,6 +870,32 @@ function NeueRechnungInner() {
         }
       }
 
+      // Material aus Auftrag-Katalog laden (auftrag_material)
+      if (auftragId) {
+        const { data: matPos } = await supabase
+          .from('auftrag_material')
+          .select('*, materialien(name, einheit)')
+          .eq('auftrag_id', auftragId)
+          .eq('company_id', member.company_id);
+
+        if (matPos && matPos.length > 0) {
+          const neuePosi = matPos
+            .filter(m => m.materialien?.name)
+            .map(m => ({
+              beschreibung: m.materialien.name,
+              menge:        m.menge,
+              einheit:      m.materialien.einheit || '',
+              preis:        m.einzelpreis || 0,
+            }));
+
+          setPositionen(prev => {
+            const vorhandeneBezeichnungen = new Set(prev.map(p => p.beschreibung));
+            const ohneDouble = neuePosi.filter(p => !vorhandeneBezeichnungen.has(p.beschreibung));
+            return [...prev, ...ohneDouble];
+          });
+        }
+      }
+
       setZustand('ok');
     } catch (e) {
       console.error(e);
