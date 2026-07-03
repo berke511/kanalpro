@@ -2393,7 +2393,11 @@ export default function AuftragBearbeiten() {
                       {arbeitszeitStunden ? `${arbeitszeitStunden} h` : '–'}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
+                                    <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
+                    <span className="text-gray-600">Interne Lohnkosten</span>
+                    <span className="font-medium text-gray-800">Nicht verfügbar</span>
+                  </div>
+<div className="flex justify-between text-sm border-t border-gray-100 pt-3">
                     <span className="text-gray-600">Rechnungsbetrag</span>
                     <span className="font-medium text-gray-800">
                       {rechnungen.length > 0 ? `${rechnungsbetrag.toFixed(2)} €` : '–'}
