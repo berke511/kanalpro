@@ -2377,6 +2377,12 @@ export default function AuftragBearbeiten() {
 
             const rechnungsbetrag = rechnungen.reduce((s, r) => s + (r.betrag_brutto || 0), 0);
 
+            let internLohnkosten = null;
+            if (einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at && einsatzDok?.stundensatz) {
+              const ms = new Date(einsatzDok.arbeit_beendet_at) - new Date(einsatzDok.arbeit_begonnen_at);
+              internLohnkosten = (ms / 1000 / 3600) * einsatzDok.stundensatz;
+            }
+
             return (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="font-semibold text-gray-700 mb-4">Auftragsergebnis</h3>
