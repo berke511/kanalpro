@@ -3,9 +3,9 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    KONFIGURATION
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const EINSATZ_STATUS = ['Unterwegs', 'Vor Ort', 'In Arbeit', 'Arbeit beendet', 'Dokumentiert'];
 
@@ -26,32 +26,32 @@ const FOTO_KATEGORIEN = [
   { key: 'sonstige', label: 'Sonstige', color: 'bg-gray-100 text-gray-600'   },
 ];
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    HILFSFUNKTIONEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function fmtDatum(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â';
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function fmtZeit(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â';
   try { return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); } catch { return iso; }
 }
 
 function nowIso() { return new Date().toISOString(); }
 
 function minZuHM(min) {
-  if (min == null || isNaN(min)) return '—';
+  if (min == null || isNaN(min)) return 'â';
   const h = Math.floor(Math.abs(min) / 60);
   const m = Math.abs(min) % 60;
   return `${h}h ${m}min`;
 }
 
 function kundeAnzeigeName(k) {
-  if (!k) return '—';
-  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? '—') : (k.name ?? '—');
+  if (!k) return 'â';
+  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? 'â') : (k.name ?? 'â');
 }
 
 function statusTimestampKey(status) {
@@ -65,9 +65,9 @@ function statusTimestampKey(status) {
   return map[status] ?? null;
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    BASIS-KOMPONENTEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Svg({ d, cls = 'w-4 h-4' }) {
   return (
@@ -151,21 +151,21 @@ function Skeleton() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-8 h-8 text-blue-500 animate-spin" />
-        <p className="text-sm text-gray-400">Wird geladen…</p>
+        <p className="text-sm text-gray-400">Wird geladenâ¦</p>
       </div>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 1 – AUFTRAGSINFORMATIONEN
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 1 â AUFTRAGSINFORMATIONEN
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function InfoZeile({ label, value, multi }) {
   return (
     <div>
       <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</dt>
-      <dd className={`text-sm font-medium text-gray-800 ${multi ? 'whitespace-pre-wrap' : ''}`}>{value || '—'}</dd>
+      <dd className={`text-sm font-medium text-gray-800 ${multi ? 'whitespace-pre-wrap' : ''}`}>{value || 'â'}</dd>
     </div>
   );
 }
@@ -182,11 +182,11 @@ function AuftragInfoSektion({ auftrag }) {
       />
       <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
         <InfoZeile label="Kunde" value={kundeAnzeigeName(kd)} />
-        <InfoZeile label="Auftragsart" value={auftrag.typ ?? '—'} />
-        <InfoZeile label="Adresse" value={auftrag.adresse ?? auftrag.einsatzort ?? '—'} />
+        <InfoZeile label="Auftragsart" value={auftrag.typ ?? 'â'} />
+        <InfoZeile label="Adresse" value={auftrag.adresse ?? auftrag.einsatzort ?? 'â'} />
         <InfoZeile label="Einsatzdatum" value={fmtDatum(auftrag.einsatzdatum)} />
-        <InfoZeile label="Startzeit" value={auftrag.startzeit ?? '—'} />
-        <InfoZeile label="Priorität" value={auftrag.prioritaet ?? '—'} />
+        <InfoZeile label="Startzeit" value={auftrag.startzeit ?? 'â'} />
+        <InfoZeile label="PrioritÃ¤t" value={auftrag.prioritaet ?? 'â'} />
         {auftrag.beschreibung && (
           <div className="sm:col-span-2">
             <InfoZeile label="Beschreibung" value={auftrag.beschreibung} multi />
@@ -199,19 +199,19 @@ function AuftragInfoSektion({ auftrag }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 2 – FORTSCHRITT
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 2 â FORTSCHRITT
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function FortschrittSektion({ dok, material, fotos }) {
   const checks = [
     { label: 'Status gesetzt',           ok: !!dok?.einsatz_status },
-    { label: 'Tätigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
+    { label: 'TÃ¤tigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
     { label: 'Material erfasst',         ok: dok?.kein_material_verwendet || material.length > 0 },
     { label: 'Arbeitszeiten erfasst',    ok: !!dok?.arbeit_start && !!dok?.arbeit_ende },
     { label: 'Mindestens 1 Foto',        ok: fotos.length > 0 },
     { label: 'Kundenunterschrift',       ok: !!dok?.unterschrift_base64 },
-    { label: 'Prüfliste ausgefüllt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
+    { label: 'PrÃ¼fliste ausgefÃ¼llt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
   ];
 
   const done = checks.filter(c => c.ok).length;
@@ -252,11 +252,11 @@ function FortschrittSektion({ dok, material, fotos }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 3 – EINSATZSTATUS
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 3 â EINSATZSTATUS
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
+function EinsatzStatusSektion({ dok, onStatusChange, saving, gesperrt }) {
   const aktuellerStatus = dok?.einsatz_status ?? null;
   const aktIdx = EINSATZ_STATUS.indexOf(aktuellerStatus);
 
@@ -281,7 +281,7 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
                   <span className={`w-1.5 h-1.5 rounded-full ${done ? cfg.dot : 'bg-gray-300'}`} />
                   {s}
                   {done && dok?.[tsKey] && (
-                    <span className="opacity-60">· {fmtZeit(dok[tsKey])}</span>
+                    <span className="opacity-60">Â· {fmtZeit(dok[tsKey])}</span>
                   )}
                 </div>
                 {i < EINSATZ_STATUS.length - 1 && (
@@ -302,7 +302,7 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
             const cfg = STATUS_CFG[s];
             return (
               <button key={s} onClick={() => !istAktuell && onStatusChange(s)}
-                disabled={istAktuell || saving}
+                disabled={istAktuell || saving || gesperrt}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition
                   ${istAktuell
                     ? `${cfg.bg} ${cfg.text} border ${cfg.border} cursor-default`
@@ -310,7 +310,7 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
                 {saving && (istNaechster || istErster)
                   ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
                   : null}
-                {istAktuell ? `✓ ${s}` : `→ ${s}`}
+                {istAktuell ? `â ${s}` : `â ${s}`}
               </button>
             );
           })}
@@ -320,25 +320,25 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 4 – TÄTIGKEITSDOKUMENTATION
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 4 â TÃTIGKEITSDOKUMENTATION
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function TaetigkeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
   const felder = [
-    { key: 'durchgefuehrte_arbeiten', label: 'Durchgeführte Arbeiten *', placeholder: 'Was wurde gemacht?', rows: 4, required: true },
-    { key: 'festgestellter_schaden',  label: 'Festgestellter Schaden',   placeholder: 'Schäden, Mängel…',    rows: 2 },
-    { key: 'ursache',                 label: 'Ursache',                   placeholder: 'Ursache des Problems…', rows: 2 },
-    { key: 'massnahmen',              label: 'Maßnahmen',                 placeholder: 'Ergriffene Maßnahmen…', rows: 2 },
-    { key: 'empfehlung',              label: 'Empfehlung an Kunden',      placeholder: 'Weitere Empfehlungen…', rows: 2 },
-    { key: 'interne_notiz',           label: 'Interne Notiz',             placeholder: 'Interne Hinweise…',     rows: 2, internal: true },
+    { key: 'durchgefuehrte_arbeiten', label: 'DurchgefÃ¼hrte Arbeiten *', placeholder: 'Was wurde gemacht?', rows: 4, required: true },
+    { key: 'festgestellter_schaden',  label: 'Festgestellter Schaden',   placeholder: 'SchÃ¤den, MÃ¤ngelâ¦',    rows: 2 },
+    { key: 'ursache',                 label: 'Ursache',                   placeholder: 'Ursache des Problemsâ¦', rows: 2 },
+    { key: 'massnahmen',              label: 'MaÃnahmen',                 placeholder: 'Ergriffene MaÃnahmenâ¦', rows: 2 },
+    { key: 'empfehlung',              label: 'Empfehlung an Kunden',      placeholder: 'Weitere Empfehlungenâ¦', rows: 2 },
+    { key: 'interne_notiz',           label: 'Interne Notiz',             placeholder: 'Interne Hinweiseâ¦',     rows: 2, internal: true },
   ];
 
   return (
     <Karte>
       <KarteHeader
         icon="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-        title="Tätigkeitsdokumentation"
+        title="TÃ¤tigkeitsdokumentation"
         subtitle="Was wurde getan?"
       />
       <div className="px-5 py-4 space-y-4">
@@ -362,18 +362,18 @@ function TaetigkeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
             <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
             Speichern
           </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Gespeichert</span>}
+          {gespeichert && <span className="text-xs text-green-600 font-medium">â Gespeichert</span>}
         </div>
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 5 – MATERIAL
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 5 â MATERIAL
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMaterial, saving }) {
+function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMaterial, saving, gesperrt }) {
   const [neu, setNeu]     = useState({ bezeichnung: '', menge: '1', einheit: 'Stk.', bemerkung: '' });
   const [fehler, setFehler] = useState(false);
 
@@ -406,7 +406,7 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
                   <div key={m.id ?? i} className="flex items-start gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">{m.bezeichnung}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{m.menge} {m.einheit}{m.bemerkung ? ` · ${m.bemerkung}` : ''}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{m.menge} {m.einheit}{m.bemerkung ? ` Â· ${m.bemerkung}` : ''}</p>
                     </div>
                     <button onClick={() => onDelete(m.id ?? i)}
                       className="shrink-0 p-1.5 text-gray-300 hover:text-red-400 rounded-lg transition">
@@ -418,7 +418,7 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
             )}
 
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Position hinzufügen</p>
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Position hinzufÃ¼gen</p>
               <div>
                 <Label>Bezeichnung *</Label>
                 <input value={neu.bezeichnung}
@@ -445,10 +445,10 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
                 <input value={neu.bemerkung} onChange={e => setNeu(p => ({ ...p, bemerkung: e.target.value }))}
                   placeholder="Optional" className={inp()} />
               </div>
-              <button onClick={handleAdd} disabled={saving}
+              <button onClick={handleAdd} disabled={saving || gesperrt}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
                 <Svg d="M12 4.5v15m7.5-7.5h-15" cls="w-4 h-4" />
-                Hinzufügen
+                HinzufÃ¼gen
               </button>
             </div>
           </>
@@ -458,9 +458,9 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 6 – ARBEITSZEITEN
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 6 â ARBEITSZEITEN
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function ArbeitszeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
   function parseTime(t) {
@@ -516,16 +516,16 @@ function ArbeitszeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
             <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
             Speichern
           </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Gespeichert</span>}
+          {gespeichert && <span className="text-xs text-green-600 font-medium">â Gespeichert</span>}
         </div>
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 7 – FOTOS
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 7 â FOTOS
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted }) {
   const [uploading, setUploading] = useState(false);
@@ -594,7 +594,7 @@ function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted 
           {uploading ? (
             <div className="flex flex-col items-center gap-2 text-blue-500">
               <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-6 h-6 animate-spin" />
-              <p className="text-sm">Wird hochgeladen…</p>
+              <p className="text-sm">Wird hochgeladenâ¦</p>
             </div>
           ) : (
             <>
@@ -644,11 +644,11 @@ function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted 
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 8 – KUNDENUNTERSCHRIFT (CANVAS)
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 8 â KUNDENUNTERSCHRIFT (CANVAS)
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
+function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert, gesperrt }) {
   const canvasRef = useRef(null);
   const [drawing,  setDrawing]  = useState(false);
   const [hatZeich, setHatZeich] = useState(false);
@@ -726,7 +726,7 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
           <div className="flex items-center justify-between mb-1.5">
             <Label>Unterschrift</Label>
             {hatZeich && (
-              <button onClick={loeschen} className="text-xs text-red-400 hover:text-red-600 font-medium transition">Löschen</button>
+              <button onClick={loeschen} className="text-xs text-red-400 hover:text-red-600 font-medium transition">LÃ¶schen</button>
             )}
           </div>
           <div className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ touchAction: 'none' }}>
@@ -749,11 +749,11 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <BtnPrimary onClick={onSave} loading={saving} disabled={!hatZeich || !form.kundenname}>
+          <BtnPrimary onClick={onSave} loading={saving} disabled={!hatZeich || !form.kundenname || gesperrt}>
             <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
             Speichern
           </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Unterschrift gespeichert</span>}
+          {gespeichert && <span className="text-xs text-green-600 font-medium">â Unterschrift gespeichert</span>}
         </div>
         {form.unterschrift_at && (
           <p className="text-xs text-gray-400">Unterschrieben um {fmtZeit(form.unterschrift_at)}</p>
@@ -763,21 +763,21 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 9 – ABSCHLUSSPRÜFUNG
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 9 â ABSCHLUSSPRÃFUNG
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AbschlusspruefungSektion({ form, onChange }) {
   const checks = [
-    { key: 'werkzeug_vollstaendig', label: 'Werkzeug vollständig und eingepackt' },
-    { key: 'bereich_gereinigt',     label: 'Einsatzbereich gesäubert und geräumt' },
-    { key: 'kunde_informiert',      label: 'Kunden über Ergebnis informiert' },
+    { key: 'werkzeug_vollstaendig', label: 'Werkzeug vollstÃ¤ndig und eingepackt' },
+    { key: 'bereich_gereinigt',     label: 'Einsatzbereich gesÃ¤ubert und gerÃ¤umt' },
+    { key: 'kunde_informiert',      label: 'Kunden Ã¼ber Ergebnis informiert' },
   ];
   return (
     <Karte>
       <KarteHeader
         icon="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"
-        title="Abschlussprüfung"
+        title="AbschlussprÃ¼fung"
         subtitle="Checkliste vor Abschluss"
       />
       <div className="px-5 py-4 space-y-2">
@@ -795,17 +795,17 @@ function AbschlusspruefungSektion({ form, onChange }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 10 – DOKUMENTATION ABSCHLIESSEN
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 10 â DOKUMENTATION ABSCHLIESSEN
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
-function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler }) {
+function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler, gesperrt }) {
   const checks = [
     { label: 'Status gesetzt',           ok: !!dok?.einsatz_status },
-    { label: 'Tätigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
+    { label: 'TÃ¤tigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
     { label: 'Material erfasst',         ok: dok?.kein_material_verwendet || material.length > 0 },
     { label: 'Arbeitszeiten erfasst',    ok: !!dok?.arbeit_start && !!dok?.arbeit_ende },
-    { label: 'Prüfliste ausgefüllt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
+    { label: 'PrÃ¼fliste ausgefÃ¼llt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
   ];
   const allOk        = checks.every(c => c.ok);
   const abgeschlossen = dok?.status === 'dokumentiert';
@@ -814,11 +814,11 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
     <Karte className={abgeschlossen ? 'border-green-200' : ''}>
       <KarteHeader
         icon="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-        title="Dokumentation abschließen"
-        subtitle={abgeschlossen ? 'Einsatz abgeschlossen ✓' : 'Einsatzbericht finalisieren'}
+        title="Dokumentation abschlieÃen"
+        subtitle={abgeschlossen ? 'Einsatz abgeschlossen â' : 'Einsatzbericht finalisieren'}
       />
       <div className="px-5 py-4 space-y-4">
-        {abgeschlossen ? (
+        {(abgeschlossen || gesperrt) ? (
           <div className="p-4 bg-green-50 rounded-xl border border-green-100 text-center">
             <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-8 h-8 text-green-500 mx-auto mb-2" />
             <p className="font-semibold text-green-700">Einsatzbericht abgeschlossen</p>
@@ -842,7 +842,7 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
 
             {fehler && <Alert type="error">{fehler}</Alert>}
 
-            <button onClick={onAbschliessen} disabled={saving || !allOk}
+            <button onClick={onAbschliessen} disabled={saving || !allOk || gesperrt}
               className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition
                 ${allOk
                   ? 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
@@ -850,7 +850,7 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
               {saving
                 ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-5 h-5 animate-spin" />
                 : <Svg d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" cls="w-5 h-5" />}
-              Einsatz dokumentieren & abschließen
+              Einsatz dokumentieren & abschlieÃen
             </button>
           </>
         )}
@@ -859,27 +859,27 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    HAUPT-KOMPONENTE
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function EinsatzberichtPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const auftragId    = searchParams.get('id');
 
-  // ── Core ──
+  // ââ Core ââ
   const [zustand,   setZustand]   = useState('loading');
   const [auftrag,   setAuftrag]   = useState(null);
   const [companyId, setCompanyId] = useState(null);
   const [userId,    setUserId]    = useState(null);
 
-  // ── Doku-State ──
+  // ââ Doku-State ââ
   const [dok,      setDok]      = useState(null);
   const [material, setMaterial] = useState([]);
   const [fotos,    setFotos]    = useState([]);
 
-  // ── Formular-States ──
+  // ââ Formular-States ââ
   const [taetForm, setTaetForm] = useState({
     durchgefuehrte_arbeiten: '', festgestellter_schaden: '',
     ursache: '', massnahmen: '', empfehlung: '', interne_notiz: '',
@@ -891,15 +891,16 @@ function EinsatzberichtPageInner() {
     kunde_informiert: false, kein_material_verwendet: false,
   });
 
-  // ── UI ──
+  // ââ UI ââ
   const [saving,         setSaving]         = useState(false);
+  const gesperrt = auftrag?.gesperrt ?? false;
   const [taetSaved,      setTaetSaved]      = useState(false);
   const [zeitSaved,      setZeitSaved]      = useState(false);
   const [unterschrSaved, setUnterschrSaved] = useState(false);
   const [abschlFehler,   setAbschlFehler]   = useState('');
   const [globalErr,      setGlobalErr]      = useState('');
 
-  // ── Auftrag-Material ──
+  // ââ Auftrag-Material ââ
   const [materialListe,   setMaterialListe]   = useState([]);
   const [auftragMaterial, setAuftragMaterial] = useState([]);
   const [matForm,         setMatForm]         = useState({ material_id: '', menge: '' });
@@ -907,7 +908,7 @@ function EinsatzberichtPageInner() {
   const [matLaden,        setMatLaden]        = useState(false);
   const [matDialog,       setMatDialog]       = useState(false);
 
-  /* ── Daten laden ── */
+  /* ââ Daten laden ââ */
   const ladeDaten = useCallback(async () => {
     if (!auftragId) { setZustand('not_found'); return; }
     try {
@@ -997,7 +998,7 @@ function EinsatzberichtPageInner() {
 
       setZustand('ok');
 
-      // Materialliste für Dropdown
+      // Materialliste fÃ¼r Dropdown
       const { data: matList } = await supabase
         .from('materialien')
         .select('id, name, bestand_aktuell, einheit, einzelpreis')
@@ -1005,7 +1006,7 @@ function EinsatzberichtPageInner() {
         .order('name');
       setMaterialListe(matList || []);
 
-      // Bereits gebuchtes Material für diesen Auftrag
+      // Bereits gebuchtes Material fÃ¼r diesen Auftrag
       const { data: amList } = await supabase
         .from('auftrag_material')
         .select('*, materialien(name, einheit)')
@@ -1021,7 +1022,7 @@ function EinsatzberichtPageInner() {
 
   useEffect(() => { ladeDaten(); }, [ladeDaten]);
 
-  /* ── Dok holen oder anlegen ── */
+  /* ââ Dok holen oder anlegen ââ */
   async function getDokId() {
     if (dok?.id) return dok.id;
     const { data, error } = await supabase
@@ -1047,7 +1048,7 @@ function EinsatzberichtPageInner() {
     return data;
   }
 
-  /* ── Handler ── */
+  /* ââ Handler ââ */
   async function handleStatusChange(neuerStatus) {
     setSaving(true);
     try {
@@ -1139,22 +1140,22 @@ function EinsatzberichtPageInner() {
       });
       setAuftrag(p => ({ ...p, status: 'abgeschlossen', gesperrt: true }));
     } catch (e) {
-      setAbschlFehler(e.message ?? 'Fehler beim Abschließen');
+      setAbschlFehler(e.message ?? 'Fehler beim AbschlieÃen');
     }
     setSaving(false);
   }
 
-  /* ── Material auf Auftrag buchen ── */
+  /* ââ Material auf Auftrag buchen ââ */
   async function materialBuchen(e) {
     e.preventDefault();
     setMatFehler('');
     const menge = Number(matForm.menge);
-    if (!matForm.material_id) { setMatFehler('Bitte Material wählen.'); return; }
-    if (!menge || menge <= 0) { setMatFehler('Bitte eine gültige Menge eingeben.'); return; }
+    if (!matForm.material_id) { setMatFehler('Bitte Material wÃ¤hlen.'); return; }
+    if (!menge || menge <= 0) { setMatFehler('Bitte eine gÃ¼ltige Menge eingeben.'); return; }
 
     const mat = materialListe.find(m => m.id === matForm.material_id);
     if (!mat) { setMatFehler('Material nicht gefunden.'); return; }
-    if (menge > mat.bestand_aktuell) { setMatFehler('Nicht genügend Bestand vorhanden.'); return; }
+    if (menge > mat.bestand_aktuell) { setMatFehler('Nicht genÃ¼gend Bestand vorhanden.'); return; }
 
     setMatLaden(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -1197,7 +1198,7 @@ function EinsatzberichtPageInner() {
     setMatLaden(false);
   }
 
-  /* ── Render-Guards ── */
+  /* ââ Render-Guards ââ */
   if (zustand === 'loading') return <Skeleton />;
 
   if (zustand === 'forbidden') return (
@@ -1205,7 +1206,7 @@ function EinsatzberichtPageInner() {
       <div className="text-center">
         <Svg d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z" cls="w-10 h-10 text-red-300 mx-auto mb-3" />
         <h2 className="font-semibold text-gray-700 mb-1">Kein Zugriff</h2>
-        <p className="text-sm text-gray-400 mb-4">Sie haben keine Berechtigung für diese Seite.</p>
+        <p className="text-sm text-gray-400 mb-4">Sie haben keine Berechtigung fÃ¼r diese Seite.</p>
         <button onClick={() => router.push('/dashboard')} className="text-sm text-blue-600 font-medium hover:underline">Zum Dashboard</button>
       </div>
     </div>
@@ -1217,14 +1218,27 @@ function EinsatzberichtPageInner() {
         <Svg d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" cls="w-10 h-10 text-gray-200 mx-auto mb-3" />
         <h2 className="font-semibold text-gray-700 mb-1">Auftrag nicht gefunden</h2>
         <p className="text-sm text-gray-400 mb-4">{!auftragId ? 'Keine Auftrags-ID angegeben.' : `Auftrag nicht gefunden.`}</p>
-        <button onClick={() => router.push('/dashboard/auftraege')} className="text-sm text-blue-600 font-medium hover:underline">Zur Auftragsübersicht</button>
+        <button onClick={() => router.push('/dashboard/auftraege')} className="text-sm text-blue-600 font-medium hover:underline">Zur AuftragsÃ¼bersicht</button>
       </div>
     </div>
   );
 
-  /* ── Hauptansicht ── */
+  /* ââ Hauptansicht ââ */
   return (
     <div className="min-h-screen bg-gray-50">
+      {gesperrt && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+          <span className="text-green-600 text-xl">✓</span>
+          <div>
+            <p className="font-semibold text-green-800">Einsatzbericht abgeschlossen</p>
+            <p className="text-sm text-green-700">
+              {auftrag?.abschluss_datum
+                ? new Date(auftrag.abschluss_datum).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : ''}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Sticky Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -1235,7 +1249,7 @@ function EinsatzberichtPageInner() {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold text-gray-900 truncate">Einsatz & Dokumentation</h1>
             <p className="text-xs text-gray-400 truncate">
-              {auftrag?.typ ?? 'Auftrag'} · #{auftrag?.auftragsnummer ?? auftragId?.slice(0, 8)}
+              {auftrag?.typ ?? 'Auftrag'} Â· #{auftrag?.auftragsnummer ?? auftragId?.slice(0, 8)}
             </p>
           </div>
           {dok?.status === 'dokumentiert' && (
@@ -1261,6 +1275,7 @@ function EinsatzberichtPageInner() {
           dok={dok}
           onStatusChange={handleStatusChange}
           saving={saving}
+          gesperrt={gesperrt}
         />
 
         <TaetigkeitenSektion
@@ -1278,9 +1293,10 @@ function EinsatzberichtPageInner() {
           keinMaterial={abschlForm.kein_material_verwendet}
           onKeinMaterial={handleKeinMaterial}
           saving={saving}
+          gesperrt={gesperrt}
         />
 
-        {/* ── Auftrag-Material ── */}
+        {/* ââ Auftrag-Material ââ */}
         <div className="mt-4">
           {auftragMaterial.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-4 mb-3">
@@ -1288,9 +1304,9 @@ function EinsatzberichtPageInner() {
               <ul className="space-y-1">
                 {auftragMaterial.map(am => (
                   <li key={am.id} className="flex justify-between text-sm text-gray-700 border-b border-gray-100 pb-1 last:border-0">
-                    <span>{am.materialien?.name} — {am.menge} {am.einheit || ''}</span>
+                    <span>{am.materialien?.name} â {am.menge} {am.einheit || ''}</span>
                     {am.gesamtpreis != null && (
-                      <span className="text-gray-500">{am.gesamtpreis.toFixed(2)} €</span>
+                      <span className="text-gray-500">{am.gesamtpreis.toFixed(2)} â¬</span>
                     )}
                   </li>
                 ))}
@@ -1298,7 +1314,7 @@ function EinsatzberichtPageInner() {
               {auftragMaterial.some(am => am.gesamtpreis != null) && (
                 <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-sm font-medium">
                   <span>Materialkosten gesamt</span>
-                  <span>{auftragMaterial.reduce((s, am) => s + (am.gesamtpreis || 0), 0).toFixed(2)} €</span>
+                  <span>{auftragMaterial.reduce((s, am) => s + (am.gesamtpreis || 0), 0).toFixed(2)} â¬</span>
                 </div>
               )}
             </div>
@@ -1306,22 +1322,22 @@ function EinsatzberichtPageInner() {
 
           <button onClick={() => setMatDialog(true)}
             className="w-full py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-colors">
-            + Material hinzufügen
+            + Material hinzufÃ¼gen
           </button>
         </div>
 
-        {/* ── Material-Dialog ── */}
+        {/* ââ Material-Dialog ââ */}
         {matDialog && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-lg p-5 w-full max-w-sm">
-              <h3 className="font-semibold text-gray-800 mb-4">Material auswählen</h3>
+              <h3 className="font-semibold text-gray-800 mb-4">Material auswÃ¤hlen</h3>
               <form onSubmit={materialBuchen} className="space-y-3">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Material</label>
                   <select value={matForm.material_id}
                     onChange={e => setMatForm(p => ({ ...p, material_id: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" required>
-                    <option value="">— bitte wählen —</option>
+                    <option value="">â bitte wÃ¤hlen â</option>
                     {materialListe.map(m => (
                       <option key={m.id} value={m.id}>
                         {m.name} (Bestand: {m.bestand_aktuell} {m.einheit || ''})
@@ -1342,9 +1358,9 @@ function EinsatzberichtPageInner() {
                     className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                     Abbrechen
                   </button>
-                  <button type="submit" disabled={matLaden}
+                  <button type="submit" disabled={matLaden || gesperrt}
                     className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-                    {matLaden ? 'Wird gebucht…' : 'Buchen'}
+                    {matLaden ? 'Wird gebuchtâ¦' : 'Buchen'}
                   </button>
                 </div>
               </form>
@@ -1374,6 +1390,7 @@ function EinsatzberichtPageInner() {
           onSave={saveUnterschrift}
           saving={saving}
           gespeichert={unterschrSaved}
+          gesperrt={gesperrt}
         />
 
         <AbschlusspruefungSektion
@@ -1388,6 +1405,7 @@ function EinsatzberichtPageInner() {
           onAbschliessen={handleAbschliessen}
           saving={saving}
           fehler={abschlFehler}
+          gesperrt={gesperrt}
         />
 
         <div className="h-8" />
