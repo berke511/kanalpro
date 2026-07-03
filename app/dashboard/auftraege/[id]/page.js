@@ -1322,6 +1322,7 @@ export default function AuftragBearbeiten() {
   const [rechnungen,     setRechnungen]     = useState([]);
   const [aktivitaeten,   setAktivitaeten]   = useState([]);
 
+  const [auftragMaterial, setAuftragMaterial] = useState([]);
   const rechte = useMemo(() => berechneRechte(userRolle), [userRolle]);
 
   const ladeDaten = useCallback(async () => {
@@ -1361,6 +1362,7 @@ export default function AuftragBearbeiten() {
         { data: fotosData },
         { data: rechnungenData },
         { data: aktivitaetenData },
+        { data: amData },
       ] = await Promise.all([
         supabase
           .from('auftraege')
@@ -1417,6 +1419,12 @@ export default function AuftragBearbeiten() {
           .eq('auftrag_id', id)
           .eq('company_id', member.company_id)
           .order('erstellt_am', { ascending: false }),
+        supabase
+          .from('auftrag_material')
+          .select('*, materialien(name, einheit)')
+          .eq('auftrag_id', id)
+          .eq('company_id', member.company_id)
+          .order('created_at', { ascending: false }),
       ]);
 
       if (auftragErr || !auftragData) { setZustand('not_found'); return; }
@@ -1428,6 +1436,7 @@ export default function AuftragBearbeiten() {
       setEinsatzMat(matData ?? []);
       setEinsatzFotos(fotosData ?? []);
       setRechnungen(rechnungenData ?? []);
+      setAuftragMaterial(amData || []);
       setAktivitaeten(aktivitaetenData ?? []);
       setZustand('ok');
     } catch {
@@ -1752,6 +1761,43 @@ export default function AuftragBearbeiten() {
               </Karte>
             );
           })()}
+          {/* ── Materialkosten ── */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+            <h3 className="font-semibold text-gray-700 mb-4">Materialkosten</h3>
+            {auftragMaterial.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500 mb-3">Für diesen Auftrag wurde noch kein Material erfasst.</p>
+                <a href={`/dashboard/auftraege/${id}/einsatzbericht`}
+                  className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">
+                  Einsatzbericht öffnen
+                </a>
+              </div>
+            ) : (
+              <>
+                <ul className="space-y-2 mb-4">
+                  {auftragMaterial.map(am => (
+                    <li key={am.id} className="flex items-start justify-between text-sm border-b border-gray-100 pb-2 last:border-0">
+                      <div>
+                        <p className="font-medium text-gray-800">{am.materialien?.name || '–'}</p>
+                        <p className="text-xs text-gray-500">{am.menge} {am.einheit || ''}{am.einzelpreis != null ? ` × ${am.einzelpreis.toFixed(2)} €` : ''}</p>
+                      </div>
+                      {am.gesamtpreis != null && (
+                        <span className="text-sm font-medium text-gray-700 ml-4 whitespace-nowrap">
+                          {am.gesamtpreis.toFixed(2)} €
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {auftragMaterial.some(am => am.gesamtpreis != null) && (
+                  <div className="flex justify-between text-sm font-semibold border-t border-gray-200 pt-3">
+                    <span>Materialkosten gesamt</span>
+                    <span>{auftragMaterial.reduce((s, am) => s + (am.gesamtpreis || 0), 0).toFixed(2)} €</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Linke Spalte (2/3) */}
