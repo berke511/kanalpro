@@ -4,16 +4,14 @@ import { useRouter, useParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'uebersicht', label: 'Übersicht' },
   { id: 'stammdaten', label: 'Stammdaten' },
-  { id: 'bestand',    label: 'Bestand' },
-  { id: 'lagerort',   label: 'Lagerort' },
-  { id: 'historie',   label: 'Historie' },
+  { id: 'bestand', label: 'Bestand' },
+  { id: 'lagerort', label: 'Lagerort' },
+  { id: 'historie', label: 'Historie' },
 ];
 
-// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return null;
   return new Date(d).toLocaleDateString('de-DE');
@@ -30,10 +28,9 @@ function Icon({ d, className = 'w-5 h-5' }) {
 
 const ICONS = {
   back: 'M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18',
-  box:  'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z',
+  box: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z',
 };
 
-// ── Karten-Hilfskomponente ────────────────────────────────────────────────────
 function InfoCard({ title, children }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -64,25 +61,27 @@ function FelderGrid({ felder }) {
   );
 }
 
-// ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function MaterialDetailPage() {
-  const router  = useRouter();
-  const { id }  = useParams();
+  const router = useRouter();
+  const { id } = useParams();
 
-  const [material,  setMaterial]  = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [material, setMaterial] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('uebersicht');
+  const [companyId, setCompanyId] = useState(null);
+  const [bewegungen, setBewegungen] = useState([]);
+  const [buchForm, setBuchForm] = useState({ typ: 'eingang', menge: '', bemerkung: '' });
+  const [buchFehler, setBuchFehler] = useState('');
+  const [buchLaden, setBuchLaden] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    // 1) Eingeloggten User holen
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
 
-    // 2) company_id über company_members ermitteln
     const { data: member } = await supabase
       .from('company_members')
       .select('company_id')
@@ -91,7 +90,8 @@ export default function MaterialDetailPage() {
 
     if (!member) { setError('Kein Unternehmen gefunden.'); setLoading(false); return; }
 
-    // 3) Material laden
+    setCompanyId(member.company_id);
+
     const { data, error: fetchError } = await supabase
       .from('materialien')
       .select('*')
@@ -103,13 +103,58 @@ export default function MaterialDetailPage() {
       setError('Material nicht gefunden.');
     } else {
       setMaterial(data);
+      const { data: bew } = await supabase
+        .from('material_bewegungen')
+        .select('*')
+        .eq('material_id', id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setBewegungen(bew || []);
     }
     setLoading(false);
   }, [id, router]);
 
   useEffect(() => { load(); }, [load]);
 
-  // ── Ladezustand ──────────────────────────────────────────────────────────
+  async function buchung(e) {
+    e.preventDefault();
+    setBuchFehler('');
+    const menge = Number(buchForm.menge);
+    if (!menge || menge <= 0) { setBuchFehler('Bitte eine gültige Menge eingeben.'); return; }
+
+    const aktuellerBestand = Number(material.bestand_aktuell);
+    if (buchForm.typ === 'ausgang' && menge > aktuellerBestand) {
+      setBuchFehler('Nicht genügend Bestand vorhanden.'); return;
+    }
+
+    setBuchLaden(true);
+    const neuerBestand = buchForm.typ === 'eingang'
+      ? aktuellerBestand + menge
+      : aktuellerBestand - menge;
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    await supabase.from('material_bewegungen').insert({
+      company_id: companyId,
+      material_id: id,
+      typ: buchForm.typ,
+      menge,
+      bemerkung: buchForm.bemerkung || null,
+      created_by: user?.id,
+    });
+
+    await supabase.from('materialien')
+      .update({ bestand_aktuell: neuerBestand })
+      .eq('id', id);
+
+    const { data: mat } = await supabase.from('materialien').select('*').eq('id', id).single();
+    setMaterial(mat);
+    const { data: bew } = await supabase.from('material_bewegungen').select('*').eq('material_id', id).order('created_at', { ascending: false }).limit(10);
+    setBewegungen(bew || []);
+    setBuchForm({ typ: 'eingang', menge: '', bemerkung: '' });
+    setBuchLaden(false);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -126,40 +171,35 @@ export default function MaterialDetailPage() {
     );
   }
 
-  // ── Tab-Inhalte ───────────────────────────────────────────────────────────
-
-  // Übersicht: nur vorhandene Felder
   const uebersichtFelder = [
-    material.name            ? { label: 'Name',           value: material.name } : null,
-    material.typ             ? { label: 'Typ',            value: material.typ } : null,
-    material.einheit         ? { label: 'Einheit',        value: material.einheit } : null,
-    material.hersteller      ? { label: 'Hersteller',     value: material.hersteller } : null,
-    material.lagerort        ? { label: 'Lagerort',       value: material.lagerort } : null,
+    material.name ? { label: 'Name', value: material.name } : null,
+    material.typ ? { label: 'Typ', value: material.typ } : null,
+    material.einheit ? { label: 'Einheit', value: material.einheit } : null,
+    material.hersteller ? { label: 'Hersteller', value: material.hersteller } : null,
+    material.lagerort ? { label: 'Lagerort', value: material.lagerort } : null,
     material.bestand_aktuell != null ? { label: 'Bestand aktuell', value: String(material.bestand_aktuell) } : null,
-    material.mindestbestand  != null ? { label: 'Mindestbestand',  value: String(material.mindestbestand) }  : null,
-    material.ablaufdatum     ? { label: 'Ablaufdatum',    value: fmtDate(material.ablaufdatum) } : null,
-    material.zustand         ? { label: 'Zustand',        value: material.zustand } : null,
-    material.notiz           ? { label: 'Notiz',          value: material.notiz } : null,
+    material.mindestbestand != null ? { label: 'Mindestbestand', value: String(material.mindestbestand) } : null,
+    material.ablaufdatum ? { label: 'Ablaufdatum', value: fmtDate(material.ablaufdatum) } : null,
+    material.zustand ? { label: 'Zustand', value: material.zustand } : null,
+    material.notiz ? { label: 'Notiz', value: material.notiz } : null,
   ].filter(Boolean);
 
-  // Stammdaten: alle Felder
   const stammdatenFelder = [
-    { label: 'Name',           value: material.name            ?? '—' },
-    { label: 'Typ',            value: material.typ             ?? '—' },
-    { label: 'Einheit',        value: material.einheit         ?? '—' },
-    { label: 'Hersteller',     value: material.hersteller      ?? '—' },
-    { label: 'Lagerort',       value: material.lagerort        ?? '—' },
-    { label: 'Bestand',        value: material.bestand_aktuell != null ? String(material.bestand_aktuell) : '—' },
-    { label: 'Mindestbestand', value: material.mindestbestand  != null ? String(material.mindestbestand)  : '—' },
-    { label: 'Ablaufdatum',    value: fmtDate(material.ablaufdatum) ?? '—' },
-    { label: 'Zustand',        value: material.zustand         ?? '—' },
-    { label: 'Notiz',          value: material.notiz           ?? '—' },
+    { label: 'Name', value: material.name ?? '—' },
+    { label: 'Typ', value: material.typ ?? '—' },
+    { label: 'Einheit', value: material.einheit ?? '—' },
+    { label: 'Hersteller', value: material.hersteller ?? '—' },
+    { label: 'Lagerort', value: material.lagerort ?? '—' },
+    { label: 'Bestand', value: material.bestand_aktuell != null ? String(material.bestand_aktuell) : '—' },
+    { label: 'Mindestbestand', value: material.mindestbestand != null ? String(material.mindestbestand) : '—' },
+    { label: 'Ablaufdatum', value: fmtDate(material.ablaufdatum) ?? '—' },
+    { label: 'Zustand', value: material.zustand ?? '—' },
+    { label: 'Notiz', value: material.notiz ?? '—' },
   ];
 
   return (
     <div className="max-w-4xl mx-auto">
 
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-2 mb-6">
         <div className="flex items-center gap-3">
           <button
@@ -178,7 +218,6 @@ export default function MaterialDetailPage() {
         </div>
       </div>
 
-      {/* Tab-Navigation */}
       <TabNav
         id="material-tabs"
         tabs={TABS}
@@ -188,7 +227,6 @@ export default function MaterialDetailPage() {
         className="mb-6"
       />
 
-      {/* ── Tab: Übersicht ─────────────────────────────────────────────────── */}
       {activeTab === 'uebersicht' && (
         <div className="space-y-6">
           <InfoCard title="Material-Zusammenfassung">
@@ -197,7 +235,6 @@ export default function MaterialDetailPage() {
         </div>
       )}
 
-      {/* ── Tab: Stammdaten ────────────────────────────────────────────────── */}
       {activeTab === 'stammdaten' && (
         <div className="space-y-6">
           <InfoCard title="Stammdaten">
@@ -206,7 +243,6 @@ export default function MaterialDetailPage() {
         </div>
       )}
 
-      {/* ── Tab: Bestand ───────────────────────────────────────────────────── */}
       {activeTab === 'bestand' && (
         <div className="space-y-6">
           <InfoCard title="Bestand">
@@ -215,7 +251,7 @@ export default function MaterialDetailPage() {
                 <p className="text-xs text-gray-400">Bestand aktuell</p>
                 <p className="text-sm font-medium text-gray-800 mt-0.5">
                   {material.bestand_aktuell != null
-                    ? `${material.bestand_aktuell}${material.einheit ? ' ' + material.einheit : ''}`
+                    ? String(material.bestand_aktuell) + (material.einheit ? ' ' + material.einheit : '')
                     : '—'}
                 </p>
               </div>
@@ -223,16 +259,70 @@ export default function MaterialDetailPage() {
                 <p className="text-xs text-gray-400">Mindestbestand</p>
                 <p className="text-sm font-medium text-gray-800 mt-0.5">
                   {material.mindestbestand != null
-                    ? `${material.mindestbestand}${material.einheit ? ' ' + material.einheit : ''}`
+                    ? String(material.mindestbestand) + (material.einheit ? ' ' + material.einheit : '')
                     : '—'}
                 </p>
               </div>
             </div>
           </InfoCard>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+            <h3 className="font-semibold text-gray-700 mb-4">Bestandsbewegung</h3>
+            <form onSubmit={buchung} className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Typ</label>
+                <select value={buchForm.typ} onChange={e => setBuchForm(p => ({ ...p, typ: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="eingang">Wareneingang</option>
+                  <option value="ausgang">Materialentnahme</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Menge</label>
+                <input type="number" min="0.01" step="0.01" value={buchForm.menge}
+                  onChange={e => setBuchForm(p => ({ ...p, menge: e.target.value }))}
+                  placeholder="z.B. 5" required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Bemerkung (optional)</label>
+                <input type="text" value={buchForm.bemerkung}
+                  onChange={e => setBuchForm(p => ({ ...p, bemerkung: e.target.value }))}
+                  placeholder="z.B. Lieferung von Müller GmbH"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              {buchFehler && <p className="text-sm text-red-600">{buchFehler}</p>}
+              <button type="submit" disabled={buchLaden}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50">
+                {buchLaden ? 'Wird gebucht…' : 'Buchen'}
+              </button>
+            </form>
+          </div>
+
+          {bewegungen.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold text-gray-700 mb-3">Letzte Bewegungen</h3>
+              <ul className="space-y-2">
+                {bewegungen.map(b => (
+                  <li key={b.id} className="flex items-start justify-between text-sm border-b border-gray-100 pb-2 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{b.typ === 'eingang' ? '🟢' : '🔴'}</span>
+                      <div>
+                        <p className="font-medium text-gray-800">{b.typ === 'eingang' ? '+' : '-'}{b.menge} {material?.einheit || ''}</p>
+                        {b.bemerkung && <p className="text-xs text-gray-500">{b.bemerkung}</p>}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 whitespace-nowrap ml-3">
+                      {new Date(b.created_at).toLocaleDateString('de-DE')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Tab: Lagerort ──────────────────────────────────────────────────── */}
       {activeTab === 'lagerort' && (
         <div className="space-y-6">
           <InfoCard title="Lagerort">
@@ -246,7 +336,6 @@ export default function MaterialDetailPage() {
         </div>
       )}
 
-      {/* ── Tab: Historie ──────────────────────────────────────────────────── */}
       {activeTab === 'historie' && (
         <div className="space-y-6">
           <InfoCard title="Historie">
