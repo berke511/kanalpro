@@ -346,6 +346,7 @@ export default function AngebotBearbeiten() {
   const [speichern, setSpeichern]       = useState(false);
   const [deleting, setDeleting]         = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [auftragId, setAuftragId]       = useState(null);
   const [istAuftrag, setIstAuftrag]     = useState(false);
   const [auftragLaden, setAuftragLaden] = useState(false);
   const [kunden, setKunden]             = useState([]);
