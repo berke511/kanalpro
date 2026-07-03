@@ -1122,8 +1122,22 @@ function EinsatzberichtPageInner() {
     setSaving(true);
     try {
       await updateDok({ status: 'dokumentiert', dokumentiert_at: nowIso() });
-      await supabase.from('auftraege').update({ status: 'Abgeschlossen' }).eq('id', auftragId);
-      setAuftrag(p => ({ ...p, status: 'Abgeschlossen' }));
+      const jetzt = nowIso();
+      await supabase.from('auftraege').update({
+        status:                    'abgeschlossen',
+        gesperrt:                  true,
+        abschluss_datum:           jetzt,
+        abgeschlossen_von_id:      userId,
+        freigegeben_fuer_rechnung: true,
+      }).eq('id', auftragId);
+      await supabase.from('activity_log').insert({
+        company_id: companyId,
+        auftrag_id: auftragId,
+        user_id:    userId,
+        aktion:     'einsatzbericht_abgeschlossen',
+        details:    { beschreibung: 'Einsatzbericht wurde abgeschlossen' },
+      });
+      setAuftrag(p => ({ ...p, status: 'abgeschlossen', gesperrt: true }));
     } catch (e) {
       setAbschlFehler(e.message ?? 'Fehler beim Abschließen');
     }
