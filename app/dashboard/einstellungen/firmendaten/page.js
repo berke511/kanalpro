@@ -13,10 +13,16 @@ export default function Firmendaten() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await supabase
-        .from('einstellungen')
-        .select('*')
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('company_id')
         .eq('user_id', user.id)
+        .single();
+      if (!member?.company_id) return;
+      const { data } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', member.company_id)
         .maybeSingle();
       if (data) setFirma({ firmaname: data.firmaname || '', strasse: data.strasse || '', plz: data.plz || '', ort: data.ort || '' });
       setLaden(false);
@@ -28,9 +34,16 @@ export default function Firmendaten() {
     e.preventDefault();
     setFehler('');
     const { data: { user } } = await supabase.auth.getUser();
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .single();
+    if (!member?.company_id) return;
     const { error } = await supabase
-      .from('einstellungen')
-      .upsert({ user_id: user.id, ...firma }, { onConflict: 'user_id' });
+      .from('companies')
+      .update({ ...firma })
+      .eq('id', member.company_id);
     if (error) { setFehler(error.message); return; }
     setGespeichert(true);
     setTimeout(() => setGespeichert(false), 3000);
