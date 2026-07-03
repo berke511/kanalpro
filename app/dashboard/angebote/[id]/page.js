@@ -705,8 +705,7 @@ export default function AngebotBearbeiten() {
           >
             {speichern ? 'Wird gespeichert…' : 'Änderungen speichern'}
           </button>
-          {!istAuftrag && (
-            {istAuftrag ? (
+          {istAuftrag ? (
               <button
                 type="button"
                 onClick={() => auftragId && router.push('/dashboard/auftraege/' + auftragId)}
@@ -725,7 +724,6 @@ export default function AngebotBearbeiten() {
                 {auftragLaden ? 'Wird erstellt...' : 'Als Auftrag markieren'}
               </button>
             )}
-          )}
           {istAuftrag && (
             <span className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-100">
               Auftrag bestätigt
