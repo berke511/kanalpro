@@ -2418,6 +2418,14 @@ export default function AuftragBearbeiten() {
                       {rechnungen.length > 0 ? `${rechnungsbetrag.toFixed(2)} €` : '–'}
                     </span>
                   </div>
+                  <div className="flex justify-between text-sm border-t-2 border-gray-300 pt-3 mt-2">
+                    <span className="text-gray-800 font-medium">Deckungsbeitrag</span>
+                    <span className={deckungsbeitrag !== null ? (deckungsbeitrag > 0 ? 'font-semibold text-green-600' : deckungsbeitrag < 0 ? 'font-semibold text-red-600' : 'font-semibold text-gray-500') : 'font-medium text-gray-400'}>
+                      {deckungsbeitrag !== null
+                        ? '€ ' + deckungsbeitrag.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : 'Nicht vollständig berechenbar'}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
