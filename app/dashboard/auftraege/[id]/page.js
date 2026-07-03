@@ -2383,6 +2383,10 @@ export default function AuftragBearbeiten() {
               internLohnkosten = (ms / 1000 / 3600) * auftrag.einsatzleiter.stundensatz;
             }
 
+            const deckungsbeitrag = (internLohnkosten !== null && rechnungen.length > 0)
+              ? rechnungsbetrag - materialkosten - internLohnkosten
+              : null;
+
             return (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h3 className="font-semibold text-gray-700 mb-4">Auftragsergebnis</h3>
