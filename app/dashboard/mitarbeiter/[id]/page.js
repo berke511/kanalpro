@@ -35,6 +35,7 @@ const FELDER = [
     { name: 'eintrittsdatum', label: 'Eintrittsdatum',   type: 'date',   required: false },
     { name: 'position',       label: 'Position / Rolle', type: 'text',   required: false },
     { name: 'stundenlohn',    label: 'Stundenlohn (€)',  type: 'number', required: false },
+    { name: 'stundensatz', label: 'Stundensatz (€ / Stunde)', type: 'number', required: false },
   ]},
 ];
 
@@ -342,6 +343,7 @@ export default function MitarbeiterProfilPage() {
       eintrittsdatum: form.eintrittsdatum || null,
       position:       form.position.trim(),
       stundenlohn:    form.stundenlohn ? parseFloat(form.stundenlohn) : null,
+      stundensatz:    form.stundensatz ? parseFloat(form.stundensatz) : null,
       notizen:        form.notizen.trim(),
     };
 
