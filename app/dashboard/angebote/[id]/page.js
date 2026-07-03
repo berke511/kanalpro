@@ -462,17 +462,68 @@ export default function AngebotBearbeiten() {
   }
 
   async function handleAlsAuftrag() {
-    setAuftragLaden(true);
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from('angebote')
-      .update({ auftrag: true, auftrag_erstellt_am: now, status: 'angenommen' })
-      .eq('id', id);
-    if (!error) {
-      setIstAuftrag(true);
-      setForm(f => ({ ...f, status: 'angenommen' }));
+    if (istAuftrag) {
+      alert('Dieser Auftrag wurde bereits erstellt.');
+      return;
     }
-    setAuftragLaden(false);
+    setAuftragLaden(true);
+    setFehler('');
+    try {
+      // Aktuellen User laden
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // company_id laden
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      // Aktuelles Angebot aus DB laden (frische Daten)
+      const { data: ang, error: fetchErr } = await supabase
+        .from('angebote')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      // Doppelter Klick: bereits konvertiert?
+      if (ang.auftrag) { setIstAuftrag(true); return; }
+
+      // Neuen Auftrag erstellen
+      const { data: neuerAuftrag, error: auftragErr } = await supabase
+        .from('auftraege')
+        .insert({
+          company_id:  member?.company_id ?? ang.company_id ?? null,
+          user_id:     user.id,
+          kunde_id:    ang.kunden_id ?? ang.kunde_id ?? null,
+          objekt_id:   ang.objekt_id ?? null,
+          titel:       ang.titel ?? ang.betreff ?? ('Auftrag aus Angebot ' + (ang.angebotsnummer || id)),
+          beschreibung: ang.beschreibung ?? null,
+          notizen:     ang.notizen ?? null,
+          datum:       ang.datum ?? new Date().toISOString().split('T')[0],
+          adresse:     ang.adresse ?? null,
+          status:      'offen',
+          angebot_id:  id,
+          positionen:  ang.positionen ?? [],
+        })
+        .select('id')
+        .single();
+      if (auftragErr) throw auftragErr;
+
+      // Angebot erst nach erfolgreichem Auftrag aktualisieren
+      await supabase
+        .from('angebote')
+        .update({ auftrag: true, auftrag_erstellt_am: new Date().toISOString(), status: 'angenommen' })
+        .eq('id', id);
+
+      setIstAuftrag(true);
+      router.push('/dashboard/auftraege/' + neuerAuftrag.id);
+    } catch (e) {
+      setFehler('Fehler beim Erstellen des Auftrags: ' + (e.message || 'Unbekannter Fehler'));
+    } finally {
+      setAuftragLaden(false);
+    }
   }
 
   if (laden) return <p className="text-gray-400 text-sm">Wird geladen…</p>;
