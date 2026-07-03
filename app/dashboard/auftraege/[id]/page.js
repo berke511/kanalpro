@@ -2364,6 +2364,45 @@ export default function AuftragBearbeiten() {
           })()}
 
           </Karte>
+
+          {/* ── Auftragsergebnis ── */}
+          {(() => {
+            const materialkosten = auftragMaterial.reduce((s, m) => s + (m.gesamtpreis || 0), 0);
+
+            let arbeitszeitStunden = null;
+            if (einsatzDok?.arbeit_begonnen_at && einsatzDok?.arbeit_beendet_at) {
+              const ms = new Date(einsatzDok.arbeit_beendet_at) - new Date(einsatzDok.arbeit_begonnen_at);
+              arbeitszeitStunden = (ms / 1000 / 3600).toFixed(1);
+            }
+
+            const rechnungsbetrag = rechnungen.reduce((s, r) => s + (r.betrag_brutto || 0), 0);
+
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="font-semibold text-gray-700 mb-4">Auftragsergebnis</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Materialkosten</span>
+                    <span className="font-medium text-gray-800">
+                      {auftragMaterial.length > 0 ? `${materialkosten.toFixed(2)} €` : '–'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
+                    <span className="text-gray-600">Arbeitszeit</span>
+                    <span className="font-medium text-gray-800">
+                      {arbeitszeitStunden ? `${arbeitszeitStunden} h` : '–'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-gray-100 pt-3">
+                    <span className="text-gray-600">Rechnungsbetrag</span>
+                    <span className="font-medium text-gray-800">
+                      {rechnungen.length > 0 ? `${rechnungsbetrag.toFixed(2)} €` : '–'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
