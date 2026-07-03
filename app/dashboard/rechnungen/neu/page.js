@@ -976,40 +976,55 @@ function NeueRechnungInner() {
   /* ── E-Mail versenden ── */
   async function handleEmailVersenden() {
     const empfaenger = kundeObj?.email || form.email_manuell || '';
-    if (!empfaenger) { setFehler('Keine E-Mail-Adresse des Kunden hinterlegt.'); return; }
-
-    setEmailSend(true);
+    if (!empfaenger) { setFehler('Keine E-Mail-Adresse hinterlegt.'); return; }
+    setPdfLaden(true);
+    setFehler('');
     try {
-      // PDF erstellen und als Blob öffnen
       const { doc, nr, brutto } = await generatePDF({ firma, kunde: kundeObj, form, positionen, logoUrl, rechnungsnummer: rechnungsNr, auftrag });
-
-      // Versanddatum speichern (falls bereits gespeichert)
+      // PDF → base64
+      const ab = doc.output('arraybuffer');
+      const bytes = new Uint8Array(ab);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const pdf_base64 = btoa(binary);
+      // E-Mail-Inhalte
+      const betreff = `Rechnung ${rechnungsNr}`;
+      const emailHtml = [
+        '<p>Sehr geehrte Damen und Herren,</p>',
+        `<p>anbei erhalten Sie Rechnung <strong>${rechnungsNr}</strong> über <strong>${fmtEuro(brutto)}</strong>.</p>`,
+        '<p>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</p>',
+        `<p>${firma?.bank_name || ''}<br>IBAN: ${firma?.iban || ''}<br>BIC: ${firma?.bic || ''}<br>Verwendungszweck: ${rechnungsNr}</p>`,
+        `<p>Mit freundlichen Grüßen,<br>${firma?.name || ''}</p>`,
+      ].join('');
+      // API-Call
+      const res = await fetch('/api/send-dokument', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: empfaenger,
+          subject: betreff,
+          body: emailHtml,
+          pdf_base64,
+          filename: `Rechnung_${rechnungsNr}.pdf`,
+          dokument_typ: 'rechnung',
+          dokument_id: gespeichert,
+        }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Versand fehlgeschlagen');
+      // DB-Update: Versandstatus
       if (gespeichert) {
         await supabase.from('rechnungen').update({
-          status:        'versendet',
-          versand_datum: new Date().toISOString(),
-          versendet_an:  empfaenger,
+          status: 'versendet',
+          versendet_an: empfaenger,
         }).eq('id', gespeichert);
-        setErfolg('Rechnung als versendet markiert.');
       }
-
-      // Mailto-Link öffnen
-      const betreff = encodeURIComponent(`Ihre Rechnung ${rechnungsNr} – ${firma.firmenname || 'KanalPro'}`);
-      const body    = encodeURIComponent(
-        `Sehr geehrte Damen und Herren,\n\n` +
-        `anbei erhalten Sie Ihre Rechnung ${rechnungsNr} über ${fmtEuro(brutto)}.\n` +
-        `Bitte überweisen Sie den Betrag bis zum ${fmtDatum(form.faellig_am)}.\n\n` +
-        `Mit freundlichen Grüßen\n${firma.firmenname || 'Ihr Unternehmen'}\n\n` +
-        `--- Bitte Rechnung als PDF an diese E-Mail anhängen ---`
-      );
-      window.open(`mailto:${empfaenger}?subject=${betreff}&body=${body}`, '_blank');
-
-      // PDF auch herunterladen damit es angehängt werden kann
-      doc.save(`Rechnung_${rechnungsNr}.pdf`);
+      setErfolg('Rechnung erfolgreich per E-Mail versendet.');
     } catch (e) {
-      setFehler('Versand fehlgeschlagen: ' + e.message);
+      setFehler('E-Mail-Versand fehlgeschlagen: ' + e.message);
+    } finally {
+      setPdfLaden(false);
     }
-    setEmailSend(false);
   }
 
   /* ── Render-Guards ── */
