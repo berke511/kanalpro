@@ -1,4 +1,5 @@
 'use client';
+import { generateAngebotPDF } from '@/lib/generateAngebotPDF';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -76,10 +77,55 @@ export default function AngeboteEmailVersand() {
     );
   }, [emailSelectedId, angebote]);
 
-function handleMailto() {
-const href = 'mailto:' + encodeURIComponent(emailEmpfaenger) + '?subject=' + encodeURIComponent(emailBetreff) + '&body=' + encodeURIComponent(emailNachricht);
-window.location.href = href;
-}
+const [fehler, setFehler] = useState('');
+  const [erfolg, setErfolg] = useState(false);
+
+  async function handleEmailVersenden() {
+    if (!emailSelectedId) { setFehler('Kein Angebot ausgewählt.'); return; }
+    if (!emailEmpfaenger) { setFehler('Keine Empfänger-E-Mail-Adresse.'); return; }
+    setLaden(true);
+    setFehler('');
+    setErfolg(false);
+    try {
+      // Selected angebot (already loaded in state)
+      const angebotObj = angebote.find(a => a.id === emailSelectedId);
+      if (!angebotObj) throw new Error('Angebot nicht gefunden.');
+      // Load company data on demand
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
+      const { data: comp }   = await supabase.from('companies').select('*').eq('id', member.company_id).single();
+      // Generate PDF
+      const doc = await generateAngebotPDF({ angebot: angebotObj, company: comp });
+      // PDF → base64
+      const ab = doc.output('arraybuffer');
+      const bytes = new Uint8Array(ab);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const pdf_base64 = btoa(binary);
+      const nr = angebotObj.angebotsnummer || angebotObj.id;
+      // API-Call
+      const res = await fetch('/api/send-dokument', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailEmpfaenger,
+          subject: emailBetreff,
+          body: emailNachricht,
+          pdf_base64,
+          filename: `Angebot_${nr}.pdf`,
+          dokument_typ: 'angebot',
+          dokument_id: emailSelectedId,
+        }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Versand fehlgeschlagen');
+      setErfolg(true);
+    } catch (e) {
+      setFehler('E-Mail-Versand fehlgeschlagen: ' + e.message);
+    } finally {
+      setLaden(false);
+    }
+  }
 
   return (
     <div className="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
@@ -174,7 +220,7 @@ window.location.href = href;
 
                 {/* Senden-Button */}
                 <button
-                  onClick={handleMailto}
+                  onClick={handleEmailVersenden}
                   disabled={!emailSelectedId || !emailEmpfaenger.trim()}
                   className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
