@@ -2426,6 +2426,14 @@ export default function AuftragBearbeiten() {
                         : 'Nicht vollständig berechenbar'}
                     </span>
                   </div>
+                  <div className="border-t-2 border-gray-300 pt-3 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 font-medium">Bewertung</span>
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${deckungsbeitrag === null ? 'bg-gray-100 text-gray-500' : deckungsbeitrag > 0 ? 'bg-green-100 text-green-700' : deckungsbeitrag < 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {deckungsbeitrag === null ? '⚪ Bewertung derzeit nicht möglich' : deckungsbeitrag > 0 ? '🟢 Positiver Deckungsbeitrag' : deckungsbeitrag < 0 ? '🔴 Negativer Deckungsbeitrag' : '⚪ Kostendeckend'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
