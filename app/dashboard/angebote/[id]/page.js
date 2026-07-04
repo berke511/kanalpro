@@ -349,6 +349,7 @@ export default function AngebotBearbeiten() {
   const [auftragId, setAuftragId]       = useState(null);
   const [istAuftrag, setIstAuftrag]     = useState(false);
   const [auftragLaden, setAuftragLaden] = useState(false);
+  const [companyId, setCompanyId] = useState(null);
   const [kunden, setKunden]             = useState([]);
   const [form, setForm] = useState({
     kunden_id: '',
@@ -382,17 +383,18 @@ export default function AngebotBearbeiten() {
         .eq('user_id', user.id)
         .single();
       if (!member) return;
+      setCompanyId(member.company_id);
 
       const [{ data: kundenData }, { data: angebot }, { data: co }] = await Promise.all([
         supabase.from('kunden').select('id, name').eq('company_id', member.company_id).order('name'),
-        supabase.from('angebote').select('*').eq('id', id).single(),
+        supabase.from('angebote').select('*').eq('id', id).eq('company_id', member.company_id).single(),
         supabase.from('companies').select('logo_url').eq('id', member.company_id).single(),
       ]);
       setLogoUrl(co?.logo_url ?? null);
 
       setKunden(kundenData ?? []);
 
-      if (!angebot) { router.push('/dashboard/angebote'); return; }
+      if (!angebot) { setFehler('Nicht gefunden oder kein Zugriff.'); setLaden(false); return; }
       setForm({
         kunden_id:  angebot.kunden_id  ?? '',
         datum:      angebot.datum      ?? new Date().toISOString().split('T')[0],
@@ -451,7 +453,7 @@ export default function AngebotBearbeiten() {
       status:     form.status,
       positionen,
       notizen:    form.notizen || null,
-    }).eq('id', id);
+    }).eq('id', id).eq('company_id', companyId);
     setSpeichern(false);
     if (error) { setFehler('Fehler: ' + error.message); return; }
     router.push('/dashboard/angebote');
@@ -459,7 +461,7 @@ export default function AngebotBearbeiten() {
 
   async function onDelete() {
     setDeleting(true);
-    await supabase.from('angebote').delete().eq('id', id);
+    await supabase.from('angebote').delete().eq('id', id).eq('company_id', companyId);
     router.push('/dashboard/angebote');
   }
 
