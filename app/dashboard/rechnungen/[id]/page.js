@@ -363,16 +363,18 @@ export default function RechnungBearbeiten() {
   const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
   const [pdfLaden, setPdfLaden] = useState(false);
   const [rechnungsnummer, setRechnungsnummer] = useState('');
+  const [companyId, setCompanyId] = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
 
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
+      if (member?.company_id) setCompanyId(member.company_id);
 
       const [{ data: kundenData }, { data: rechnung }, { data: co }, { data: einst }] = await Promise.all([
-        supabase.from('kunden').select('id, name, adresse, email, telefon').eq('user_id', user.id).order('name'),
-        supabase.from('rechnungen').select('*').eq('id', id).single(),
+        supabase.from('kunden').select('id, name, adresse, email, telefon').eq('company_id', member?.company_id ?? '').order('name'),
+        supabase.from('rechnungen').select('*').eq('id', id).eq('company_id', member?.company_id ?? '').single(),
         member ? supabase.from('companies').select('logo_url').eq('id', member.company_id).single() : Promise.resolve({ data: null }),
         supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
       ]);
@@ -381,7 +383,7 @@ export default function RechnungBearbeiten() {
 
       setKunden(kundenData ?? []);
 
-      if (!rechnung) { router.push('/dashboard/rechnungen'); return; }
+      if (!rechnung) { setFehler('Nicht gefunden oder kein Zugriff.'); setLaden(false); return; }
       setRechnungsnummer(rechnung.rechnungsnummer ?? '');
       setForm({
         kunde_id:   rechnung.kunde_id   ?? '',
@@ -539,7 +541,7 @@ export default function RechnungBearbeiten() {
       status:     form.status,
       positionen,
       notizen:    form.notizen || null,
-    }).eq('id', id);
+    }).eq('id', id).eq('company_id', companyId);
     setSpeichern(false);
     if (error) { setFehler('Fehler: ' + error.message); return; }
     router.push('/dashboard/rechnungen');
@@ -547,7 +549,7 @@ export default function RechnungBearbeiten() {
 
   async function onDelete() {
     setDeleting(true);
-    await supabase.from('rechnungen').delete().eq('id', id);
+    await supabase.from('rechnungen').delete().eq('id', id).eq('company_id', companyId);
     router.push('/dashboard/rechnungen');
   }
 
