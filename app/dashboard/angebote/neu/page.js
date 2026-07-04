@@ -366,8 +366,9 @@ export default function NeuesAngebot() {
       setVorlageUserId(user.id);
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('company_id', member.company_id).order('name');
       setKunden(data ?? []);
-      const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
+      const { data: co } = await supabase.from('companies').select('logo_url, standard_steuersatz').eq('id', member.company_id).single();
       setLogoUrl(co?.logo_url ?? null);
+      setForm(f => ({ ...f, steuersatz: co?.standard_steuersatz ?? 19 }));
       // Pre-fill from Vorlage URL param
       const params = new URLSearchParams(window.location.search);
       const vorlageId = params.get('vorlage');
@@ -385,7 +386,7 @@ export default function NeuesAngebot() {
           );
           setForm(f => ({
             ...f,
-            steuersatz: vl.steuersatz ?? 19,
+            steuersatz: vl.steuersatz ?? co?.standard_steuersatz ?? 19,
             notizen: vl.notizen ?? '',
           }));
         }
