@@ -10,6 +10,7 @@ export default function Firmendaten() {
     ust_id: '', steuernummer: '',
     iban: '', bic: '', bank: '',
     logo_url: '',
+    standard_steuersatz: 19,
   });
   const [companyId, setCompanyId] = useState(null);
   const [laden, setLaden] = useState(true);
@@ -22,7 +23,7 @@ export default function Firmendaten() {
       if (!user) return;
       const { data } = await supabase
         .from('companies')
-        .select('id, name, adresse, plz, ort, telefon, email, ust_id, steuernummer, iban, bic, bank, logo_url')
+        .select('id, name, adresse, plz, ort, telefon, email, ust_id, steuernummer, iban, bic, bank, logo_url, standard_steuersatz')
         .maybeSingle();
       if (data) {
         setCompanyId(data.id);
@@ -39,6 +40,7 @@ export default function Firmendaten() {
           bic: data.bic || '',
           bank: data.bank || '',
           logo_url: data.logo_url || '',
+          standard_steuersatz: data.standard_steuersatz ?? 19,
         });
       }
       setLaden(false);
@@ -65,6 +67,7 @@ export default function Firmendaten() {
         bic: firma.bic,
         bank: firma.bank,
         logo_url: firma.logo_url,
+        standard_steuersatz: firma.standard_steuersatz,
         updated_at: new Date().toISOString(),
       })
       .eq('id', companyId);
@@ -142,6 +145,16 @@ export default function Firmendaten() {
           <h2 className="text-sm font-semibold text-gray-800">Steuerdaten</h2>
           <Feld k="ust_id" label="USt-IdNr." placeholder="DE123456789" />
           <Feld k="steuernummer" label="Steuernummer" placeholder="12/345/67890" />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Standard-Steuersatz (%)</label>
+            <input
+              type="number" min="0" max="100" step="0.01"
+              value={firma.standard_steuersatz}
+              onChange={e => { const v = Math.min(100, Math.max(0, Number(e.target.value))); setFirma(f => ({...f, standard_steuersatz: v})); }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              placeholder="19"
+            />
+          </div>
         </div>
 
         {/* Bankverbindung */}
@@ -170,5 +183,3 @@ export default function Firmendaten() {
     </div>
   );
 }
-
-// test
