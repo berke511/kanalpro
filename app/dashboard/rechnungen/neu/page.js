@@ -469,7 +469,7 @@ async function generatePDF({ firma, kunde, form, positionen, logoUrl, rechnungsn
   const netto = positionen.reduce((s, p) => s + (p.menge || 0) * (p.preis || 0), 0);
   const skontoAmt = (form.skonto || 0) > 0 ? netto * (form.skonto / 100) : 0;
   const nettoNachSk = netto - skontoAmt;
-  const mwst = nettoNachSk * ((form.steuersatz || 19) / 100);
+  const mwst = nettoNachSk * ((form.steuersatz) / 100);
   const brutto = nettoNachSk + mwst;
 
   const tableBody = positionen
@@ -517,7 +517,7 @@ async function generatePDF({ firma, kunde, form, positionen, logoUrl, rechnungsn
 
   zeile('Nettobetrag', fmtEuro(netto));
   if (skontoAmt > 0) zeile(`Skonto (${form.skonto}%)`, `-${fmtEuro(skontoAmt)}`);
-  zeile(`MwSt. (${form.steuersatz || 19}%)`, fmtEuro(mwst));
+  zeile(`MwSt. (${form.steuersatz}%)`, fmtEuro(mwst));
   doc.setFillColor(...hellgrau); doc.rect(sumX - 4, y - 4, 80, 9, 'F');
   zeile('Gesamtbetrag', fmtEuro(brutto), true);
 
@@ -559,7 +559,7 @@ function VorschauModal({ firma, kunde, form, positionen, logoUrl, rechnungsnumme
   const netto      = positionen.reduce((s, p) => s + (p.menge || 0) * (p.preis || 0), 0);
   const skontoAmt  = (form.skonto || 0) > 0 ? netto * (form.skonto / 100) : 0;
   const nettoNachSk = netto - skontoAmt;
-  const mwst       = nettoNachSk * ((form.steuersatz || 19) / 100);
+  const mwst       = nettoNachSk * ((form.steuersatz) / 100);
   const brutto     = nettoNachSk + mwst;
   const kundenName = kunde ? kundeAnzeigeName(kunde) : (form.kundenname_manuell || '—');
 
@@ -755,7 +755,7 @@ function NeueRechnungInner() {
       const promises = [
         supabase.from('kunden').select('*').eq('company_id', member.company_id).order('name'),
         supabase.from('einstellungen').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('companies').select('logo_url, firmenname, adresse, telefon, email').eq('id', member.company_id).maybeSingle(),
+        supabase.from('companies').select('logo_url, firmenname, adresse, telefon, email, standard_steuersatz').eq('id', member.company_id).maybeSingle(),
       ];
 
       if (auftragId) {
@@ -799,6 +799,7 @@ function NeueRechnungInner() {
         bank:       einstData.bank       || '',
       }));
       if (coData.logo_url) setLogoUrl(coData.logo_url);
+      setForm(prev => ({ ...prev, steuersatz: coData.standard_steuersatz ?? 19 }));
 
       // Auftragsdaten übernehmen
       if (auftragId && results.length >= 6) {
@@ -1042,7 +1043,7 @@ function NeueRechnungInner() {
   );
 
   const netto    = positionen.reduce((s, p) => s + (p.menge || 0) * (p.preis || 0), 0);
-  const brutto   = netto * (1 - (form.skonto || 0) / 100) * (1 + (form.steuersatz || 19) / 100);
+  const brutto   = netto * (1 - (form.skonto || 0) / 100) * (1 + (form.steuersatz) / 100);
 
   /* ── Hauptansicht ── */
   return (
