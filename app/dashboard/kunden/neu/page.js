@@ -1,9 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
-import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
 export default function NeuerKunde() {
   const router = useRouter();
@@ -17,21 +16,6 @@ export default function NeuerKunde() {
   const [fehler, setFehler] = useState('');
   const [laden, setLaden] = useState(false);
 
-  useEffect(() => {
-    async function checkLimit() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const abo = await checkAndDowngrade(supabase, user.id);
-      const sub = getSubscriptionStatus(abo);
-      const plan = getPlan(sub.plan);
-      const limit = plan.limits.kunden;
-      if (limit == null || limit === Infinity) return;
-      const { count } = await supabase.from('kunden').select('id', { count: 'exact', head: true });
-      if (count >= limit) router.push('/dashboard/kunden');
-    }
-    checkLimit();
-  }, []);
-
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
@@ -42,7 +26,12 @@ export default function NeuerKunde() {
     setFehler('');
     setLaden(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .single();
+    const companyId = member?.company_id;
     const { error } = await supabase.from('kunden').insert({
       name: form.name,
       telefon: form.telefon || null,
@@ -58,7 +47,7 @@ export default function NeuerKunde() {
       ist_vertragskunde: form.ist_vertragskunde,
       ist_wartungskunde: form.ist_wartungskunde,
       user_id: user.id,
-      company_id: member?.company_id ?? null,
+      company_id: companyId,
     });
     if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); setLaden(false); return; }
     router.push('/dashboard/kunden');
@@ -80,8 +69,8 @@ export default function NeuerKunde() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Kundentyp</label>
             <div className="flex gap-3">
               {[
-                { value: 'privat', label: 'Privatperson' },
-                { value: 'firma', label: 'Firmenkunde' },
+                { value: 'privat', label: '👤 Privatperson' },
+                { value: 'firma', label: '🏢 Firmenkunde' },
               ].map(opt => (
                 <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition ${
                   form.kundentyp === opt.value
@@ -97,7 +86,7 @@ export default function NeuerKunde() {
           </div>
 
           {/* Name / Firmenname */}
-          <div className={form.kundentyp === 'firma' ? 'grid grid-cols-1 sm:grid-cols-2 gap-4' : ''}>
+          <div className={form.kundentyp === 'firma' ? 'grid grid-cols-2 gap-4' : ''}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {form.kundentyp === 'firma' ? 'Ansprechpartner *' : 'Name *'}
@@ -117,7 +106,7 @@ export default function NeuerKunde() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
               <input type="tel" name="telefon" value={form.telefon} onChange={handleChange}
@@ -170,12 +159,12 @@ export default function NeuerKunde() {
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_vertragskunde" checked={form.ist_vertragskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">Vertragskunde</span>
+              <span className="text-sm font-medium text-gray-700">📄 Vertragskunde</span>
             </label>
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_wartungskunde" checked={form.ist_wartungskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">Wartungskunde</span>
+              <span className="text-sm font-medium text-gray-700">🔧 Wartungskunde</span>
             </label>
           </div>
 
