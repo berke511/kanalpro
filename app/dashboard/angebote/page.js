@@ -63,6 +63,7 @@ export default function Angebote() {
         .order('erstellt_am', { ascending: false });
       setAngebote(data ?? []);
       setLaden(false);
+    }
     load().catch(() => setLaden(false));
   }, []);
 
