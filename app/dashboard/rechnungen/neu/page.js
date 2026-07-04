@@ -754,8 +754,7 @@ function NeueRechnungInner() {
       // Parallel laden: Kunden, Firmeneinstellungen, Logo, ggf. Auftrag
       const promises = [
         supabase.from('kunden').select('*').eq('company_id', member.company_id).order('name'),
-        supabase.from('einstellungen').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('companies').select('logo_url, firmenname, adresse, telefon, email, standard_steuersatz').eq('id', member.company_id).maybeSingle(),
+        supabase.from('companies').select('name, adresse, telefon, email, ust_id, steuernummer, iban, bic, bank, logo_url, standard_steuersatz').eq('id', member.company_id).maybeSingle(),
       ];
 
       if (auftragId) {
@@ -779,31 +778,30 @@ function NeueRechnungInner() {
       }
 
       const results = await Promise.all(promises);
-      const [kundenRes, einstRes, coRes] = results;
+      const [kundenRes, coRes] = results;
 
       setKunden(kundenRes.data ?? []);
 
       // Firmeninfos zusammenführen
-      const einstData = einstRes?.data ?? {};
       const coData    = coRes?.data ?? {};
       setFirma(prev => ({
         ...prev,
-        firmenname: einstData.firmenname || coData.firmenname || '',
-        adresse:    einstData.adresse    || coData.adresse    || '',
-        telefon:    einstData.telefon    || coData.telefon    || '',
-        email:      einstData.email      || coData.email      || '',
-        steuernummer: einstData.steuernummer || '',
-        ust_id:     einstData.ust_id     || '',
-        iban:       einstData.iban       || '',
-        bic:        einstData.bic        || '',
-        bank:       einstData.bank       || '',
+        firmenname: coData.name || '',
+        adresse:    coData.adresse || '',
+        telefon:    coData.telefon || '',
+        email:      coData.email || '',
+        steuernummer: coData.steuernummer || '',
+        ust_id:     coData.ust_id || '',
+        iban:       coData.iban || '',
+        bic:        coData.bic || '',
+        bank:       coData.bank || '',
       }));
       if (coData.logo_url) setLogoUrl(coData.logo_url);
       setForm(prev => ({ ...prev, steuersatz: coData.standard_steuersatz ?? 19 }));
 
       // Auftragsdaten übernehmen
-      if (auftragId && results.length >= 6) {
-        const [, , , auftragRes, dokRes, matRes] = results;
+      if (auftragId && results.length >= 5) {
+        const [, , auftragRes, dokRes, matRes] = results;
         const a   = auftragRes?.data;
         const d   = dokRes?.data;
         const mat = matRes?.data ?? [];
