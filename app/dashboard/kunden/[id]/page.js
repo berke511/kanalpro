@@ -1207,14 +1207,14 @@ export default function KundeDetail() {
         { data: o },
         { data: r },
       ] = await Promise.all([
-        supabase.from('kunden').select('*').eq('id', id).single(),
+        supabase.from('kunden').select('*').eq('id', id).eq('company_id', cId).single(),
         supabase.from('auftraege')
           .select('*, auftrag_mitarbeiter(mitarbeiter:mitarbeiter_id(vorname, nachname))')
           .eq('kunde_id', id)
           .eq('company_id', cId)
           .order('einsatzdatum', { ascending: false, nullsFirst: false }),
         supabase.from('objekte').select('*').eq('kunde_id', id).order('erstellt_am'),
-        supabase.from('rechnungen').select('*').eq('kunde_id', id).order('erstellt_am', { ascending: false }),
+        supabase.from('rechnungen').select('*').eq('kunde_id', id).eq('company_id', cId).order('erstellt_am', { ascending: false }),
       ]);
 
       if (!k) { router.push('/dashboard/kunden'); return; }
@@ -1269,7 +1269,7 @@ export default function KundeDetail() {
       rechnung_ort:             form.rechnungsadresse_abweichend ? (form.rechnung_ort || null) : null,
       ist_vertragskunde:        form.ist_vertragskunde,
       ist_wartungskunde:        form.ist_wartungskunde,
-    }).eq('id', id);
+    }).eq('id', id).eq('company_id', companyId);
     if (error) setFehler('Fehler beim Speichern.');
     else { setErfolg(true); setTimeout(() => setErfolg(false), 3000); }
     setSpeichern(false);
@@ -1277,7 +1277,7 @@ export default function KundeDetail() {
 
   async function handleDelete() {
     if (!loeschenBestaetigt) { setLoeschenBestaetigt(true); return; }
-    await supabase.from('kunden').delete().eq('id', id);
+    await supabase.from('kunden').delete().eq('id', id).eq('company_id', companyId);
     router.push('/dashboard/kunden');
   }
 
