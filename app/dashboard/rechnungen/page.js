@@ -220,18 +220,25 @@ export default function Rechnungen() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      // Mandant: company_id via company_members ermitteln (muss vor Listen-Query stehen)
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('*, companies(id, logo_url)')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+      const companyId = member?.company_id;
+      if (member) {
+        setMyMember(member);
+        setLogoUrl(member.companies?.logo_url ?? null);
+      }
+
       const [{ data: rech }, { data: einst }] = await Promise.all([
-        supabase.from('rechnungen')
-          .select('*, kunden(name, email)')
-          .eq('user_id', user.id)
-          .order('erstellt_am', { ascending: false }),
-        supabase.from('einstellungen')
-          .select('firmaname, strasse, plz, ort')
-          .eq('user_id', user.id)
-          .single(),
+        supabase.from('rechnungen').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false }),
+        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
       ]);
       setRechnungen(rech ?? []);
-      setFirma(einst ?? null);
+      if (einst) setFirma(einst);
       setLaden(false);
     }
     load();
