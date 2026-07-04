@@ -44,19 +44,25 @@ export default function Angebote() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      // Mandant: company_id via company_members ermitteln (muss vor Listen-Query stehen)
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('company_id, companies(logo_url)')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      const companyId = member?.company_id;
+      if (member) {
+        setLogoUrl(member.companies?.logo_url ?? null);
+      }
+
       const { data } = await supabase
         .from('angebote')
         .select('*, kunden(name, adresse, email)')
+        .eq('company_id', companyId)
         .order('erstellt_am', { ascending: false });
       setAngebote(data ?? []);
       setLaden(false);
-      // Logo laden
-      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
-      if (member) {
-        const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
-        setLogoUrl(co?.logo_url ?? null);
-      }
-    }
     load().catch(() => setLaden(false));
   }, []);
 
