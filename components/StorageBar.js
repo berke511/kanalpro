@@ -4,6 +4,7 @@ import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus } from '@/lib/subscription';
 import { getPlan } from '@/lib/plans';
+import { HardDrive, AlertTriangle, Info, Star, Check } from 'lucide-react';
 
 function formatMb(mb) {
   if (mb === null || mb === undefined) return '∞';
@@ -60,7 +61,7 @@ export default function StorageBar({ compact = false }) {
     return (
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>💾 Speicher</span>
+          <span className="flex items-center gap-1"><HardDrive size={14} /> Speicher</span>
           <span>{formatMb(Math.round(usedMb))} / {isUnlimited ? '∞' : formatMb(limitMb)}</span>
         </div>
         {!isUnlimited && (
@@ -76,7 +77,7 @@ export default function StorageBar({ compact = false }) {
     <div className="bg-white rounded-2xl border border-gray-100 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900">💾 Speicher</h3>
+          <h3 className="flex items-center gap-2 font-semibold text-gray-900"><HardDrive size={18} /> Speicher</h3>
           <p className="text-xs text-gray-400 mt-0.5">Plan: {planName}</p>
         </div>
         <span className="text-sm font-medium text-gray-700">
@@ -86,7 +87,7 @@ export default function StorageBar({ compact = false }) {
 
       {isUnlimited ? (
         <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-xl px-4 py-2.5">
-          <span>✓</span>
+          <Check size={18} />
           <span>Unbegrenzter Speicher in deinem Plan</span>
         </div>
       ) : (
@@ -104,7 +105,7 @@ export default function StorageBar({ compact = false }) {
 
           {percent >= 90 && (
             <div className="bg-red-50 text-red-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-              <span>⚠️</span>
+              <AlertTriangle size={18} />
               <div>
                 <p className="font-medium">Speicher fast voll</p>
                 <p className="text-xs text-red-500 mt-0.5">
@@ -116,7 +117,7 @@ export default function StorageBar({ compact = false }) {
 
           {percent >= 70 && percent < 90 && (
             <div className="bg-amber-50 text-amber-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-              <span>ℹ️</span>
+              <Info size={18} />
               <p>Speicher zu {percent.toFixed(0)}% belegt.</p>
             </div>
           )}
@@ -124,13 +125,13 @@ export default function StorageBar({ compact = false }) {
           {percent >= 90 && (
             <Link
               href="/dashboard/billing"
-              className="mt-3 block w-full text-center py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
+              className="mt-3 flex items-center justify-center gap-2 w-full text-center py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
             >
-              ⭐ Mehr Speicher — Plan upgraden
+              <Star size={18} /> Mehr Speicher — Plan upgraden
             </Link>
           )}
         </>
       )}
     </div>
   );
-}
+    }
