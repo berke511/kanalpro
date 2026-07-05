@@ -228,10 +228,6 @@ export default function Rechnungen() {
         .eq('is_active', true)
         .single();
       const companyId = member?.company_id;
-      if (member) {
-        setMyMember(member);
-        setLogoUrl(member.companies?.logo_url ?? null);
-      }
 
       const [{ data: rech }, { data: einst }] = await Promise.all([
         supabase.from('rechnungen').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false }),
