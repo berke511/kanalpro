@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import { ClipboardList } from 'lucide-react';
 const statusConfig = {
   offen:          { label: 'Offen',          cls: 'bg-yellow-50 text-yellow-700' },
   in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-50 text-blue-700'    },
@@ -16,13 +17,7 @@ export default function Auftraege() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-      const companyId = member?.company_id;
-      const { data } = await supabase.from('auftraege').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false });
+      const { data } = await supabase.from('auftraege').select('*, kunden(name)').eq('user_id', user.id).order('erstellt_am', { ascending: false });
       setAuftraege(data ?? []); setLaden(false);
     }
     load();
@@ -47,7 +42,7 @@ export default function Auftraege() {
       </div>
       {laden ? <p className="text-gray-400">Wird geladen...</p> : gefiltert.length===0 ? (
         <div className="text-center py-16 text-gray-400">
-          <div className="text-4xl mb-3">📋</div>
+          <div className="mb-3 flex justify-center"><ClipboardList size={18} /></div>
           <p className="font-medium">Keine Aufträge</p>
           <p className="text-sm mt-1">Lege deinen ersten Auftrag an.</p>
         </div>
@@ -70,10 +65,10 @@ export default function Auftraege() {
                   <tr key={a.id} onClick={() => router.push("/dashboard/auftraege/" + a.id)}
                     className="hover:bg-blue-50 transition cursor-pointer">
                     <td className="px-5 py-3 font-medium text-gray-900">{a.titel}</td>
-                    <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '–'}</td>
-                    <td className="px-5 py-3 text-gray-500">{a.datum?new Date(a.datum).toLocaleDateString('de-DE'):'–'}</td>
+                    <td className="px-5 py-3 text-gray-500">{a.kunden?.name ?? '\u2013'}</td>
+                    <td className="px-5 py-3 text-gray-500">{a.datum?new Date(a.datum).toLocaleDateString('de-DE'):'\u2013'}</td>
                     <td className="px-5 py-3"><span className={"px-2 py-1 rounded-md text-xs font-medium " + cfg.cls}>{cfg.label}</span></td>
-                    <td className="px-5 py-3 text-gray-400 text-right">→</td>
+                    <td className="px-5 py-3 text-gray-400 text-right">\u2192</td>
                   </tr>
                 );
               })}
