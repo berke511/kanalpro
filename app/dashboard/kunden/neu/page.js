@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { User, Building2, FileText, Wrench } from 'lucide-react';
 
 export default function NeuerKunde() {
   const router = useRouter();
@@ -26,12 +27,6 @@ export default function NeuerKunde() {
     setFehler('');
     setLaden(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: member } = await supabase
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .single();
-    const companyId = member?.company_id;
     const { error } = await supabase.from('kunden').insert({
       name: form.name,
       telefon: form.telefon || null,
@@ -47,7 +42,6 @@ export default function NeuerKunde() {
       ist_vertragskunde: form.ist_vertragskunde,
       ist_wartungskunde: form.ist_wartungskunde,
       user_id: user.id,
-      company_id: companyId,
     });
     if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); setLaden(false); return; }
     router.push('/dashboard/kunden');
@@ -69,8 +63,8 @@ export default function NeuerKunde() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Kundentyp</label>
             <div className="flex gap-3">
               {[
-                { value: 'privat', label: '👤 Privatperson' },
-                { value: 'firma', label: '🏢 Firmenkunde' },
+                { value: 'privat', Icon: User, label: 'Privatperson' },
+                { value: 'firma', Icon: Building2, label: 'Firmenkunde' },
               ].map(opt => (
                 <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition ${
                   form.kundentyp === opt.value
@@ -79,6 +73,7 @@ export default function NeuerKunde() {
                 }`}>
                   <input type="radio" name="kundentyp" value={opt.value}
                     checked={form.kundentyp === opt.value} onChange={handleChange} className="hidden" />
+                  <opt.Icon size={18} />
                   <span className="text-sm font-medium">{opt.label}</span>
                 </label>
               ))}
@@ -159,12 +154,14 @@ export default function NeuerKunde() {
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_vertragskunde" checked={form.ist_vertragskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">📄 Vertragskunde</span>
+              <FileText size={18} />
+              <span className="text-sm font-medium text-gray-700">Vertragskunde</span>
             </label>
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <input type="checkbox" name="ist_wartungskunde" checked={form.ist_wartungskunde} onChange={handleChange}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">🔧 Wartungskunde</span>
+              <Wrench size={18} />
+              <span className="text-sm font-medium text-gray-700">Wartungskunde</span>
             </label>
           </div>
 
