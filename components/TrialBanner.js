@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { AlertTriangle, Sparkles, Package } from 'lucide-react';
 
 // TrialBanner — Zeigt oben im Dashboard an, wie viele Tage die Testphase noch läuft.
 // Props:
@@ -26,10 +27,12 @@ export default function TrialBanner({
           warnung ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'
         }`}
       >
-        <span>
-          {warnung ? '⚠️' : '🎉'}{' '}
-          Noch {daysLeft} {daysLeft === 1 ? 'Tag' : 'Tage'} kostenlose Testphase —{' '}
-          <strong>Enterprise</strong>
+        <span className="flex items-center gap-2">
+          {warnung ? <AlertTriangle size={18} /> : <Sparkles size={18} />}
+          <span>
+            Noch {daysLeft} {daysLeft === 1 ? 'Tag' : 'Tage'} kostenlose Testphase —{' '}
+            <strong>Enterprise</strong>
+          </span>
         </span>
         <Link
           href={upgradeHref}
@@ -45,8 +48,9 @@ export default function TrialBanner({
   if (!isTrialActive && !isExpired && plan === 'starter') {
     return (
       <div className="px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 bg-gray-700 text-white">
-        <span>
-          📦 Du nutzt den <strong>Starter-Plan</strong> — einige Funktionen sind gesperrt
+        <span className="flex items-center gap-2">
+          <Package size={18} />
+          <span>Du nutzt den <strong>Starter-Plan</strong> — einige Funktionen sind gesperrt</span>
         </span>
         <Link
           href={upgradeHref}
@@ -59,4 +63,4 @@ export default function TrialBanner({
   }
 
   return null;
-}
+    }
