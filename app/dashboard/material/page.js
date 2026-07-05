@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { XCircle, Clock, Package, Calendar } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -265,9 +266,9 @@ export default function MaterialPage() {
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2 flex-shrink-0">
-                    {abgelaufen && <span title="Abgelaufen">🔴</span>}
-                    {!abgelaufen && ablaufWarn && <span title="Läuft bald ab">🟡</span>}
-                    {bestandWarn && !abgelaufen && <span title="Bestand niedrig">🔴</span>}
+                    {abgelaufen && <span title="Abgelaufen"><XCircle size={18} /></span>}
+                    {!abgelaufen && ablaufWarn && <span title="Läuft bald ab"><Clock size={18} /></span>}
+                    {bestandWarn && !abgelaufen && <span title="Bestand niedrig"><XCircle size={18} /></span>}
                   </div>
                 </div>
 
@@ -286,13 +287,15 @@ export default function MaterialPage() {
 
                 {/* Lagerort */}
                 {m.lagerort && (
-                  <div className="text-xs text-gray-500 mb-2">📦 {m.lagerort}</div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                    <Package size={18} /> {m.lagerort}
+                  </div>
                 )}
 
                 {/* Ablaufdatum */}
                 {m.ablaufdatum && (
-                  <div className={`text-xs mb-2 ${abgelaufen ? 'text-red-600 font-medium' : ablaufWarn ? 'text-amber-600' : 'text-gray-500'}`}>
-                    🗓 {new Date(m.ablaufdatum).toLocaleDateString('de-DE')}
+                  <div className={`flex items-center gap-1 text-xs mb-2 ${abgelaufen ? 'text-red-600 font-medium' : ablaufWarn ? 'text-amber-600' : 'text-gray-500'}`}>
+                    <Calendar size={18} /> {new Date(m.ablaufdatum).toLocaleDateString('de-DE')}
                     {abgelaufen ? ' – Abgelaufen' : ablaufWarn ? ' – Läuft bald ab' : ''}
                   </div>
                 )}
