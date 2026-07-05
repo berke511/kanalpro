@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { Users, Wrench, CheckCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ kunden: 0, offen: 0, abgeschlossen: 0 });
@@ -11,16 +12,10 @@ export default function Dashboard() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-      const companyId = member?.company_id;
       const [{ count: kunden }, { count: offen }, { count: abgeschlossen }] = await Promise.all([
-        supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'offen'),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'abgeschlossen'),
+        supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
+        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
       ]);
       setStats({ kunden: kunden ?? 0, offen: offen ?? 0, abgeschlossen: abgeschlossen ?? 0 });
       setLaden(false);
@@ -36,13 +31,13 @@ export default function Dashboard() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
         {[
-          { label: 'Kunden gesamt',    value: stats.kunden,        href: '/dashboard/kunden',    icon: '👥', color: 'bg-blue-50 text-blue-700' },
-          { label: 'Offene Aufträge',  value: stats.offen,         href: '/dashboard/auftraege', icon: '🔧', color: 'bg-yellow-50 text-yellow-700' },
-          { label: 'Abgeschlossen',    value: stats.abgeschlossen, href: '/dashboard/auftraege', icon: '✅', color: 'bg-green-50 text-green-700' },
+          { label: 'Kunden gesamt',    value: stats.kunden,        href: '/dashboard/kunden',    Icon: Users,       color: 'bg-blue-50 text-blue-700' },
+          { label: 'Offene Aufträge',  value: stats.offen,         href: '/dashboard/auftraege', Icon: Wrench,      color: 'bg-yellow-50 text-yellow-700' },
+          { label: 'Abgeschlossen',    value: stats.abgeschlossen, href: '/dashboard/auftraege', Icon: CheckCircle, color: 'bg-green-50 text-green-700' },
         ].map(c => (
           <Link key={c.label} href={c.href}>
             <div className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-sm transition cursor-pointer">
-              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${c.color} text-xl mb-4`}>{c.icon}</div>
+              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${c.color} mb-4`}><c.Icon size={18} /></div>
               <div className="text-3xl font-bold text-gray-900 mb-1">{laden ? '–' : c.value}</div>
               <div className="text-sm text-gray-500">{c.label}</div>
             </div>
