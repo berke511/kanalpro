@@ -1,0 +1,19 @@
+name: Check Required Dependencies
+on: [push, pull_request]
+jobs:
+  check-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required dependencies
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const required = ['stripe','resend','lucide-react'];
+            const missing = required.filter(d => !pkg.dependencies[d]);
+            if (missing.length) {
+              console.error('MISSING REQUIRED DEPENDENCIES:', missing.join(', '));
+              process.exit(1);
+            }
+            console.log('All required dependencies present:', required.join(', '));
+          "
