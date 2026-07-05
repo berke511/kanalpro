@@ -335,6 +335,7 @@ const LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-w
 export default function NeuesAngebot() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
+  const [company, setCompany] = useState(null);
   const [form, setForm] = useState({
     kunde_id: '',
     datum: new Date().toISOString().split('T')[0],
@@ -366,8 +367,9 @@ export default function NeuesAngebot() {
       setVorlageUserId(user.id);
       const { data } = await supabase.from('kunden').select('id, name, adresse, email').eq('company_id', member.company_id).order('name');
       setKunden(data ?? []);
-      const { data: co } = await supabase.from('companies').select('logo_url, standard_steuersatz').eq('id', member.company_id).single();
+      const { data: co } = await supabase.from('companies').select('logo_url, standard_steuersatz, name, adresse, telefon, email').eq('id', member.company_id).single();
       setLogoUrl(co?.logo_url ?? null);
+      setCompany(co ?? null);
       setForm(f => ({ ...f, steuersatz: co?.standard_steuersatz ?? 19 }));
       // Pre-fill from Vorlage URL param
       const params = new URLSearchParams(window.location.search);
@@ -479,13 +481,13 @@ export default function NeuesAngebot() {
 
     doc.setFillColor(...blau); doc.rect(0, 0, 210, 35, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text('KanalPro', 15, 18);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Rohr- & Kanalservice Verwaltung', 15, 26);
+    doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text(company?.name || 'Ihr Unternehmen', 15, 18);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text([company?.telefon, company?.email].filter(Boolean).join(' | '), 15, 26);
     doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.text('ANGEBOT', 195, 18, { align: 'right' });
     doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.text(`Nr: ${nr}`, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
 
-    doc.setFontSize(8); doc.setTextColor(...grau); doc.text('Ihr Unternehmen · Musterstraße 1 · 40000 Düsseldorf', 15, 45);
+    doc.setFontSize(8); doc.setTextColor(...grau); doc.text([company?.name, company?.adresse].filter(Boolean).join(' · '), 15, 45);
     doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold'); doc.text('Angebot für:', 15, 55);
     doc.setFont('helvetica', 'normal');
     if (kunde) { doc.text(kunde.name, 15, 62); if (kunde.adresse) doc.text(kunde.adresse, 15, 68); }
