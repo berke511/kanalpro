@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const STATUS_CONFIG = {
   offen:          { label: 'Offen',          cls: 'bg-yellow-100 text-yellow-700' },
@@ -269,7 +270,7 @@ export default function AuftragDetail() {
         <div className="flex gap-2">
           <button onClick={() => setEditMode(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-            ✏️ Bearbeiten
+            <Pencil size={18} /> Bearbeiten
           </button>
           <button onClick={() => {
             if (window.confirm('Auftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
@@ -277,7 +278,7 @@ export default function AuftragDetail() {
             }
           }} disabled={loeschen}
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition disabled:opacity-60">
-            {loeschen ? '…' : '🗑️ Löschen'}
+            {loeschen ? '…' : <><Trash2 size={18} /> Löschen</>}
           </button>
         </div>
       </div>
