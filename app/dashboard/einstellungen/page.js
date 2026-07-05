@@ -141,7 +141,7 @@ export default function Einstellungen() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSOJSON.stringify({
+        body: JSON.stringify({
           email: invEmail,
           role: invRole,
           company_id: myMember.company_id,
