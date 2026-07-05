@@ -6,6 +6,7 @@ import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
 import { PLANS } from '@/lib/plans';
 import StorageBar from '@/components/StorageBar';
 import TabNav from '@/components/ui/TabNav';
+import { CheckCircle, LogOut } from 'lucide-react';
 
 const INVITABLE_ROLES = [
   { value: 'administrator', label: 'Administrator' },
@@ -444,7 +445,7 @@ export default function Einstellungen() {
                 <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{passError}</div>
               )}
               {passStatus && (
-                <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg">{passStatus}</div>
+                <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg flex items-center gap-2"><CheckCircle size={16} /> {passStatus}</div>
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Neues Passwort</label>
@@ -478,9 +479,9 @@ export default function Einstellungen() {
             <h2 className="font-semibold text-gray-800 mb-3">Sitzung beenden</h2>
             <button
               onClick={handleAbmelden}
-              className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
+              className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm flex items-center gap-2"
             >
-              Abmelden
+              <LogOut size={18} /> Abmelden
             </button>
           </div>
 
