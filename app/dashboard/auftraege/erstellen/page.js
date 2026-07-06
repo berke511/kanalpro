@@ -3,13 +3,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ─────────────────────────────────────────────────────────────
    Konstanten
-âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+───────────────────────────────────────────────────────────── */
 const AUFTRAGSARTEN = [
   'Rohrreinigung',
   'TV-Inspektion',
-  'DichtheitsprÃ¼fung',
+  'Dichtheitsprüfung',
   'Notdienst',
   'Wartung',
   'Sanierung',
@@ -22,9 +22,9 @@ function genNummer() {
   return `AUF-${year}-${rand}`;
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ─────────────────────────────────────────────────────────────
    Hilfskomponenten
-âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+───────────────────────────────────────────────────────────── */
 function Svg({ d, cls = 'w-4 h-4' }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -82,7 +82,7 @@ function InfoPill({ label, value }) {
   return (
     <div>
       <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className="text-sm text-gray-800">{value || <span className="text-gray-300 italic">â</span>}</p>
+      <p className="text-sm text-gray-800">{value || <span className="text-gray-300 italic">—</span>}</p>
     </div>
   );
 }
@@ -98,9 +98,9 @@ function Skeleton() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ─────────────────────────────────────────────────────────────
    Hauptkomponente
-âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+───────────────────────────────────────────────────────────── */
 export default function AuftragErstellen() {
   const router = useRouter();
   const containerRef = useRef(null);
@@ -139,7 +139,7 @@ export default function AuftragErstellen() {
   const [saving, setSaving] = useState(false);
   const [apiErr, setApiErr] = useState('');
 
-  /* ââ Auth + Company laden ââ */
+  /* ── Auth + Company laden ── */
   useEffect(() => {
     async function init() {
       try {
@@ -164,7 +164,7 @@ export default function AuftragErstellen() {
     init();
   }, [router]);
 
-  /* ââ Live-Suche mit Debounce ââ */
+  /* ── Live-Suche mit Debounce ── */
   useEffect(() => {
     if (!companyId || suchText.trim().length < 1) {
       setSuchergebnisse([]);
@@ -187,7 +187,7 @@ export default function AuftragErstellen() {
     return () => clearTimeout(timer);
   }, [suchText, companyId]);
 
-  /* ââ Klick auÃerhalb â Dropdown schlieÃen ââ */
+  /* ── Klick außerhalb → Dropdown schließen ── */
   useEffect(() => {
     function handler(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -198,7 +198,7 @@ export default function AuftragErstellen() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  /* ââ Helpers ââ */
+  /* ── Helpers ── */
   function kundeAnzeigeName(k) {
     if (!k) return '';
     if (k.kundentyp === 'firma') return k.firmenname || k.firma || k.name;
@@ -213,7 +213,7 @@ export default function AuftragErstellen() {
     return k.adresse ?? '';
   }
 
-  /* ââ Kunde auswÃ¤hlen â Objekte laden ââ */
+  /* ── Kunde auswählen → Objekte laden ── */
   async function onKundeWaehlen(k) {
     setSelectedKunde(k);
     setSuchText(kundeAnzeigeName(k));
@@ -248,10 +248,10 @@ export default function AuftragErstellen() {
     setManuelleAdr('');
   }
 
-  /* ââ Validierung ââ */
+  /* ── Validierung ── */
   function validieren() {
     const e = {};
-    if (!selectedKunde)       e.kunde        = 'Bitte einen Kunden auswÃ¤hlen.';
+    if (!selectedKunde)       e.kunde        = 'Bitte einen Kunden auswählen.';
     if (!auftragsart)         e.auftragsart  = 'Auftragsart ist erforderlich.';
     if (!beschreibung.trim()) e.beschreibung = 'Bitte eine Problembeschreibung eingeben.';
     if (!selectedObjekt && !manuelleAdr.trim())
@@ -260,7 +260,7 @@ export default function AuftragErstellen() {
     return Object.keys(e).length === 0;
   }
 
-  /* ââ Speichern ââ */
+  /* ── Speichern ── */
   async function speichern(weiter = false) {
     if (!validieren()) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -271,7 +271,7 @@ export default function AuftragErstellen() {
 
     try {
       const einsatzAdr = selectedObjekt
-        ? `${selectedObjekt.bezeichnung}${selectedObjekt.adresse ? ' â ' + selectedObjekt.adresse : ''}`
+        ? `${selectedObjekt.bezeichnung}${selectedObjekt.adresse ? ' – ' + selectedObjekt.adresse : ''}`
         : manuelleAdr.trim();
 
       const payload = {
@@ -311,7 +311,7 @@ export default function AuftragErstellen() {
     }
   }
 
-  /* âââââââââââââââ Render âââââââââââââââ */
+  /* ─────────────── Render ─────────────── */
   if (ladeStatus === 'loading') return <Skeleton />;
 
   if (ladeStatus === 'error') return (
@@ -326,12 +326,12 @@ export default function AuftragErstellen() {
   return (
     <div className="space-y-6 max-w-3xl">
 
-      {/* âââ Seitenkopf âââ */}
+      {/* ─── Seitenkopf ─── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Neuer Auftrag</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Erstelle einen neuen Auftrag und bereite ihn fÃ¼r die Einsatzplanung vor.
+            Erstelle einen neuen Auftrag und bereite ihn für die Einsatzplanung vor.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -370,7 +370,7 @@ export default function AuftragErstellen() {
         </div>
       </div>
 
-      {/* âââ Fehlermeldungen âââ */}
+      {/* ─── Fehlermeldungen ─── */}
       {apiErr && (
         <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
           <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
@@ -380,11 +380,11 @@ export default function AuftragErstellen() {
       {hatFehler && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
           <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-700">Bitte alle Pflichtfelder ausfÃ¼llen, bevor du fortfÃ¤hrst.</p>
+          <p className="text-xs text-amber-700">Bitte alle Pflichtfelder ausfüllen, bevor du fortfährst.</p>
         </div>
       )}
 
-      {/* âââ BEREICH 1: Kunde âââ */}
+      {/* ─── BEREICH 1: Kunde ─── */}
       <SectionCard
         icon="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
         title="Kunde"
@@ -405,7 +405,7 @@ export default function AuftragErstellen() {
                 type="text"
                 value={suchText}
                 onChange={e => setSuchText(e.target.value)}
-                placeholder="Firmenname, Name oder Ort eingeben â¦"
+                placeholder="Firmenname, Name oder Ort eingeben …"
                 autoComplete="off"
                 className={inp(`pl-9 ${fehler.kunde ? 'border-red-300' : 'border-gray-200'}`)}
               />
@@ -466,7 +466,7 @@ export default function AuftragErstellen() {
             </p>
           </div>
         ) : (
-          /* ââ AusgewÃ¤hlter Kunde ââ */
+          /* ── Ausgewählter Kunde ── */
           <div>
             <div className="flex items-start gap-3 p-3.5 bg-blue-50 rounded-xl border border-blue-100 mb-5">
               <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
@@ -480,12 +480,12 @@ export default function AuftragErstellen() {
               </div>
               <button type="button" onClick={kundeZuruecksetzen}
                 className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-white transition shrink-0"
-                title="Kunden Ã¤ndern">
+                title="Kunden ändern">
                 <Svg d="M6 18L18 6M6 6l12 12" cls="w-4 h-4" />
               </button>
             </div>
 
-            {/* Kundendaten (schreibgeschÃ¼tzt) */}
+            {/* Kundendaten (schreibgeschützt) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <InfoPill label="Name / Firma" value={kundeAnzeigeName(selectedKunde)} />
               <InfoPill label="Telefon"      value={selectedKunde.telefon} />
@@ -500,7 +500,7 @@ export default function AuftragErstellen() {
         )}
       </SectionCard>
 
-      {/* âââ BEREICH 2: Einsatzort âââ */}
+      {/* ─── BEREICH 2: Einsatzort ─── */}
       {selectedKunde && (
         <SectionCard
           icon="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
@@ -512,7 +512,7 @@ export default function AuftragErstellen() {
           ) : objekte.length > 0 ? (
             <div>
               <Label htmlFor="objekt" required>
-                {objekte.length === 1 ? 'Einsatzort (automatisch ausgewÃ¤hlt)' : 'Einsatzort wÃ¤hlen'}
+                {objekte.length === 1 ? 'Einsatzort (automatisch ausgewählt)' : 'Einsatzort wählen'}
               </Label>
               <select
                 id="objekt"
@@ -525,10 +525,10 @@ export default function AuftragErstellen() {
                 }}
                 className={inp(fehler.einsatzort ? 'border-red-300' : 'border-gray-200')}
               >
-                {objekte.length > 1 && <option value="">â Objekt wÃ¤hlen â</option>}
+                {objekte.length > 1 && <option value="">— Objekt wählen —</option>}
                 {objekte.map(o => (
                   <option key={o.id} value={o.id}>
-                    {o.bezeichnung}{o.adresse ? ` â ${o.adresse}` : ''}
+                    {o.bezeichnung}{o.adresse ? ` – ${o.adresse}` : ''}
                   </option>
                 ))}
               </select>
@@ -545,15 +545,15 @@ export default function AuftragErstellen() {
                   setManuelleAdr(e.target.value);
                   setFehler(prev => ({ ...prev, einsatzort: '' }));
                 }}
-                placeholder="z. B. MusterstraÃe 12, 12345 Berlin"
+                placeholder="z. B. Musterstraße 12, 12345 Berlin"
                 className={inp(fehler.einsatzort ? 'border-red-300' : 'border-gray-200')}
               />
               <FieldError msg={fehler.einsatzort} />
               <p className="mt-1.5 text-xs text-gray-400">
-                Kein Objekt fÃ¼r diesen Kunden angelegt.{' '}
+                Kein Objekt für diesen Kunden angelegt.{' '}
                 <button type="button" onClick={() => router.push(`/dashboard/kunden/${selectedKunde.id}`)}
                   className="text-blue-500 hover:underline">
-                  Objekt anlegen â
+                  Objekt anlegen →
                 </button>
               </p>
             </div>
@@ -561,7 +561,7 @@ export default function AuftragErstellen() {
         </SectionCard>
       )}
 
-      {/* âââ BEREICH 3: Auftragsinformationen âââ */}
+      {/* ─── BEREICH 3: Auftragsinformationen ─── */}
       <SectionCard
         icon="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"
         title="Auftragsinformationen"
@@ -597,7 +597,7 @@ export default function AuftragErstellen() {
             }}
             className={inp(fehler.auftragsart ? 'border-red-300' : 'border-gray-200')}
           >
-            <option value="">â Bitte wÃ¤hlen â</option>
+            <option value="">— Bitte wählen —</option>
             {AUFTRAGSARTEN.map(a => (
               <option key={a} value={a}>{a}</option>
             ))}
@@ -606,7 +606,7 @@ export default function AuftragErstellen() {
         </div>
       </SectionCard>
 
-      {/* âââ BEREICH 4: Einsatzplanung âââ */}
+      {/* ─── BEREICH 4: Einsatzplanung ─── */}
       <SectionCard
         icon="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
         title="Einsatzplanung"
@@ -620,17 +620,17 @@ export default function AuftragErstellen() {
               className={inp('border-gray-200')} />
           </div>
           <div>
-            <Label htmlFor="uhrzeit">GewÃ¼nschte Uhrzeit</Label>
+            <Label htmlFor="uhrzeit">Gewünschte Uhrzeit</Label>
             <input id="uhrzeit" type="time" value={uhrzeit}
               onChange={e => setUhrzeit(e.target.value)}
               className={inp('border-gray-200')} />
           </div>
         </div>
 
-        {/* PrioritÃ¤t + Dauer */}
+        {/* Priorität + Dauer */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <div>
-            <Label htmlFor="prioritaet">PrioritÃ¤t</Label>
+            <Label htmlFor="prioritaet">Priorität</Label>
             <select id="prioritaet" value={prioritaet} onChange={(e) => setPrioritaet(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <option value="niedrig">Niedrig</option>
@@ -672,7 +672,7 @@ export default function AuftragErstellen() {
               Notdienst
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Auftrag erhÃ¤lt Notdienst-Status und hÃ¶chste BearbeitungsprioritÃ¤t
+              Auftrag erhält Notdienst-Status und höchste Bearbeitungspriorität
             </p>
           </div>
           {notdienst && (
@@ -683,7 +683,7 @@ export default function AuftragErstellen() {
         </button>
       </SectionCard>
 
-      {/* âââ BEREICH 5: Problembeschreibung âââ */}
+      {/* ─── BEREICH 5: Problembeschreibung ─── */}
       <SectionCard
         icon="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
         title="Problembeschreibung"
@@ -698,33 +698,33 @@ export default function AuftragErstellen() {
             setBeschreibung(e.target.value);
             setFehler(prev => ({ ...prev, beschreibung: '' }));
           }}
-          placeholder="z. B. Rohrleitung in der KÃ¼che verstopft. Wasser lÃ¤uft nicht mehr ab. Letzter Service vor 2 Jahren â¦"
+          placeholder="z. B. Rohrleitung in der Küche verstopft. Wasser läuft nicht mehr ab. Letzter Service vor 2 Jahren …"
           className={inp(`${fehler.beschreibung ? 'border-red-300' : 'border-gray-200'} resize-none`)}
         />
         <FieldError msg={fehler.beschreibung} />
       </SectionCard>
 
-      {/* âââ BEREICH 6: Interne Notiz âââ */}
+      {/* ─── BEREICH 6: Interne Notiz ─── */}
       <SectionCard
         icon="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
         title="Interne Notiz"
       >
-        <Label htmlFor="interneNotiz">Notiz fÃ¼r internes Team</Label>
+        <Label htmlFor="interneNotiz">Notiz für internes Team</Label>
         <textarea
           id="interneNotiz"
           rows={3}
           value={interneNotiz}
           onChange={e => setInterneNotiz(e.target.value)}
-          placeholder="Nur intern sichtbar â z. B. Besonderheiten, Vorgeschichte, Hinweise fÃ¼r den Techniker â¦"
+          placeholder="Nur intern sichtbar – z. B. Besonderheiten, Vorgeschichte, Hinweise für den Techniker …"
           className={inp('border-gray-200 resize-none')}
         />
         <p className="mt-1.5 text-xs text-gray-400 flex items-center gap-1">
           <Svg d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" cls="w-3 h-3" />
-          Nicht im Kundendokument â nur intern sichtbar
+          Nicht im Kundendokument — nur intern sichtbar
         </p>
       </SectionCard>
 
-      {/* âââ Aktionsleiste unten âââ */}
+      {/* ─── Aktionsleiste unten ─── */}
       <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-sm">
         <button
           type="button"
