@@ -2,15 +2,41 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Users, ClipboardList, FileText, Settings, AlertTriangle, Sparkles, Zap, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, FileText, Receipt, CalendarDays, UserCheck, Truck, Wrench, Package, Settings, AlertTriangle, Sparkles, Zap, LogOut } from 'lucide-react';
 import supabase from '@/lib/supabase';
 
-const navLinks = [
-  { href: '/dashboard',              label: 'Übersicht',    icon: Home },
-  { href: '/dashboard/kunden',       label: 'Kunden',       icon: Users },
-  { href: '/dashboard/auftraege',    label: 'Aufträge',     icon: ClipboardList },
-  { href: '/dashboard/rechnungen',   label: 'Rechnungen',   icon: FileText },
-  { href: '/dashboard/einstellungen',label: 'Einstellungen',icon: Settings },
+const navGroups = [
+  {
+    label: null,
+    links: [
+      { href: '/dashboard', label: 'Übersicht', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Vertrieb',
+    links: [
+      { href: '/dashboard/kunden',     label: 'Kunden',     icon: Users },
+      { href: '/dashboard/auftraege',  label: 'Aufträge',   icon: ClipboardList },
+      { href: '/dashboard/angebote',   label: 'Angebote',   icon: FileText },
+      { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: Receipt },
+    ],
+  },
+  {
+    label: 'Betrieb',
+    links: [
+      { href: '/dashboard/disposition', label: 'Disposition', icon: CalendarDays },
+      { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: UserCheck },
+      { href: '/dashboard/fahrzeuge',   label: 'Fahrzeuge',   icon: Truck },
+      { href: '/dashboard/maschinen',   label: 'Maschinen',   icon: Wrench },
+      { href: '/dashboard/material',    label: 'Material',    icon: Package },
+    ],
+  },
+  {
+    label: 'Verwaltung',
+    links: [
+      { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
+    ],
+  },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -93,16 +119,27 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-1">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                  pathname === link.href || pathname.startsWith(link.href + '/')
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}>
-                <link.icon size={18} />{link.label}
-              </Link>
+          <nav className="flex-1 px-3 py-4 overflow-y-auto">
+            {navGroups.map((group, gi) => (
+              <div key={gi} className={gi > 0 ? 'mt-4' : ''}>
+                {group.label && (
+                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    {group.label}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {group.links.map((link) => (
+                    <Link key={link.href} href={link.href}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
+                        pathname === link.href || pathname.startsWith(link.href + '/')
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}>
+                      <link.icon size={18} />{link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
 
