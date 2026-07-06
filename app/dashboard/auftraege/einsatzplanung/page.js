@@ -9,6 +9,14 @@ const STATUS_CONFIG = {
   in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-100 text-blue-700 border-blue-200'       },
   abgeschlossen:  { label: 'Abgeschlossen',  cls: 'bg-green-100 text-green-700 border-green-200'    },
 };
+
+const PRIORITAET_CONFIG = {
+  notfall: { label: 'Notfall', dot: 'bg-red-500',    badge: 'bg-red-50 text-red-700 border-red-200'        },
+  hoch:    { label: 'Hoch',    dot: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200'},
+  normal:  { label: 'Normal',  dot: 'bg-blue-400',   badge: 'bg-blue-50 text-blue-700 border-blue-200'     },
+  niedrig: { label: 'Niedrig', dot: 'bg-gray-400',   badge: 'bg-gray-100 text-gray-500 border-gray-200'    },
+};
+
 const WOCHENTAGE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const _today = new Date();
@@ -32,8 +40,8 @@ function KalenderAnsicht({ auftraege }) {
   const nextMonat = () => monat === 11 ? (setMonat(0),  setJahr(j => j + 1)) : setMonat(m => m + 1);
   const zuHeute   = () => { setJahr(_today.getFullYear()); setMonat(_today.getMonth()); };
 
-  const ersterTag  = new Date(jahr, monat, 1);
-  const anzahlTage = new Date(jahr, monat + 1, 0).getDate();
+  const ersterTag   = new Date(jahr, monat, 1);
+  const anzahlTage  = new Date(jahr, monat + 1, 0).getDate();
   const startOffset = (ersterTag.getDay() + 6) % 7;
 
   const byDate = {};
@@ -77,13 +85,19 @@ function KalenderAnsicht({ auftraege }) {
                 <div className={`text-sm font-semibold mb-1.5 w-7 h-7 flex items-center justify-center rounded-full leading-none ${isToday ? 'bg-blue-600 text-white' : isWE ? 'text-gray-400' : 'text-gray-700'}`}>{d}</div>
                 <div className="space-y-1">
                   {tags.slice(0, 3).map(a => {
-                    const cfg   = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.offen;
+                    const cfg  = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.offen;
+                    const pCfg = PRIORITAET_CONFIG[a.prioritaet];
                     const kunde = a.kunden ? (a.kunden.firmenname || a.kunden.name) : null;
+                    const tech  = a.mitarbeiter ? `${a.mitarbeiter.vorname} ${a.mitarbeiter.nachname}` : null;
                     return (
                       <Link key={a.id} href={`/dashboard/auftraege/${a.id}`}
-                        title={`${a.titel}${kunde ? ' – ' + kunde : ''}${a.adresse ? ' · ' + a.adresse : ''}`}
+                        title={`${a.titel}${kunde ? ' – ' + kunde : ''}${a.adresse ? ' · ' + a.adresse : ''}${tech ? ' | ' + tech : ''}`}
                         className={`block text-xs px-1.5 py-0.5 rounded border truncate hover:opacity-75 transition ${cfg.cls}`}>
-                        {a.titel}
+                        <span className="flex items-center gap-1 min-w-0">
+                          {pCfg && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${pCfg.dot}`} />}
+                          {a.uhrzeit && <span className="shrink-0 font-medium">{a.uhrzeit.slice(0, 5)}</span>}
+                          <span className="truncate">{a.titel}</span>
+                        </span>
                       </Link>
                     );
                   })}
@@ -152,8 +166,10 @@ function DispositionAnsicht({ auftraege: alleAuftraege }) {
         <div className="space-y-3">
           <p className="text-sm font-medium text-gray-500">{tagesAuftraege.length} Einsatz{tagesAuftraege.length !== 1 ? 'ätze' : ''}</p>
           {tagesAuftraege.map((a, i) => {
-            const cfg   = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.offen;
+            const cfg  = STATUS_CONFIG[a.status] ?? STATUS_CONFIG.offen;
+            const pCfg = PRIORITAET_CONFIG[a.prioritaet];
             const kunde = a.kunden ? (a.kunden.firmenname || a.kunden.name) : null;
+            const tech  = a.mitarbeiter ? `${a.mitarbeiter.vorname} ${a.mitarbeiter.nachname}` : null;
             return (
               <div key={a.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-start gap-4">
                 {/* Nummer */}
@@ -166,13 +182,27 @@ function DispositionAnsicht({ auftraege: alleAuftraege }) {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <p className="text-sm font-semibold text-gray-900">{a.titel}</p>
                     <span className={`text-xs px-2 py-0.5 rounded border ${cfg.cls}`}>{cfg.label}</span>
+                    {pCfg && (
+                      <span className={`text-xs px-2 py-0.5 rounded border ${pCfg.badge}`}>{pCfg.label}</span>
+                    )}
                   </div>
                   {kunde && <p className="text-xs text-gray-500 mb-0.5">{kunde}</p>}
                   {a.adresse ? (
-                    <p className="text-xs text-gray-500">{a.adresse}</p>
+                    <p className="text-xs text-gray-500 mb-0.5">{a.adresse}</p>
                   ) : (
-                    <p className="text-xs text-gray-300 italic">Keine Adresse hinterlegt</p>
+                    <p className="text-xs text-gray-300 italic mb-0.5">Keine Adresse hinterlegt</p>
                   )}
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    {a.uhrzeit && (
+                      <span className="text-xs text-gray-500">&#128336; {a.uhrzeit.slice(0, 5)} Uhr</span>
+                    )}
+                    {a.dauer_minuten && (
+                      <span className="text-xs text-gray-500">&#9201; {a.dauer_minuten} Min.</span>
+                    )}
+                    {tech && (
+                      <span className="text-xs text-gray-500">&#128119; {tech}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Aktionen */}
@@ -195,7 +225,6 @@ function DispositionAnsicht({ auftraege: alleAuftraege }) {
                   </Link>
                 </div>
               </div>
-  
             );
           })}
         </div>
@@ -215,10 +244,17 @@ export default function Einsatzplanung() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: memberData } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      const companyId = memberData?.company_id;
+      if (!companyId) { setLaden(false); return; }
       const { data } = await supabase
         .from('auftraege')
-        .select('id, titel, datum, status, adresse, kunden(name, firmenname)')
-        .eq('user_id', user.id)
+        .select('id, titel, datum, status, adresse, uhrzeit, dauer_minuten, prioritaet, kunden(name, firmenname), mitarbeiter:techniker_id(vorname, nachname)')
+        .eq('company_id', companyId)
         .not('datum', 'is', null)
         .order('datum');
       setAlleAuftraege(data ?? []);
