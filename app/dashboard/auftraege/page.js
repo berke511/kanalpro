@@ -30,7 +30,7 @@ export default function Auftraege() {
           <h1 className="text-2xl font-bold text-gray-900">Aufträge</h1>
           <p className="text-gray-500 mt-1">{auftraege.length} Aufträge gesamt</p>
         </div>
-        <Link href="/dashboard/auftraege/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neuer Auftrag</Link>
+        <Link href="/dashboard/auftraege/erstellen" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neuer Auftrag</Link>
       </div>
       <div className="flex gap-2 mb-5">
         {['alle','offen','in_bearbeitung','abgeschlossen'].map(s => (
