@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
-import { Pencil, Trash2 } from 'lucide-react';
 
 const STATUS_CONFIG = {
   offen:          { label: 'Offen',          cls: 'bg-yellow-100 text-yellow-700' },
@@ -22,35 +21,32 @@ export default function AuftragDetail() {
   const [speichern, setSpeichern] = useState(false);
   const [fehler, setFehler]       = useState('');
 
+  const [companyId, setCompanyId] = useState(null);
   const [kunden, setKunden]       = useState([]);
   const [objekte, setObjekte]     = useState([]);
   const [objLaden, setObjLaden]   = useState(false);
+  const [techniker, setTechniker] = useState([]);
 
   const [form, setForm] = useState({
     titel: '', beschreibung: '', notizen: '', adresse: '',
     status: 'offen', datum: '', kunde_id: '', objekt_id: '',
+    techniker_id: '',
   });
 
   // Auftrag laden
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-      const companyId = member?.company_id;
-
       const { data, error } = await supabase
         .from('auftraege')
-        .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse)')
+        .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse), mitarbeiter:techniker_id(vorname, nachname, position)')
         .eq('id', id)
-        .eq('company_id', companyId)
+        .eq('user_id', user.id)
         .single();
 
       if (error || !data) { router.push('/dashboard/auftraege'); return; }
       setAuftrag(data);
+      setCompanyId(data.company_id);
       setForm({
         titel:        data.titel         ?? '',
         beschreibung: data.beschreibung  ?? '',
@@ -60,17 +56,29 @@ export default function AuftragDetail() {
         datum:        data.datum         ?? '',
         kunde_id:     data.kunde_id      ?? '',
         objekt_id:    data.objekt_id     ?? '',
+        techniker_id: data.techniker_id  ?? '',
       });
 
       // Kunden für Dropdown laden
       const { data: kundenData } = await supabase
-        .from('kunden').select('id, name, firmennamen').eq('company_id', companyId).order('name');
+        .from('kunden').select('id, name, firmennamen').eq('user_id', user.id).order('name');
       setKunden(kundenData ?? []);
 
       setLaden(false);
     }
     load();
   }, [id, router]);
+
+  // Techniker laden sobald companyId bekannt
+  useEffect(() => {
+    if (!companyId) return;
+    supabase
+      .from('mitarbeiter')
+      .select('id, vorname, nachname, position')
+      .eq('company_id', companyId)
+      .order('nachname')
+      .then(({ data }) => setTechniker(data ?? []));
+  }, [companyId]);
 
   // Objekte nachladen wenn Kunde in Edit-Form wechselt
   useEffect(() => {
@@ -102,6 +110,7 @@ export default function AuftragDetail() {
       datum:        form.datum        || null,
       kunde_id:     form.kunde_id     || null,
       objekt_id:    form.objekt_id    || null,
+      techniker_id: form.techniker_id || null,
     }).eq('id', id);
 
     if (error) {
@@ -113,7 +122,7 @@ export default function AuftragDetail() {
     // Aktualisierten Auftrag neu laden
     const { data } = await supabase
       .from('auftraege')
-      .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse)')
+      .select('*, kunden(id, name, firmennamen), objekte(id, bezeichnung, adresse), mitarbeiter:techniker_id(vorname, nachname, position)')
       .eq('id', id).single();
     setAuftrag(data);
     setEditMode(false);
@@ -235,6 +244,24 @@ export default function AuftragDetail() {
                 className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
             </div>
 
+            {/* Techniker */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Techniker</label>
+              <select
+                name="techniker_id"
+                value={form.techniker_id || ''}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Nicht zugewiesen</option>
+                {techniker.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.vorname} {t.nachname}{t.position ? ` – ${t.position}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={speichern}
                 className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">
@@ -270,7 +297,7 @@ export default function AuftragDetail() {
         <div className="flex gap-2">
           <button onClick={() => setEditMode(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-            <Pencil size={18} /> Bearbeiten
+            ✏️ Bearbeiten
           </button>
           <button onClick={() => {
             if (window.confirm('Auftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
@@ -278,7 +305,7 @@ export default function AuftragDetail() {
             }
           }} disabled={loeschen}
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition disabled:opacity-60">
-            {loeschen ? '…' : <><Trash2 size={18} /> Löschen</>}
+            {loeschen ? '…' : '🗑️ Löschen'}
           </button>
         </div>
       </div>
@@ -325,6 +352,23 @@ export default function AuftragDetail() {
               </Link>
             ) : (
               <p className="text-sm text-gray-400">—</p>
+            )}
+          </div>
+        </div>
+
+        {/* Techniker */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Techniker</p>
+            {auftrag.mitarbeiter ? (
+              <p className="text-sm text-gray-800 font-medium">
+                {auftrag.mitarbeiter.vorname} {auftrag.mitarbeiter.nachname}
+                {auftrag.mitarbeiter.position && (
+                  <span className="text-gray-400 font-normal"> – {auftrag.mitarbeiter.position}</span>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">Nicht zugewiesen</p>
             )}
           </div>
         </div>
