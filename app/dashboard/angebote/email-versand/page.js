@@ -6,24 +6,23 @@ import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
 const statusConfig = {
-  entwurf:    { label: 'Entwurf',    cls: 'bg-gray-100 text-gray-600'   },
-  gesendet:   { label: 'Gesendet',   cls: 'bg-blue-50 text-blue-700'    },
-  angenommen: { label: 'Angenommen', cls: 'bg-green-50 text-green-700'  },
-  abgelehnt:  { label: 'Abgelehnt',  cls: 'bg-red-50 text-red-600'      },
+  entwurf: { label: 'Entwurf', cls: 'bg-gray-100 text-gray-600' },
+  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700' },
+  angenommen: { label: 'Angenommen', cls: 'bg-green-50 text-green-700' },
+  abgelehnt: { label: 'Abgelehnt', cls: 'bg-red-50 text-red-600' },
 };
 
 function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
 
-
 export default function AngeboteEmailVersand() {
   const router = useRouter();
-  const [tab, setTab]           = useState('angebote');
+  const [tab, setTab] = useState('angebote');
   const [angebote, setAngebote] = useState([]);
-  const [laden, setLaden]       = useState(true);
-  const [emailSelectedId,  setEmailSelectedId]  = useState('');
-  const [emailEmpfaenger,  setEmailEmpfaenger]  = useState('');
-  const [emailBetreff,     setEmailBetreff]     = useState('');
-  const [emailNachricht,   setEmailNachricht]   = useState('');
+  const [laden, setLaden] = useState(true);
+  const [emailSelectedId, setEmailSelectedId] = useState('');
+  const [emailEmpfaenger, setEmailEmpfaenger] = useState('');
+  const [emailBetreff, setEmailBetreff] = useState('');
+  const [emailNachricht, setEmailNachricht] = useState('');
   const [logoUrl, setLogoUrl] = useState(null);
 
   useEffect(() => {
@@ -36,7 +35,6 @@ export default function AngeboteEmailVersand() {
         .order('erstellt_am', { ascending: false });
       setAngebote(data ?? []);
       setLaden(false);
-      // Logo laden
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
       if (member) {
         const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
@@ -51,8 +49,6 @@ export default function AngeboteEmailVersand() {
     return netto * (1 + (a.steuersatz ?? 19) / 100);
   }
 
-
-  // Auto-fill E-Mail-Felder beim Auswählen eines Angebots
   useEffect(() => {
     const a = angebote.find(x => x.id === emailSelectedId);
     if (!a) {
@@ -61,8 +57,8 @@ export default function AngeboteEmailVersand() {
       setEmailNachricht('');
       return;
     }
-    const nr     = a.angebotsnummer ?? '–';
-    const netto  = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
+    const nr = a.angebotsnummer ?? '–';
+    const netto = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
     const brutto = netto * (1 + (a.steuersatz ?? 19) / 100);
     const betrag = brutto.toFixed(2).replace('.', ',') + ' €';
     setEmailEmpfaenger(a.kunden?.email ?? '');
@@ -75,42 +71,40 @@ export default function AngeboteEmailVersand() {
       `Bei Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.\n\n` +
       `Mit freundlichen Grüßen\nIhr KanalPro-Team`
     );
+    setFehler('');
+    setErfolg(false);
   }, [emailSelectedId, angebote]);
 
-const [fehler, setFehler] = useState('');
+  const [fehler, setFehler] = useState('');
   const [erfolg, setErfolg] = useState(false);
+  const [sending, setSending] = useState(false);
 
   async function handleEmailVersenden() {
     if (!emailSelectedId) { setFehler('Kein Angebot ausgewählt.'); return; }
     if (!emailEmpfaenger) { setFehler('Keine Empfänger-E-Mail-Adresse.'); return; }
-    setLaden(true);
+    setSending(true);
     setFehler('');
     setErfolg(false);
     try {
-      // Selected angebot (already loaded in state)
       const angebotObj = angebote.find(a => a.id === emailSelectedId);
       if (!angebotObj) throw new Error('Angebot nicht gefunden.');
-      // Load company data on demand
       const { data: { user } } = await supabase.auth.getUser();
       const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
-      const { data: comp }   = await supabase.from('companies').select('*').eq('id', member.company_id).single();
-      // Generate PDF
+      const { data: comp } = await supabase.from('companies').select('*').eq('id', member.company_id).single();
       const doc = await generateAngebotPDF({ angebot: angebotObj, company: comp });
-      // PDF → base64
       const ab = doc.output('arraybuffer');
       const bytes = new Uint8Array(ab);
       let binary = '';
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       const pdf_base64 = btoa(binary);
       const nr = angebotObj.angebotsnummer || angebotObj.id;
-      // API-Call
       const res = await fetch('/api/send-dokument', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: emailEmpfaenger,
           subject: emailBetreff,
-          body: emailNachricht,
+          body: emailNachricht.replace(/\n/g, '<br>'),
           pdf_base64,
           filename: `Angebot_${nr}.pdf`,
           dokument_typ: 'angebot',
@@ -119,120 +113,129 @@ const [fehler, setFehler] = useState('');
       });
       const result = await res.json();
       if (!result.success) throw new Error(result.error || 'Versand fehlgeschlagen');
+      await supabase.from('angebote').update({ status: 'gesendet' }).eq('id', emailSelectedId);
+      setAngebote(prev => prev.map(a => a.id === emailSelectedId ? { ...a, status: 'gesendet' } : a));
       setErfolg(true);
     } catch (e) {
       setFehler('E-Mail-Versand fehlgeschlagen: ' + e.message);
     } finally {
-      setLaden(false);
+      setSending(false);
     }
   }
 
   return (
     <div className="p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
-        <div className="max-w-xl space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Angebot per E-Mail versenden</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt.</p>
-              </div>
+      <div className="max-w-xl space-y-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
             </div>
-
-            {laden ? (
-              <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
-            ) : angebote.length === 0 ? (
-              <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
-            ) : (
-              <>
-                {/* Angebot-Auswahl */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
-                  <select
-                    value={emailSelectedId}
-                    onChange={e => setEmailSelectedId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">— Angebot wählen —</option>
-                    {angebote.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Empfänger */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Empfänger-E-Mail
-                    {emailSelectedId && !angebote.find(a => a.id === emailSelectedId)?.kunden?.email && (
-                      <span className="ml-2 text-xs text-amber-500 font-normal">Keine E-Mail beim Kunden hinterlegt</span>
-                    )}
-                  </label>
-                  <input
-                    type="email"
-                    value={emailEmpfaenger}
-                    onChange={e => setEmailEmpfaenger(e.target.value)}
-                    placeholder="kunde@beispiel.de"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* Betreff */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
-                  <input
-                    type="text"
-                    value={emailBetreff}
-                    onChange={e => setEmailBetreff(e.target.value)}
-                    placeholder="Ihr Angebot Nr. … von KanalPro"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* Nachricht */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
-                  <textarea
-                    value={emailNachricht}
-                    onChange={e => setEmailNachricht(e.target.value)}
-                    rows={9}
-                    placeholder="E-Mail-Text…"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-
-                {/* Hinweis PDF */}
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                  <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                  </svg>
-                  <p className="text-xs text-amber-700">
-                    Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
-                  </p>
-                </div>
-
-                {/* Senden-Button */}
-                <button
-                  onClick={handleEmailVersenden}
-                  disabled={!emailSelectedId || !emailEmpfaenger.trim()}
-                  className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                  </svg>
-                  E-Mail-Programm öffnen
-                </button>
-              </>
-            )}
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Angebot per E-Mail versenden</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt. Das PDF wird automatisch angehängt.</p>
+            </div>
           </div>
+
+          {laden ? (
+            <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
+          ) : angebote.length === 0 ? (
+            <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Angebot auswählen</label>
+                <select
+                  value={emailSelectedId}
+                  onChange={e => setEmailSelectedId(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">— Angebot wählen —</option>
+                  {angebote.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {(a.angebotsnummer ?? '–') + (a.kunden?.name ? ' · ' + a.kunden.name : '') + (a.datum ? ' · ' + new Date(a.datum).toLocaleDateString('de-DE') : '')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Empfänger-E-Mail
+                  {emailSelectedId && !angebote.find(a => a.id === emailSelectedId)?.kunden?.email && (
+                    <span className="ml-2 text-xs text-amber-500 font-normal">Keine E-Mail beim Kunden hinterlegt</span>
+                  )}
+                </label>
+                <input
+                  type="email"
+                  value={emailEmpfaenger}
+                  onChange={e => setEmailEmpfaenger(e.target.value)}
+                  placeholder="kunde@beispiel.de"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Betreff</label>
+                <input
+                  type="text"
+                  value={emailBetreff}
+                  onChange={e => setEmailBetreff(e.target.value)}
+                  placeholder="Ihr Angebot Nr. … von KanalPro"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nachricht</label>
+                <textarea
+                  value={emailNachricht}
+                  onChange={e => setEmailNachricht(e.target.value)}
+                  rows={9}
+                  placeholder="E-Mail-Text…"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {erfolg && (
+                <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
+                  E-Mail wurde erfolgreich versendet. Status auf „Gesendet" gesetzt.
+                </div>
+              )}
+              {fehler && (
+                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
+                  {fehler}
+                </div>
+              )}
+
+              <button
+                onClick={handleEmailVersenden}
+                disabled={!emailSelectedId || !emailEmpfaenger.trim() || sending}
+                className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              >
+                {sending ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Wird gesendet…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                    Angebot per E-Mail senden
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
+      </div>
     </div>
   );
 }
