@@ -71,7 +71,7 @@ export default function Firmendaten() {
     setTimeout(() => setGespeichert(false), 3000);
   }
 
-  if (laden) return <div className="p-8 text-center text-gray-400 text-sm">LÃ¤dtâ¦</div>;
+  if (laden) return <div className="p-8 text-center text-gray-400 text-sm">Lädt…</div>;
 
   return (
     <div className="space-y-6">
@@ -81,7 +81,7 @@ export default function Firmendaten() {
           <p className="text-sm text-gray-500 mt-0.5">Name und Daten deiner Firma</p>
         </div>
         <Link href="/dashboard/einstellungen" className="px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
-          â Einstellungen
+          ← Einstellungen
         </Link>
       </div>
 
@@ -104,7 +104,7 @@ export default function Firmendaten() {
               value={firma.adresse}
               onChange={e => setFirma(f => ({ ...f, adresse: e.target.value }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              placeholder="MusterstraÃe 1, 12345 Musterstadt"
+              placeholder="Musterstraße 1, 12345 Musterstadt"
             />
           </div>
           <div>
