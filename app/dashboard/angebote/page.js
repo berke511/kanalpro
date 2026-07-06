@@ -6,39 +6,41 @@ import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 
 const ANGEBOTE_TABS = [
-  { id: 'angebote', label: 'Angebote'      },
-  { id: 'email',    label: 'E-Mail-Versand' },
-  { id: 'pdf',      label: 'PDF-Export'    },
+  { id: 'angebote', label: 'Angebote' },
+  { id: 'email', label: 'E-Mail-Versand' },
+  { id: 'pdf', label: 'PDF-Export' },
 ];
 
 const statusConfig = {
-  entwurf:    { label: 'Entwurf',    cls: 'bg-gray-100 text-gray-600'   },
-  gesendet:   { label: 'Gesendet',   cls: 'bg-blue-50 text-blue-700'    },
-  angenommen: { label: 'Angenommen', cls: 'bg-green-50 text-green-700'  },
-  abgelehnt:  { label: 'Abgelehnt',  cls: 'bg-red-50 text-red-600'      },
+  entwurf: { label: 'Entwurf', cls: 'bg-gray-100 text-gray-600' },
+  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700' },
+  angenommen: { label: 'Angenommen', cls: 'bg-green-50 text-green-700' },
+  abgelehnt: { label: 'Abgelehnt', cls: 'bg-red-50 text-red-600' },
 };
 
 function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
 
 export default function Angebote() {
   const router = useRouter();
-  const [tab, setTab]           = useState('angebote');
+  const [tab, setTab] = useState('angebote');
   const [angebote, setAngebote] = useState([]);
-  const [laden, setLaden]       = useState(true);
+  const [laden, setLaden] = useState(true);
 
   // PDF-Export state
   const [selectedId, setSelectedId] = useState('');
-  const [pdfLaden, setPdfLaden]     = useState(false);
+  const [pdfLaden, setPdfLaden] = useState(false);
 
   // Firmenlogo
   const [logoUrl, setLogoUrl] = useState(null);
 
   // E-Mail-Versand state
-  const [emailSelectedId,  setEmailSelectedId]  = useState('');
-  const [emailEmpfaenger,  setEmailEmpfaenger]  = useState('');
-  const [emailBetreff,     setEmailBetreff]     = useState('');
-  const [emailNachricht,   setEmailNachricht]   = useState('');
-
+  const [emailSelectedId, setEmailSelectedId] = useState('');
+  const [emailEmpfaenger, setEmailEmpfaenger] = useState('');
+  const [emailBetreff, setEmailBetreff] = useState('');
+  const [emailNachricht, setEmailNachricht] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailFehler, setEmailFehler] = useState('');
+  const [emailErfolg, setEmailErfolg] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -84,8 +86,8 @@ export default function Angebote() {
       setEmailNachricht('');
       return;
     }
-    const nr     = a.angebotsnummer ?? '–';
-    const netto  = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
+    const nr = a.angebotsnummer ?? '–';
+    const netto = (a.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
     const brutto = netto * (1 + (a.steuersatz ?? 19) / 100);
     const betrag = brutto.toFixed(2).replace('.', ',') + ' €';
     setEmailEmpfaenger(a.kunden?.email ?? '');
@@ -98,6 +100,8 @@ export default function Angebote() {
       `Bei Rückfragen stehen wir Ihnen jederzeit gerne zur Verfügung.\n\n` +
       `Mit freundlichen Grüßen\nIhr KanalPro-Team`
     );
+    setEmailErfolg(false);
+    setEmailFehler('');
   }, [emailSelectedId, angebote]);
 
   const selected = angebote.find(a => a.id === selectedId) ?? null;
@@ -118,24 +122,21 @@ export default function Angebote() {
     });
   }
 
-  async function handlePDF() {
-    if (!selected) return;
-    setPdfLaden(true);
+  async function buildAngebotDoc(a) {
     if (!window.jspdf) {
       await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
       await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
     }
     const { jsPDF } = window.jspdf;
-    const doc  = new jsPDF();
+    const doc = new jsPDF();
     const blau = [37, 99, 235];
     const grau = [107, 114, 128];
-    const a    = selected;
-    const nr   = a.angebotsnummer ?? '–';
+    const nr = a.angebotsnummer ?? '–';
     const positionen = a.positionen ?? [];
-    const netto  = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
-    const mwst   = netto * (a.steuersatz ?? 19) / 100;
+    const netto = positionen.reduce((s, p) => s + p.menge * p.preis, 0);
+    const mwst = netto * (a.steuersatz ?? 19) / 100;
     const brutto = netto + mwst;
-    const kunde  = a.kunden ?? null;
+    const kunde = a.kunden ?? null;
 
     let logoImgData = null, logoImgW = 0, logoImgH = 0;
     if (logoUrl) {
@@ -154,11 +155,11 @@ export default function Angebote() {
     if (logoImgData) {
       doc.addImage(logoImgData, 'PNG', 15, (35 - logoImgH) / 2, logoImgW, logoImgH);
     } else {
-      doc.setFontSize(22); doc.setFont('helvetica', 'bold');   doc.text('KanalPro', 15, 18);
+      doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.text('KanalPro', 15, 18);
       doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text('Rohr- & Kanalservice Verwaltung', 15, 26);
     }
-    doc.setFontSize(20); doc.setFont('helvetica', 'bold');   doc.text('ANGEBOT', 195, 18, { align: 'right' });
-    doc.setFontSize(9);  doc.setFont('helvetica', 'normal'); doc.text('Nr: ' + nr, 195, 26, { align: 'right' });
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.text('ANGEBOT', 195, 18, { align: 'right' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.text('Nr: ' + nr, 195, 26, { align: 'right' });
     doc.setTextColor(0, 0, 0);
 
     doc.setFontSize(8); doc.setTextColor(...grau);
@@ -177,8 +178,8 @@ export default function Angebote() {
     doc.text('Datum:', 130, 55);
     doc.text('Gültig bis:', 130, 62);
     doc.setFont('helvetica', 'normal');
-    doc.text(a.datum       ? new Date(a.datum).toLocaleDateString('de-DE')          : '–', 195, 55, { align: 'right' });
-    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE')    : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
+    doc.text(a.datum ? new Date(a.datum).toLocaleDateString('de-DE') : '–', 195, 55, { align: 'right' });
+    doc.text(a.gueltig_bis ? new Date(a.gueltig_bis).toLocaleDateString('de-DE') : '30 Tage ab Angebotsdatum', 195, 62, { align: 'right' });
 
     doc.setDrawColor(...blau); doc.setLineWidth(0.5); doc.line(15, 75, 195, 75);
     doc.setFontSize(9); doc.setTextColor(...grau);
@@ -195,11 +196,11 @@ export default function Angebote() {
         p.preis.toFixed(2).replace('.', ',') + ' €',
         (p.menge * p.preis).toFixed(2).replace('.', ',') + ' €',
       ]),
-      headStyles:         { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
-      bodyStyles:         { fontSize: 9 },
-      columnStyles:       { 0: { cellWidth: 12 }, 4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' } },
+      headStyles: { fillColor: blau, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 12 }, 4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' } },
       alternateRowStyles: { fillColor: [249, 250, 251] },
-      margin:             { left: 15, right: 15 },
+      margin: { left: 15, right: 15 },
     });
 
     const ty = doc.lastAutoTable.finalY + 8;
@@ -227,16 +228,58 @@ export default function Angebote() {
     doc.setFontSize(7); doc.setTextColor(156, 163, 175);
     doc.text('Erstellt mit KanalPro', 105, 285, { align: 'center' });
 
-    doc.save('Angebot_' + nr + '.pdf');
-    setPdfLaden(false);
+    return doc;
   }
 
-  function handleMailto() {
-    const href =
-      `mailto:${encodeURIComponent(emailEmpfaenger)}` +
-      `?subject=${encodeURIComponent(emailBetreff)}` +
-      `&body=${encodeURIComponent(emailNachricht)}`;
-    window.location.href = href;
+  async function handlePDF() {
+    if (!selected) return;
+    setPdfLaden(true);
+    try {
+      const doc = await buildAngebotDoc(selected);
+      doc.save('Angebot_' + (selected.angebotsnummer ?? '–') + '.pdf');
+    } finally {
+      setPdfLaden(false);
+    }
+  }
+
+  async function handleApiVersand() {
+    if (!emailSelectedId || !emailEmpfaenger.trim()) return;
+    setEmailSending(true);
+    setEmailFehler('');
+    setEmailErfolg(false);
+    try {
+      const a = angebote.find(x => x.id === emailSelectedId);
+      if (!a) throw new Error('Angebot nicht gefunden.');
+      const doc = await buildAngebotDoc(a);
+      const ab = doc.output('arraybuffer');
+      const bytes = new Uint8Array(ab);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const pdf_base64 = btoa(binary);
+      const nr = a.angebotsnummer ?? a.id;
+      const res = await fetch('/api/send-dokument', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailEmpfaenger,
+          subject: emailBetreff,
+          body: emailNachricht.replace(/\n/g, '<br>'),
+          pdf_base64,
+          filename: `Angebot_${nr}.pdf`,
+          dokument_typ: 'angebot',
+          dokument_id: emailSelectedId,
+        }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Versand fehlgeschlagen');
+      await supabase.from('angebote').update({ status: 'gesendet' }).eq('id', emailSelectedId);
+      setAngebote(prev => prev.map(x => x.id === emailSelectedId ? { ...x, status: 'gesendet' } : x));
+      setEmailErfolg(true);
+    } catch (e) {
+      setEmailFehler('Versand fehlgeschlagen: ' + e.message);
+    } finally {
+      setEmailSending(false);
+    }
   }
 
   return (
@@ -412,7 +455,7 @@ export default function Angebote() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-gray-900">Angebot per E-Mail versenden</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt.</p>
+                <p className="text-xs text-gray-400 mt-0.5">Wähle ein Angebot aus — Betreff und Text werden automatisch vorausgefüllt. Das PDF wird automatisch angehängt.</p>
               </div>
             </div>
 
@@ -476,24 +519,38 @@ export default function Angebote() {
                   />
                 </div>
 
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                  <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                  </svg>
-                  <p className="text-xs text-amber-700">
-                    Das Angebot wird <strong>nicht automatisch angehängt</strong>. Exportiere es zuerst unter <strong>PDF-Export</strong> als PDF-Datei und hänge es manuell in deinem E-Mail-Programm an.
-                  </p>
-                </div>
+                {emailErfolg && (
+                  <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
+                    E-Mail wurde erfolgreich versendet. Status auf „Gesendet" gesetzt.
+                  </div>
+                )}
+                {emailFehler && (
+                  <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
+                    {emailFehler}
+                  </div>
+                )}
 
                 <button
-                  onClick={handleMailto}
-                  disabled={!emailSelectedId || !emailEmpfaenger.trim()}
+                  onClick={handleApiVersand}
+                  disabled={!emailSelectedId || !emailEmpfaenger.trim() || emailSending}
                   className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                  </svg>
-                  E-Mail-Programm öffnen
+                  {emailSending ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Wird gesendet…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                      </svg>
+                      Angebot per E-Mail senden
+                    </>
+                  )}
                 </button>
               </>
             )}
