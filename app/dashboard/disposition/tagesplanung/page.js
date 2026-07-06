@@ -1,7 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import supabase from '@/lib/supabase';
 
 const STUNDEN = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+const STATUS_CONFIG = {
+  offen:          { label: 'Offen',          cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-100 text-blue-700 border-blue-200'       },
+  abgeschlossen:  { label: 'Abgeschlossen',  cls: 'bg-green-100 text-green-700 border-green-200'    },
+};
+
+const PRIORITAET_DOT = {
+  notfall: 'bg-red-500',
+  hoch:    'bg-orange-500',
+  normal:  'bg-blue-400',
+  niedrig: 'bg-gray-400',
+};
 
 function CalendarIcon({ className }) {
   return (
@@ -22,16 +36,73 @@ function PlusIcon({ className }) {
   );
 }
 
-export default function Tagesplanung() {
-  const [modalOffen, setModalOffen] = useState(false);
+function ChevronIcon({ direction, className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+      strokeWidth={2} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d={direction === 'left' ? 'M15.75 19.5L8.25 12l7.5-7.5' : 'M8.25 4.5l7.5 7.5-7.5 7.5'} />
+    </svg>
+  );
+}
 
-  const heute = new Date();
-  const datumText = heute.toLocaleDateString('de-DE', {
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+export default function Tagesplanung() {
+  const [modalOffen,    setModalOffen]    = useState(false);
+  const [einsaetze,     setEinsaetze]     = useState([]);
+  const [laden,         setLaden]         = useState(true);
+  const [companyId,     setCompanyId]     = useState(null);
+  const [gewaehlterTag, setGewaehlterTag] = useState(new Date().toISOString().split('T')[0]);
+
+  // Company laden
+  useEffect(() => {
+    async function loadCompany() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      setCompanyId(data?.company_id ?? null);
+    }
+    loadCompany();
+  }, []);
+
+  // Einsätze laden
+  useEffect(() => {
+    if (!companyId) return;
+    const load = async () => {
+      setLaden(true);
+      const { data } = await supabase
+        .from('auftraege')
+        .select('id, titel, status, uhrzeit, dauer_minuten, prioritaet, adresse, mitarbeiter:techniker_id(vorname, nachname), kunden:kunde_id(name, firmenname)')
+        .eq('company_id', companyId)
+        .eq('datum', gewaehlterTag)
+        .order('uhrzeit', { ascending: true, nullsFirst: false });
+      setEinsaetze(data ?? []);
+      setLaden(false);
+    };
+    load();
+  }, [companyId, gewaehlterTag]);
+
+  const datumText = new Date(gewaehlterTag + 'T00:00:00').toLocaleDateString('de-DE', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  // Platzhalter – noch keine Einsätze aus der Datenbank
-  const einsaetze = [];
+  // Einsätze nach Stunde gruppieren
+  const byStunde = {};
+  for (const e of einsaetze) {
+    if (e.uhrzeit) {
+      const h = parseInt(e.uhrzeit.split(':')[0], 10);
+      (byStunde[h] = byStunde[h] ?? []).push(e);
+    }
+  }
+  const ohneUhrzeit = einsaetze.filter(e => !e.uhrzeit);
 
   return (
     <div className="space-y-6">
@@ -41,7 +112,7 @@ export default function Tagesplanung() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Tagesplanung</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Plane und verwalte alle Einsätze für den heutigen Tag.
+            Plane und verwalte alle Einsätze für den gewählten Tag.
           </p>
         </div>
         <button
@@ -53,12 +124,31 @@ export default function Tagesplanung() {
         </button>
       </div>
 
-      {/* ── Datum-Badge ── */}
+      {/* ── Datum-Navigation ── */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Heute</span>
+        <button
+          onClick={() => setGewaehlterTag(prev => addDays(prev, -1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-600"
+        >
+          <ChevronIcon direction="left" className="w-4 h-4" />
+        </button>
         <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
           {datumText}
         </span>
+        <button
+          onClick={() => setGewaehlterTag(prev => addDays(prev, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition text-gray-600"
+        >
+          <ChevronIcon direction="right" className="w-4 h-4" />
+        </button>
+        {gewaehlterTag !== new Date().toISOString().split('T')[0] && (
+          <button
+            onClick={() => setGewaehlterTag(new Date().toISOString().split('T')[0])}
+            className="ml-2 text-xs text-blue-600 hover:underline font-medium"
+          >
+            Heute
+          </button>
+        )}
       </div>
 
       {/* ── Tageskalender-Bereich ── */}
@@ -67,18 +157,24 @@ export default function Tagesplanung() {
         {/* Kalender-Header */}
         <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
           <span className="text-sm font-semibold text-gray-900">Tagesansicht</span>
-          <span className="text-xs text-gray-400">Kalenderansicht folgt in Kürze</span>
+          <span className="text-xs text-gray-400">
+            {laden ? 'Lädt…' : `${einsaetze.length} Einsatz${einsaetze.length !== 1 ? 'ätze' : ''}`}
+          </span>
         </div>
 
-        {einsaetze.length === 0 ? (
+        {laden ? (
+          <div className="flex items-center justify-center py-16">
+            <p className="text-sm text-gray-400">Wird geladen…</p>
+          </div>
+        ) : einsaetze.length === 0 ? (
           /* ── Leerer Zustand ── */
           <div className="flex flex-col items-center justify-center py-16 text-center px-6">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CalendarIcon className="w-7 h-7 text-gray-300" />
             </div>
-            <p className="text-sm font-medium text-gray-500">Keine Einsätze für heute geplant.</p>
+            <p className="text-sm font-medium text-gray-500">Keine Einsätze für diesen Tag geplant.</p>
             <p className="text-xs text-gray-400 mt-1">
-              Klicke auf „Einsatz planen“, um den ersten Einsatz hinzuzufügen.
+              Klicke auf „Einsatz planen", um den ersten Einsatz hinzuzufügen.
             </p>
             <button
               onClick={() => setModalOffen(true)}
@@ -89,46 +185,57 @@ export default function Tagesplanung() {
             </button>
           </div>
         ) : (
-          /* ── Einsatz-Liste (wird später mit echten Daten befüllt) ── */
-          <div className="divide-y divide-gray-50">
-            {einsaetze.map((e) => (
-              <div key={e.id} className="px-6 py-4 flex items-center gap-4">
-                <span className="text-xs text-gray-400 w-12 shrink-0">{e.uhrzeit}</span>
-                <span className="flex-1 text-sm font-medium text-gray-900">{e.titel}</span>
+          /* ── Zeitraster mit echten Daten ── */
+          <div className="px-6 py-4">
+            {ohneUhrzeit.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Ohne Uhrzeit</p>
+                <div className="space-y-2">
+                  {ohneUhrzeit.map(e => {
+                    const cfg  = STATUS_CONFIG[e.status] ?? STATUS_CONFIG.offen;
+                    const tech = e.mitarbeiter ? `${e.mitarbeiter.vorname} ${e.mitarbeiter.nachname}` : null;
+                    return (
+                      <div key={e.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm ${cfg.cls}`}>
+                        {e.prioritaet && <span className={`w-2 h-2 rounded-full shrink-0 ${PRIORITAET_DOT[e.prioritaet] ?? 'bg-gray-400'}`} />}
+                        <span className="font-medium flex-1 truncate">{e.titel}</span>
+                        {tech && <span className="text-xs opacity-75">&#128119; {tech}</span>}
+                        {e.dauer_minuten && <span className="text-xs opacity-75 shrink-0">{e.dauer_minuten} Min.</span>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
+            )}
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Zeitraster</p>
+            <div className="space-y-px">
+              {STUNDEN.map((h) => {
+                const stundenEinsaetze = byStunde[h] ?? [];
+                return (
+                  <div key={h} className="flex items-start gap-4 group">
+                    <span className="text-xs text-gray-300 w-10 shrink-0 text-right py-2.5">
+                      {String(h).padStart(2, '0')}:00
+                    </span>
+                    <div className="flex-1 min-h-10 rounded-lg bg-gray-50 group-hover:bg-gray-100 transition p-1 space-y-1">
+                      {stundenEinsaetze.map(e => {
+                        const cfg  = STATUS_CONFIG[e.status] ?? STATUS_CONFIG.offen;
+                        const tech = e.mitarbeiter ? `${e.mitarbeiter.vorname} ${e.mitarbeiter.nachname}` : null;
+                        return (
+                          <div key={e.id} className={`flex items-center gap-2 px-2 py-1 rounded border text-xs ${cfg.cls}`}>
+                            {e.prioritaet && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITAET_DOT[e.prioritaet] ?? 'bg-gray-400'}`} />}
+                            <span className="font-medium shrink-0">{e.uhrzeit?.slice(0, 5)}</span>
+                            <span className="flex-1 truncate font-medium">{e.titel}</span>
+                            {tech && <span className="opacity-75 shrink-0">&#128119; {tech}</span>}
+                            {e.dauer_minuten && <span className="opacity-75 shrink-0">{e.dauer_minuten} Min.</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
-
-        {/* ── Zeitslot-Skeleton – Platzhalter für Kalenderansicht ── */}
-        <div className="border-t border-gray-50 px-6 py-4">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">
-            Zeitraster – Vorschau
-          </p>
-          <div className="space-y-px">
-            {STUNDEN.map((h) => (
-              <div key={h} className="flex items-center gap-4 group">
-                <span className="text-xs text-gray-300 w-10 shrink-0 text-right py-2">
-                  {String(h).padStart(2, '0')}:00
-                </span>
-                <div className="flex-1 h-10 rounded-lg bg-gray-50 group-hover:bg-gray-100 transition" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Hinweis-Banner ── */}
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-        <svg className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24"
-          strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round"
-            d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-        </svg>
-        <p className="text-xs text-blue-700">
-          Die vollständige Tagesplanung mit Drag & Drop, Mitarbeiter- und Fahrzeugzuweisung wird
-          in einer kommenden Version verfügbar sein.
-        </p>
       </div>
 
       {/* ── Platzhalter-Modal ── */}
