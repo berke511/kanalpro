@@ -4,6 +4,6 @@ import { useRouter } from 'next/navigation';
 
 export default function Register() {
   const router = useRouter();
-  useEffect(() => { router.replace('/'); }, []);
+  useEffect(() => { router.replace('/registrieren'); }, []);
   return null;
 }
