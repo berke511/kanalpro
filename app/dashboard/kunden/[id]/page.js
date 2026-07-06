@@ -1191,7 +1191,7 @@ export default function KundeDetail() {
         .from('company_members')
         .select('company_id, rolle')
         .eq('user_id', user.id)
-        .eq('is_active', true)
+        .neq('is_active', false)
         .maybeSingle();
 
       if (!member) { setZugriff(false); setLaden(false); return; }
