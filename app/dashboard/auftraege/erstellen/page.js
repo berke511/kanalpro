@@ -286,7 +286,7 @@ export default function AuftragErstellen() {
         objekt_id:    selectedObjekt?.id ?? null,
         titel:        auftragsart,
         beschreibung: beschreibung.trim(),
-        status:       notdienst ? 'Notdienst' : 'Neu',
+        status:       'offen',
         datum:        termin || null,
         adresse:      einsatzAdr || null,
         notizen:      JSON.stringify(metaDaten),
