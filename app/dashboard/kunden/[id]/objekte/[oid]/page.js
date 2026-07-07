@@ -277,7 +277,7 @@ export default function ObjektDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{objekt.bezeichnung}</h1>
           {objekt.adresse && <p className="text-gray-500 text-sm mt-1">{objekt.adresse}</p>}
         </div>
-        <Link href={`/dashboard/auftraege/neu?objekt_id=${oid}&kunde_id=${id}`}
+        <Link href={`/dashboard/auftraege/erstellen`}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
           + Einsatz erfassen
         </Link>
