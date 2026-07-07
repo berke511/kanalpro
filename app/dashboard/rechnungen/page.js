@@ -255,7 +255,7 @@ export default function Rechnungen() {
       <div className="space-y-5 max-w-6xl pb-10">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Rechnungen</h1>
             <p className="text-sm text-gray-400 mt-0.5">Rechnungen erstellen, verwalten und versenden.</p>
@@ -303,8 +303,8 @@ export default function Rechnungen() {
                 </Link>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <table className="w-full text-sm">
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
                       <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
@@ -368,7 +368,7 @@ export default function Rechnungen() {
                     })}
                   </tbody>
                 </table>
-              </div>
+</div></div>
             )}
 
             {mahnModal && (
