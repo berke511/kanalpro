@@ -267,7 +267,7 @@ export default function Einsatzplanung() {
     <div>
       <div className="flex items-center justify-between mb-6 no-print">
         <h1 className="text-2xl font-bold text-gray-900">&#128197; Einsatzplanung</h1>
-        <Link href="/dashboard/auftraege/neu"
+        <Link href="/dashboard/auftraege/erstellen"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
           + Neuer Auftrag
         </Link>
