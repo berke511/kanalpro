@@ -809,6 +809,7 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
   ];
   const allOk        = checks.every(c => c.ok);
   const abgeschlossen = dok?.status === 'dokumentiert';
+  const router       = useRouter();
 
   return (
     <Karte className={abgeschlossen ? 'border-green-200' : ''}>
@@ -825,6 +826,12 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
             {dok?.dokumentiert_at && (
               <p className="text-xs text-green-500 mt-1">Abgeschlossen um {fmtZeit(dok.dokumentiert_at)}</p>
             )}
+            <button
+              onClick={() => router.push('/dashboard/rechnungen/neu')}
+              className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition"
+            >
+              Rechnung erstellen
+            </button>
           </div>
         ) : (
           <>
