@@ -25,14 +25,14 @@ export default function Auftraege() {
   const gefiltert = filter === 'alle' ? auftraege : auftraege.filter(a => a.status === filter);
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Aufträge</h1>
           <p className="text-gray-500 mt-1">{auftraege.length} Aufträge gesamt</p>
         </div>
         <Link href="/dashboard/auftraege/erstellen" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">+ Neuer Auftrag</Link>
       </div>
-      <div className="flex gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5">
         {['alle','offen','in_bearbeitung','abgeschlossen'].map(s => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter===s?'bg-blue-600 text-white':'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
@@ -47,8 +47,8 @@ export default function Auftraege() {
           <p className="text-sm mt-1">Lege deinen ersten Auftrag an.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
+          <table className="w-full min-w-[500px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Titel</th>
@@ -74,7 +74,7 @@ export default function Auftraege() {
               })}
             </tbody>
           </table>
-        </div>
+</div></div>
       )}
     </div>
   );
