@@ -7,16 +7,16 @@ import PlanGate from '@/components/PlanGate';
 import TabNav from '@/components/ui/TabNav';
 
 const RECHNUNGEN_TABS = [
-  { id: 'rechnungen', label: 'Rechnungen' },
+  { id: 'rechnungen',      label: 'Rechnungen'      },
   { id: 'zahlungseingang', label: 'Zahlungseingänge' },
-  { id: 'pdf', label: 'PDF-Export' },
+  { id: 'pdf',             label: 'PDF-Export'       },
 ];
 
 const statusConfig = {
-  entwurf: { label: 'Entwurf', cls: 'bg-gray-100 text-gray-600' },
-  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700' },
-  bezahlt: { label: 'Bezahlt', cls: 'bg-green-50 text-green-700' },
-  mahnung: { label: 'Mahnung', cls: 'bg-orange-50 text-orange-600'},
+  entwurf:  { label: 'Entwurf',  cls: 'bg-gray-100 text-gray-600'   },
+  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700'    },
+  bezahlt:  { label: 'Bezahlt',  cls: 'bg-green-50 text-green-700'  },
+  mahnung:  { label: 'Mahnung',  cls: 'bg-orange-50 text-orange-600'},
 };
 
 function brutto(r) {
@@ -32,15 +32,15 @@ function getMahnLabel(stufe) {
 }
 
 function buildBriefText(r, firma, stufe) {
-  const betrag = brutto(r).toFixed(2).replace('.', ',');
+  const betrag    = brutto(r).toFixed(2).replace('.', ',');
   const faelligStr = r.faellig_am ? new Date(r.faellig_am).toLocaleDateString('de-DE') : '–';
-  const datumStr = r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–';
-  const heute = new Date().toLocaleDateString('de-DE');
-  const fn = firma?.firmaname ?? '';
-  const adresse = [fn, firma?.strasse, [firma?.plz, firma?.ort].filter(Boolean).join(' ')].filter(Boolean).join('\n');
-  const frist14 = new Date(Date.now() + 14 * 86400000).toLocaleDateString('de-DE');
-  const frist7 = new Date(Date.now() + 7 * 86400000).toLocaleDateString('de-DE');
-  const header = adresse ? `${adresse}\n\n${heute}\n\n` : `${heute}\n\n`;
+  const datumStr   = r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–';
+  const heute      = new Date().toLocaleDateString('de-DE');
+  const fn         = firma?.firmaname ?? '';
+  const adresse    = [fn, firma?.strasse, [firma?.plz, firma?.ort].filter(Boolean).join(' ')].filter(Boolean).join('\n');
+  const frist14    = new Date(Date.now() + 14 * 86400000).toLocaleDateString('de-DE');
+  const frist7     = new Date(Date.now() +  7 * 86400000).toLocaleDateString('de-DE');
+  const header     = adresse ? `${adresse}\n\n${heute}\n\n` : `${heute}\n\n`;
 
   if (stufe === 0) return (
     `${header}` +
@@ -48,8 +48,8 @@ function buildBriefText(r, firma, stufe) {
     `Sehr geehrte Damen und Herren,\n\n` +
     `vermutlich ist es in Ihrem Geschäftsalltag untergegangen. Wir möchten Sie daher freundlich an ` +
     `die offene Rechnung Nr. ${r.rechnungsnummer} vom ${datumStr} erinnern.\n\n` +
-    `Offener Betrag: ${betrag} €\n` +
-    `Fälligkeitsdatum: ${faelligStr}\n\n` +
+    `Offener Betrag:    ${betrag} €\n` +
+    `Fälligkeitsdatum:  ${faelligStr}\n\n` +
     `Wir bitten Sie, den Betrag bis zum ${frist14} auf unser Konto zu überweisen. ` +
     `Sollte sich die Zahlung mit diesem Schreiben gekreuzt haben, betrachten Sie es bitte als gegenstandslos.\n\n` +
     `Mit freundlichen Grüßen\n${fn}`
@@ -74,7 +74,7 @@ function buildBriefText(r, firma, stufe) {
     `Nr. ${r.rechnungsnummer} über ${betrag} € (fällig am ${faelligStr}) hingewiesen haben, ` +
     `ist bislang kein Zahlungseingang bei uns eingegangen.\n\n` +
     `Wir setzen Ihnen eine letzte Zahlungsfrist bis zum ${frist7}. ` +
-    `Sollte bis zu diesem Datum keine Zahlung erfolgen, sehen wir ans gezwungen, ` +
+    `Sollte bis zu diesem Datum keine Zahlung erfolgen, sehen wir mis gezwungen, ` +
     `einen Rechtsanwalt einzuschalten und gerichtliche Schritte einzuleiten.\n\n` +
     `Mit freundlichen Grüßen\n${fn}`
   );
@@ -99,67 +99,22 @@ async function generatePDF(text, rechnungsnummer, label) {
   doc.save(`${label.replace(/[\s.]/g, '_')}_${rechnungsnummer}.pdf`);
 }
 
-async function buildMahnungPDFBase64(text) {
-  if (!window.jspdf) {
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(11);
-  const lines = doc.splitTextToSize(text, 175);
-  doc.text(lines, 17, 20);
-  const ab = doc.output('arraybuffer');
-  const bytes = new Uint8Array(ab);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
 function MahnungModal({ rechnung, firma, onClose, onSaved }) {
   const stufe = rechnung.mahnstufe ?? 0;
   const label = getMahnLabel(stufe);
   const [text, setText] = useState(() => buildBriefText(rechnung, firma, stufe));
   const [saving, setSaving] = useState(false);
-  const [sendFehler, setSendFehler] = useState('');
 
   async function handle(mode) {
     setSaving(true);
-    setSendFehler('');
     const newStufe = stufe + 1;
     await supabase.from('rechnungen').update({ mahnstufe: newStufe, status: 'mahnung' }).eq('id', rechnung.id);
 
     if (mode === 'email') {
-      try {
-        const email = rechnung.kunden?.email ?? '';
-        if (!email) throw new Error('Keine E-Mail-Adresse beim Kunden hinterlegt.');
-        const pdf_base64 = await buildMahnungPDFBase64(text);
-        const betreff = `${label} – Rechnung ${rechnung.rechnungsnummer}`;
-        const filename = `${label.replace(/[\s.]/g, '_')}_${rechnung.rechnungsnummer}.pdf`;
-        const res = await fetch('/api/send-dokument', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: email,
-            subject: betreff,
-            body: text.replace(/\n/g, '<br>'),
-            pdf_base64,
-            filename,
-            dokument_typ: 'mahnung',
-            dokument_id: rechnung.id,
-          }),
-        });
-        const result = await res.json();
-        if (!result.success) throw new Error(result.error || 'Versand fehlgeschlagen');
-      } catch (e) {
-        setSendFehler(e.message);
-        setSaving(false);
-        return;
-      }
+      const betreff = encodeURIComponent(`${label} – Rechnung ${rechnung.rechnungsnummer}`);
+      const body    = encodeURIComponent(text);
+      const email   = rechnung.kunden?.email ?? '';
+      window.open(`mailto:${email}?subject=${betreff}&body=${body}`, '_blank');
     } else {
       await generatePDF(text, rechnung.rechnungsnummer, label);
     }
@@ -222,13 +177,6 @@ function MahnungModal({ rechnung, firma, onClose, onSaved }) {
           />
         </div>
 
-        {/* Fehler */}
-        {sendFehler && (
-          <div className="mx-6 mb-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700">
-            {sendFehler}
-          </div>
-        )}
-
         {/* Footer */}
         <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100">
           <button onClick={onClose} className="text-sm text-gray-400 hover:text-gray-600 px-3 py-2 transition">
@@ -250,22 +198,10 @@ function MahnungModal({ rechnung, firma, onClose, onSaved }) {
             onClick={() => handle('email')}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {saving ? (
-              <>
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Wird gesendet…
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
-                Per E-Mail senden
-              </>
-            )}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+            Per E-Mail
           </button>
         </div>
       </div>
@@ -275,29 +211,27 @@ function MahnungModal({ rechnung, firma, onClose, onSaved }) {
 
 export default function Rechnungen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('rechnungen');
+  const [activeTab, setActiveTab]   = useState('rechnungen');
   const [rechnungen, setRechnungen] = useState([]);
-  const [laden, setLaden] = useState(true);
-  const [firma, setFirma] = useState(null);
-  const [mahnModal, setMahnModal] = useState(null);
+  const [laden, setLaden]           = useState(true);
+  const [firma, setFirma]           = useState(null);
+  const [mahnModal, setMahnModal]   = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('*, companies(id, logo_url)')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single();
-      const companyId = member?.company_id;
-
       const [{ data: rech }, { data: einst }] = await Promise.all([
-        supabase.from('rechnungen').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false }),
-        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
+        supabase.from('rechnungen')
+          .select('*, kunden(name, email)')
+          .eq('user_id', user.id)
+          .order('erstellt_am', { ascending: false }),
+        supabase.from('einstellungen')
+          .select('firmaname, strasse, plz, ort')
+          .eq('user_id', user.id)
+          .single(),
       ]);
       setRechnungen(rech ?? []);
-      if (einst) setFirma(einst);
+      setFirma(einst ?? null);
       setLaden(false);
     }
     load();
@@ -350,9 +284,23 @@ export default function Rechnungen() {
             {laden ? (
               <p className="text-gray-400">Wird geladen...</p>
             ) : rechnungen.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <p className="font-medium">Noch keine Rechnungen</p>
-                <p className="text-sm mt-1">Erstelle deine erste Rechnung.</p>
+              <div className="text-center py-20 px-6">
+                <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 01-.75.75h-.75M6.75 7.5h10.5M6.75 10.5h10.5M6.75 13.5h3" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-gray-700">Noch keine Rechnungen</p>
+                <p className="text-sm text-gray-400 mt-1.5 max-w-xs mx-auto">Erstelle professionelle Rechnungen und behalte den Überblick über offene Zahlungen.</p>
+                <Link
+                  href="/dashboard/rechnungen/neu"
+                  className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Erste Rechnung erstellen
+                </Link>
               </div>
             ) : (
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -369,36 +317,36 @@ export default function Rechnungen() {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {rechnungen.map(r => {
-                      const cfg = statusConfig[r.status] ?? statusConfig.entwurf;
+                      const cfg     = statusConfig[r.status] ?? statusConfig.entwurf;
                       const overdue = isOverdue(r);
-                      const stufe = r.mahnstufe ?? 0;
+                      const stufe   = r.mahnstufe ?? 0;
                       const mahnLabel = getMahnLabel(stufe);
                       return (
                         <tr key={r.id} className="hover:bg-gray-50 transition">
                           <td className="px-5 py-3 font-mono font-medium text-gray-900 cursor-pointer"
-                            onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
+                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                             {r.rechnungsnummer}
                           </td>
                           <td className="px-5 py-3 text-gray-500 cursor-pointer"
-                            onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
+                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                             {r.kunden?.name ?? '–'}
                           </td>
                           <td className="px-5 py-3 text-gray-500 cursor-pointer"
-                            onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
+                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                             {r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}
                           </td>
                           <td className="px-5 py-3 font-medium text-gray-900 cursor-pointer"
-                            onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
+                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                             {brutto(r).toFixed(2).replace('.', ',')} €
                           </td>
                           <td className="px-5 py-3 cursor-pointer"
-                            onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
+                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
                             <div className="flex items-center gap-2">
                               <span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>
                                 {cfg.label}
                               </span>
                               {overdue && (
-                                <span className="text-xs text-red-500 font-medium">øberfällig</span>
+                                <span className="text-xs text-red-500 font-medium">überfällig</span>
                               )}
                             </div>
                           </td>
