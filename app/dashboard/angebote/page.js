@@ -235,7 +235,7 @@ export default function Angebote() {
   return (
     <div>
       {/* ── Tab-Navigation + Actions ── */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <Link
           href="/dashboard/angebote/vorlagen"
           className="text-sm font-medium text-gray-500 hover:text-blue-600 transition"
@@ -281,8 +281,8 @@ export default function Angebote() {
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
+            <table className="w-full min-w-[550px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
@@ -311,7 +311,7 @@ export default function Angebote() {
                 })}
               </tbody>
             </table>
-          </div>
+</div></div>
         )
       )}
 
