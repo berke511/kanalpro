@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import { checkAndDowngrade, getSubscriptionStatus, getPlan } from '@/lib/subscription';
 
 function farbeVonName(name) {
   const farben = ['bg-blue-500','bg-green-500','bg-purple-500','bg-pink-500','bg-orange-500','bg-teal-500','bg-indigo-500','bg-red-500'];
@@ -26,23 +27,26 @@ export default function Kunden() {
   const [buchstabe, setBuchstabe] = useState(null);
   const [loeschenId, setLoeschenId] = useState(null);
   const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
+  const [planInfo, setPlanInfo] = useState(null);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: member } = await supabase
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .single();
-    const companyId = member?.company_id;
+    const abo = await checkAndDowngrade(supabase, user.id);
+    const sub = getSubscriptionStatus(abo);
+    const plan = getPlan(sub.plan);
+    const limit = plan.limits.kunden;
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
-      .eq('company_id', companyId)
       .order('name');
     setKunden(data ?? []);
+    const count = (data ?? []).length;
+    const isLimited = limit != null && limit !== Infinity;
+    const atLimit = isLimited && count >= limit;
+    const nearLimit = isLimited && !atLimit && count >= Math.floor(limit * 0.8);
+    setPlanInfo({ planId: sub.plan, limit, count, atLimit, nearLimit });
     setLaden(false);
   }
 
@@ -61,23 +65,43 @@ export default function Kunden() {
       })
     : kunden;
 
-  const vorhandeneBuchstaben = new Set(kunden.map(k => {
+  const vorhandeneBuchstaben = new Set((kunden || []).map(k => {
     const n = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
     return n[0]?.toUpperCase();
   }));
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Kunden</h1>
           <p className="text-gray-500 mt-1">{kunden.length} Kunden gesamt</p>
         </div>
-        <Link href="/dashboard/kunden/neu"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-          + Neuer Kunde
-        </Link>
+        {planInfo?.atLimit ? (
+          <Link href="/dashboard/billing"
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium text-sm flex items-center gap-1.5 border border-red-100">
+            Limit erreicht
+          </Link>
+        ) : (
+          <Link href="/dashboard/kunden/neu"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
+            + Neuer Kunde
+          </Link>
+        )}
       </div>
+
+      {planInfo?.atLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+          <span>Limit erreicht: {planInfo.count}/{planInfo.limit} Kunden (Starter-Plan)</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
+      {planInfo?.nearLimit && (
+        <div className="mb-4 flex items-center justify-between px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-700">
+          <span>{planInfo.count}/{planInfo.limit} Kunden genutzt — bald voll</span>
+          <Link href="/dashboard/billing" className="ml-4 font-semibold underline shrink-0">Upgrade →</Link>
+        </div>
+      )}
 
       {/* A-Z Register */}
       <div className="flex flex-wrap gap-1 mb-5">
@@ -85,7 +109,7 @@ export default function Kunden() {
           className={`px-2.5 h-7 rounded-lg text-xs font-bold transition ${!buchstabe ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
           Alle
         </button>
-        {ALPHABET.map(b => (
+        {(ALPHABET || []).map(b => (
           <button key={b} onClick={() => vorhandeneBuchstaben.has(b) && setBuchstabe(buchstabe === b ? null : b)}
             className={`w-7 h-7 rounded-md text-xs font-bold transition ${
               buchstabe === b ? 'bg-blue-600 text-white' :
@@ -100,14 +124,36 @@ export default function Kunden() {
       {laden ? (
         <p className="text-gray-400">Wird geladen...</p>
       ) : gefiltert.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <div className="text-4xl mb-3">👥</div>
-          <p className="font-medium">Keine Kunden{buchstabe ? ` mit „${buchstabe}"` : ''}</p>
-          {!buchstabe && <p className="text-sm mt-1">Lege deinen ersten Kunden an.</p>}
+        <div className="text-center py-20 px-6">
+          <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-gray-700">
+            {buchstabe ? `Keine Kunden mit „${buchstabe}"` : 'Noch keine Kunden angelegt'}
+          </p>
+          <p className="text-sm text-gray-400 mt-1.5 max-w-xs mx-auto">
+            {buchstabe
+              ? 'Wähle einen anderen Buchstaben oder lege einen neuen Kunden an.'
+              : 'Füge deinen ersten Kunden hinzu und verwalte Aufträge, Angebote und Rechnungen an einem Ort.'}
+          </p>
+          {!buchstabe && (
+            <Link
+              href="/dashboard/kunden/neu"
+              className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Ersten Kunden anlegen
+            </Link>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
@@ -118,7 +164,7 @@ export default function Kunden() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {gefiltert.map(k => {
+              {(gefiltert || []).map(k => {
                 const anzeigeName = k.kundentyp === 'firma' && k.firmenname ? k.firmenname : k.name;
                 const sortiert = (k.auftraege ?? []).slice().sort((a, b) => new Date(b.datum ?? 0) - new Date(a.datum ?? 0));
                 const letzter = sortiert[0];
@@ -137,10 +183,10 @@ export default function Kunden() {
                           )}
                           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${k.kundentyp === 'firma' ? 'bg-purple-50 text-purple-600' : 'bg-gray-50 text-gray-500'}`}>
-                              {k.kundentyp === 'firma' ? '🏢 Firma' : '👤 Privat'}
+                              {k.kundentyp === 'firma' ? 'Firma' : 'Privat'}
                             </span>
-                            {k.ist_vertragskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">📄 Vertrag</span>}
-                            {k.ist_wartungskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">🔧 Wartung</span>}
+                            {k.ist_vertragskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Vertrag</span>}
+                            {k.ist_wartungskunde && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">Wartung</span>}
                           </div>
                         </div>
                       </div>
@@ -187,7 +233,7 @@ export default function Kunden() {
                           </Link>
                           <button onClick={() => { setLoeschenId(k.id); setLoeschenBestaetigt(false); }}
                             className="text-xs px-2 py-1 rounded text-gray-300 hover:bg-red-50 hover:text-red-500 transition">
-                            ✕
+                            ×
                           </button>
                         </div>
                       )}
@@ -197,6 +243,7 @@ export default function Kunden() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
