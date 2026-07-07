@@ -733,15 +733,15 @@ function NeueRechnungInner() {
 
       const { data: member } = await supabase
         .from('company_members')
-        .select('company_id, rolle')
+        .select('company_id, role')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!member) { setZustand('forbidden'); return; }
-      if (!LESEN_ROLLEN.includes(member.rolle)) { setZustand('forbidden'); return; }
+      if (!LESEN_ROLLEN.includes(member.role)) { setZustand('forbidden'); return; }
 
-      setUserRolle(member.rolle);
+      setUserRolle(member.role);
       setCompanyId(member.company_id);
 
       // Rechnungsnummer vorab generieren
