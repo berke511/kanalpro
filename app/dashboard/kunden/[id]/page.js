@@ -359,7 +359,7 @@ function StammdatenTab({ form, handleChange, handleSave, speichern, erfolg, fehl
 function AnsprechpartnerTab({ form }) {
   const felder = [
     { label: 'Name / Ansprechpartner', value: form.name, icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z' },
-    { label: 'Telefon', value: form.telefon, href: form.telefon ? `tel:${form.telefon}` : null, icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z' },
+    { label: 'Telefon', value: form.telefon, href: form.telefon ? `sel:${form.telefon}` : null, icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.25 0 00-1.091-.852H14.5A2.25 2.25 0 002.25 4.5v2.25z' },
     { label: 'E-Mail', value: form.email, href: form.email ? `mailto:${form.email}` : null, icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75' },
     { label: 'Adresse', value: form.adresse, icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z' },
   ];
@@ -697,7 +697,7 @@ function HistorieTab({ auftraege, rechnungen }) {
         });
       }
 
-      if (a.status === 'Abgeschlossen') {
+      if (a.status === 'abgeschlossen') {
         liste.push({
           datum: a.einsatzdatum ? a.einsatzdatum + 'T18:00:00' : a.created_at,
           typ: 'auftrag_abgeschlossen',
@@ -896,7 +896,7 @@ function RechnungenTab({ rechnungen, router }) {
                         <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
                           {cfg.label}
                         </span>
-                        {isOverdue && <span className="text-xs text-red-500 font-medium">überfällig</span>}
+                        {isOverdue && <span className="text-xs text-red-500 font-medium">øberfällig</span>}
                       </div>
                     </td>
                     <td className="px-5 py-3.5 text-right">
@@ -1189,13 +1189,13 @@ export default function KundeDetail() {
 
       const { data: member } = await supabase
         .from('company_members')
-        .select('company_id, rolle')
+        .select('company_id, role')
         .eq('user_id', user.id)
-        .neq('is_active', false)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (!member) { setZugriff(false); setLaden(false); return; }
-      if (!BERECHTIGTE_ROLLEN.includes(member.rolle)) { setZugriff(false); setLaden(false); return; }
+      if (!BERECHTIGTE_ROLLEN.includes(member.role)) { setZugriff(false); setLaden(false); return; }
 
       const cId = member.company_id;
       setCompanyId(cId);
@@ -1207,14 +1207,14 @@ export default function KundeDetail() {
         { data: o },
         { data: r },
       ] = await Promise.all([
-        supabase.from('kunden').select('*').eq('id', id).eq('company_id', cId).single(),
+        supabase.from('kunden').select('*').eq('id', id).single(),
         supabase.from('auftraege')
           .select('*, auftrag_mitarbeiter(mitarbeiter:mitarbeiter_id(vorname, nachname))')
           .eq('kunde_id', id)
           .eq('company_id', cId)
           .order('einsatzdatum', { ascending: false, nullsFirst: false }),
         supabase.from('objekte').select('*').eq('kunde_id', id).order('erstellt_am'),
-        supabase.from('rechnungen').select('*').eq('kunde_id', id).eq('company_id', cId).order('erstellt_am', { ascending: false }),
+        supabase.from('rechnungen').select('*').eq('kunde_id', id).order('erstellt_am', { ascending: false }),
       ]);
 
       if (!k) { router.push('/dashboard/kunden'); return; }
@@ -1269,7 +1269,7 @@ export default function KundeDetail() {
       rechnung_ort:             form.rechnungsadresse_abweichend ? (form.rechnung_ort || null) : null,
       ist_vertragskunde:        form.ist_vertragskunde,
       ist_wartungskunde:        form.ist_wartungskunde,
-    }).eq('id', id).eq('company_id', companyId);
+    }).eq('id', id);
     if (error) setFehler('Fehler beim Speichern.');
     else { setErfolg(true); setTimeout(() => setErfolg(false), 3000); }
     setSpeichern(false);
@@ -1277,7 +1277,7 @@ export default function KundeDetail() {
 
   async function handleDelete() {
     if (!loeschenBestaetigt) { setLoeschenBestaetigt(true); return; }
-    await supabase.from('kunden').delete().eq('id', id).eq('company_id', companyId);
+    await supabase.from('kunden').delete().eq('id', id);
     router.push('/dashboard/kunden');
   }
 
@@ -1405,7 +1405,7 @@ export default function KundeDetail() {
             if (!form.telefon && !form.email) {
               step = { title: 'Kontaktdaten ergänzen', btnLabel: 'Stammdaten bearbeiten', onBtn: () => setTab('stammdaten') };
             } else if (auftraege.length === 0) {
-              step = { title: 'Ersten Auftrag anlegen', btnLabel: 'Auftrag erstellen', onBtn: () => router.push(`/dashboard/auftraege/erstellen`) };
+              step = { title: 'Ersten Auftrag anlegen', btnLabel: 'Auftrag erstellen', onBtn: () => router.push('/dashboard/auftraege/erstellen') };
             } else if (hatOffeneRechnungen) {
               step = { title: 'Offene Rechnungen prüfen', btnLabel: 'Rechnungen öffnen', onBtn: () => setTab('rechnungen') };
             }
@@ -1477,11 +1477,10 @@ export default function KundeDetail() {
             );
           })()}
 
-
           {/* ── Kunden-Kennzahlen ── */}
           {(() => {
             const auftraegeGesamt = auftraege.length;
-            const auftraegeAbgeschlossen = auftraege.filter(a => a.status === 'Abgeschlossen').length;
+            const auftraegeAbgeschlossen = auftraege.filter(a => a.status === 'abgeschlossen').length;
             const rechnungenGesamt = rechnungen.length;
             const offenerBetrag = rechnungen
               .filter(r => r.status !== 'bezahlt')
@@ -1514,7 +1513,6 @@ export default function KundeDetail() {
               </Karte>
             );
           })()}
-
 
           {/* ── Quick Actions ── */}
           {(() => {

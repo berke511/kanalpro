@@ -128,10 +128,8 @@ export default function AuftragErstellen() {
   const [termin,       setTermin]       = useState('');
   const [uhrzeit,      setUhrzeit]      = useState('');
   const [notdienst,    setNotdienst]    = useState(false);
-  const [prioritaet,   setPrioritaet]   = useState('normal');
-  const [dauerMinuten, setDauerMinuten] = useState('');
   const [beschreibung, setBeschreibung] = useState('');
-  const [interneNotiz, setInterneNotiz] = useState('');
+  const [intNotiz,     setIntNotiz]     = useState('');
   const [nummer]                        = useState(genNummer);
 
   // UI
@@ -270,26 +268,28 @@ export default function AuftragErstellen() {
     setApiErr('');
 
     try {
+      const metaDaten = {
+        nummer,
+        uhrzeit:       uhrzeit || null,
+        notdienst,
+        interne_notiz: intNotiz.trim() || null,
+      };
+
       const einsatzAdr = selectedObjekt
         ? `${selectedObjekt.bezeichnung}${selectedObjekt.adresse ? ' â€“ ' + selectedObjekt.adresse : ''}`
         : manuelleAdr.trim();
 
       const payload = {
-        company_id:    companyId,
-        user_id:       userId,
-        kunde_id:      selectedKunde.id,
-        objekt_id:     selectedObjekt?.id ?? null,
-        titel:         auftragsart,
-        beschreibung:  beschreibung.trim(),
-        status:        notdienst ? 'Notdienst' : 'Neu',
-        datum:         termin || null,
-        adresse:       einsatzAdr || null,
-        prioritaet,
-        dauer_minuten: dauerMinuten ? parseInt(dauerMinuten) : null,
-        uhrzeit:       uhrzeit || null,
-        notdienst,
-        interne_notiz: interneNotiz || null,
-        notizen:       beschreibung || null,
+        company_id:   companyId,
+        user_id:      userId,
+        kunde_id:     selectedKunde.id,
+        objekt_id:    selectedObjekt?.id ?? null,
+        titel:        auftragsart,
+        beschreibung: beschreibung.trim(),
+        status:       'offen',
+        datum:        termin || null,
+        adresse:      einsatzAdr || null,
+        notizen:      JSON.stringify(metaDaten),
       };
 
       const { data: neuer, error } = await supabase
@@ -342,7 +342,7 @@ export default function AuftragErstellen() {
             className="flex items-center gap-1.5 px-4 py-2 border border-blue-200 text-blue-600 bg-blue-50 rounded-xl text-sm font-medium hover:bg-blue-100 transition disabled:opacity-50"
           >
             {saving
-              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M8.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
+              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
               : <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             }
             Auftrag speichern
@@ -354,7 +354,7 @@ export default function AuftragErstellen() {
             className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
           >
             {saving
-              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M8.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
+              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
               : <Svg d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             }
             Speichern & zur Einsatzplanung
@@ -600,18 +600,17 @@ export default function AuftragErstellen() {
             <option value="">â€” Bitte wÃ¤hlen â€”</option>
             {AUFTRAGSARTEN.map(a => (
               <option key={a} value={a}>{a}</option>
-            ))}
+             ))}
           </select>
           <FieldError msg={fehler.auftragsart} />
         </div>
       </SectionCard>
 
-      {/* â”€â”€â”€ BEREICH 4: Einsatzplanung â”€â”€â”€ */}
+      {/* BEREICH 4: Einsatzplanung */}
       <SectionCard
         icon="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
         title="Einsatzplanung"
       >
-        {/* Termin + Uhrzeit */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
           <div>
             <Label htmlFor="termin">Wunschtermin</Label>
@@ -627,35 +626,10 @@ export default function AuftragErstellen() {
           </div>
         </div>
 
-        {/* PrioritÃ¤t + Dauer */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-          <div>
-            <Label htmlFor="prioritaet">PrioritÃ¤t</Label>
-            <select id="prioritaet" value={prioritaet} onChange={(e) => setPrioritaet(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="niedrig">Niedrig</option>
-              <option value="normal">Normal</option>
-              <option value="hoch">Hoch</option>
-              <option value="notfall">Notfall</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="dauerMinuten">Dauer (Minuten)</Label>
-            <input type="number" id="dauerMinuten" min="0" step="15" value={dauerMinuten}
-              onChange={(e) => setDauerMinuten(e.target.value)}
-              placeholder="z.B. 90"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-          </div>
-        </div>
-
-        {/* Notdienst */}
+        {*/ Notdienst */}
         <button
           type="button"
-          onClick={() => {
-            const v = !notdienst;
-            setNotdienst(v);
-            if (v) setPrioritaet('notfall'); else setPrioritaet('normal');
-          }}
+          onClick={() => setNotdienst(v => !v)}
           className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition ${
             notdienst
               ? 'border-red-200 bg-red-50'
@@ -672,95 +646,7 @@ export default function AuftragErstellen() {
               Notdienst
             </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Auftrag erhÃ¤lt Notdienst-Status und hÃ¶chste BearbeitungsprioritÃ¤t
-            </p>
-          </div>
-          {notdienst && (
-            <span className="text-xs font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full shrink-0">
-              AKTIV
-            </span>
-          )}
-        </button>
-      </SectionCard>
-
-      {/* â”€â”€â”€ BEREICH 5: Problembeschreibung â”€â”€â”€ */}
-      <SectionCard
-        icon="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
-        title="Problembeschreibung"
-        badge="Pflichtfeld"
-      >
-        <Label htmlFor="beschreibung" required>Beschreibung des Problems / Auftrags</Label>
-        <textarea
-          id="beschreibung"
-          rows={5}
-          value={beschreibung}
-          onChange={e => {
-            setBeschreibung(e.target.value);
-            setFehler(prev => ({ ...prev, beschreibung: '' }));
-          }}
-          placeholder="z. B. Rohrleitung in der KÃ¼che verstopft. Wasser lÃ¤uft nicht mehr ab. Letzter Service vor 2 Jahren â€¦"
-          className={inp(`${fehler.beschreibung ? 'border-red-300' : 'border-gray-200'} resize-none`)}
-        />
-        <FieldError msg={fehler.beschreibung} />
-      </SectionCard>
-
-      {/* â”€â”€â”€ BEREICH 6: Interne Notiz â”€â”€â”€ */}
-      <SectionCard
-        icon="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-        title="Interne Notiz"
-      >
-        <Label htmlFor="interneNotiz">Notiz fÃ¼r internes Team</Label>
-        <textarea
-          id="interneNotiz"
-          rows={3}
-          value={interneNotiz}
-          onChange={e => setInterneNotiz(e.target.value)}
-          placeholder="Nur intern sichtbar â€“ z. B. Besonderheiten, Vorgeschichte, Hinweise fÃ¼r den Techniker â€¦"
-          className={inp('border-gray-200 resize-none')}
-        />
-        <p className="mt-1.5 text-xs text-gray-400 flex items-center gap-1">
-          <Svg d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" cls="w-3 h-3" />
-          Nicht im Kundendokument â€” nur intern sichtbar
-        </p>
-      </SectionCard>
-
-      {/* â”€â”€â”€ Aktionsleiste unten â”€â”€â”€ */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-sm">
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard/auftraege')}
-          disabled={saving}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50 sm:w-auto w-full"
-        >
-          Abbrechen
-        </button>
-
-        <div className="flex-1" />
-
-        <button
-          type="button"
-          onClick={() => speichern(false)}
-          disabled={saving}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-200 text-blue-600 bg-blue-50 rounded-xl text-sm font-medium hover:bg-blue-100 transition disabled:opacity-50 sm:w-auto w-full"
-        >
-          {saving
-            ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-            : <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          }
-          Auftrag speichern
-        </button>
-
-        <button
-          type="button"
-          onClick={() => speichern(true)}
-          disabled={saving}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition disabled:opacity-50 sm:w-auto w-full"
-        >
-          {saving
-            ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M8.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-            : <Svg d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          }
-          Speichern & zur Einsatzplanung
+              Auftrag erhÃ¤lt Notdienst-Status und hÃ¶cië«ÙÑ”	•…É‰•¥ÑÕ¹ÍÁÉ¥½É¥Ó‘Ð(€€€€€€€€€€€€ð½Àø(€€€€€€€€€€ð½‘¥Øø(€€€€€€€€€í¹½Ñ‘¥•¹ÍÐ€˜˜€ (€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰Ñ•áÐµáÌ™½¹Ðµ‰½±Ñ•áÐµÉ•´ØÀÀ‰œµÉ•´ÄÀÀÁà´È¸ÔÁä´ÄÉ½Õ¹‘•µ™Õ±°Í¡É¥¹¬´Àˆø(€€€€€€€€€€€€€-Q%X(€€€€€€€€€€€€ð½ÍÁ…¸ø(€€€€€€€€€€¥ô(€€€€€€€€ð½‰ÕÑÑ½¸ø(€€€€€€ð½M•Ñ¥½¹…Éø((€€€€€ì¼¨	I% €ÔèAÉ½‰±•µ‰•Í¡É•¥‰Õ¹œ€¨½ô(€€€€€€ñM•Ñ¥½¹…É(€€€€€€€¥½¸ô‰4ÄØ¸àØÈ€Ð¸ÐàÝ°È¸ØàÜ´Ä¸Øàá„Ä¸àÜÔ€Ä¸àÜÔ€À€ÄÄÈ¸ØÔÈ€È¸ØÔÉ0ÄÀ¸ÔàÈ€ÄØ¸ÀÝ„Ð¸Ô€Ð¸Ô€À€ÀÄ´Ä¸àäÜ€Ä¸ÄÍ0Ø€Äá°¸à´È¸ØàÕ„Ð¸Ô€Ð¸Ô€À€ÀÄÄ¸ÄÌ´Ä¸àäÝ°à¸äÌÈ´à¸äÌÅé´À€Á0Ää¸Ô€Ü¸ÄÈÕ4Äà€ÄÑØÐ¸ÜÕÈ¸ÈÔ€È¸ÈÔ€À€ÀÄÄÔ¸ÜÔ€ÈÅ Ô¸ÈÕÈ¸ÈÔ€È¸ÈÔ€À€ÀÄÌ€Äà¸ÜÕXà¸ÈÕÈ¸ÈÔ€È¸ÈÔ€À€ÀÄÔ¸ÈÔ€Ù ÄÀˆ(€€€€€€€Ñ¥Ñ±”ô‰AÉ½‰±•µ‰•Í¡É•¥‰Õ¹œˆ(€€€€€€€‰…‘”ô‰A™±¥¡Ñ™•±ˆ(€€€€€€ø(€€€€€€€€ñ1…‰•°¡Ñµ±½Èô‰‰•Í¡É•¥‰Õ¹œˆÉ•ÅÕ¥É•ù	•Í¡É•¥‰Õ¹œ‘•ÌAÉ½‰±•µÌ€¼Õ™ÑÉ…Ìð½1…‰•°ø(€€€€€€€€ñÑ•áÑ…É•„(€€€€€€€€€¥ô‰‰•Í¡É•¥‰Õ¹œˆ(€€€€€€€€€É½ÝÌõìÕô(€€€€€€€€€Ù…±Õ”õí‰•Í¡É•¥‰Õ¹ô(€€€€€€€€€½¹¡…¹”õí”€ôøì(€€€€€€€€€€€Í•Ñ	•Í¡É•¥‰Õ¹œ¡”¹Ñ…É•Ð¹Ù…±Õ”¤ì(€€€€€€€€€€€Í•Ñ•¡±•È¡ÁÉ•Ø€ôø€¡ì€¸¸¹ÁÉ•Ø°‰•Í¡É•¥‰Õ¹œè€œœô¤¤ì(€€€€€€€€€õô(€€€€€€€€€Á±…•¡½±‘•Èô‰è¸¸I½¡É±•¥ÑÕ¹œ¥¸‘•È/ñ¡”Ù•ÉÍÑ½Á™Ð¸]…ÍÍ•È³‘Õ™Ð¹¥¡Ðµ•¡È…ˆ¸1•ÑéÑ•ÈM•ÉÙ¥”Ù½È€È)…¡É•¸ƒŠ˜(€€€€€€€€€±…ÍÍ9…µ”õí¥¹À¡€‘í™•¡±•È¹‰•Í¡É•¥‰Õ¹œ€ü€‰½É‘•ÈµÉ•´ÌÀÀœ€è€‰½É‘•ÈµÉ…ä´ÈÀÀôÉ•Í¥é”µ¹½¹•€¥ô(€€€€€€€€¼ø(€€€€€€€€ñ¥•±‘ÉÉ½ÈµÍœõí™•¡±•È¹‰•Í¡É•¥‰Õ¹ô€¼ø(€€€€€€ð½M•Ñ¥½¹…Éø((€€€€€ì¼¨	I% €Øè%¹Ñ•É¹”9½Ñ¥è€¨½ô(€€€€€€ñM•Ñ¥½¹…É(€€€€€€€¥½¸ô‰4ÄØ¸Ô€ÄÀ¸ÕXØ¸ÜÕ„Ð¸Ô€Ð¸Ô€À€ÄÀ´ä€ÁØÌ¸ÜÕ´´¸ÜÔ€ÄÄ¸ÈÕ ÄÀ¸Õ„È¸ÈÔ€È¸ÈÔ€À€ÀÀÈ¸ÈÔ´È¸ÈÕØ´Ø¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀ´È¸ÈÔ´È¸ÈÕ Ø¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀ´È¸ÈÔ€È¸ÈÕØØ¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀÈ¸ÈÔ€È¸ÈÕèˆ(€€€€€€€Ñ¥Ñ±”ô‰%¹Ñ•É¹”9½Ñ¥èˆ(€€€€€€ø(€€€€€€€€ñ1…‰•°¡Ñµ±½Èô‰¥¹Ñ9½Ñ¥èˆù9½Ñ¥è›ñÈ¥¹Ñ•É¹•ÌQ•…´ð½1…‰•°ø(€€€€€€€€ñÑ•áÑ…É•„(€€€€€€€€€¥ô‰¥¹Ñ9½Ñ¥èˆ(€€€€€€€€€É½ÝÌõìÍô(€€€€€€€€€Ù…±Õ”õí¥¹Ñ9½Ñ¥éô(€€€€€€€€€½¹¡…¹”õí”€ôøÍ•Ñ%¹Ñ9½Ñ¥è¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô(€€€€€€€€€Á±…•¡½±‘•Èô‰9ÕÈ¥¹Ñ•É¸Í¥¡Ñ‰…ÈƒŠLè¸¸	•Í½¹‘•É¡•¥Ñ•¸°Y½É•Í¡¥¡Ñ”°!¥¹Ý•¥Í”›ñÈ‘•¸Q•¡¹¥­•ÈƒŠ˜ˆ(€€€€€€€€€±…ÍÍ9…µ”õí¥¹À ‰½É‘•ÈµÉ…ä´ÈÀÀÉ•Í¥é”µ¹½¹”œ¥ô(€€€€€€€€¼ø(€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰µÐ´Ä¸ÔÑ•áÐµáÌÑ•áÐµÉ…ä´ÐÀÀ™±•à¥Ñ•µÌµ•¹Ñ•È…À´Äˆø(€€€€€€€€€€ñMÙœô‰4ÄØ¸Ô€ÄÀ¸ÕXØ¸ÜÕ„Ð¸Ô€Ð¸Ô€À€ÄÀ´ä€ÁØÌ¸ÜÕ´´¸ÜÔ€ÄÄ¸ÈÕ ÄÀ¸Õ„È¸ÈÔ€È¸ÈÔ€À€ÀÀÈ¸ÈÔ´È¸ÈÕØ´Ø¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀ´È¸ÈÔ´È¸ÈÕ Ø¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀ´È¸ÈÔ€È¸ÈÕØØ¸ÜÕ„È¸ÈÔ€È¸ÈÔ€À€ÀÀÈ¸ÈÔ€È¸ÈÕèˆ±Ìô‰Ü´Ì ´Ìˆ€¼ø(€€€€€€€€€9¥¡Ð¥´-Õ¹‘•¹‘½­Õµ•¹ÐƒŠP¹ÕÈ¥¹Ñ•É¸Í¥¡Ñ‰…È(€€€€€€€€ð½Àø(€€€€€€ð½M•Ñ¥½¹…Éø((€€€€€ì€¼¨­Ñ¥½¹Í±•¥ÍÑ”Õ¹Ñ•¸€¨½ô(€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰‰œµÝ¡¥Ñ”É½Õ¹‘•´Éá°‰½É‘•È‰½É‘•ÈµÉ…ä´ÄÀÀÁà´ÔÁä´Ð™±•à™±•àµ½°Í´é™±•àµÉ½Ü¥Ñ•µÌµÍÑÉ•Ñ Í´é¥Ñ•µÌµ•¹Ñ•È…À´ÌÍ¡…‘½ÜµÍ´ˆø(€€€€€€€€ñ‰ÕÑÑ½¸(€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ(€€€€€€€€€½¹±¥¬õì ¤€ôøÉ½ÕÑ•È¹ÁÕÍ  œ½‘…Í¡‰½…É½…Õ™ÑÉ…•”œ¥ô(€€€€€€€€€‘¥Í…‰±•õíÍ…Ù¥¹ô(€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•È…À´ÈÁà´ÐÁä´È¸Ô‰½É‘•È‰½É‘•ÈµÉ…ä´ÈÀÀÑ•áÐµÉ…ä´ÔÀÀÉ½Õ¹‘•µá°Ñ•áÐµÍ´™½¹Ðµµ•‘¥Õ´¡½Ù•Èé‰œµÉ…ä´ÔÀÑÉ…¹Í¥Ñ¥½¸‘¥Í…‰±•é½Á…¥Ñä´ÔÀÍ´éÜµ…ÕÑ¼Üµ™Õ±°ˆ(€€€€€€€€ø(€€€€€€€€€‰‰É•¡•¸(€€€€€€€€ð½‰ÕÑÑ½¸ø((€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à´Äˆ€¼ø((€€€€€€€€ñ‰ÕÑÑ½¸(€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ(€€€€€€€€€½¹±¥¬õì ¤€ôøÍÁ•¥¡•É¸¡™…±Í”¥ô(€€€€€€€€€‘¥Í…‰±•õíÍ…Ù¥¹ô(€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•È…À´ÈÁà´ÐÁä´È¸Ô‰½É‘•È‰½É‘•Èµ‰±Õ”´ÈÀÀÑ•áÐµ‰±Õ”´ØÀÀ‰œµ‰±Õ”´ÔÀÉ½Õ¹‘•µá°Ñ•áÐµÍ´™½¹Ðµµ•‘¥Õ´¡½Ù•Èé‰œµ‰±Õ”´ÄÀÀÑÉ…¹Í¥Ñ¥½¸‘¥Í…‰±•é½Á…¥Ñä´ÔÀÍ´éÜµ…ÕÑ¼Üµ™Õ±°ˆ(€€€€€€€€ø(€€€€€€€€€íÍ…Ù¥¹œ(€€€€€€€€€€€€ü€ñMÙœô‰4ÄØ¸ÀÈÌ€ä¸ÌÐá Ð¸ääÉØ´¸ÀÀÅ4È¸äàÔ€Ää¸ØÐÑØ´Ð¸ääÉ´À€Á Ð¸ääÉ´´Ð¸ääÌ€Á°Ì¸ÄàÄ€Ì¸ÄàÍ„à¸ÈÔ€à¸ÈÔ€À€ÀÀÄÌ¸àÀÌ´Ì¸Ý4Ð¸ÀÌÄ€ä¸àØÕ„à¸ÈÔ€à¸ÈÔ€À€ÀÄÄÌ¸àÀÌ´Ì¸Ý°Ì¸ÄàÄ€Ì¸ÄàÉ´À´Ð¸ääÅØÐ¸ääˆ±Ìô‰Ü´Ð ´Ð…¹¥µ…Ñ”µÍÁ¥¸ˆ€¼ø(€€€€€€€€€€€€è€ñMÙœô‰4Ì€ÄØ¸ÕØÈ¸ÈÕÈ¸ÈÔ€È¸ÈÔ€À€ÀÀÔ¸ÈÔ€ÈÅ ÄÌ¸ÕÈ¸ÈÔ€È¸ÈÔ€À€ÀÀÈÄ€Äà¸ÜÕXÄØ¸Õ´´ÄÌ¸Ô´å0ÄÈ€Í´À€Á°Ð¸Ô€Ð¸Õ4ÄÈ€ÍØÄÌ¸Ôˆ€¼ø(€€€€€€€€€ô(€€€€€€€€€Õ™ÑÉ…œÍÁ•¥¡•É¸(€€€€€€€€ð½‰ÕÑÑ½¸ø((€€€€€€€€ñ‰ÕÑÑ½¸(€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ(€€€€€€€€€½¹±¥¬õì ¤€ôøÍÁ•¥¡•É¸¡ÑÉÕ”¥ô(€€€€€€€€€‘¥Í…‰±•õíÍ…Ù¥¹ô(€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•È…À´ÈÁà´ÔÁä´È¸Ô‰œµ‰±Õ”´ØÀÀÑ•áÐµÝ¡¥Ñ”É½Õ¹‘•µá°Ñ•áÐµÍ´™½¹ÐµÍ•µ¥‰½±¡½Ù•Èé‰œµ‰±Õ”´ÜÀÀ…Ñ¥Ù”é‰œµ‰±Õ”´àÀÀÑÉ…¹Í¥Ñ¥½¸‘¥Í…‰±•é½Á…¥Ñä´ÔÀÍ´éÜµ…ÕÑ¼Üµ™Õ±°ˆ(€€€€€€€€ø(€€€€€€€€€íÍ…Ù¥¹œ(€€€€€€€€€€€€ü€ñMÙœô‰4ÄØ¸ÀÈÌ€ä¸ÌÐá Ð¸ääÉØ´¸ÀÀÅ4È¸äàÔ€Ää¸ØÐÑØ´Ð¸ääÉ´À€Á Ð¸ääÉ´´Ð¸ääÌ€Á°Ì¸ÄàÄ€Ì¸ÄàÍ„à¸ÈÔ€à¸ÈÔ€À€ÀÀÄÌ¸àÀÌ´Ì¸Ý4Ð¸ÀÌÄ€ä¸àØÕ„à¸ÈÔ€à¸ÈÔ€À€ÀÄÄÌ¸àÀÌ´Ì¸Ý°Ì¸ÄàÄ€Ì¸ÄàÉ´À´Ð¸ääÅØÐ¸ääˆ±Ìô‰Ü´Ð ´Ð…¹¥µ…Ñ”µÍÁ¥¸ˆ€¼ø(€€€€€€€€€€€€è€ñMÙœô‰4ÄÌ¸Ô€Ð¸Õ0ÈÄ€ÄÉ´À€Á°´Ü¸Ô€Ü¸Õ4ÈÄ€ÄÉ Ìˆ€¼ø(€€€€€€€€€ô(€€€€€€€€€MÁ•¥¡•É¸€˜éÕÈ¥¹Í…ÑéÁ±…¹Õ¹œ(€€€€€€€€ð½‰ÕÑÑ½¸ø(€€€€€€ð½‘¥Øø((€€€€ð½‘¥Øø(€€¤ì)ô)chern & zur Einsatzplanung
         </button>
       </div>
 
