@@ -936,7 +936,7 @@ function EinsatzberichtPageInner() {
       ] = await Promise.all([
         supabase
           .from('auftraege')
-          .select('*, kunden:kunden_id(id, name, firmenname, kundentyp, email, telefon)')
+          .select('*, kunden:kunde_id(id, name, firmenname, kundentyp, email, telefon)')
           .eq('id', auftragId)
           .eq('company_id', member.company_id)
           .maybeSingle(),
