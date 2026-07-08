@@ -1189,13 +1189,13 @@ export default function KundeDetail() {
 
       const { data: member } = await supabase
         .from('company_members')
-        .select('company_id, rolle')
+        .select('company_id, role')
         .eq('user_id', user.id)
         .neq('is_active', false)
         .maybeSingle();
 
       if (!member) { setZugriff(false); setLaden(false); return; }
-      if (!BERECHTIGTE_ROLLEN.includes(member.rolle)) { setZugriff(false); setLaden(false); return; }
+      if (!BERECHTIGTE_ROLLEN.includes(member.role)) { setZugriff(false); setLaden(false); return; }
 
       const cId = member.company_id;
       setCompanyId(cId);
