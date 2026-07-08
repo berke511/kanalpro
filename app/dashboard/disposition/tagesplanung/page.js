@@ -84,7 +84,7 @@ export default function Tagesplanung() {
     loadCompany();
   }, []);
 
-  // EinsÃ¤tze laden
+  // Einsätze laden
   useEffect(() => {
     if (!companyId) return;
     const load = async () => {
@@ -101,7 +101,7 @@ export default function Tagesplanung() {
     load();
   }, [companyId, gewaehlterTag]);
 
-  // Modal Ã¶ffnen + Daten laden
+  // Modal öffnen + Daten laden
   async function modalOeffnen() {
     setModalOffen(true);
     setAusgewaehlterAuftrag('');
@@ -132,7 +132,7 @@ export default function Tagesplanung() {
 
   async function einsatzSpeichern() {
     if (!ausgewaehlterAuftrag) {
-      setModalFehler('Bitte einen Auftrag auswÃ¤hlen.');
+      setModalFehler('Bitte einen Auftrag auswählen.');
       return;
     }
     setSpeichernLaeuft(true);
@@ -169,7 +169,7 @@ export default function Tagesplanung() {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  // EinsÃ¤tze nach Stunde gruppieren
+  // Einsätze nach Stunde gruppieren
   const byStunde = {};
   for (const e of einsaetze) {
     if (e.uhrzeit) {
@@ -182,12 +182,12 @@ export default function Tagesplanung() {
   return (
     <div className="space-y-6">
 
-      {/* ââ Header ââ */}
+      {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Tagesplanung</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Plane und verwalte alle EinsÃ¤tze fÃ¼r den gewÃ¤hlten Tag.
+            Plane und verwalte alle Einsätze für den gewählten Tag.
           </p>
         </div>
         <button
@@ -199,7 +199,7 @@ export default function Tagesplanung() {
         </button>
       </div>
 
-      {/* ââ Datum-Navigation ââ */}
+      {/* ── Datum-Navigation ── */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => setGewaehlterTag(prev => addDays(prev, -1))}
@@ -226,30 +226,30 @@ export default function Tagesplanung() {
         )}
       </div>
 
-      {/* ââ Tageskalender-Bereich ââ */}
+      {/* ── Tageskalender-Bereich ── */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
         {/* Kalender-Header */}
         <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
           <span className="text-sm font-semibold text-gray-900">Tagesansicht</span>
           <span className="text-xs text-gray-400">
-            {laden ? 'LÃ¤dtâ¦' : `${einsaetze.length} Einsatz${einsaetze.length !== 1 ? 'Ã¤tze' : ''}`}
+            {laden ? 'Lädt─¦' : `${einsaetze.length} Einsatz${einsaetze.length !== 1 ? 'ätze' : ''}`}
           </span>
         </div>
 
         {laden ? (
           <div className="flex items-center justify-center py-16">
-            <p className="text-sm text-gray-400">Wird geladenâ¦</p>
+            <p className="text-sm text-gray-400">Wird geladen─¦</p>
           </div>
         ) : einsaetze.length === 0 ? (
-          /* ââ Leerer Zustand ââ */
+          /* ── Leerer Zustand ── */
           <div className="flex flex-col items-center justify-center py-16 text-center px-6">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CalendarIcon className="w-7 h-7 text-gray-300" />
             </div>
-            <p className="text-sm font-medium text-gray-500">Keine EinsÃ¤tze fÃ¼r diesen Tag geplant.</p>
+            <p className="text-sm font-medium text-gray-500">Keine Einsätze für diesen Tag geplant.</p>
             <p className="text-xs text-gray-400 mt-1">
-              Klicke auf âEinsatz planen", um den ersten Einsatz hinzuzufÃ¼gen.
+              Klicke auf ─Einsatz planen", um den ersten Einsatz hinzuzufügen.
             </p>
             <button
               onClick={modalOeffnen}
@@ -260,7 +260,7 @@ export default function Tagesplanung() {
             </button>
           </div>
         ) : (
-          /* ââ Zeitraster mit echten Daten ââ */
+          /* ── Zeitraster mit echten Daten ── */
           <div className="px-6 py-4">
             {ohneUhrzeit.length > 0 && (
               <div className="mb-4">
@@ -313,7 +313,7 @@ export default function Tagesplanung() {
         )}
       </div>
 
-      {/* ââ Einsatz-Planungs-Modal ââ */}
+      {/* ── Einsatz-Planungs-Modal ── */}
       {modalOffen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full space-y-4">
@@ -330,29 +330,29 @@ export default function Tagesplanung() {
 
             {modalLaden ? (
               <div className="py-8 text-center">
-                <p className="text-sm text-gray-400">Wird geladenâ¦</p>
+                <p className="text-sm text-gray-400">Wird geladen─¦</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Auftrag auswÃ¤hlen */}
+                {/* Auftrag auswählen */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                     Auftrag <span className="text-red-400">*</span>
                   </label>
                   {offeneAuftraege.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic">Keine offenen AuftrÃ¤ge vorhanden.</p>
+                    <p className="text-xs text-gray-400 italic">Keine offenen Aufträge vorhanden.</p>
                   ) : (
                     <select
                       value={ausgewaehlterAuftrag}
                       onChange={e => setAusgewaehlterAuftrag(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="">â Auftrag wÃ¤hlen â</option>
+                      <option value="">─ Auftrag wählen ─</option>
                       {offeneAuftraege.map(a => {
                         const kunde = a.kunden ? (a.kunden.firmenname || a.kunden.name) : null;
                         return (
                           <option key={a.id} value={a.id}>
-                            {a.titel}{kunde ? ` â ${kunde}` : ''}
+                            {a.titel}{kunde ? ` ─ ${kunde}` : ''}
                           </option>
                         );
                       })}
@@ -412,7 +412,7 @@ export default function Tagesplanung() {
                       onChange={e => setAusgewaehlterTechniker(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     >
-                      <option value="">â Kein Techniker â</option>
+                      <option value="">─ Kein Techniker ─</option>
                       {mitarbeiter.map(m => (
                         <option key={m.id} value={m.id}>
                           {m.vorname} {m.nachname}
@@ -442,7 +442,7 @@ export default function Tagesplanung() {
                     disabled={speichernLaeuft || !ausgewaehlterAuftrag}
                     className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
                   >
-                    {speichernLaeuft ? 'Wird gespeichertâ¦' : 'Einsatz planen'}
+                    {speichernLaeuft ? 'Wird gespeichert─¦' : 'Einsatz planen'}
                   </button>
                 </div>
               </div>
