@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import { MapPin } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
    KONFIGURATION
@@ -183,7 +184,19 @@ function AuftragInfoSektion({ auftrag }) {
       <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
         <InfoZeile label="Kunde" value={kundeAnzeigeName(kd)} />
         <InfoZeile label="Auftragsart" value={auftrag.typ ?? '—'} />
-        <InfoZeile label="Adresse" value={auftrag.adresse ?? auftrag.einsatzort ?? '—'} />
+        <div>
+          <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Adresse</dt>
+          <div className="flex items-center gap-2">
+            <dd className="text-sm font-medium text-gray-800">{auftrag.adresse ?? auftrag.einsatzort ?? '—'}</dd>
+            {(auftrag.adresse ?? auftrag.einsatzort) && (
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(auftrag.adresse ?? auftrag.einsatzort)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="shrink-0 text-blue-500 hover:text-blue-700 transition">
+                <MapPin className="w-4 h-4" />
+              </a>
+            )}
+          </div>
+        </div>
         <InfoZeile label="Einsatzdatum" value={fmtDatum(auftrag.einsatzdatum)} />
         <InfoZeile label="Startzeit" value={auftrag.startzeit ?? '—'} />
         <InfoZeile label="Priorität" value={auftrag.prioritaet ?? '—'} />
@@ -192,7 +205,14 @@ function AuftragInfoSektion({ auftrag }) {
             <InfoZeile label="Beschreibung" value={auftrag.beschreibung} multi />
           </div>
         )}
-        {kd?.telefon && <InfoZeile label="Telefon Kunde" value={kd.telefon} />}
+        {kd?.telefon && (
+          <div>
+            <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Telefon Kunde</dt>
+            <dd className="text-sm font-medium text-gray-800">
+              <a href={`tel:${kd.telefon}`} className="text-blue-600 hover:underline">{kd.telefon}</a>
+            </dd>
+          </div>
+        )}
         {kd?.email && <InfoZeile label="E-Mail Kunde" value={kd.email} />}
       </div>
     </Karte>
@@ -605,7 +625,7 @@ function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted 
             </>
           )}
         </div>
-        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
+        <input ref={inputRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
           onChange={e => handleUpload(e.target.files)} />
 
         {uploadErr && <Alert type="error" onClose={() => setUploadErr('')}>{uploadErr}</Alert>}
@@ -799,7 +819,7 @@ function AbschlusspruefungSektion({ form, onChange }) {
    SEKTION 10 – DOKUMENTATION ABSCHLIESSEN
 ════════════════════════════════════════════════════════════════ */
 
-function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler }) {
+function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler, naechsterEinsatzId }) {
   const checks = [
     { label: 'Status gesetzt',           ok: !!dok?.einsatz_status },
     { label: 'Tätigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
@@ -826,12 +846,29 @@ function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler
             {dok?.dokumentiert_at && (
               <p className="text-xs text-green-500 mt-1">Abgeschlossen um {fmtZeit(dok.dokumentiert_at)}</p>
             )}
-            <button
-              onClick={() => router.push('/dashboard/rechnungen/neu')}
-              className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition"
-            >
-              Rechnung erstellen
-            </button>
+            <div className="flex flex-col gap-2 mt-3 items-center">
+              {naechsterEinsatzId ? (
+                <button
+                  onClick={() => router.push(`/dashboard/auftraege/${naechsterEinsatzId}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
+                >
+                  Nächster Einsatz →
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push('/dashboard/auftraege')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
+                >
+                  Meine Einsätze
+                </button>
+              )}
+                <button
+                  onClick={() => router.push('/dashboard/rechnungen/neu')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition"
+                >
+                  Rechnung erstellen
+                </button>
+            </div>
           </div>
         ) : (
           <>
@@ -916,7 +953,7 @@ function EinsatzberichtPageInner() {
 
       const { data: member } = await supabase
         .from('company_members')
-        .select('company_id, role')
+        .select('id, company_id, role')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -927,6 +964,7 @@ function EinsatzberichtPageInner() {
       if (!erlaubt.includes(member.role)) { setZustand('forbidden'); return; }
 
       setCompanyId(member.company_id);
+      setMemberId(member.id);
 
       const [
         { data: auftragData, error: auftragErr },
@@ -1106,6 +1144,18 @@ function EinsatzberichtPageInner() {
       await updateDok({ status: 'dokumentiert', dokumentiert_at: nowIso() });
       await supabase.from('auftraege').update({ status: 'abgeschlossen' }).eq('id', auftragId);
       setAuftrag(p => ({ ...p, status: 'abgeschlossen' }));
+      // FR-002-5: Nächsten Einsatz ermitteln
+      const todayStr = new Date().toISOString().split('T')[0];
+      const { data: zugewiesene } = await supabase
+        .from('auftrag_mitarbeiter')
+        .select('auftrag_id, auftraege:auftrag_id(id, status, datum)')
+        .eq('company_id', companyId)
+        .eq('mitarbeiter_id', memberId);
+      const naechsteListe = (zugewiesene || [])
+        .filter(r => r.auftraege?.datum === todayStr
+          && r.auftraege?.status !== 'abgeschlossen'
+          && r.auftrag_id !== auftragId);
+      setNaechsterEinsatzId(naechsteListe.length === 1 ? naechsteListe[0].auftrag_id : null);
     } catch (e) {
       setAbschlFehler(e.message ?? 'Fehler beim Abschließen');
     }
@@ -1231,6 +1281,7 @@ function EinsatzberichtPageInner() {
           onAbschliessen={handleAbschliessen}
           saving={saving}
           fehler={abschlFehler}
+          naechsterEinsatzId={naechsterEinsatzId}
         />
 
         <div className="h-8" />
