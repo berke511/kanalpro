@@ -918,6 +918,8 @@ function EinsatzberichtPageInner() {
   const [companyId, setCompanyId] = useState(null);
   const [userId,    setUserId]    = useState(null);
 
+  const [memberId, setMemberId] = useState(null);
+  const [naechsterEinsatzId, setNaechsterEinsatzId] = useState(null);
   // ── Doku-State ──
   const [dok,      setDok]      = useState(null);
   const [material, setMaterial] = useState([]);
