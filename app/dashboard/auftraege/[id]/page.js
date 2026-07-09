@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 import Link from 'next/link';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList } , MapPin } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
    ROLLEN & RECHTE
@@ -220,11 +220,13 @@ function KarteHeader({ icon, title, badge, badgeVariant = 'blue', action }) {
   );
 }
 
-function InfoZeile({ label, value, fullWidth = false }) {
+function InfoZeile({ label, value, fullWidth = false, href }) {
   return (
     <div className={fullWidth ? 'col-span-2' : ''}>
       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-sm text-gray-900 font-medium">{value || <span className="text-gray-300 font-normal italic">—</span>}</p>
+      {href && value && value !== '—'
+        ? <a href={href} className="text-sm text-blue-600 font-medium hover:underline">{value}</a>
+        : <p className="text-sm text-gray-900 font-medium">{value || <span className="text-gray-300 font-normal italic">—</span>}</p>}
     </div>
   );
 }
@@ -409,8 +411,20 @@ function AuftragInfoKarte({ auftrag, rechte, onRefresh }) {
             <InfoZeile label="Priorität"      value={auftrag.prioritaet} />
             <InfoZeile label="Kunde"          value={kname} />
             <InfoZeile label="Ansprechpartner" value={auftrag.ansprechpartner} />
-            <InfoZeile label="Telefon"        value={telefon} />
-            <InfoZeile label="Einsatzort"     value={adresse || '—'} fullWidth />
+            <InfoZeile label="Telefon"        value={telefon} href={telefon && telefon !== '—' ? `tel:${telefon}` : undefined} />
+            <div className="col-span-2">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Einsatzort</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-900 font-medium">{adresse || <span className="text-gray-300 font-normal italic">—</span>}</p>
+                {adresse && (
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="shrink-0 text-blue-500 hover:text-blue-700 transition">
+                    <MapPin className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            </div>
             <InfoZeile label="Einsatzdatum"   value={fmtDatum(auftrag.einsatzdatum)} />
             <InfoZeile label="Startzeit"      value={auftrag.startzeit ?? '—'} />
             <InfoZeile label="Erstellungsdatum" value={fmtDatum(auftrag.created_at)} />
