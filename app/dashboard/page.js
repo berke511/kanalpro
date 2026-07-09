@@ -221,7 +221,7 @@ export default function Dashboard() {
       // Rolle + Company laden
       const { data: member } = await supabase
         .from('company_members')
-        .select('role, company_id')
+        .select('id, role, company_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -344,16 +344,23 @@ export default function Dashboard() {
         const assignedTechIds = new Set();
         parsedHeute.forEach(a => a.techniker.forEach(t => { if (t?.id) assignedTechIds.add(t.id); }));
 
+        // Task FR-002-1: Techniker sieht nur eigene Einsätze
+        const heuteFiltered = userRole === 'techniker' && member?.id
+          ? parsedHeute.filter(a => a.techniker.some(t => t.id === member.id))
+          : parsedHeute;
+
         setHeuteStats({
-          total: parsedHeute.length,
-          offen: parsedHeute.filter(a => a.status === 'offen').length,
-          notdienste: parsedHeute.filter(a => a.notdienst).length,
-          unzugewiesen: parsedHeute.filter(a => a.techniker.length === 0).length,
-          freieTechniker: Math.max(0, mCount - assignedTechIds.size),
-          fahrzeugeImEinsatz: parsedHeute.filter(a => a.fahrzeug_id && a.status !== 'abgeschlossen').length,
-          offeneEinsatzberichte: abgIds.filter(id => !mitBericht.has(id)).length,
+          total: heuteFiltered.length,
+          offen: heuteFiltered.filter(a => a.status === 'offen').length,
+          notdienste: heuteFiltered.filter(a => a.notdienst).length,
+          unzugewiesen: heuteFiltered.filter(a => a.techniker.length === 0).length,
+          freieTechniker: userRole === 'techniker' ? 0 : Math.max(0, mCount - assignedTechIds.size),
+          fahrzeugeImEinsatz: heuteFiltered.filter(a => a.fahrzeug_id && a.status !== 'abgeschlossen').length,
+          offeneEinsatzberichte: heuteFiltered
+            .filter(a => a.status === 'abgeschlossen')
+            .filter(a => !mitBericht.has(a.id)).length,
         });
-        setHeuteEinsaetze(parsedHeute);
+        setHeuteEinsaetze(heuteFiltered);
       }
 
       setLaden(false);
@@ -456,14 +463,16 @@ export default function Dashboard() {
       )}
 
       {/* ══ BEREICH HEUTE: TAGESÜBERSICHT ════════════════════════════════════ */}
-      {canSee(role, 'auftraege') && (
+      {(canSee(role, 'auftraege') || role === 'techniker') && (
         <section>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Heute</p>
-            <Link href="/dashboard/auftraege/erstellen"
-              className="text-xs text-blue-600 hover:underline font-medium">
-              + Einsatz planen
-            </Link>
+            {canSee(role, 'auftraege') && (
+              <Link href="/dashboard/auftraege/erstellen"
+                className="text-xs text-blue-600 hover:underline font-medium">
+                + Einsatz planen
+              </Link>
+            )}
           </div>
 
           {/* KPI-Chips: 7 Metriken */}
