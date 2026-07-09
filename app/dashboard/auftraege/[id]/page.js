@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
 import Link from 'next/link';
-import { ClipboardList } , MapPin } from 'lucide-react';
+import { ClipboardList, MapPin } from 'lucide-react';
 
 /* ════════════════════════════════════════════════════════════════
    ROLLEN & RECHTE
