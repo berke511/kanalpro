@@ -540,7 +540,7 @@ export default function Tagesplanung() {
                   </button>
                   <button onClick={editEinsatzSpeichern} disabled={editSpeichernLaeuft}
                     className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition disabled:opacity-50">
-                    {`editSpeichernLaeuft ? 'Wird gespeichert…' : 'Änderungen speichern'`}
+                    {editSpeichernLaeuft ? 'Wird gespeichert…' : 'Änderungen speichern'}
                   </button>
                 </div>
               </div>
