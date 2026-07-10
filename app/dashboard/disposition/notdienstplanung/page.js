@@ -335,7 +335,7 @@ export default function Notdienstplanung() {
 
             // KW-Trennzeile merken
             const kwLabel = (zeigeKW && letzteKW !== kw) ? kw : null;
-            if (zeigeKW && letzteKW !== kw) letzteKW = kw;zeigeKW && letzteKW !== kw) letzteKW = kw;
+            if (zeigeKW && letzteKW !== kw) letzteKW = kw;
 
             return (
               <div key={datum}>
