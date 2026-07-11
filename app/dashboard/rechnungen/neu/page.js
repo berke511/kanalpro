@@ -3,6 +3,13 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
 
+import {
+  PageHeader,
+  FormInput, FormSelect, FormTextarea,
+  FormSection, SuccessBanner,
+  PrimaryButton, SecondaryButton,
+} from '@/components/ui/KanalProUI';
+
 /* ════════════════════════════════════════════════════════════════
    KONSTANTEN
 ════════════════════════════════════════════════════════════════ */
