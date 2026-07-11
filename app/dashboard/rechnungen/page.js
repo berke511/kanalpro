@@ -1,450 +1,416 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import PlanGate from '@/components/PlanGate';
-import TabNav from '@/components/ui/TabNav';
+import { Receipt, Search, X, ExternalLink } from 'lucide-react';
+import {
+  PageHeader, FilterBar, FilterButton,
+  Table, TableRow, TableCell, TableSkeleton, TableCheckbox, TableActions,
+  EmptyState, RechnungBadge,
+} from '@/components/ui/KanalProUI';
 
-const RECHNUNGEN_TABS = [
-  { id: 'rechnungen',      label: 'Rechnungen'      },
-  { id: 'zahlungseingang', label: 'Zahlungseingänge' },
-  { id: 'pdf',             label: 'PDF-Export'       },
-];
+// Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
+// const COLUMN_CONFIG = [
+//   { key: 'nummer',  label: 'Nummer',         sortable: true,  visible: true },
+//   { key: 'kunde',   label: 'Kunde',           sortable: true,  visible: true },
+//   { key: 'datum',   label: 'Datum',           sortable: true,  visible: true },
+//   { key: 'betrag',  label: 'Betrag (brutto)', sortable: true,  visible: true },
+//   { key: 'status',  label: 'Status',          sortable: false, visible: true },
+// ];
 
 const statusConfig = {
-  entwurf:  { label: 'Entwurf',  cls: 'bg-gray-100 text-gray-600'   },
-  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700'    },
-  bezahlt:  { label: 'Bezahlt',  cls: 'bg-green-50 text-green-700'  },
-  mahnung:  { label: 'Mahnung',  cls: 'bg-orange-50 text-orange-600'},
+  entwurf:  { label: 'Entwurf',  cls: 'bg-gray-100 text-gray-600'  },
+  gesendet: { label: 'Gesendet', cls: 'bg-blue-50 text-blue-700'   },
+  bezahlt:  { label: 'Bezahlt',  cls: 'bg-green-50 text-green-700' },
 };
 
-function brutto(r) {
-  const netto = (r.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
-  return netto * (1 + r.steuersatz / 100);
-}
+const STATUS_FILTER = [
+  { key: 'alle',     label: 'Alle'     },
+  { key: 'entwurf',  label: 'Entwurf'  },
+  { key: 'gesendet', label: 'Gesendet' },
+  { key: 'bezahlt',  label: 'Bezahlt'  },
+];
 
-function getMahnLabel(stufe) {
-  if (stufe === 0) return 'Zahlungserinnerung';
-  if (stufe === 1) return '1. Mahnung';
-  if (stufe === 2) return '2. Mahnung';
-  return null; // 3 = alle Stufen ausgeschöpft
-}
-
-function buildBriefText(r, firma, stufe) {
-  const betrag    = brutto(r).toFixed(2).replace('.', ',');
-  const faelligStr = r.faellig_am ? new Date(r.faellig_am).toLocaleDateString('de-DE') : '–';
-  const datumStr   = r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–';
-  const heute      = new Date().toLocaleDateString('de-DE');
-  const fn         = firma?.firmaname ?? '';
-  const adresse    = [fn, firma?.strasse, [firma?.plz, firma?.ort].filter(Boolean).join(' ')].filter(Boolean).join('\n');
-  const frist14    = new Date(Date.now() + 14 * 86400000).toLocaleDateString('de-DE');
-  const frist7     = new Date(Date.now() +  7 * 86400000).toLocaleDateString('de-DE');
-  const header     = adresse ? `${adresse}\n\n${heute}\n\n` : `${heute}\n\n`;
-
-  if (stufe === 0) return (
-    `${header}` +
-    `Zahlungserinnerung – Rechnung ${r.rechnungsnummer}\n\n` +
-    `Sehr geehrte Damen und Herren,\n\n` +
-    `vermutlich ist es in Ihrem Geschäftsalltag untergegangen. Wir möchten Sie daher freundlich an ` +
-    `die offene Rechnung Nr. ${r.rechnungsnummer} vom ${datumStr} erinnern.\n\n` +
-    `Offener Betrag:    ${betrag} €\n` +
-    `Fälligkeitsdatum:  ${faelligStr}\n\n` +
-    `Wir bitten Sie, den Betrag bis zum ${frist14} auf unser Konto zu überweisen. ` +
-    `Sollte sich die Zahlung mit diesem Schreiben gekreuzt haben, betrachten Sie es bitte als gegenstandslos.\n\n` +
-    `Mit freundlichen Grüßen\n${fn}`
-  );
-
-  if (stufe === 1) return (
-    `${header}` +
-    `1. Mahnung – Rechnung ${r.rechnungsnummer}\n\n` +
-    `Sehr geehrte Damen und Herren,\n\n` +
-    `trotz unserer Zahlungserinnerung ist die Rechnung Nr. ${r.rechnungsnummer} über ${betrag} € ` +
-    `(fällig am ${faelligStr}) bis heute nicht beglichen worden.\n\n` +
-    `Wir fordern Sie auf, den ausstehenden Betrag bis spätestens ${frist14} zu überweisen.\n\n` +
-    `Sollte bis dahin kein Zahlungseingang bei uns eingehen, behalten wir uns weitere Maßnahmen vor.\n\n` +
-    `Mit freundlichen Grüßen\n${fn}`
-  );
-
-  if (stufe === 2) return (
-    `${header}` +
-    `2. Mahnung – Rechnung ${r.rechnungsnummer}\n\n` +
-    `Sehr geehrte Damen und Herren,\n\n` +
-    `obwohl wir Sie bereits mit einer Zahlungserinnerung und einer 1. Mahnung auf die offene Rechnung ` +
-    `Nr. ${r.rechnungsnummer} über ${betrag} € (fällig am ${faelligStr}) hingewiesen haben, ` +
-    `ist bislang kein Zahlungseingang bei uns eingegangen.\n\n` +
-    `Wir setzen Ihnen eine letzte Zahlungsfrist bis zum ${frist7}. ` +
-    `Sollte bis zu diesem Datum keine Zahlung erfolgen, sehen wir mis gezwungen, ` +
-    `einen Rechtsanwalt einzuschalten und gerichtliche Schritte einzuleiten.\n\n` +
-    `Mit freundlichen Grüßen\n${fn}`
-  );
-
-  return '';
-}
-
-async function generatePDF(text, rechnungsnummer, label) {
-  if (!window.jspdf) {
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(11);
-  const lines = doc.splitTextToSize(text, 175);
-  doc.text(lines, 17, 20);
-  doc.save(`${label.replace(/[\s.]/g, '_')}_${rechnungsnummer}.pdf`);
-}
-
-function MahnungModal({ rechnung, firma, onClose, onSaved }) {
-  const stufe = rechnung.mahnstufe ?? 0;
-  const label = getMahnLabel(stufe);
-  const [text, setText] = useState(() => buildBriefText(rechnung, firma, stufe));
-  const [saving, setSaving] = useState(false);
-
-  async function handle(mode) {
-    setSaving(true);
-    const newStufe = stufe + 1;
-    await supabase.from('rechnungen').update({ mahnstufe: newStufe, status: 'mahnung' }).eq('id', rechnung.id);
-
-    if (mode === 'email') {
-      const betreff = encodeURIComponent(`${label} – Rechnung ${rechnung.rechnungsnummer}`);
-      const body    = encodeURIComponent(text);
-      const email   = rechnung.kunden?.email ?? '';
-      window.open(`mailto:${email}?subject=${betreff}&body=${body}`, '_blank');
-    } else {
-      await generatePDF(text, rechnung.rechnungsnummer, label);
-    }
-
-    onSaved(rechnung.id, newStufe);
-    setSaving(false);
-    onClose();
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div>
-            <h2 className="font-semibold text-gray-900">{label}</h2>
-            <p className="text-sm text-gray-400">Rechnung {rechnung.rechnungsnummer} · {rechnung.kunden?.name ?? '–'}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Mahnstufen-Indikator */}
-        <div className="flex items-center gap-2 px-6 pt-4">
-          {['Zahlungserinnerung', '1. Mahnung', '2. Mahnung'].map((s, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition ${
-                i === stufe
-                  ? 'bg-orange-50 border-orange-300 text-orange-700'
-                  : i < stufe
-                  ? 'bg-gray-100 border-gray-200 text-gray-400'
-                  : 'bg-white border-gray-200 text-gray-400'
-              }`}>
-                {i < stufe && (
-                  <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-                {s}
-              </div>
-              {i < 2 && <span className="text-gray-300 text-xs">→</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Brieftext */}
-        <div className="flex-1 overflow-auto px-6 py-4">
-          <p className="text-xs text-gray-400 mb-2">Brieftext — vor dem Versand anpassen:</p>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            className="w-full h-64 border border-gray-200 rounded-xl p-4 text-sm font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} className="text-sm text-gray-400 hover:text-gray-600 px-3 py-2 transition">
-            Abbrechen
-          </button>
-          <div className="flex-1" />
-          <button
-            disabled={saving}
-            onClick={() => handle('pdf')}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-            Als PDF
-          </button>
-          <button
-            disabled={saving}
-            onClick={() => handle('email')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-            </svg>
-            Per E-Mail
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const firmaFelder = [
+  { section: 'Firmendaten', items: [
+    { name: 'firmenname',   label: 'Firmenname',    placeholder: 'Mustermann Rohrreinigung GmbH' },
+    { name: 'adresse',      label: 'Adresse',       placeholder: 'Musterstrasse 1, 40000 Duesseldorf' },
+    { name: 'telefon',      label: 'Telefon',       placeholder: '0211 123456' },
+    { name: 'email',        label: 'E-Mail',        placeholder: 'info@musterfirma.de' },
+  ]},
+  { section: 'Steuerdaten', items: [
+    { name: 'steuernummer', label: 'Steuernummer',  placeholder: '123/456/78901' },
+    { name: 'ust_id',       label: 'USt-IdNr.',     placeholder: 'DE123456789' },
+  ]},
+  { section: 'Bankverbindung', items: [
+    { name: 'iban', label: 'IBAN', placeholder: 'DE00 0000 0000 0000 0000 00' },
+    { name: 'bic',  label: 'BIC',  placeholder: 'DEUTDEDB' },
+    { name: 'bank', label: 'Bank', placeholder: 'Deutsche Bank' },
+  ]},
+];
 
 export default function Rechnungen() {
   const router = useRouter();
-  const [activeTab, setActiveTab]   = useState('rechnungen');
+  const [tab, setTab] = useState('liste');
   const [rechnungen, setRechnungen] = useState([]);
-  const [laden, setLaden]           = useState(true);
-  const [firma, setFirma]           = useState(null);
-  const [mahnModal, setMahnModal]   = useState(null);
+  const [laden, setLaden] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('alle');
+  const [suche, setSuche] = useState('');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
+  const [gespeichert, setGespeichert] = useState(false);
+  const [fehler, setFehler] = useState('');
+
+  // Logo
+  const [myMember, setMyMember]     = useState(null);
+  const [logoUrl, setLogoUrl]       = useState(null);
+  const [logoLaden, setLogoLaden]   = useState(false);
+  const [logoStatus, setLogoStatus] = useState('');
+  const [logoError, setLogoError]   = useState('');
+  const logoInputRef                = useRef(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       const [{ data: rech }, { data: einst }] = await Promise.all([
-        supabase.from('rechnungen')
-          .select('*, kunden(name, email)')
-          .eq('user_id', user.id)
-          .order('erstellt_am', { ascending: false }),
-        supabase.from('einstellungen')
-          .select('firmaname, strasse, plz, ort')
-          .eq('user_id', user.id)
-          .single(),
+        supabase.from('rechnungen').select('*, kunden(name)').eq('user_id', user.id).order('erstellt_am', { ascending: false }),
+        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
       ]);
       setRechnungen(rech ?? []);
-      setFirma(einst ?? null);
+      if (einst) setFirma(einst);
+
+      const { data: member } = await supabase
+        .from('company_members')
+        .select('*, companies(id, logo_url)')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+      if (member) {
+        setMyMember(member);
+        setLogoUrl(member.companies?.logo_url ?? null);
+      }
+
       setLaden(false);
     }
     load();
   }, []);
 
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-
-  function isOverdue(r) {
-    return r.status !== 'bezahlt' && r.faellig_am && new Date(r.faellig_am) < heute;
+  function brutto(r) {
+    const netto = (r.positionen ?? []).reduce((s, p) => s + p.menge * p.preis, 0);
+    return netto * (1 + r.steuersatz / 100);
   }
 
-  function handleMahnungSaved(id, newStufe) {
-    setRechnungen(prev =>
-      prev.map(r => r.id === id ? { ...r, mahnstufe: newStufe, status: 'mahnung' } : r)
+  async function handleFirmaSpeichern(e) {
+    e.preventDefault(); setFehler(''); setGespeichert(false);
+    const { data: { user } } = await supabase.auth.getUser();
+    const companyId = myMember?.company_id;
+    const { error } = await supabase.from('einstellungen').upsert(
+      { ...firma, user_id: user.id, company_id: companyId },
+      { onConflict: 'user_id' }
     );
+    if (error) { setFehler('Fehler beim Speichern: ' + error.message); }
+    else { setGespeichert(true); setTimeout(() => setGespeichert(false), 3000); }
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ALLOWED = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'];
+    if (!ALLOWED.includes(file.type)) { setLogoError('Nur JPG, PNG, SVG oder WebP erlaubt.'); return; }
+    if (file.size > 2 * 1024 * 1024) { setLogoError('Datei zu gross (max. 2 MB).'); return; }
+    setLogoError(''); setLogoStatus(''); setLogoLaden(true);
+    try {
+      const companyId = myMember?.company_id;
+      if (!companyId) throw new Error('Keine Firma gefunden.');
+      const ext = file.type === 'image/svg+xml' ? 'svg' : file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${companyId}/logo.${ext}`;
+      const { error: upErr } = await supabase.storage.from('logos').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(path);
+      const newUrl = urlData.publicUrl + '?t=' + Date.now();
+      const { error: dbErr } = await supabase.from('companies').update({ logo_url: urlData.publicUrl }).eq('id', companyId);
+      if (dbErr) throw dbErr;
+      setLogoUrl(newUrl);
+      setLogoStatus('Logo erfolgreich gespeichert!');
+    } catch (err) {
+      setLogoError('Fehler beim Upload: ' + (err.message ?? 'Unbekannt'));
+    }
+    setLogoLaden(false);
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  }
+
+  async function handleLogoEntfernen() {
+    if (!confirm('Logo wirklich entfernen?')) return;
+    setLogoError(''); setLogoStatus(''); setLogoLaden(true);
+    try {
+      const companyId = myMember?.company_id;
+      await supabase.from('companies').update({ logo_url: null }).eq('id', companyId);
+      setLogoUrl(null);
+      setLogoStatus('Logo entfernt.');
+    } catch (err) {
+      setLogoError('Fehler beim Entfernen.');
+    }
+    setLogoLaden(false);
+  }
+
+  // Filter-Logik
+  const gefiltert = rechnungen.filter(r => {
+    if (statusFilter !== 'alle' && r.status !== statusFilter) return false;
+    if (suche) {
+      const s = suche.toLowerCase();
+      const treffer =
+        (r.rechnungsnummer ?? '').toLowerCase().includes(s) ||
+        (r.kunden?.name ?? '').toLowerCase().includes(s);
+      if (!treffer) return false;
+    }
+    return true;
+  });
+
+  // Massenauswahl
+  const alleGewaehlt = gefiltert.length > 0 && gefiltert.every(r => selectedIds.has(r.id));
+  const teilGewaehlt = gefiltert.some(r => selectedIds.has(r.id)) && !alleGewaehlt;
+
+  function toggleAlle() {
+    if (alleGewaehlt) {
+      setSelectedIds(prev => { const n = new Set(prev); gefiltert.forEach(r => n.delete(r.id)); return n; });
+    } else {
+      setSelectedIds(prev => { const n = new Set(prev); gefiltert.forEach(r => n.add(r.id)); return n; });
+    }
+  }
+
+  function toggleEiner(id) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
 
   return (
     <PlanGate feature="rechnungen">
-      <div className="space-y-5 max-w-6xl pb-10">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Rechnungen</h1>
+        {tab === 'liste' && (
+          <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
+            + Neue Rechnung
+          </Link>
+        )}
+      </div>
 
-        {/* ── Header ── */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Rechnungen</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Rechnungen erstellen, verwalten und versenden.</p>
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
+        {[{ key: 'liste', label: 'Rechnungen' }, { key: 'firmendaten', label: 'Firmendaten' }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === t.key ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'liste' && (
+        <div className="space-y-4">
+          {/* Suchleiste + StatusFilter */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative max-w-xs w-full">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={suche}
+                onChange={e => setSuche(e.target.value)}
+                placeholder="Suchen..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+              {suche && (
+                <button onClick={() => setSuche('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <FilterBar>
+              {STATUS_FILTER.map(f => (
+                <FilterButton key={f.key} label={f.label} active={statusFilter === f.key} onClick={() => setStatusFilter(f.key)} />
+              ))}
+            </FilterBar>
           </div>
-          {activeTab === 'rechnungen' && (
-            <Link href="/dashboard/rechnungen/neu"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-              + Neue Rechnung
-            </Link>
+
+          {/* Bulk-Action-Bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl text-sm">
+              <span className="font-medium text-blue-700 dark:text-blue-300">{selectedIds.size} ausgewaehlt</span>
+              <button onClick={() => setSelectedIds(new Set())} className="text-xs text-blue-500 hover:text-blue-700 underline">
+                Auswahl aufheben
+              </button>
+              <div className="ml-auto flex gap-2">
+                <button className="px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 transition">
+                  Exportieren
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Inhalt */}
+          {laden ? (
+            <TableSkeleton rows={5} cols={5} />
+          ) : gefiltert.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <EmptyState
+                icon={Receipt}
+                title={rechnungen.length === 0 ? 'Noch keine Rechnungen' : 'Keine Rechnungen gefunden'}
+                description={rechnungen.length === 0 ? 'Erstelle deine erste Rechnung.' : 'Versuche andere Filter oder Suchbegriffe.'}
+                action={rechnungen.length === 0 ? () => router.push('/dashboard/rechnungen/neu') : undefined}
+                actionLabel="Neue Rechnung"
+              />
+            </div>
+          ) : (
+            <>
+              {/* Desktop-Tabelle */}
+              <div className="hidden md:block">
+                <Table headers={['', 'Nummer', 'Kunde', 'Datum', 'Betrag (brutto)', 'Status', '']}>
+                  <tr className="bg-transparent">
+                    <td className="pl-3 pr-0 py-1 w-10">
+                      <TableCheckbox checked={alleGewaehlt} indeterminate={teilGewaehlt} onChange={toggleAlle} />
+                    </td>
+                    <td colSpan={6} />
+                  </tr>
+                  {gefiltert.map(r => {
+                    const cfg = statusConfig[r.status] ?? statusConfig.entwurf;
+                    const isSelected = selectedIds.has(r.id);
+                    return (
+                      <TableRow
+                        key={r.id}
+                        onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}
+                        className={isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                      >
+                        <TableCell className="pl-3 pr-0 w-10">
+                          <div onClick={e => { e.stopPropagation(); toggleEiner(r.id); }}>
+                            <TableCheckbox checked={isSelected} onChange={() => toggleEiner(r.id)} />
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono font-medium text-gray-900 dark:text-white">
+                          {r.rechnungsnummer}
+                        </TableCell>
+                        <TableCell>{r.kunden?.name ?? 'â'}</TableCell>
+                        <TableCell>
+                          {r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 dark:text-white">
+                          {brutto(r).toFixed(2).replace('.', ',')} &euro;
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>{cfg.label}</span>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <TableActions>
+                            <Link href={`/dashboard/rechnungen/${r.id}`} onClick={e => e.stopPropagation()}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition">
+                              <ExternalLink size={14} />
+                            </Link>
+                          </TableActions>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </Table>
+              </div>
+
+              {/* Mobile Card-Ansicht */}
+              <div className="md:hidden space-y-3">
+                {gefiltert.map(r => {
+                  const cfg = statusConfig[r.status] ?? statusConfig.entwurf;
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}
+                      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-100 transition"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <p className="font-mono font-semibold text-gray-900 dark:text-white">{r.rechnungsnummer}</p>
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium shrink-0 ${cfg.cls}`}>{cfg.label}</span>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{r.kunden?.name ?? 'â'}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-gray-400">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {brutto(r).toFixed(2).replace('.', ',')} &euro;
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
+      )}
 
-        {/* ── Tab-Navigation ── */}
-        <TabNav
-          id="rechnungen-tabs"
-          tabs={RECHNUNGEN_TABS}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          label="Rechnungsnavigation"
-          className="mb-5"
-        />
+      {tab === 'firmendaten' && (
+        <div className="space-y-5 max-w-xl">
+          <form onSubmit={handleFirmaSpeichern} className="space-y-5">
+            {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
+            {gespeichert && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg font-medium">Erfolgreich gespeichert!</div>}
+            {firmaFelder.map(section => (
+              <div key={section.section} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+                <h2 className="font-semibold text-sm uppercase tracking-wide text-blue-600">{section.section}</h2>
+                {section.items.map(f => (
+                  <div key={f.name}>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{f.label}</label>
+                    <input type="text" value={firma[f.name] || ''} onChange={e => setFirma({ ...firma, [f.name]: e.target.value })}
+                      placeholder={f.placeholder}
+                      className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div>
+              <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm">Firmendaten speichern</button>
+              <p className="text-xs text-gray-400 mt-3">Diese Daten erscheinen automatisch auf deinen Rechnungs-PDFs.</p>
+            </div>
+          </form>
 
-        {/* ── Tab: Rechnungen ── */}
-        {activeTab === 'rechnungen' && (
-          <>
-            {laden ? (
-              <p className="text-gray-400">Wird geladen...</p>
-            ) : rechnungen.length === 0 ? (
-              <div className="text-center py-20 px-6">
-                <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-gray-300">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 01-.75.75h-.75M6.75 7.5h10.5M6.75 10.5h10.5M6.75 13.5h3" />
-                  </svg>
+          {/* Firmenlogo */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <h2 className="font-semibold text-sm uppercase tracking-wide text-blue-600 mb-4">Firmenlogo</h2>
+            {logoUrl ? (
+              <div className="mb-3 flex items-center gap-4">
+                <div className="w-28 h-16 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
+                  <img src={logoUrl} alt="Firmenlogo" className="max-w-full max-h-full object-contain p-1" />
                 </div>
-                <p className="text-sm font-semibold text-gray-700">Noch keine Rechnungen</p>
-                <p className="text-sm text-gray-400 mt-1.5 max-w-xs mx-auto">Erstelle professionelle Rechnungen und behalte den Überblick über offene Zahlungen.</p>
-                <Link
-                  href="/dashboard/rechnungen/neu"
-                  className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                  Erste Rechnung erstellen
-                </Link>
+                <div className="flex flex-col gap-1.5">
+                  <button type="button" onClick={() => logoInputRef.current?.click()} disabled={logoLaden}
+                    className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+                    Logo ersetzen
+                  </button>
+                  <button type="button" onClick={handleLogoEntfernen} disabled={logoLaden}
+                    className="px-3.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition">
+                    Logo entfernen
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
-                <table className="w-full min-w-[600px] text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Nummer</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Kunde</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Datum</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Betrag</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Status</th>
-                      <th className="px-5 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {rechnungen.map(r => {
-                      const cfg     = statusConfig[r.status] ?? statusConfig.entwurf;
-                      const overdue = isOverdue(r);
-                      const stufe   = r.mahnstufe ?? 0;
-                      const mahnLabel = getMahnLabel(stufe);
-                      return (
-                        <tr key={r.id} className="hover:bg-gray-50 transition">
-                          <td className="px-5 py-3 font-mono font-medium text-gray-900 cursor-pointer"
-                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
-                            {r.rechnungsnummer}
-                          </td>
-                          <td className="px-5 py-3 text-gray-500 cursor-pointer"
-                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
-                            {r.kunden?.name ?? '–'}
-                          </td>
-                          <td className="px-5 py-3 text-gray-500 cursor-pointer"
-                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
-                            {r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '–'}
-                          </td>
-                          <td className="px-5 py-3 font-medium text-gray-900 cursor-pointer"
-                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
-                            {brutto(r).toFixed(2).replace('.', ',')} €
-                          </td>
-                          <td className="px-5 py-3 cursor-pointer"
-                              onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}>
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-1 rounded-md text-xs font-medium ${cfg.cls}`}>
-                                {cfg.label}
-                              </span>
-                              {overdue && (
-                                <span className="text-xs text-red-500 font-medium">überfällig</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-5 py-3 text-right whitespace-nowrap">
-                            {overdue && mahnLabel && (
-                              <button
-                                onClick={() => setMahnModal(r)}
-                                className="text-xs px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg font-medium hover:bg-orange-100 transition"
-                              >
-                                {mahnLabel} →
-                              </button>
-                            )}
-                            {overdue && !mahnLabel && (
-                              <span className="text-xs text-gray-400 italic">Alle Mahnungen versendet</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-</div></div>
+              <div className="mb-3">
+                <div onClick={() => logoInputRef.current?.click()}
+                  className="cursor-pointer w-full border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl p-6 flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50/30 transition">
+                  <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                  </svg>
+                  <p className="text-sm text-gray-500 font-medium">Logo hochladen</p>
+                  <p className="text-xs text-gray-400">JPG, PNG, SVG oder WebP &middot; max. 2 MB</p>
+                </div>
+              </div>
             )}
-
-            {mahnModal && (
-              <MahnungModal
-                rechnung={mahnModal}
-                firma={firma}
-                onClose={() => setMahnModal(null)}
-                onSaved={handleMahnungSaved}
-              />
+            <input ref={logoInputRef} type="file" accept="image/jpeg,image/png,image/svg+xml,image/webp" className="hidden" onChange={handleLogoUpload} />
+            {logoLaden && (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />
+                Wird hochgeladen...
+              </div>
             )}
-          </>
-        )}
-
-        {/* ── Tab: Zahlungseingänge ── */}
-        {activeTab === 'zahlungseingang' && (
-          <div className="max-w-lg">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-green-50">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-green-600" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-gray-900 mb-2">Zahlungseingänge</h2>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  Erfasse Zahlungen und aktualisiere den Zahlungsstatus deiner Rechnungen.
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/dashboard/rechnungen/zahlungseingaenge')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl text-sm font-semibold transition bg-green-600 hover:bg-green-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  strokeWidth={2} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-                Zahlungseingänge öffnen
-              </button>
-            </div>
+            {logoStatus && !logoLaden && <p className="text-sm text-green-600">{logoStatus}</p>}
+            {logoError && <p className="text-sm text-red-600">{logoError}</p>}
+            <p className="text-xs text-gray-400 mt-4">Das Logo erscheint automatisch auf deinen Rechnungs- und Angebots-PDFs.</p>
           </div>
-        )}
-
-        {/* ── Tab: PDF-Export ── */}
-        {activeTab === 'pdf' && (
-          <div className="max-w-lg">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-red-50">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-red-600" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-gray-900 mb-2">PDF-Export</h2>
-                <p className="text-sm text-gray-500 leading-relaxed">
-                  Erstelle und lade Rechnungen als professionelle PDF-Dateien herunter.
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/dashboard/rechnungen/pdf-export')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl text-sm font-semibold transition bg-red-600 hover:bg-red-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                  strokeWidth={2} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-                PDF-Export öffnen
-              </button>
-            </div>
-          </div>
-        )}
-
-      </div>
+        </div>
+      )}
+    </div>
     </PlanGate>
   );
 }
