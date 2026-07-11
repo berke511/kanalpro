@@ -1275,7 +1275,7 @@ function EinsatzberichtPageInner() {
   );
 
   if (zustand === 'not_found') return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24 md:pb-0 flex items-center justify-center p-4">
       <div className="text-center">
         <Svg d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" cls="w-10 h-10 text-gray-200 mx-auto mb-3" />
         <h2 className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Auftrag nicht gefunden</h2>
