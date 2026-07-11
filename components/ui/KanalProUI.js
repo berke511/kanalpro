@@ -334,6 +334,51 @@ export function FormCheckbox({ label, id, checked, onChange }) {
   );
 }
 
+
+// ===== FORM SECTION / FOOTER / HELPER / ERROR / SUCCESS (PX-004) =====
+
+export function FormSection({ title, description, children }) {
+  return (
+    <div className="mb-6">
+      {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>}
+      {description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{description}</p>}
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+export function FormHelper({ children }) {
+  return (
+    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{children}</p>
+  );
+}
+
+export function FormError({ children }) {
+  return (
+    <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+      <span>&#9888;</span>{children}
+    </p>
+  );
+}
+
+export function FormFooter({ children }) {
+  return (
+    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-700 mt-6">
+      {children}
+    </div>
+  );
+}
+
+export function SuccessBanner({ message, onDismiss }) {
+  return (
+    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg mb-6">
+      <span className="text-green-600 dark:text-green-400 text-lg">&#10003;</span>
+      <span className="text-sm text-green-800 dark:text-green-200 flex-1">{message}</span>
+      {onDismiss && <button onClick={onDismiss} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-lg leading-none">&#215;</button>}
+    </div>
+  );
+}
+
 // ===== TABELLE =====
 
 export function Table({ headers = [], children }) {
