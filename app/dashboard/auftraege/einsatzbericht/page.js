@@ -2,11 +2,10 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import { MapPin } from 'lucide-react';
 
-/* ════════════════════════════════════════════════════════════════
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    KONFIGURATION
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const EINSATZ_STATUS = ['Unterwegs', 'Vor Ort', 'In Arbeit', 'Arbeit beendet', 'Dokumentiert'];
 
@@ -27,32 +26,48 @@ const FOTO_KATEGORIEN = [
   { key: 'sonstige', label: 'Sonstige', color: 'bg-gray-100 text-gray-600'   },
 ];
 
-/* ════════════════════════════════════════════════════════════════
+const FOTO_BUCKET = 'einsatz-fotos';
+
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    HILFSFUNKTIONEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function fmtDatum(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â';
   return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function fmtZeit(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â';
   try { return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); } catch { return iso; }
 }
 
 function nowIso() { return new Date().toISOString(); }
 
 function minZuHM(min) {
-  if (min == null || isNaN(min)) return '—';
-  const h = Math.floor(Math.abs(min) / 60);
-  const m = Math.abs(min) % 60;
-  return `${h}h ${m}min`;
+  if (min == null || isNaN(min) || min < 0) return 'â';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h} Std ${m} Min`;
+}
+
+function timeDiffMin(von, bis) {
+  if (!von || !bis) return 0;
+  const [vh, vm] = von.split(':').map(Number);
+  const [bh, bm] = bis.split(':').map(Number);
+  return Math.max(0, (bh * 60 + bm) - (vh * 60 + vm));
+}
+
+function nettoArbeitszeit(start, ende, pauseBeginn, pauseEnde) {
+  if (!start || !ende) return null;
+  const gesamtMin = timeDiffMin(start, ende);
+  const pauseMin  = timeDiffMin(pauseBeginn, pauseEnde);
+  return Math.max(0, gesamtMin - pauseMin);
 }
 
 function kundeAnzeigeName(k) {
-  if (!k) return '—';
-  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? '—') : (k.name ?? '—');
+  if (!k) return 'â';
+  return k.kundentyp === 'firma' ? (k.firmenname ?? k.name ?? 'â') : (k.name ?? 'â');
 }
 
 function statusTimestampKey(status) {
@@ -66,9 +81,32 @@ function statusTimestampKey(status) {
   return map[status] ?? null;
 }
 
-/* ════════════════════════════════════════════════════════════════
+async function compressImage(file, maxWidth = 1200, quality = 0.8) {
+  return new Promise((resolve) => {
+    const img  = new Image();
+    const url  = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.width <= maxWidth) { resolve(file); return; }
+      const ratio  = maxWidth / img.width;
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })),
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
    BASIS-KOMPONENTEN
-════════════════════════════════════════════════════════════════ */
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Svg({ d, cls = 'w-4 h-4' }) {
   return (
@@ -81,7 +119,7 @@ function Svg({ d, cls = 'w-4 h-4' }) {
 
 function Karte({ children, className = '' }) {
   return (
-    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -89,16 +127,16 @@ function Karte({ children, className = '' }) {
 
 function KarteHeader({ icon, title, subtitle, action }) {
   return (
-    <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-50">
+    <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-gray-50 dark:border-gray-700">
       <div className="flex items-center gap-3 min-w-0">
         {icon && (
-          <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
             <Svg d={icon} cls="w-4 h-4 text-blue-500" />
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
-          {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -107,18 +145,18 @@ function KarteHeader({ icon, title, subtitle, action }) {
 }
 
 function inp(err = false) {
-  return `w-full px-3 py-2.5 border rounded-xl text-sm text-gray-900 bg-white placeholder-gray-300
+  return `w-full px-3 py-2.5 border rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700 placeholder-gray-300 dark:placeholder-gray-500
     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition
-    ${err ? 'border-red-300 bg-red-50' : 'border-gray-200'}`;
+    ${err ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-gray-600'}`;
 }
 
 function Label({ children }) {
-  return <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{children}</label>;
+  return <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">{children}</label>;
 }
 
 function BtnPrimary({ onClick, disabled, loading, children, className = '' }) {
   return (
-    <button onClick={onClick} disabled={disabled || loading}
+    <button onClick={onClick} disabled={disabled || loading} style={{ minHeight: '44px' }}
       className={`flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold
         hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed ${className}`}>
       {loading ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" /> : null}
@@ -149,24 +187,24 @@ function Alert({ type = 'success', children, onClose }) {
 
 function Skeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-8 h-8 text-blue-500 animate-spin" />
-        <p className="text-sm text-gray-400">Wird geladen…</p>
+        <p className="text-sm text-gray-400">Wird geladenâ¦</p>
       </div>
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 1 – AUFTRAGSINFORMATIONEN
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 1 â AUFTRAGSINFORMATIONEN
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function InfoZeile({ label, value, multi }) {
   return (
     <div>
-      <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</dt>
-      <dd className={`text-sm font-medium text-gray-800 ${multi ? 'whitespace-pre-wrap' : ''}`}>{value || '—'}</dd>
+      <dt className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-0.5">{label}</dt>
+      <dd className={`text-sm font-medium text-gray-800 dark:text-gray-200 ${multi ? 'whitespace-pre-wrap' : ''}`}>{value || 'â'}</dd>
     </div>
   );
 }
@@ -183,55 +221,36 @@ function AuftragInfoSektion({ auftrag }) {
       />
       <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
         <InfoZeile label="Kunde" value={kundeAnzeigeName(kd)} />
-        <InfoZeile label="Auftragsart" value={auftrag.typ ?? '—'} />
-        <div>
-          <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Adresse</dt>
-          <div className="flex items-center gap-2">
-            <dd className="text-sm font-medium text-gray-800">{auftrag.adresse ?? auftrag.einsatzort ?? '—'}</dd>
-            {(auftrag.adresse ?? auftrag.einsatzort) && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(auftrag.adresse ?? auftrag.einsatzort)}`}
-                target="_blank" rel="noopener noreferrer"
-                className="shrink-0 text-blue-500 hover:text-blue-700 transition">
-                <MapPin className="w-4 h-4" />
-              </a>
-            )}
-          </div>
-        </div>
-        <InfoZeile label="Einsatzdatum" value={fmtDatum(auftrag.einsatzdatum)} />
-        <InfoZeile label="Startzeit" value={auftrag.startzeit ?? '—'} />
-        <InfoZeile label="Priorität" value={auftrag.prioritaet ?? '—'} />
+        <InfoZeile label="Auftragsart" value={auftrag.typ ?? auftrag.titel ?? 'â'} />
+        <InfoZeile label="Adresse" value={auftrag.adresse ?? auftrag.einsatzort ?? 'â'} />
+        <InfoZeile label="Einsatzdatum" value={fmtDatum(auftrag.datum ?? auftrag.einsatzdatum)} />
+        <InfoZeile label="Startzeit" value={auftrag.uhrzeit ?? auftrag.startzeit ?? 'â'} />
+        <InfoZeile label="PrioritÃ¤t" value={auftrag.prioritaet ?? 'â'} />
         {auftrag.beschreibung && (
           <div className="sm:col-span-2">
             <InfoZeile label="Beschreibung" value={auftrag.beschreibung} multi />
           </div>
         )}
-        {kd?.telefon && (
-          <div>
-            <dt className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Telefon Kunde</dt>
-            <dd className="text-sm font-medium text-gray-800">
-              <a href={`tel:${kd.telefon}`} className="text-blue-600 hover:underline">{kd.telefon}</a>
-            </dd>
-          </div>
-        )}
+        {kd?.telefon && <InfoZeile label="Telefon Kunde" value={kd.telefon} />}
         {kd?.email && <InfoZeile label="E-Mail Kunde" value={kd.email} />}
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 2 – FORTSCHRITT
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 2 â FORTSCHRITT
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function FortschrittSektion({ dok, material, fotos }) {
   const checks = [
     { label: 'Status gesetzt',           ok: !!dok?.einsatz_status },
-    { label: 'Tätigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
+    { label: 'TÃ¤tigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
     { label: 'Material erfasst',         ok: dok?.kein_material_verwendet || material.length > 0 },
     { label: 'Arbeitszeiten erfasst',    ok: !!dok?.arbeit_start && !!dok?.arbeit_ende },
     { label: 'Mindestens 1 Foto',        ok: fotos.length > 0 },
     { label: 'Kundenunterschrift',       ok: !!dok?.unterschrift_base64 },
-    { label: 'Prüfliste ausgefüllt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
+    { label: 'PrÃ¼fliste ausgefÃ¼llt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
   ];
 
   const done = checks.filter(c => c.ok).length;
@@ -247,10 +266,10 @@ function FortschrittSektion({ dok, material, fotos }) {
       <div className="px-5 py-4 space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-500 font-medium">Gesamt</span>
-            <span className={`text-sm font-bold ${pct === 100 ? 'text-green-600' : 'text-gray-700'}`}>{pct}%</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Gesamt</span>
+            <span className={`text-sm font-bold ${pct === 100 ? 'text-green-600' : 'text-gray-700 dark:text-gray-200'}`}>{pct}%</span>
           </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
               style={{ width: `${pct}%` }} />
           </div>
@@ -258,12 +277,12 @@ function FortschrittSektion({ dok, material, fotos }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {checks.map(c => (
             <div key={c.label} className="flex items-center gap-2.5">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${c.ok ? 'bg-green-100' : 'bg-gray-100'}`}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${c.ok ? 'bg-green-100' : 'bg-gray-100 dark:bg-gray-700'}`}>
                 {c.ok
                   ? <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-3 h-3 text-green-600" />
-                  : <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />}
+                  : <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-500" />}
               </div>
-              <span className={`text-sm ${c.ok ? 'text-gray-700' : 'text-gray-400'}`}>{c.label}</span>
+              <span className={`text-sm ${c.ok ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}`}>{c.label}</span>
             </div>
           ))}
         </div>
@@ -272,9 +291,9 @@ function FortschrittSektion({ dok, material, fotos }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 3 – EINSATZSTATUS
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 3 â EINSATZSTATUS
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
   const aktuellerStatus = dok?.einsatz_status ?? null;
@@ -288,31 +307,29 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
         subtitle={aktuellerStatus ? `Aktuell: ${aktuellerStatus}` : 'Noch nicht gestartet'}
       />
       <div className="px-5 py-4 space-y-4">
-        {/* Timeline */}
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
           {EINSATZ_STATUS.map((s, i) => {
-            const done    = aktIdx >= i;
-            const cfg     = STATUS_CFG[s];
-            const tsKey   = statusTimestampKey(s);
+            const done  = aktIdx >= i;
+            const cfg   = STATUS_CFG[s];
+            const tsKey = statusTimestampKey(s);
             return (
               <div key={s} className="flex items-center gap-1 shrink-0">
                 <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold transition
-                  ${done ? `${cfg.bg} ${cfg.text} border ${cfg.border}` : 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+                  ${done ? `${cfg.bg} ${cfg.text} border ${cfg.border}` : 'bg-gray-50 dark:bg-gray-700 text-gray-400 border border-gray-100 dark:border-gray-600'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${done ? cfg.dot : 'bg-gray-300'}`} />
                   {s}
                   {done && dok?.[tsKey] && (
-                    <span className="opacity-60">· {fmtZeit(dok[tsKey])}</span>
+                    <span className="opacity-60">Â· {fmtZeit(dok[tsKey])}</span>
                   )}
                 </div>
                 {i < EINSATZ_STATUS.length - 1 && (
-                  <div className={`w-4 h-px shrink-0 ${i < aktIdx ? 'bg-gray-300' : 'bg-gray-100'}`} />
+                  <div className={`w-4 h-px shrink-0 ${i < aktIdx ? 'bg-gray-300' : 'bg-gray-100 dark:bg-gray-600'}`} />
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Action-Buttons */}
         <div className="flex flex-wrap gap-2">
           {EINSATZ_STATUS.map((s, i) => {
             const istAktuell   = aktuellerStatus === s;
@@ -322,7 +339,7 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
             const cfg = STATUS_CFG[s];
             return (
               <button key={s} onClick={() => !istAktuell && onStatusChange(s)}
-                disabled={istAktuell || saving}
+                disabled={istAktuell || saving} style={{ minHeight: '44px' }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition
                   ${istAktuell
                     ? `${cfg.bg} ${cfg.text} border ${cfg.border} cursor-default`
@@ -330,7 +347,7 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
                 {saving && (istNaechster || istErster)
                   ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
                   : null}
-                {istAktuell ? `✓ ${s}` : `→ ${s}`}
+               {istAktuell ? `Aktuell: ${s}` : `Weiter: ${s}`}
               </button>
             );
           })}
@@ -340,25 +357,25 @@ function EinsatzStatusSektion({ dok, onStatusChange, saving }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 4 – TÄTIGKEITSDOKUMENTATION
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 4  â TÃTIGKEITSDOKUMENTATION
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function TaetigkeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
   const felder = [
-    { key: 'durchgefuehrte_arbeiten', label: 'Durchgeführte Arbeiten *', placeholder: 'Was wurde gemacht?', rows: 4, required: true },
-    { key: 'festgestellter_schaden',  label: 'Festgestellter Schaden',   placeholder: 'Schäden, Mängel…',    rows: 2 },
-    { key: 'ursache',                 label: 'Ursache',                   placeholder: 'Ursache des Problems…', rows: 2 },
-    { key: 'massnahmen',              label: 'Maßnahmen',                 placeholder: 'Ergriffene Maßnahmen…', rows: 2 },
-    { key: 'empfehlung',              label: 'Empfehlung an Kunden',      placeholder: 'Weitere Empfehlungen…', rows: 2 },
-    { key: 'interne_notiz',           label: 'Interne Notiz',             placeholder: 'Interne Hinweise…',     rows: 2, internal: true },
+    { key: 'durchgefuehrte_arbeiten', label: 'DurchgefÃ¼hrte Arbeiten *', placeholder: 'Was wurde gemacht?', rows: 4, required: true },
+    { key: 'festgestellter_schaden',  label: 'Festgestellter Schaden',   placeholder: 'SchÃ¤den, MÃ¤ngenâ¦',    rows: 2 },
+    { key: 'ursache',                 label: 'Ursache',                   placeholder: 'Ursache des Problemsâ¦', rows: 2 },
+    { key: 'massnahmen',              label: 'MaÃnahmen',                 placeholder: 'Ergriffene MaÃnahmenâ¦', rows: 2 },
+    { key: 'empfehlung',              label: 'Empfehlung an Kunden',      placeholder: 'Weitere Empfehlungenâ¦', rows: 2 },
+    { key: 'interne_notiz',           label: 'Interne Notiz',             placeholder: 'Interne Hinweiseâ¦',     rows: 2, internal: true },
   ];
 
   return (
     <Karte>
       <KarteHeader
         icon="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-        title="Tätigkeitsdokumentation"
+        title="TÃ¤tigkeitsdokumentation"
         subtitle="Was wurde getan?"
       />
       <div className="px-5 py-4 space-y-4">
@@ -382,19 +399,19 @@ function TaetigkeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
             <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
             Speichern
           </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Gespeichert</span>}
+          {gespeichert && <span className="text-xs text-green-600 font-medium">Gespeichert</span>}
         </div>
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 5 – MATERIAL
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 5 â MATERIAL
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMaterial, saving }) {
-  const [neu, setNeu]     = useState({ bezeichnung: '', menge: '1', einheit: 'Stk.', bemerkung: '' });
+  const [neu, setNeu]       = useState({ bezeichnung: '', menge: '1', einheit: 'Stk.', bemerkung: '' });
   const [fehler, setFehler] = useState(false);
 
   function handleAdd() {
@@ -412,10 +429,10 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
         subtitle={`${material.length} Position${material.length !== 1 ? 'en' : ''}`}
       />
       <div className="px-5 py-4 space-y-4">
-        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none" style={{ minHeight: '44px' }}>
           <input type="checkbox" checked={keinMaterial} onChange={e => onKeinMaterial(e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-          <span className="text-sm text-gray-600">Kein Material verwendet</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">Kein Material verwendet</span>
         </label>
 
         {!keinMaterial && (
@@ -423,12 +440,12 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
             {material.length > 0 && (
               <div className="space-y-2">
                 {material.map((m, i) => (
-                  <div key={m.id ?? i} className="flex items-start gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div key={m.id ?? i} className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800">{m.bezeichnung}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{m.menge} {m.einheit}{m.bemerkung ? ` · ${m.bemerkung}` : ''}</p>
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{m.bezeichnung}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{m.menge} {m.einheit}{m.bemerkung ? ` Â· ${m.bemerkung}` : ''}</p>
                     </div>
-                    <button onClick={() => onDelete(m.id ?? i)}
+                    <button onClick={() => onDelete(m.id ?? i)} style={{ minHeight: '44px' }}
                       className="shrink-0 p-1.5 text-gray-300 hover:text-red-400 rounded-lg transition">
                       <Svg d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" cls="w-4 h-4" />
                     </button>
@@ -437,8 +454,8 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
               </div>
             )}
 
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3">
-              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Position hinzufügen</p>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 space-y-3">
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Position hinzufÃ¼gen</p>
               <div>
                 <Label>Bezeichnung *</Label>
                 <input value={neu.bezeichnung}
@@ -465,10 +482,10 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
                 <input value={neu.bemerkung} onChange={e => setNeu(p => ({ ...p, bemerkung: e.target.value }))}
                   placeholder="Optional" className={inp()} />
               </div>
-              <button onClick={handleAdd} disabled={saving}
+              <button onClick={handleAdd} disabled={saving} style={{ minHeight: '44px' }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
                 <Svg d="M12 4.5v15m7.5-7.5h-15" cls="w-4 h-4" />
-                Hinzufügen
+                HinzufÃ¼gen
               </button>
             </div>
           </>
@@ -478,22 +495,13 @@ function MaterialSektion({ material, onAdd, onDelete, keinMaterial, onKeinMateri
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 6 – ARBEITSZEITEN
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 6 â ARBEITSZEITEN (4 Felder)
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function ArbeitszeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
-  function parseTime(t) {
-    if (!t) return null;
-    const [h, m] = t.split(':').map(Number);
-    return (h * 60 + m) * 60000;
-  }
-
-  const startMs  = parseTime(form.arbeit_start);
-  const endeMs   = parseTime(form.arbeit_ende);
-  const nettoMin = (startMs != null && endeMs != null)
-    ? Math.max(0, Math.round((endeMs - startMs) / 60000) - (parseInt(form.pause_minuten) || 0))
-    : null;
+  const nettoMin = nettoArbeitszeit(form.arbeit_start, form.arbeit_ende, form.pause_beginn, form.pause_ende);
+  const pauseMin = timeDiffMin(form.pause_beginn, form.pause_ende);
 
   return (
     <Karte>
@@ -503,30 +511,38 @@ function ArbeitszeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
         subtitle="Erfassung der Arbeitszeit"
       />
       <div className="px-5 py-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>Arbeit Beginn</Label>
-            <input type="time" value={form.arbeit_start ?? ''}
+            <Label>Startzeit</Label>
+            <input type="time" value={form.arbeit_start ?? ''} style={{ minHeight: '44px' }}
               onChange={e => onChange('arbeit_start', e.target.value)} className={inp()} />
           </div>
           <div>
-            <Label>Arbeit Ende</Label>
-            <input type="time" value={form.arbeit_ende ?? ''}
-              onChange={e => onChange('arbeit_ende', e.target.value)} className={inp()} />
+            <Label>Pausenbeginn</Label>
+            <input type="time" value={form.pause_beginn ?? ''} style={{ minHeight: '44px' }}
+              onChange={e => onChange('pause_beginn', e.target.value)} className={inp()} />
           </div>
           <div>
-            <Label>Pause (Minuten)</Label>
-            <input type="number" min="0" step="5" value={form.pause_minuten ?? 0}
-              onChange={e => onChange('pause_minuten', e.target.value)} className={inp()} />
+            <Label>Pausenende</Label>
+            <input type="time" value={form.pause_ende ?? ''} style={{ minHeight: '44px' }}
+              onChange={e => onChange('pause_ende', e.target.value)} className={inp()} />
+          </div>
+          <div>
+            <Label>Endzeit</Label>
+            <input type="time" value={form.arbeit_ende ?? ''} style={{ minHeight: '44px' }}
+              onChange={e => onChange('arbeit_ende', e.target.value)} className={inp()} />
           </div>
         </div>
 
         {nettoMin != null && (
-          <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
-            <Svg d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-600" />
+          <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800">
+            <Svg d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-4 h-4 text-green-600 dark:text-green-400" />
             <div>
-              <p className="text-xs text-green-600 font-semibold uppercase tracking-wide">Netto-Arbeitszeit</p>
-              <p className="text-lg font-bold text-green-700">{minZuHM(nettoMin)}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 font-semibold uppercase tracking-wide">Netto-Arbeitszeit</p>
+              <p className="text-lg font-bold text-green-700 dark:text-green-300">{minZuHM(nettoMin)}</p>
+              {pauseMin > 0 && (
+                <p className="text-xs text-green-500 mt-0.5">Pause: {minZuHM(pauseMin)}</p>
+              )}
             </div>
           </div>
         )}
@@ -536,101 +552,168 @@ function ArbeitszeitenSektion({ form, onChange, onSave, saving, gespeichert }) {
             <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
             Speichern
           </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Gespeichert</span>}
+          {gespeichert && <span className="text-xs text-green-600 dark:text-green-400 font-medium">Gespeichert</span>}
         </div>
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 7 – FOTOS
-════════════════════════════════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 7 â FOTODOKUMENTATION (Kamera + Galerie + Komprimierung + Zoom)
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadErr, setUploadErr] = useState('');
-  const [kategorie, setKategorie] = useState('vorher');
-  const inputRef = useRef(null);
+  const [pending,      setPending]      = useState([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [uploadErr,    setUploadErr]    = useState('');
+  const [kategorie,    setKategorie]    = useState('vorher');
+  const [fullscreenUrl, setFullscreenUrl] = useState(null);
+  const kameraRef  = useRef(null);
+  const galerieRef = useRef(null);
 
-  async function handleUpload(files) {
-    if (!files?.length) return;
+  function addFiles(files) {
+    const neu = Array.from(files).map(file => ({
+      id: Math.random().toString(36).slice(2),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPending(p => [...p, ...neu]);
+  }
+
+  function removePending(id) {
+    setPending(p => {
+      const item = p.find(x => x.id === id);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return p.filter(x => x.id !== id);
+    });
+  }
+
+  async function uploadAll() {
+    if (!pending.length) return;
     setUploading(true);
     setUploadErr('');
     try {
-      for (const file of Array.from(files)) {
-        const ext  = file.name.split('.').pop();
+      for (const item of pending) {
+        let fileToUpload = item.file;
+        try { fileToUpload = await compressImage(item.file); } catch (_) { /* fallback to original */ }
+
+        const ext  = fileToUpload.name.split('.').pop() || 'jpg';
         const path = `${companyId}/${auftragId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('einsatz-fotos').upload(path, file);
-        if (upErr) throw upErr;
-        const { data: { publicUrl } } = supabase.storage.from('einsatz-fotos').getPublicUrl(path);
+
+        const { error: upErr } = await supabase.storage.from(FOTO_BUCKET).upload(path, fileToUpload);
+        if (upErr) throw new Error(upErr.message ?? 'Bucket nicht verfÃ¼gbar');
+
+        const { data: { publicUrl } } = supabase.storage.from(FOTO_BUCKET).getPublicUrl(path);
+
         const { data: fotoRow, error: insErr } = await supabase
           .from('einsatz_fotos')
-          .insert({ auftrag_id: auftragId, company_id: companyId, kategorie, url: publicUrl, storage_path: path, dateiname: file.name })
+          .insert({ auftrag_id: auftragId, company_id: companyId, kategorie, url: publicUrl, storage_path: path, dateiname: item.file.name })
           .select().single();
-        if (insErr) throw insErr;
+        if (insErr) throw new Error(insErr.message);
+
+        URL.revokeObjectURL(item.previewUrl);
         onFotoAdded(fotoRow);
       }
+      setPending([]);
     } catch (e) {
       setUploadErr(e.message ?? 'Upload fehlgeschlagen');
     }
     setUploading(false);
-    if (inputRef.current) inputRef.current.value = '';
   }
 
   async function handleDelete(foto) {
-    if (foto.storage_path) {
-      await supabase.storage.from('einsatz-fotos').remove([foto.storage_path]);
-    }
-    await supabase.from('einsatz_fotos').delete().eq('id', foto.id);
-    onFotoDeleted(foto.id);
+    try {
+      if (foto.storage_path) {
+        await supabase.storage.from(FOTO_BUCKET).remove([foto.storage_path]);
+      }
+      await supabase.from('einsatz_fotos').delete().eq('id', foto.id);
+      onFotoDeleted(foto.id);
+    } catch (_) { /* ignoriere Fehler beim LÃ¶schen */ }
   }
 
   return (
     <Karte>
+      {fullscreenUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setFullscreenUrl(null)}
+          style={{ touchAction: 'none' }}
+        >
+          <img src={fullscreenUrl} alt="Vollbild" className="max-w-full max-h-full object-contain rounded-xl" />
+          <button
+            className="absolute top-4 right-4 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition"
+            onClick={() => setFullscreenUrl(null)}
+            style={{ minHeight: '44px', minWidth: '44px' }}
+          >
+            <Svg d="M6 18L18 6M6 6l12 12" cls="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
       <KarteHeader
         icon="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-        title="Fotos"
-        subtitle={`${fotos.length} Foto${fotos.length !== 1 ? 's' : ''}`}
+        title="Fotodokumentation"
+        subtitle={`${fotos.length} hochgeladen${pending.length > 0 ? ` Â· ${pending.length} ausstehend` : ''}`}
       />
+
       <div className="px-5 py-4 space-y-4">
-        {/* Kategoriewahl */}
         <div className="flex flex-wrap gap-2">
           {FOTO_KATEGORIEN.map(k => (
-            <button key={k.key} onClick={() => setKategorie(k.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition
-                ${kategorie === k.key ? k.color + ' ring-2 ring-offset-1 ring-blue-400' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+            <button key={k.key} onClick={() => setKategorie(k.key)} style={{ minHeight: '44px' }}
+              className={`px-3 py-2 rounded-xl text-sm font-semibold transition
+                ${kategorie === k.key ? k.color + ' ring-2 ring-offset-1 ring-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
               {k.label}
             </button>
           ))}
         </div>
 
-        {/* Upload-Drop-Zone */}
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); handleUpload(e.dataTransfer.files); }}
-          className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 transition">
-          {uploading ? (
-            <div className="flex flex-col items-center gap-2 text-blue-500">
-              <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-6 h-6 animate-spin" />
-              <p className="text-sm">Wird hochgeladen…</p>
-            </div>
-          ) : (
-            <>
-              <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-7 h-7 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 font-medium">Fotos hochladen</p>
-              <p className="text-xs text-gray-300 mt-1">Klicken oder Dateien hierher ziehen</p>
-              <p className="text-xs text-blue-500 mt-1 font-medium">Kategorie: {FOTO_KATEGORIEN.find(k => k.key === kategorie)?.label}</p>
-            </>
-          )}
+        <div className="flex gap-3">
+          <button onClick={() => kameraRef.current?.click()} style={{ minHeight: '44px' }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+            <Svg d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" cls="w-5 h-5" />
+            Kamera
+          </button>
+          <button onClick={() => galerieRef.current?.click()} style={{ minHeight: '44px' }}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+            <Svg d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" cls="w-5 h-5" />
+            Galerie
+          </button>
         </div>
-        <input ref={inputRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
-          onChange={e => handleUpload(e.target.files)} />
+
+        <input ref={kameraRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
+          onChange={e => { if (e.target.files?.length) { addFiles(e.target.files); e.target.value = ''; } }} />
+        <input ref={galerieRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={e => { if (e.target.files?.length) { addFiles(e.target.files); e.target.value = ''; } }} />
+
+        {pending.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Vorschau â Kategorie: {FOTO_KATEGORIEN.find(k => k.key === kategorie)?.label}
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {pending.map(item => (
+                <div key={item.id} className="relative rounded-xl overflow-hidden aspect-square bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                  <img src={item.previewUrl} alt="Vorschau" className="w-full h-full object-cover" />
+                  <button onClick={() => removePending(item.id)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md">
+                    <Svg d="M6 18L18 6M6 6l12 12" cls="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button onClick={uploadAll} disabled={uploading} style={{ minHeight: '44px' }}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60">
+              {uploading
+                ? <><Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" /> Wird hochgeladenâ¦</>
+                : <><Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />{pending.length} Foto{pending.length !== 1 ? 's' : ''} hochladen</>
+              }
+            </button>
+          </div>
+        )}
 
         {uploadErr && <Alert type="error" onClose={() => setUploadErr('')}>{uploadErr}</Alert>}
 
-        {/* Galerie */}
         {fotos.length > 0 && (
           <div className="space-y-3">
             {FOTO_KATEGORIEN.map(k => {
@@ -644,10 +727,15 @@ function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted 
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {gruppe.map(f => (
-                      <div key={f.id} className="relative group rounded-xl overflow-hidden border border-gray-100 aspect-square bg-gray-50">
+                      <div key={f.id} className="relative group rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 aspect-square bg-gray-50 dark:bg-gray-700">
                         <img src={f.url} alt={f.dateiname ?? 'Foto'} className="w-full h-full object-cover" loading="lazy" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <button onClick={() => handleDelete(f)} className="p-1.5 bg-red-500 text-white rounded-lg shadow-lg">
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                          <button onClick={() => setFullscreenUrl(f.url)}
+                            className="p-1.5 bg-white/20 text-white rounded-lg shadow-lg hover:bg-white/40 transition">
+                            <Svg d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" cls="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(f)}
+                            className="p-1.5 bg-red-500 text-white rounded-lg shadow-lg hover:bg-red-600 transition">
                             <Svg d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" cls="w-4 h-4" />
                           </button>
                         </div>
@@ -659,14 +747,18 @@ function FotosSektion({ fotos, auftragId, companyId, onFotoAdded, onFotoDeleted 
             })}
           </div>
         )}
+
+        {fotos.length === 0 && pending.length === 0 && (
+          <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">Noch keine Fotos hinzugefÃ¼gt</p>
+        )}
       </div>
     </Karte>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 8 – KUNDENUNTERSCHRIFT (CANVAS)
-════════════════════════════════════════════════════════════════ */
+/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+   SEKTION 8 â KUNDENUNTERSCHRIFT (Canvas)
+ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
   const canvasRef = useRef(null);
@@ -687,10 +779,10 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
   }, []);
 
   function getPos(e, canvas) {
-    const rect = canvas.getBoundingClientRect();
+    const rect   = canvas.getBoundingClientRect();
     const scaleX = canvas.width  / rect.width;
     const scaleY = canvas.height / rect.height;
-    const src = e.touches ? e.touches[0] : e;
+    const src    = e.touches ? e.touches[0] : e;
     return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
   }
 
@@ -700,8 +792,8 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
     e.preventDefault();
     if (!drawing || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const pt  = getPos(e, canvas);
+    const ctx    = canvas.getContext('2d');
+    const pt     = getPos(e, canvas);
     ctx.beginPath();
     ctx.moveTo(lastPt.current.x, lastPt.current.y);
     ctx.lineTo(pt.x, pt.y);
@@ -739,559 +831,311 @@ function UnterschriftSektion({ form, onChange, onSave, saving, gespeichert }) {
         <div>
           <Label>Name des Kunden</Label>
           <input value={form.kundenname ?? ''} onChange={e => onChange('kundenname', e.target.value)}
-            placeholder="Vor- und Nachname" className={inp()} />
+            placeholder="Vor- und Nachname" className={inp()} style={{ minHeight: '44px' }} />
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <Label>Unterschrift</Label>
             {hatZeich && (
-              <button onClick={loeschen} className="text-xs text-red-400 hover:text-red-600 font-medium transition">Löschen</button>
+              <button onClick={loeschen} className="text-xs text-red-400 hover:text-red-600 font-medium transition">LÃ¶schen</button>
             )}
           </div>
-          <div className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ touchAction: 'none' }}>
+          <div className="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-900"
+            style={{ touchAction: 'none' }}>
             <canvas
               ref={canvasRef}
               width={600}
               height={200}
               className="w-full cursor-crosshair"
               style={{ touchAction: 'none' }}
-              onMouseDown={startDraw}
-              onMouseMove={draw}
-              onMouseUp={stopDraw}
-              onMouseLeave={stopDraw}
-              onTouchStart={startDraw}
-              onTouchMove={draw}
-              onTouchEnd={stopDraw}
-            />
-          </div>
-          {!hatZeich && <p className="text-xs text-gray-400 text-center mt-1">Hier unterschreiben</p>}
-        </div>
+              onPointerDown={startDraw}
+            ÛÚ[\[ÝO^Ù]ßBÛÚ[\\^ÜÝÜ]ßBÛÚ[\X]O^ÜÝÜ]ßBÏÙ]ÈZ]ZXÚ	Û\ÜÓ[YOH^^È^YÜ^KM^XÙ[\]LHY\[\ØÚZX[ÜBÙ]]Û\ÜÓ[YOH^][\ËXÙ[\Ø\LÈ[X\HÛÛXÚÏ^ÛÛØ]_HØY[Ï^ÜØ][ßH\ØXY^ÈZ]ZXÚYÜKÝ[[[Y_OÝÈHLÈM]PLHH
+KHZLËPLHHHNÍUM[KLLËKNSLÛL
+H
+SLLÝLËHÛÏHËMMÏÜZXÚ\Ð[X\OÙÙ\ÜZXÚ\	Ü[Û\ÜÓ[YOH^^È^YÜY[M\Î^YÜY[MÛ[YY][H[\ØÚYÙ\ÜZXÚ\ÜÜ[BÙ]ÙÜK[\ØÚYØ]	
+Û\ÜÓ[YOH^^È^YÜ^KM[\ØÚYX[[HÙ]Z]
+ÜK[\ØÚYØ]
+_OÜ
+_BÙ]ÒØ\O
+NÂBÊ8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥dÑRÕSÓH8 $ÈPÐÒTÔÔ°çSÂ¸¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d
+Â[Ý[ÛXØÚ\ÜÜYY[ÔÙZÝ[ÛÈÜKÛÚ[ÙHJHÂÛÛÝÚXÚÜÈHÂÈÙ^N	ÝÙ\Þ]Y×ÝÛÝY[YÉËX[	ÕÙ\Þ]YÈÛÝ0éYÈ[Z[Ù\XÚÝ	ÈKÈÙ^N	Ø\ZXÚÙÙ\Z[YÝ	ËX[	ÑZ[Ø]\ZXÚÙ\ðéX\[Ù\°é[]	ÈKÈÙ^N	ÚÝ[WÚ[ÜZY\	ËX[	ÒÝ[[0ï\\ÙX\È[ÜZY\	ÈKNÂ]\
+Ø\OØ\RXY\XÛÛHNHLÍSLKHMHMHKÍSLHLÌKKÈÎKLKNLÈË
+LËÍ
+HËÍ
+HKLK
+ÈËMËÍ
+HËÍ
+HKLËMK
+ÐLËÍ
+HËÍ
+HLLXËLKLÎKKËLË
+LKNLØLËÍ
+ËÍ
+KLËMLK
+ÈËÍ
+HËÍ
+HKLK
+ËLËMLËÍ
+HËÍ
+HLÈLÌLKËLÎHKNLËLË
+LËÍ
+HËÍ
+HLK
+ËLËMËÍ
+ËÍ
+LËMLK
+ÐLËÍ
+ËÍ
+LLØÌKÎKÈË
+KNLØLËÍ
+ËÍ
+LËMK
+ÈËÍ
+ËÍ
+LK
+ÈËMLËÍ
+HËÍ
+HLHL]OHXØÚ\ÜÜ°ï[ÈÝX]OHÚXÚÛ\ÝHÜXØÚ\ÜÈÏ]Û\ÜÓ[YOHMHKMÜXÙK^KLØÚXÚÜËX\
+ÈO
+X[Ù^O^ØËÙ^_HÛ\ÜÓ[YOH^][\ËXÙ[\Ø\LÈÝ\ÛÜ\Ú[\Ù[XÝ[ÛHLÈÝ[Y^Ý\ËYÜ^KML\ÎÝ\ËYÜ^KMÌ[Ú][ÛÝ[O^ÞÈZ[ZYÚ	Í
+	È_O[]\OHÚXÚØÞÚXÚÙY^ÈHYÜVØËÙ^W_BÛÚ[ÙO^ÙHOÛÚ[ÙJËÙ^KK\Ù]ÚXÚÙY
+_BÛ\ÜÓ[YOHËMHMHÝ[Y[ÈÜ\YÜ^KLÌ^YÜY[MØÝ\Î[ËYÜY[MLÏÜ[Û\ÜÓ[YO^Ø^\ÛHÛ[YY][H^LH	ÙÜVØËÙ^WHÈ	Ý^YÜ^KMÌ\Î^YÜ^KL	È	Ý^YÜ^KM\Î^YÜ^KML	ßXOØËX[OÜÜ[ÙÜVØËÙ^WH	ÝÈHMHLÍ[
+
+KLLËHÛÏHËMM^YÜY[MLÚ[ËLÏBÛX[
+J_BÙ]ÒØ\O
+NÂBÊ8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥dÑRÕSÓL8 $ÈPÐÒTÔÈ
+ÈRÕSÓS¸¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d
+Â[Ý[ÛXØÚ\ÜÔÙZÝ[ÛÈÚËX]\X[ÝÜËÛXØÚY\ÜÙ[ÛXÚ[ËÛYXÚÝ\Z[Ø]Ø][ËZ\JHÂÛÛÝÚXÚÜÈHÂÈX[	ÔÝ]\ÈÙ\Ù]	ËÚÎHYÚÏËZ[Ø]ÜÝ]\ÈKÈX[	Õ0éYÚÙZ][ÚÝ[Y[Y\	ËÚÎHYÚÏË\ÚÙYYZWØ\Z][KÈX[	ÓX]\X[\\ÜÝ	ËÚÎÚÏËÙZ[ÛX]\X[Ý\Ù[]X]\X[[ÝKÈX[	Ð\Z]ÞZ][\\ÜÝ	ËÚÎHYÚÏË\Z]ÜÝ\	HYÚÏË\Z]Ù[HKÈX[	Ô°ï\ÝH]\ÙÙY°ï	ËÚÎÚÏËÙ\Þ]Y×ÝÛÝY[YÈ	ÚÏË\ZXÚÙÙ\Z[YÝ	ÚÏËÝ[WÚ[ÜZY\KNÂÛÛÝ[ÚÈHÚXÚÜË]\JÈOËÚÊNÂÛÛÝXÙ\ØÚÜÜÙ[HÚÏËÝ]\ÈOOH	ÙÚÝ[Y[Y\	ÎÂ]\
+Ø\HÛ\ÜÓ[YO^ØXÙ\ØÚÜÜÙ[È	ØÜ\YÜY[L\ÎÜ\YÜY[N	È	ÉßOØ\RXY\XÛÛHNHLÍSLKHMHMHKÍ[KLËMËÍLLKMNHLKMNHLËNN
+LKNHLKNHÈKÍXÌ
+KNLËLHHLKÈ
+KMÍLKÌÌKMÈKLLKLKÌKKKLMÌKKNNLËÍLZKMLËLËNMMKLKNKLË
+^]OHXØÚ\ÜÈÝX]O^ØXÙ\ØÚÜÜÙ[È	ÑZ[Ø]XÙ\ØÚÜÜÙ[È	ÑZ[Ø]\XÚ[[\ÚY\[ßBÏ]Û\ÜÓ[YOHMHKMÜXÙK^KMØXÙ\ØÚÜÜÙ[È
+]Û\ÜÓ[YOHMËYÜY[ML\ÎËYÜY[NLÌÝ[Y^Ü\Ü\YÜY[LL\ÎÜ\YÜY[N^XÙ[\ÝÈHNHLÍSLKHMHMHKÍSLHLNHHLKLNHHLNÛÏHËNN^YÜY[ML^X]]ÈXLÏÛ\ÜÓ[YOHÛ\Ù[ZXÛ^YÜY[MÌ\Î^YÜY[LÌZ[Ø]\XÚXÙ\ØÚÜÜÙ[ÜÙÚÏËÚÝ[Y[Y\Ø]	
+Û\ÜÓ[YOH^^È^YÜY[ML]LHXÙ\ØÚÜÜÙ[[HÙ]Z]
+ÚËÚÝ[Y[Y\Ø]
+_OÜ
+_BÙ]]Û\ÜÓ[YOH^^XÛÛØ\LÈ]ÛÛÛXÚÏ^ÛÛXÚ[ßHÝ[O^ÞÈZ[ZYÚ	Í
+	È_BÛ\ÜÓ[YOHËY[^][\ËXÙ[\\ÝYKXÙ[\Ø\LKLÈËXYKM^]Ú]HÝ[Y^^\ÛHÛ\Ù[ZXÛÝ\ËXYKMÌ[Ú][ÛÝÈHLNKHM]LXLËÍÍHËÍÍHLËÍÍKLËÍÍZLKPLKLHKLHLLËH
+ËL]LKXLËÍÍHËÍÍHLËÍÍKLËÍÍR[LLÍZ
+Ë[KMËHÒLLLHR
+KXËKHLKLKL
+LKLHKL]MËXÌKL
+KLHKLHKLZLÍXËHKLKKL
+KLKLKLULKXNHHNKN^ÛÏHËMMÏXÚ[ÈÜ\Z][Ø]Û]ÛÛÛXÚÏ^ÛÛYXÚÝ\Z[Ø]HÝ[O^ÞÈZ[ZYÚ	Í
+	È_BÛ\ÜÓ[YOHËY[^][\ËXÙ[\\ÝYKXÙ[\Ø\LKLÈËYÜ^KLL\ÎËYÜ^KMÌ^YÜ^KMÌ\Î^YÜ^KLÝ[Y^^\ÛHÛ\Ù[ZXÛÝ\ËYÜ^KL\ÎÝ\ËYÜ^KM[Ú][ÛÝÈHLLËH
+SHLLMËH
+ËSLHLÈÛÏHËMMÏ°éÚÝ[Z[Ø]0í[Ø]ÛÙ]Ï
+H
+ÈX[ÚÈ	
+]Û\ÜÓ[YOHÜXÙK^KLKHLÈËX[X\ML\ÎËX[X\NLÌÝ[Y^Ü\Ü\X[X\LL\ÎÜ\X[X\NÛ\ÜÓ[YOH^^ÈÛ\Ù[ZXÛ^X[X\MÌ\Î^X[X\LÌ\\Ø\ÙHXÚÚ[Ë]ÚYHXLØÚ]\ÜÝZ[ÜØÚXÚÜË[\ÈOXËÚÊKX\
+ÈO
+]Ù^O^ØËX[HÛ\ÜÓ[YOH^][\ËXÙ[\Ø\L^\ÛH^X[X\M\Î^X[X\MÝÈHLL]ËÍ[KNKÌÈËÍÍËK
+KKMÈËÍÍKMËÍÍMÌXÌKÌÈLËLK
+ÍKMLËÍÍLËMHËÍÎËK
+LKKLËÌLKKLËNMÈMLLLMKÍZ
+ÝLKÛÏHËMMÚ[ËLÏØËX[BÙ]
+J_BÙ]
+_BÙZ\	[\\OH\ÜÙZ\OÐ[\B]ÛÛÛXÚÏ^ÛÛXØÚY\ÜÙ[H\ØXY^ÜØ][ÈX[ÚßHÝ[O^ÞÈZ[ZYÚ	Í
+	È_BÛ\ÜÓ[YO^ØËY[^][\ËXÙ[\\ÝYKXÙ[\Ø\LKLËHÝ[Y^^\ÛHÛXÛ[Ú][Û	Ø[ÚÂÈ	ØËYÜY[MÝ\ËYÜY[MÌ^]Ú]HÚYÝË[YÝ\ÚYÝË[ÉÂ	ØËYÜ^KLL\ÎËYÜ^KMÌ^YÜ^KLÌ\Î^YÜ^KMLÝ\ÛÜ[ÝX[ÝÙY	ßXOÜØ][ÂÈÝÈHLMÈKÍ
+NLKSLN
+HNK
+MNLL
+NLKMNLÈËNHËNØNHHLËËLËÓMÌHK
+XNHHLLËËLËÛËNHËNLMNL]NHÛÏHËMHMH[[X]K\Ü[ÏÝÈHNHLÍSLKHMHMHKÍ[KLËMËÍLLKMNHLKMNHLËNN
+LKNHLKNHÈKÍXÌ
+KNLËLHHLKÈ
+KMÍLKÌÌKMÈKLLKLKÌKKKLMÌKKNNLËÍLZKMLËLËNMMKLKNKLË
+^ÛÏHËMHMHÏBZ[Ø]ÚÝ[Y[Y\[	XØÚYpçÙ[Ø]ÛÏ
+_BÙ]ÒØ\O
+NÂBÊ8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥dUTRÓÓTÓSB¸¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d8¥d
+Â[Ý[ÛZ[Ø]\XÚYÙR[\
+HÂÛÛÝÝ]\H\ÙTÝ]\
+NÂÛÛÝÙX\Ú\[\ÈH\ÙTÙX\Ú\[\Ê
+NÂÛÛÝ]YYÒYHÙX\Ú\[\ËÙ]
+	ÚY	ÊNÂÛÛÝÞ\Ý[Ù]\Ý[HH\ÙTÝ]J	ÛØY[ÉÊNÂÛÛÝØ]YYËÙ]]YY×HH\ÙTÝ]J[
+NÂÛÛÝØÛÛ\[RYÙ]ÛÛ\[RYHH\ÙTÝ]J[
+NÂÛÛÝÝ\Ù\YÙ]\Ù\YHH\ÙTÝ]J[
+NÂÛÛÝÙÚËÙ]Ú×HH\ÙTÝ]J[
+NÂÛÛÝÛX]\X[Ù]X]\X[HH\ÙTÝ]J×JNÂÛÛÝÙÝÜËÙ]ÝÜ×HH\ÙTÝ]J×JNÂÛÛÝÝY]ÜKÙ]Y]ÜWHH\ÙTÝ]JÂ\ÚÙYYZWØ\Z][	ÉË\ÝÙ\Ý[\ÜØÚY[	ÉË\ØXÚN	ÉËX\ÜÛZY[	ÉË[\Z[Î	ÉË[\WÛÝ^	ÉËJNÂÛÛÝÞZ]ÜKÙ]Z]ÜWHH\ÙTÝ]JÂ\Z]ÜÝ\	ÉË]\ÙWØYÚ[	ÉË]\ÙWÙ[N	ÉË\Z]Ù[N	ÉËJNÂÛÛÝÝ[\ØÚÜKÙ][\ØÚÜWHH\ÙTÝ]JÂÝ[[[YN	ÉË[\ØÚYØ\ÙM[[\ØÚYØ][JNÂÛÛÝØXØÚÜKÙ]XØÚÜWHH\ÙTÝ]JÂÙ\Þ]Y×ÝÛÝY[YÎ[ÙK\ZXÚÙÙ\Z[YÝ[ÙKÝ[WÚ[ÜZY\[ÙKÙZ[ÛX]\X[Ý\Ù[][ÙKJNÂÛÛÝÜØ][ËÙ]Ø][×HH\ÙTÝ]J[ÙJNÂÛÛÝÝY]Ø]YÙ]Y]Ø]YHH\ÙTÝ]J[ÙJNÂÛÛÝÞZ]Ø]YÙ]Z]Ø]YHH\ÙTÝ]J[ÙJNÂÛÛÝÝ[\ØÚØ]YÙ][\ØÚØ]YHH\ÙTÝ]J[ÙJNÂÛÛÝØXØÚZ\Ù]XØÚZ\HH\ÙTÝ]J	ÉÊNÂÛÛÝÙÛØ[\Ù]ÛØ[\HH\ÙTÝ]J	ÉÊNÂÛÛÝYQ][H\ÙPØ[XÚÊ\Þ[È
 
-        <div className="flex items-center gap-3">
-          <BtnPrimary onClick={onSave} loading={saving} disabled={!hatZeich || !form.kundenname}>
-            <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" cls="w-4 h-4" />
-            Speichern
-          </BtnPrimary>
-          {gespeichert && <span className="text-xs text-green-600 font-medium">✓ Unterschrift gespeichert</span>}
-        </div>
-        {form.unterschrift_at && (
-          <p className="text-xs text-gray-400">Unterschrieben um {fmtZeit(form.unterschrift_at)}</p>
-        )}
-      </div>
-    </Karte>
-  );
-}
+HOÂY
+X]YYÒY
+HÈÙ]\Ý[
+	ÛÝÙÝ[	ÊNÈ]\ÈBHÂÛÛÝÈ]NÈ\Ù\HHH]ØZ]Ý\X\ÙK]]Ù]\Ù\
+NÂY
+]\Ù\HÈÝ]\\Ú
+	ËÛÙÚ[ÊNÈ]\ÈBÙ]\Ù\Y
+\Ù\Y
+NÂÛÛÝÈ]NY[X\HH]ØZ]Ý\X\ÙBÛJ	ØÛÛ\[WÛY[X\ÉÊBÙ[XÝ
+	ØÛÛ\[WÚYÛIÊB\J	Ý\Ù\ÚY	Ë\Ù\Y
+B\J	Ú\×ØXÝ]IËYJBX^XTÚ[ÛJ
+NÂY
+[Y[X\HÈÙ]\Ý[
+	ÙÜY[ÊNÈ]\ÈBÛÛÝ\]XHÉÚ[X\Ë	ØYZ[\Ý]ÜË	ØY\ÉË	Ù\ÜÛ[	Ë	ÝXÚZÙ\×NÂY
+Y\]X[ÛY\ÊY[X\ÛJJHÈÙ]\Ý[
+	ÙÜY[ÊNÈ]\ÈBÙ]ÛÛ\[RY
+Y[X\ÛÛ\[WÚY
+NÂÛÛÝÂÈ]N]YYÑ]K\Ü]YYÑ\KÈ]NÚÑ]HKÈ]NX]]HKÈ]NÝÜÑ]HKHH]ØZ]ÛZ\ÙK[
+ÂÝ\X\ÙBÛJ	Ø]YYYÙIÊBÙ[XÝ
+	ÊÝ[[Ý[[ÚY
+Y[YK\Y[[YKÝ[[\[XZ[[YÛB\J	ÚY	Ë]YYÒY
+B\J	ØÛÛ\[WÚY	ËY[X\ÛÛ\[WÚY
+BX^XTÚ[ÛJ
+KÝ\X\ÙBÛJ	ÙZ[Ø]ÙÚÝ[Y[][ÛÊBÙ[XÝ
+	ÊÊB\J	Ø]YY×ÚY	Ë]YYÒY
+B\J	ØÛÛ\[WÚY	ËY[X\ÛÛ\[WÚY
+BX^XTÚ[ÛJ
+KÝ\X\ÙBÛJ	ÙZ[Ø]ÛX]\X[	ÊBÙ[XÝ
+	ÊÊB\J	Ø]YY×ÚY	Ë]YYÒY
+B\J	ØÛÛ\[WÚY	ËY[X\ÛÛ\[WÚY
+BÜ\	Ù\Ý[Ø]	ÊKÝ\X\ÙBÛJ	ÙZ[Ø]ÙÝÜÉÊBÙ[XÝ
+	ÊÊB\J	Ø]YY×ÚY	Ë]YYÒY
+B\J	ØÛÛ\[WÚY	ËY[X\ÛÛ\[WÚY
+BÜ\	Ù\Ý[Ø]	ÊKJNÂY
+]YYÑ\X]YYÑ]JHÈÙ]\Ý[
+	ÛÝÙÝ[	ÊNÈ]\ÈBÙ]]YYÊ]YYÑ]JNÂÙ]X]\X[
+X]]HÏÈ×JNÂÙ]ÝÜÊÝÜÑ]HÏÈ×JNÂY
+ÚÑ]JHÂÙ]ÚÊÚÑ]JNÂÙ]Y]ÜJÂ\ÚÙYYZWØ\Z][ÚÑ]K\ÚÙYYZWØ\Z][ÏÈ	ÉË\ÝÙ\Ý[\ÜØÚY[ÚÑ]K\ÝÙ\Ý[\ÜØÚY[ÏÈ	ÉË\ØXÚNÚÑ]K\ØXÚHÏÈ	ÉËX\ÜÛZY[ÚÑ]KX\ÜÛZY[ÏÈ	ÉË[\Z[ÎÚÑ]K[\Z[ÈÏÈ	ÉË[\WÛÝ^ÚÑ]K[\WÛÝ^ÏÈ	ÉËJNÂÙ]Z]ÜJÂ\Z]ÜÝ\ÚÑ]K\Z]ÜÝ\ÏÈ	ÉË]\ÙWØYÚ[	ÉË]\ÙWÙ[N	ÉË\Z]Ù[NÚÑ]K\Z]Ù[HÏÈ	ÉËJNÂÙ][\ØÚÜJÂÝ[[[YNÚÑ]KÝ[[[YHÏÈ	ÉË[\ØÚYØ\ÙMÚÑ]K[\ØÚYØ\ÙMÏÈ[[\ØÚYØ]ÚÑ]K[\ØÚYØ]ÏÈ[JNÂÙ]XØÚÜJÂÙ\Þ]Y×ÝÛÝY[YÎÚÑ]KÙ\Þ]Y×ÝÛÝY[YÈÏÈ[ÙK\ZXÚÙÙ\Z[YÝÚÑ]K\ZXÚÙÙ\Z[YÝÏÈ[ÙKÝ[WÚ[ÜZY\ÚÑ]KÝ[WÚ[ÜZY\ÏÈ[ÙKÙZ[ÛX]\X[Ý\Ù[]ÚÑ]KÙZ[ÛX]\X[Ý\Ù[]ÏÈ[ÙKJNÂBÙ]\Ý[
+	ÛÚÉÊNÂHØ]Ú
+JHÂÛÛÛÛK\ÜJNÂÙ]\Ý[
+	ÛÝÙÝ[	ÊNÂBKØ]YYÒYÝ]\JNÂ\ÙQYXÝ
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 9 – ABSCHLUSSPRÜFUNG
-════════════════════════════════════════════════════════════════ */
 
-function AbschlusspruefungSektion({ form, onChange }) {
-  const checks = [
-    { key: 'werkzeug_vollstaendig', label: 'Werkzeug vollständig und eingepackt' },
-    { key: 'bereich_gereinigt',     label: 'Einsatzbereich gesäubert und geräumt' },
-    { key: 'kunde_informiert',      label: 'Kunden über Ergebnis informiert' },
-  ];
-  return (
-    <Karte>
-      <KarteHeader
-        icon="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"
-        title="Abschlussprüfung"
-        subtitle="Checkliste vor Abschluss"
-      />
-      <div className="px-5 py-4 space-y-2">
-        {checks.map(c => (
-          <label key={c.key} className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-xl hover:bg-gray-50 transition">
-            <input type="checkbox" checked={!!form[c.key]}
-              onChange={e => onChange(c.key, e.target.checked)}
-              className="w-5 h-5 rounded-lg border-gray-300 text-green-600 focus:ring-green-500" />
-            <span className={`text-sm font-medium flex-1 ${form[c.key] ? 'text-gray-700' : 'text-gray-400'}`}>{c.label}</span>
-            {form[c.key] && <Svg d="M4.5 12.75l6 6 9-13.5" cls="w-4 h-4 text-green-500 shrink-0" />}
-          </label>
-        ))}
-      </div>
-    </Karte>
-  );
-}
+HOÈYQ][
+NÈKÛYQ][JNÂ\Þ[È[Ý[ÛÙ]ÚÒY
 
-/* ════════════════════════════════════════════════════════════════
-   SEKTION 10 – DOKUMENTATION ABSCHLIESSEN
-════════════════════════════════════════════════════════════════ */
+HÂY
+ÚÏËY
+H]\ÚËYÂÛÛÝÈ]K\ÜHH]ØZ]Ý\X\ÙBÛJ	ÙZ[Ø]ÙÚÝ[Y[][ÛÊB[Ù\
+È]YY×ÚY]YYÒYÛÛ\[WÚYÛÛ\[RY\Ý[ÝÛÚY\Ù\YJBÙ[XÝ
 
-function AbschlussSektion({ dok, material, fotos, onAbschliessen, saving, fehler, naechsterEinsatzId }) {
-  const checks = [
-    { label: 'Status gesetzt',           ok: !!dok?.einsatz_status },
-    { label: 'Tätigkeiten dokumentiert', ok: !!dok?.durchgefuehrte_arbeiten },
-    { label: 'Material erfasst',         ok: dok?.kein_material_verwendet || material.length > 0 },
-    { label: 'Arbeitszeiten erfasst',    ok: !!dok?.arbeit_start && !!dok?.arbeit_ende },
-    { label: 'Prüfliste ausgefüllt',     ok: dok?.werkzeug_vollstaendig && dok?.bereich_gereinigt && dok?.kunde_informiert },
-  ];
-  const allOk        = checks.every(c => c.ok);
-  const abgeschlossen = dok?.status === 'dokumentiert';
-  const router       = useRouter();
+BÚ[ÛJ
+NÂY
+\ÜHÝÈ\ÜÂÙ]ÚÊ]JNÂ]\]KYÂB\Þ[È[Ý[Û\]QÚÊY[ÊHÂÛÛÝYH]ØZ]Ù]ÚÒY
 
-  return (
-    <Karte className={abgeschlossen ? 'border-green-200' : ''}>
-      <KarteHeader
-        icon="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-        title="Dokumentation abschließen"
-        subtitle={abgeschlossen ? 'Einsatz abgeschlossen ✓' : 'Einsatzbericht finalisieren'}
-      />
-      <div className="px-5 py-4 space-y-4">
-        {abgeschlossen ? (
-          <div className="p-4 bg-green-50 rounded-xl border border-green-100 text-center">
-            <Svg d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" cls="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="font-semibold text-green-700">Einsatzbericht abgeschlossen</p>
-            {dok?.dokumentiert_at && (
-              <p className="text-xs text-green-500 mt-1">Abgeschlossen um {fmtZeit(dok.dokumentiert_at)}</p>
-            )}
-            <div className="flex flex-col gap-2 mt-3 items-center">
-              {naechsterEinsatzId ? (
-                <button
-                  onClick={() => router.push(`/dashboard/auftraege/${naechsterEinsatzId}`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
-                >
-                  Nächster Einsatz →
-                </button>
-              ) : (
-                <button
-                  onClick={() => router.push('/dashboard/auftraege')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition"
-                >
-                  Meine Einsätze
-                </button>
-              )}
-                <button
-                  onClick={() => router.push('/dashboard/rechnungen/neu')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition"
-                >
-                  Rechnung erstellen
-                </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {!allOk && (
-              <div className="space-y-1.5 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Noch ausstehend:</p>
-                {checks.filter(c => !c.ok).map(c => (
-                  <div key={c.label} className="flex items-center gap-2 text-sm text-amber-600">
-                    <Svg d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" cls="w-4 h-4 shrink-0" />
-                    {c.label}
-                  </div>
-                ))}
-              </div>
-            )}
+NÂÛÛÝÈ]K\ÜHH]ØZ]Ý\X\ÙBÛJ	ÙZ[Ø]ÙÚÝ[Y[][ÛÊB\]JÈY[ËZÝX[\ÚY\Ø]ÝÒ\ÛÊ
+HJB\J	ÚY	ËY
+BÙ[XÝ
 
-            {fehler && <Alert type="error">{fehler}</Alert>}
+BÚ[ÛJ
+NÂY
+\ÜHÝÈ\ÜÂÙ]ÚÊ]JNÂ]\]NÂB\Þ[È[Ý[Û[TÝ]\ÐÚ[ÙJ]Y\Ý]\ÊHÂÙ]Ø][ÊYJNÂHÂÛÛÝÒÙ^HHÝ]\Õ[Y\Ý[\Ù^J]Y\Ý]\ÊNÂÛÛÝY[ÈHÈZ[Ø]ÜÝ]\Î]Y\Ý]\ÈNÂY
+ÒÙ^JHY[ÖÝÒÙ^WHHÝÒ\ÛÊ
+NÂ]ØZ]\]QÚÊY[ÊNÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBÙ]Ø][Ê[ÙJNÂB\Þ[È[Ý[ÛØ]UY]YÚÙZ][
+HÂÙ]Ø][ÊYJNÂHÂ]ØZ]\]QÚÊY]ÜJNÂÙ]Y]Ø]Y
+YJNÂÙ][Y[Ý]
 
-            <button onClick={onAbschliessen} disabled={saving || !allOk}
-              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition
-                ${allOk
-                  ? 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'}`}>
-              {saving
-                ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-5 h-5 animate-spin" />
-                : <Svg d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" cls="w-5 h-5" />}
-              Einsatz dokumentieren & abschließen
-            </button>
-          </>
-        )}
-      </div>
-    </Karte>
-  );
-}
 
-/* ════════════════════════════════════════════════════════════════
-   HAUPT-KOMPONENTE
-════════════════════════════════════════════════════════════════ */
+HOÙ]Y]Ø]Y
+[ÙJKÌ
+NÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBÙ]Ø][Ê[ÙJNÂB\Þ[È[Ý[ÛØ]VZ][
+HÂÙ]Ø][ÊYJNÂHÂÛÛÝ]\ÙSZ[H[YQYZ[Z]ÜK]\ÙWØYÚ[Z]ÜK]\ÙWÙ[JNÂ]ØZ]\]QÚÊÂ\Z]ÜÝ\Z]ÜK\Z]ÜÝ\[\Z]Ù[NZ]ÜK\Z]Ù[H[]\ÙWÛZ[][]\ÙSZ[JNÂÙ]Z]Ø]Y
+YJNÂÙ][Y[Ý]
 
-function EinsatzberichtPageInner() {
-  const router       = useRouter();
-  const searchParams = useSearchParams();
-  const auftragId    = searchParams.get('id');
 
-  // ── Core ──
-  const [zustand,   setZustand]   = useState('loading');
-  const [auftrag,   setAuftrag]   = useState(null);
-  const [companyId, setCompanyId] = useState(null);
-  const [userId,    setUserId]    = useState(null);
+HOÙ]Z]Ø]Y
+[ÙJKÌ
+NÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBÙ]Ø][Ê[ÙJNÂB\Þ[È[Ý[ÛØ]U[\ØÚY
 
-  const [memberId, setMemberId] = useState(null);
-  const [naechsterEinsatzId, setNaechsterEinsatzId] = useState(null);
-  // ── Doku-State ──
-  const [dok,      setDok]      = useState(null);
-  const [material, setMaterial] = useState([]);
-  const [fotos,    setFotos]    = useState([]);
+HÂÙ]Ø][ÊYJNÂHÂ]ØZ]\]QÚÊÈ[\ØÚÜK[\ØÚYØ]ÝÒ\ÛÊ
+HJNÂÙ][\ØÚØ]Y
+YJNÂÙ][Y[Ý]
 
-  // ── Formular-States ──
-  const [taetForm, setTaetForm] = useState({
-    durchgefuehrte_arbeiten: '', festgestellter_schaden: '',
-    ursache: '', massnahmen: '', empfehlung: '', interne_notiz: '',
-  });
-  const [zeitForm, setZeitForm] = useState({ arbeit_start: '', arbeit_ende: '', pause_minuten: 0 });
-  const [unterschrForm, setUnterschrForm] = useState({ kundenname: '', unterschrift_base64: null, unterschrift_at: null });
-  const [abschlForm, setAbschlForm] = useState({
-    werkzeug_vollstaendig: false, bereich_gereinigt: false,
-    kunde_informiert: false, kein_material_verwendet: false,
-  });
 
-  // ── UI ──
-  const [saving,         setSaving]         = useState(false);
-  const [taetSaved,      setTaetSaved]      = useState(false);
-  const [zeitSaved,      setZeitSaved]      = useState(false);
-  const [unterschrSaved, setUnterschrSaved] = useState(false);
-  const [abschlFehler,   setAbschlFehler]   = useState('');
-  const [globalErr,      setGlobalErr]      = useState('');
+HOÙ][\ØÚØ]Y
+[ÙJKÌ
+NÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBÙ]Ø][Ê[ÙJNÂB\Þ[È[Ý[Û[PXØÚÚ[ÙJÙ^K[
+HÂÙ]XØÚÜJO
+ÈÚÙ^WN[JJNÂHÈ]ØZ]\]QÚÊÈÚÙ^WN[JNÈHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBB\Þ[È[Ý[Û[RÙZ[X]\X[
+[
+HÂÙ]XØÚÜJO
+ÈÙZ[ÛX]\X[Ý\Ù[][JJNÂHÈ]ØZ]\]QÚÊÈÙZ[ÛX]\X[Ý\Ù[][JNÈHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBB\Þ[È[Ý[Û[SX]\X[Y
+ÜÊHÂHÂÛÛÝÈ]K\ÜHH]ØZ]Ý\X\ÙBÛJ	ÙZ[Ø]ÛX]\X[	ÊB[Ù\
+ÈÜË]YY×ÚY]YYÒYÛÛ\[WÚYÛÛ\[RYJBÙ[XÝ
 
-  /* ── Daten laden ── */
-  const ladeDaten = useCallback(async () => {
-    if (!auftragId) { setZustand('not_found'); return; }
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
-      setUserId(user.id);
+KÚ[ÛJ
+NÂY
+\ÜHÝÈ\ÜÂÙ]X]\X[
+OË]WJNÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBB\Þ[È[Ý[Û[SX]\X[[]JY
+HÂHÂ]ØZ]Ý\X\ÙKÛJ	ÙZ[Ø]ÛX]\X[	ÊK[]J
+K\J	ÚY	ËY
+NÂÙ]X]\X[
+O[\HOKYOOHY
+JNÂHØ]Ú
+JHÈÙ]ÛØ[\KY\ÜØYÙJNÈBB\Þ[È[Ý[Û[PXØÚY\ÜÙ[
+HÂÙ]XØÚZ\	ÉÊNÂÙ]Ø][ÊYJNÂHÂ]ØZ]\]QÚÊÈÝ]\Î	ÙÚÝ[Y[Y\	ËÚÝ[Y[Y\Ø]ÝÒ\ÛÊ
+HJNÂ]ØZ]Ý\X\ÙKÛJ	Ø]YYYÙIÊK\]JÈÝ]\Î	ÐXÙ\ØÚÜÜÙ[ÈJK\J	ÚY	Ë]YYÒY
+NÂÙ]]YYÊO
+ÈÝ]\Î	ÐXÙ\ØÚÜÜÙ[ÈJJNÂHØ]Ú
+JHÂÙ]XØÚZ\KY\ÜØYÙHÏÈ	ÑZ\Z[HXØÚYpçÙ[ÊNÂBÙ]Ø][Ê[ÙJNÂB[Ý[Û[TXÚ[ÕÜ\Z][
+HÂÝ]\\Ú
+Ù\ÚØ\ÜXÚ[Ù[Û]OØ]YY×ÚYIØ]YYÒYX
+NÂB\Þ[È[Ý[Û[SYXÚÝ\Z[Ø]
+HÂHÂÛÛÝ]]HH]YYÏË][HÏÈ]È]J
+KÒTÓÔÝ[Ê
+KÛXÙJL
+NÂÛÛÝÈ]HHH]ØZ]Ý\X\ÙBÛJ	Ø]YYYÙIÊBÙ[XÝ
+	ÚY	ÊB\J	ØÛÛ\[WÚY	ËÛÛ\[RY
+B\J	Ù][IË]]JB\J	ÚY	Ë]YYÒY
+BÝ
+	ÜÝ]\ÉË	Ú[Ë	ÊXÙ\ØÚÜÜÙ[ÚÝ[Y[Y\IÊBÜ\	ÝZZ]	ËÈ\ØÙ[[ÎYHJB[Z]
+JBX^XTÚ[ÛJ
+NÂY
+]OËY
+HÂÝ]\\Ú
+Ù\ÚØ\Ø]YYYÙKÉÙ]KYX
+NÂH[ÙHÂÙ]ÛØ[\	ÒÙZ[ÙZ]\\Z[Ø]°ï]]HÙY[[ÊNÂÙ][Y[Ý]
 
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('id, company_id, role')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
 
-      if (!member) { setZustand('forbidden'); return; }
-
-      const erlaubt = ['inhaber', 'administrator', 'buero', 'disponent', 'techniker'];
-      if (!erlaubt.includes(member.role)) { setZustand('forbidden'); return; }
-
-      setCompanyId(member.company_id);
-      setMemberId(member.id);
-
-      const [
-        { data: auftragData, error: auftragErr },
-        { data: dokData },
-        { data: matData },
-        { data: fotosData },
-      ] = await Promise.all([
-        supabase
-          .from('auftraege')
-          .select('*, kunden:kunde_id(id, name, firmenname, kundentyp, email, telefon)')
-          .eq('id', auftragId)
-          .eq('company_id', member.company_id)
-          .maybeSingle(),
-        supabase
-          .from('einsatz_dokumentation')
-          .select('*')
-          .eq('auftrag_id', auftragId)
-          .eq('company_id', member.company_id)
-          .maybeSingle(),
-        supabase
-          .from('einsatz_material')
-          .select('*')
-          .eq('auftrag_id', auftragId)
-          .eq('company_id', member.company_id)
-          .order('erstellt_at'),
-        supabase
-          .from('einsatz_fotos')
-          .select('*')
-          .eq('auftrag_id', auftragId)
-          .eq('company_id', member.company_id)
-          .order('erstellt_at'),
-      ]);
-
-      if (auftragErr || !auftragData) { setZustand('not_found'); return; }
-
-      setAuftrag(auftragData);
-      setMaterial(matData ?? []);
-      setFotos(fotosData ?? []);
-
-      if (dokData) {
-        setDok(dokData);
-        setTaetForm({
-          durchgefuehrte_arbeiten: dokData.durchgefuehrte_arbeiten ?? '',
-          festgestellter_schaden:  dokData.festgestellter_schaden  ?? '',
-          ursache:                 dokData.ursache                 ?? '',
-          massnahmen:              dokData.massnahmen               ?? '',
-          empfehlung:              dokData.empfehlung               ?? '',
-          interne_notiz:           dokData.interne_notiz            ?? '',
-        });
-        setZeitForm({
-          arbeit_start:  dokData.arbeit_start  ?? '',
-          arbeit_ende:   dokData.arbeit_ende   ?? '',
-          pause_minuten: dokData.pause_minuten ?? 0,
-        });
-        setUnterschrForm({
-          kundenname:          dokData.kundenname          ?? '',
-          unterschrift_base64: dokData.unterschrift_base64 ?? null,
-          unterschrift_at:     dokData.unterschrift_at     ?? null,
-        });
-        setAbschlForm({
-          werkzeug_vollstaendig:  dokData.werkzeug_vollstaendig  ?? false,
-          bereich_gereinigt:      dokData.bereich_gereinigt      ?? false,
-          kunde_informiert:       dokData.kunde_informiert       ?? false,
-          kein_material_verwendet: dokData.kein_material_verwendet ?? false,
-        });
-      }
-
-      setZustand('ok');
-    } catch (e) {
-      console.error(e);
-      setZustand('not_found');
-    }
-  }, [auftragId, router]);
-
-  useEffect(() => { ladeDaten(); }, [ladeDaten]);
-
-  /* ── Dok holen oder anlegen ── */
-  async function getDokId() {
-    if (dok?.id) return dok.id;
-    const { data, error } = await supabase
-      .from('einsatz_dokumentation')
-      .insert({ auftrag_id: auftragId, company_id: companyId, erstellt_von_id: userId })
-      .select()
-      .single();
-    if (error) throw error;
-    setDok(data);
-    return data.id;
-  }
-
-  async function updateDok(fields) {
-    const id = await getDokId();
-    const { data, error } = await supabase
-      .from('einsatz_dokumentation')
-      .update({ ...fields, aktualisiert_at: nowIso() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    setDok(data);
-    return data;
-  }
-
-  /* ── Handler ── */
-  async function handleStatusChange(neuerStatus) {
-    setSaving(true);
-    try {
-      const tsKey  = statusTimestampKey(neuerStatus);
-      const fields = { einsatz_status: neuerStatus };
-      if (tsKey) fields[tsKey] = nowIso();
-      await updateDok(fields);
-    } catch (e) { setGlobalErr(e.message); }
-    setSaving(false);
-  }
-
-  async function saveTaetigkeiten() {
-    setSaving(true);
-    try {
-      await updateDok(taetForm);
-      setTaetSaved(true);
-      setTimeout(() => setTaetSaved(false), 3000);
-    } catch (e) { setGlobalErr(e.message); }
-    setSaving(false);
-  }
-
-  async function saveZeiten() {
-    setSaving(true);
-    try {
-      await updateDok(zeitForm);
-      setZeitSaved(true);
-      setTimeout(() => setZeitSaved(false), 3000);
-    } catch (e) { setGlobalErr(e.message); }
-    setSaving(false);
-  }
-
-  async function saveUnterschrift() {
-    setSaving(true);
-    try {
-      await updateDok({ ...unterschrForm, unterschrift_at: nowIso() });
-      setUnterschrSaved(true);
-      setTimeout(() => setUnterschrSaved(false), 3000);
-    } catch (e) { setGlobalErr(e.message); }
-    setSaving(false);
-  }
-
-  async function handleAbschlChange(key, val) {
-    setAbschlForm(p => ({ ...p, [key]: val }));
-    try { await updateDok({ [key]: val }); } catch (e) { setGlobalErr(e.message); }
-  }
-
-  async function handleKeinMaterial(val) {
-    setAbschlForm(p => ({ ...p, kein_material_verwendet: val }));
-    try { await updateDok({ kein_material_verwendet: val }); } catch (e) { setGlobalErr(e.message); }
-  }
-
-  async function handleMaterialAdd(pos) {
-    try {
-      const { data, error } = await supabase
-        .from('einsatz_material')
-        .insert({ ...pos, auftrag_id: auftragId, company_id: companyId })
-        .select().single();
-      if (error) throw error;
-      setMaterial(p => [...p, data]);
-    } catch (e) { setGlobalErr(e.message); }
-  }
-
-  async function handleMaterialDelete(id) {
-    try {
-      await supabase.from('einsatz_material').delete().eq('id', id);
-      setMaterial(p => p.filter(m => m.id !== id));
-    } catch (e) { setGlobalErr(e.message); }
-  }
-
-  async function handleAbschliessen() {
-    setAbschlFehler('');
-    setSaving(true);
-    try {
-      await updateDok({ status: 'dokumentiert', dokumentiert_at: nowIso() });
-      await supabase.from('auftraege').update({ status: 'abgeschlossen' }).eq('id', auftragId);
-      setAuftrag(p => ({ ...p, status: 'abgeschlossen' }));
-      // FR-002-5: Nächsten Einsatz ermitteln
-      const todayStr = new Date().toISOString().split('T')[0];
-      const { data: zugewiesene } = await supabase
-        .from('auftrag_mitarbeiter')
-        .select('auftrag_id, auftraege:auftrag_id(id, status, datum)')
-        .eq('company_id', companyId)
-        .eq('mitarbeiter_id', memberId);
-      const naechsteListe = (zugewiesene || [])
-        .filter(r => r.auftraege?.datum === todayStr
-          && r.auftraege?.status !== 'abgeschlossen'
-          && r.auftrag_id !== auftragId);
-      setNaechsterEinsatzId(naechsteListe.length === 1 ? naechsteListe[0].auftrag_id : null);
-    } catch (e) {
-      setAbschlFehler(e.message ?? 'Fehler beim Abschließen');
-    }
-    setSaving(false);
-  }
-
-  /* ── Render-Guards ── */
-  if (zustand === 'loading') return <Skeleton />;
-
-  if (zustand === 'forbidden') return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="text-center">
-        <Svg d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008H12v-.008z" cls="w-10 h-10 text-red-300 mx-auto mb-3" />
-        <h2 className="font-semibold text-gray-700 mb-1">Kein Zugriff</h2>
-        <p className="text-sm text-gray-400 mb-4">Sie haben keine Berechtigung für diese Seite.</p>
-        <button onClick={() => router.push('/dashboard')} className="text-sm text-blue-600 font-medium hover:underline">Zum Dashboard</button>
-      </div>
-    </div>
-  );
-
-  if (zustand === 'not_found') return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="text-center">
-        <Svg d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" cls="w-10 h-10 text-gray-200 mx-auto mb-3" />
-        <h2 className="font-semibold text-gray-700 mb-1">Auftrag nicht gefunden</h2>
-        <p className="text-sm text-gray-400 mb-4">{!auftragId ? 'Keine Auftrags-ID angegeben.' : `Auftrag nicht gefunden.`}</p>
-        <button onClick={() => router.push('/dashboard/auftraege')} className="text-sm text-blue-600 font-medium hover:underline">Zur Auftragsübersicht</button>
-      </div>
-    </div>
-  );
-
-  /* ── Hauptansicht ── */
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sticky Header */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => router.push(`/dashboard/auftraege/${auftragId}`)}
-            className="p-2 rounded-xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition">
-            <Svg d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" cls="w-5 h-5" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-gray-900 truncate">Einsatz & Dokumentation</h1>
-            <p className="text-xs text-gray-400 truncate">
-              {auftrag?.typ ?? 'Auftrag'} · #{auftrag?.auftragsnummer ?? auftragId?.slice(0, 8)}
-            </p>
-          </div>
-          {dok?.status === 'dokumentiert' && (
-            <span className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              Abgeschlossen
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
-        {globalErr && (
-          <Alert type="error" onClose={() => setGlobalErr('')}>{globalErr}</Alert>
-        )}
-
-        <AuftragInfoSektion auftrag={auftrag} />
-
-        <FortschrittSektion dok={dok} material={material} fotos={fotos} />
-
-        <EinsatzStatusSektion
-          dok={dok}
-          onStatusChange={handleStatusChange}
-          saving={saving}
-        />
-
-        <TaetigkeitenSektion
-          form={taetForm}
-          onChange={(k, v) => setTaetForm(p => ({ ...p, [k]: v }))}
-          onSave={saveTaetigkeiten}
-          saving={saving}
-          gespeichert={taetSaved}
-        />
-
-        <MaterialSektion
-          material={material}
-          onAdd={handleMaterialAdd}
-          onDelete={handleMaterialDelete}
-          keinMaterial={abschlForm.kein_material_verwendet}
-          onKeinMaterial={handleKeinMaterial}
-          saving={saving}
-        />
-
-        <ArbeitszeitenSektion
-          form={zeitForm}
-          onChange={(k, v) => setZeitForm(p => ({ ...p, [k]: v }))}
-          onSave={saveZeiten}
-          saving={saving}
-          gespeichert={zeitSaved}
-        />
-
-        <FotosSektion
-          fotos={fotos}
-          auftragId={auftragId}
-          companyId={companyId}
-          onFotoAdded={f => setFotos(p => [...p, f])}
-          onFotoDeleted={id => setFotos(p => p.filter(f => f.id !== id))}
-        />
-
-        <UnterschriftSektion
-          form={unterschrForm}
-          onChange={(k, v) => setUnterschrForm(p => ({ ...p, [k]: v }))}
-          onSave={saveUnterschrift}
-          saving={saving}
-          gespeichert={unterschrSaved}
-        />
-
-        <AbschlusspruefungSektion
-          form={abschlForm}
-          onChange={handleAbschlChange}
-        />
-
-        <AbschlussSektion
-          dok={dok}
-          material={material}
-          fotos={fotos}
-          onAbschliessen={handleAbschliessen}
-          saving={saving}
-          fehler={abschlFehler}
-          naechsterEinsatzId={naechsterEinsatzId}
-        />
-
-        <div className="h-8" />
-      </div>
-    </div>
-  );
-}
-
-export default function EinsatzberichtPage() {
-  return <Suspense fallback={null}><EinsatzberichtPageInner /></Suspense>;
-}
+HOÙ]ÛØ[\	ÉÊK
+
+NÂBHØ]Ú
+JHÂÙ]ÛØ[\KY\ÜØYÙHÏÈ	ÑZ\Z[HÝXÚ[\È°éÚÝ[Z[Ø]\ÉÊNÂBBY
+\Ý[OOH	ÛØY[ÉÊH]\ÚÙ[]ÛÏÂY
+\Ý[OOH	ÙÜY[ÊH]\
+]Û\ÜÓ[YOHZ[Z\ØÜY[ËYÜ^KML\ÎËYÜ^KNL^][\ËXÙ[\\ÝYKXÙ[\M]Û\ÜÓ[YOH^XÙ[\ÝÈHLL]ËÍ[LLLÍLLKMNHLKMNHLËNN
+LKNHLKNHÈKÍXÌ
+KNLËLHHLKÈ
+KMÍLKÌÌKMÈKLLKLKÌKKKLMÌKKNNLËÍLZKMLËLËNMMKLKNKLË
+LLËÍLKÛÏHËLLLL^\YLÌ^X]]ÈXLÈÏÛ\ÜÓ[YOHÛ\Ù[ZXÛ^YÜ^KMÌ\Î^YÜ^KLXLHÙZ[YÜYÚÛ\ÜÓ[YOH^\ÛH^YÜ^KMXMÚYHX[ÙZ[H\XÚYÝ[È°ïY\ÙHÙZ]KÜ]ÛÛÛXÚÏ^Ê
+HOÝ]\\Ú
+	ËÙ\ÚØ\	Ê_HÛ\ÜÓ[YOH^\ÛH^XYKMÛ[YY][HÝ\[\[H[H\ÚØ\Ø]ÛÙ]Ù]
+NÂY
+\Ý[OOH	ÛÝÙÝ[	ÊH]\
+]Û\ÜÓ[YOHZ[Z\ØÜY[ËYÜ^KML\ÎËYÜ^KNL^][\ËXÙ[\\ÝYKXÙ[\M]Û\ÜÓ[YOH^XÙ[\ÝÈHLNKHM]LXLËÍÍHËÍÍHLËÍÍKLËÍÍZLKPLKLHKLHLLËH
+ËL]LKXLËÍÍHËÍÍHLËÍÍKLËÍÍR[MÍHL[LKKLL
+KXËKHLKLKL
+LKLHKL]MËXÌKL
+KLHKLHKLZLÍXËHKLKKL
+KLKLKLULKXNHHNKN^ÛÏHËLLLL^YÜ^KL^X]]ÈXLÈÏÛ\ÜÓ[YOHÛ\Ù[ZXÛ^YÜ^KMÌ\Î^YÜ^KLXLH]YYÈXÚÙY[[ÚÛ\ÜÓ[YOH^\ÛH^YÜ^KMXMÈX]YYÒYÈ	ÒÙZ[H]YYÜËRQ[ÙYÙX[È	Ð]YYÈXÚÙY[[ßOÜ]ÛÛÛXÚÏ^Ê
+HOÝ]\\Ú
+	ËÙ\ÚØ\Ø]YYYÙIÊ_HÛ\ÜÓ[YOH^\ÛH^XYKMÛ[YY][HÝ\[\[H\]YYÜðï\ÚXÚØ]ÛÙ]Ù]
+NÂ]\
+]Û\ÜÓ[YOHZ[Z\ØÜY[ËYÜ^KML\ÎËYÜ^KNL]Û\ÜÓ[YOHË]Ú]H\ÎËYÜ^KNÜ\XÜ\YÜ^KLL\ÎÜ\YÜ^KMÌÝXÚÞHÜLLÌ]Û\ÜÓ[YOHX^]ËLÞ^X]]ÈMKLÈ^][\ËXÙ[\Ø\LÈ]ÛÛÛXÚÏ^Ê
+HOÝ]\\Ú
+Ù\ÚØ\Ø]YYYÙKÉØ]YYÒYX
+_HÝ[O^ÞÈZ[ZYÚ	Í
+	ËZ[ÚY	Í
+	È_BÛ\ÜÓ[YOHLÝ[Y^^YÜ^KMÝ\ËYÜ^KML\ÎÝ\ËYÜ^KMÌÝ\^YÜ^KM[Ú][ÛÝÈHLLHNKSÈLL
+ËKMËSLÈLNÛÏHËMHMHÏØ]Û]Û\ÜÓ[YOH^LHZ[]ËLHÛ\ÜÓ[YOH^X\ÙHÛXÛ^YÜ^KNL\Î^]Ú]H[Ø]HZ[Ø]	ÚÝ[Y[][ÛÚOÛ\ÜÓ[YOH^^È^YÜ^KM[Ø]HØ]YYÏË\ÏÈ]YYÏË][ÏÈ	Ð]YYÉßH0­ÈÞØ]YYÏË]YYÜÛ[[Y\ÏÈ]YYÒYËÛXÙJ
+_BÜÙ]ÙÚÏËÝ]\ÈOOH	ÙÚÝ[Y[Y\	È	
+Ü[Û\ÜÓ[YOHÚ[ËL^][\ËXÙ[\Ø\LKHLHKLHÝ[YY[^^ÈÛ\Ù[ZXÛËYÜY[ML^YÜY[MÌÜ\Ü\YÜY[LÜ[Û\ÜÓ[YOHËLKHLKHÝ[YY[ËYÜY[MLÏXÙ\ØÚÜÜÙ[ÜÜ[
+_BÙ]Ù]]Û\ÜÓ[YOHX^]ËLÞ^X]]ÈMKMHÜXÙK^KMÙÛØ[\	
+[\\OH\ÜÛÛÜÙO^Ê
+HOÙ]ÛØ[\	ÉÊ_OÙÛØ[\OÐ[\
+_B]YYÒ[ÔÙZÝ[Û]YYÏ^Ø]YYßHÏÜØÚ]ÙZÝ[ÛÚÏ^ÙÚßHX]\X[^ÛX]\X[HÝÜÏ^ÙÝÜßHÏZ[Ø]Ý]\ÔÙZÝ[ÛÚÏ^ÙÚßBÛÝ]\ÐÚ[ÙO^Ú[TÝ]\ÐÚ[Ù_BØ][Ï^ÜØ][ßBÏY]YÚÙZ][ÙZÝ[ÛÜO^ÝY]Ü_BÛÚ[ÙO^ÊËHOÙ]Y]ÜJO
+ÈÚ×NJJ_BÛØ]O^ÜØ]UY]YÚÙZ][BØ][Ï^ÜØ][ßBÙ\ÜZXÚ\^ÝY]Ø]YBÏX]\X[ÙZÝ[ÛX]\X[^ÛX]\X[BÛY^Ú[SX]\X[YBÛ[]O^Ú[SX]\X[[]_BÙZ[X]\X[^ØXØÚÜKÙZ[ÛX]\X[Ý\Ù[]BÛÙZ[X]\X[^Ú[RÙZ[X]\X[BØ][Ï^ÜØ][ßBÏ\Z]ÞZ][ÙZÝ[ÛÜO^ÞZ]Ü_BÛÚ[ÙO^ÊËHOÙ]Z]ÜJO
+ÈÚ×NJJ_BÛØ]O^ÜØ]VZ][BØ][Ï^ÜØ][ßBÙ\ÜZXÚ\^ÞZ]Ø]YBÏÝÜÔÙZÝ[ÛÝÜÏ^ÙÝÜßB]YYÒY^Ø]YYÒYBÛÛ\[RY^ØÛÛ\[RYBÛÝÐYY^ÙOÙ]ÝÜÊOËJ_BÛÝÑ[]Y^ÚYOÙ]ÝÜÊO[\OYOOHY
+J_BÏ[\ØÚYÙZÝ[ÛÜO^Ý[\ØÚÜ_BÛÚ[ÙO^ÊËHOÙ][\ØÚÜJO
+ÈÚ×NJJ_BÛØ]O^ÜØ]U[\ØÚYBØ][Ï^ÜØ][ßBÙ\ÜZXÚ\^Ý[\ØÚØ]YBÏXØÚ\ÜÜYY[ÔÙZÝ[ÛÜO^ØXØÚÜ_BÛÚ[ÙO^Ú[PXØÚÚ[Ù_BÏXØÚ\ÜÔÙZÝ[ÛÚÏ^ÙÚßBX]\X[^ÛX]\X[BÝÜÏ^ÙÝÜßBÛXØÚY\ÜÙ[^Ú[PXØÚY\ÜÙ[BÛXÚ[Ï^Ú[TXÚ[ÕÜ\Z][BÛYXÚÝ\Z[Ø]^Ú[SYXÚÝ\Z[Ø]BØ][Ï^ÜØ][ßBZ\^ØXØÚZ\BÏ]Û\ÜÓ[YOHNÏÙ]Ù]
+NÂB^ÜY][[Ý[ÛZ[Ø]\XÚYÙJ
+HÂ]\Ý\Ü[ÙH[XÚÏ^Û[OZ[Ø]\XÚYÙR[\ÏÔÝ\Ü[ÙOÂB
