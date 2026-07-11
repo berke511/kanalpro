@@ -1,8 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import supabase from '@/lib/supabase';
+import {
+  PageHeader, Card,
+  FormInput, FormSelect, FormTextarea,
+  FormSection, SuccessBanner,
+  PrimaryButton, SecondaryButton,
+} from '@/components/ui/KanalProUI';
+
 
 const LEISTUNGEN = [
   'Rohrreinigung',
@@ -551,53 +557,65 @@ export default function NeuesAngebot() {
   return (
     <div className="max-w-3xl pb-12">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/angebote" className="text-gray-400 hover:text-gray-600 text-sm transition">← Zurück</Link>
-          <span className="text-gray-200">/</span>
-          <h1 className="text-xl font-bold text-gray-900">Neues Angebot</h1>
-        </div>
-        {logoUrl && (
-          <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" />
-        )}
-      </div>
+            <PageHeader
+        title="Neues Angebot"
+        subtitle="Angebot erstellen und Positionen erfassen"
+        action={logoUrl ? <img src={logoUrl} alt="Firmenlogo" className="h-9 max-w-[130px] object-contain" /> : null}
+      />
 
       <form onSubmit={handleSpeichern} className="space-y-4">
-        {fehler && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>
-        )}
+        {vorlageSaved && (
+        <SuccessBanner
+          message="Vorlage wurde gespeichert."
+          onDismiss={() => setVorlageSaved(false)}
+        />
+      )}
+      {fehler && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 text-sm px-4 py-3 rounded-lg">{fehler}</div>
+      )}
 
-        {/* ── Angebotsdetails ── */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700">Angebotsdetails</h2>
+      {/* ── Angebotsdetails ── */}
+        <Card className="overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Angebotsdetails</h2>
           </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className={LABEL}>Kunde</label>
-              <select name="kunde_id" value={form.kunde_id} onChange={onChange} className={INPUT}>
-                <option value="">— Kein Kunde —</option>
-                {kunden.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
-              </select>
+          <div className="p-5 space-y-4">
+            <FormSelect
+              label="Kunde"
+              id="kunde_id"
+              value={form.kunde_id}
+              onChange={e => setForm({ ...form, kunde_id: e.target.value })}
+              options={[{ value: '', label: '— Kein Kunde —' }, ...kunden.map(k => ({ value: k.id, label: k.name }))]}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormInput
+                label="Angebotsdatum"
+                id="datum"
+                type="date"
+                value={form.datum}
+                onChange={e => setForm({ ...form, datum: e.target.value })}
+              />
+              <FormInput
+                label="Gueltig bis"
+                id="gueltig_bis"
+                type="date"
+                value={form.gueltig_bis}
+                onChange={e => setForm({ ...form, gueltig_bis: e.target.value })}
+              />
             </div>
-            <div>
-              <label className={LABEL}>Angebotsdatum</label>
-              <input type="date" name="datum" value={form.datum} onChange={onChange} className={INPUT} />
-            </div>
-            <div>
-              <label className={LABEL}>Gültig bis</label>
-              <input type="date" name="gueltig_bis" value={form.gueltig_bis} onChange={onChange} className={INPUT} />
-            </div>
-            <div className="col-span-2">
-              <label className={LABEL}>Steuersatz</label>
-              <select name="steuersatz" value={form.steuersatz} onChange={onChange} className={INPUT}>
-                <option value={19}>19 % — Regelsteuersatz</option>
-                <option value={7}>7 % — ermäßigter Steuersatz</option>
-                <option value={0}>0 % — steuerfrei / Kleinunternehmer</option>
-              </select>
-            </div>
+            <FormSelect
+              label="Steuersatz"
+              id="steuersatz"
+              value={String(form.steuersatz)}
+              onChange={e => setForm({ ...form, steuersatz: e.target.value })}
+              options={[
+                { value: '19', label: '19 % - Regelsteuersatz' },
+                { value: '7', label: '7 % - ermaessigter Steuersatz' },
+                { value: '0', label: '0 % - steuerfrei / Kleinunternehmer' },
+              ]}
+            />
           </div>
-        </div>
+        </Card>
 
         {/* ── Positionen ── */}
         <div className="bg-white rounded-xl border border-gray-200">
@@ -684,31 +702,26 @@ export default function NeuesAngebot() {
         </div>
 
         {/* ── Notizen ── */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700">Notizen / Hinweise</h2>
+        <Card className="overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Notizen / Hinweise</h2>
           </div>
           <div className="p-5">
-            <textarea
-              name="notizen"
+            <FormTextarea
+              id="notizen"
               value={form.notizen}
-              onChange={onChange}
+              onChange={e => setForm({ ...form, notizen: e.target.value })}
               rows={2}
-              placeholder="z. B. Dieses Angebot ist 30 Tage gültig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
-              className={INPUT + ' resize-none'}
+              placeholder="z. B. Dieses Angebot ist 30 Tage gueltig. Lieferung innerhalb von 5 Werktagen nach Auftragserteilung."
             />
           </div>
-        </div>
+        </Card>
 
         {/* ── Aktionen ── */}
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            type="submit"
-            disabled={laden}
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 text-sm"
-          >
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <PrimaryButton type="submit" disabled={laden}>
             {laden ? 'Wird gespeichert…' : 'Angebot speichern'}
-          </button>
+          </PrimaryButton>
           <button
             type="button"
             onClick={handlePDF}
@@ -724,14 +737,10 @@ export default function NeuesAngebot() {
           >
             Als Vorlage speichern
           </button>
-          <Link
-            href="/dashboard/angebote"
-            className="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
-          >
+          <SecondaryButton type="button" onClick={() => router.push('/dashboard/angebote')}>
             Abbrechen
-          </Link>
+          </SecondaryButton>
         </div>
-      </form>
 
       {/* ── Vorlage Modal ── */}
       {vorlageModal && (
@@ -775,15 +784,8 @@ export default function NeuesAngebot() {
         </div>
       )}
 
-      {/* ── Vorlage gespeichert Toast ── */}
-      {vorlageSaved && (
-        <div className="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium z-50 flex items-center gap-2">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          Vorlage gespeichert!
-        </div>
-      )}
+      
+
     </div>
   );
 }
