@@ -11,12 +11,12 @@ import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus, canAccess } from '@/lib/subscription';
 import { hasMinRole } from '@/lib/roles';
 import TrialBanner from '@/components/TrialBanner';
-import { NavGroupLabel, NavItem } from '@/components/ui/KanalProUI';
+import { NavGroupLabel, NavItem, OfflineBanner } from '@/components/ui/KanalProUI';
 
-// ââ Breadcrumb-Mapping âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Breadcrumb-Mapping ──────────────────────────────────────────────────────
 const BREADCRUMB_MAP = {
   dashboard: 'Dashboard',
-  auftraege: 'AuftrÃ¤ge',
+  auftraege: 'Aufträge',
   kunden: 'Kunden',
   angebote: 'Angebote',
   rechnungen: 'Rechnungen',
@@ -37,10 +37,10 @@ function getBreadcrumb(pathname) {
   return parts.map(p => BREADCRUMB_MAP[p] || p).join(' / ');
 }
 
-// ââ Navigation âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ── Navigation ───────────────────────────────────────────────────────────────
 const NAV_GROUPS = [
   {
-    label: 'ÃBERSICHT',
+    label: 'ÜBERSICHT',
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exactMatch: true },
     ],
@@ -48,7 +48,7 @@ const NAV_GROUPS = [
   {
     label: 'KERNPROZESSE',
     items: [
-      { href: '/dashboard/auftraege', label: 'AuftrÃ¤ge', icon: ClipboardList },
+      { href: '/dashboard/auftraege', label: 'Aufträge', icon: ClipboardList },
       { href: '/dashboard/kunden', label: 'Kunden', icon: Users },
       { href: '/dashboard/angebote', label: 'Angebote', icon: FileText },
       { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: Receipt, feature: 'rechnungen' },
@@ -87,8 +87,9 @@ export default function DashboardLayout({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
-  // Sidebar schlieÃen bei Routenwechsel (Mobile)
+  // Sidebar schließen bei Routenwechsel (Mobile)
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
@@ -111,6 +112,18 @@ export default function DashboardLayout({ children }) {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Online/Offline Detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -160,7 +173,7 @@ export default function DashboardLayout({ children }) {
 
   if (!user) return null;
 
-  // Trial abgelaufen â Billing-Seite erzwingen
+  // Trial abgelaufen → Billing-Seite erzwingen
   if (isExpired && pathname !== '/dashboard/billing' && pathname !== '/dashboard/upgrade') {
     router.push('/dashboard/billing');
     return null;
@@ -168,13 +181,13 @@ export default function DashboardLayout({ children }) {
 
   // Avatar: erste 2 Buchstaben der E-Mail
   const avatarInitials = user.email?.slice(0, 2).toUpperCase() ?? '??';
-  const shortEmail = user.email?.length > 24 ? user.email.slice(0, 24) + 'â¦' : user.email;
+  const shortEmail = user.email?.length > 24 ? user.email.slice(0, 24) + '…' : user.email;
 
-  // Sidebar-Inhalt (wiederverwendet fÃ¼r Desktop & Mobile-Drawer)
+  // Sidebar-Inhalt (wiederverwendet für Desktop & Mobile-Drawer)
   function SidebarContent() {
     return (
       <>
-        {/* Logo â gleiche HÃ¶he wie Topbar (h-14) */}
+        {/* Logo – gleiche Höhe wie Topbar (h-14) */}
         <div className="px-4 h-14 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -182,11 +195,11 @@ export default function DashboardLayout({ children }) {
             </div>
             <span className="font-bold text-base text-gray-900 dark:text-white">KanalPro</span>
           </div>
-          {/* SchlieÃen-Button nur auf Mobile */}
+          {/* Schließen-Button nur auf Mobile */}
           <button
             className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             onClick={() => setSidebarOpen(false)}
-            aria-label="MenÃ¼ schlieÃen"
+            aria-label="Menü schließen"
           >
             <X size={18} />
           </button>
@@ -226,7 +239,7 @@ export default function DashboardLayout({ children }) {
               className="flex items-center justify-center gap-1.5 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
             >
               <Zap size={12} className="shrink-0" />
-              Upgrade â ab 29 â¬/Monat
+              Upgrade – ab 29 €/Monat
             </Link>
           )}
           <div className="flex items-center gap-2 px-2 py-1.5 mb-1 rounded-lg">
@@ -250,7 +263,10 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
 
-      {/* ââ Trial-Banner ââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
+      {/* Offline Banner */}
+      <OfflineBanner show={!isOnline} />
+
+      {/* ── Trial-Banner ──────────────────────────────────────────────────── */}
       <TrialBanner
         daysLeft={daysLeft}
         isTrialActive={isTrialActive}
@@ -261,7 +277,7 @@ export default function DashboardLayout({ children }) {
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ââ Mobile Overlay âââââââââââââââââââââââââââââââââââââââââââââââ */}
+        {/* ── Mobile Overlay ──────────────────────────────────────────────── */}
         {sidebarOpen && (
           <div
             className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -270,9 +286,7 @@ export default function DashboardLayout({ children }) {
           />
         )}
 
-        {/* ââ Sidebar ââââââââââââââââââââââââââââââââââââââââââââââââââââââ */}
-        {/* Desktop: always visible (md:relative md:translate-x-0 md:w-56)   */}
-        {/* Mobile: slide-in drawer (fixed, translateX animation)             */}
+        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside
           className={`
             fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col
@@ -284,7 +298,7 @@ export default function DashboardLayout({ children }) {
           <SidebarContent />
         </aside>
 
-        {/* ââ Hauptbereich: Topbar + Content âââââââââââââââââââââââââââââââ */}
+        {/* ── Hauptbereich: Topbar + Content ──────────────────────────────── */}
         <div className="flex flex-col flex-1 overflow-hidden">
 
           {/* Topbar */}
@@ -292,9 +306,9 @@ export default function DashboardLayout({ children }) {
 
             {/* Hamburger (nur Mobile) */}
             <button
-              className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 transition"
+              className="md:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 transition min-h-[48px] min-w-[48px] flex items-center justify-center"
               onClick={() => setSidebarOpen(true)}
-              aria-label="MenÃ¼ Ã¶ffnen"
+              aria-label="Menü öffnen"
             >
               <Menu size={20} />
             </button>
@@ -307,13 +321,13 @@ export default function DashboardLayout({ children }) {
             {/* OmniSearch (Desktop) */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-gray-400 dark:text-gray-500 w-48 cursor-text select-none">
               <Search size={14} className="shrink-0" />
-              <span>Suchen â¦</span>
+              <span>Suchen …</span>
             </div>
 
             {/* Dark-Mode Toggle */}
             <button
               onClick={() => setDarkMode(d => !d)}
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Dark Mode umschalten"
             >
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
