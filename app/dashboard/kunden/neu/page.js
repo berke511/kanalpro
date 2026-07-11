@@ -1,9 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { User, Building2, FileText, Wrench } from 'lucide-react';
+import {
+  PageHeader, Card,
+  FormInput, FormTextarea, FormCheckbox,
+  FormSection, FormFooter, FormError, SuccessBanner,
+  PrimaryButton, SecondaryButton,
+} from '@/components/ui/KanalProUI';
 
 export default function NeuerKunde() {
   const router = useRouter();
@@ -14,18 +19,36 @@ export default function NeuerKunde() {
     rechnung_strasse: '', rechnung_plz: '', rechnung_ort: '',
     ist_vertragskunde: false, ist_wartungskunde: false,
   });
-  const [fehler, setFehler] = useState('');
-  const [laden, setLaden] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [apiErr, setApiErr] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   }
 
+  function setField(key) {
+    return e => {
+      setForm(prev => ({ ...prev, [key]: e.target.value }));
+      if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
+    };
+  }
+
+  function validate() {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name ist erforderlich.';
+    if (form.kundentyp === 'firma' && !form.firmenname.trim()) e.firmenname = 'Firmenname ist erforderlich.';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    setFehler('');
-    setLaden(true);
+    if (!validate()) return;
+    setApiErr('');
+    setIsSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('kunden').insert({
       name: form.name,
@@ -43,24 +66,31 @@ export default function NeuerKunde() {
       ist_wartungskunde: form.ist_wartungskunde,
       user_id: user.id,
     });
-    if (error) { setFehler('Fehler beim Speichern. Bitte erneut versuchen.'); setLaden(false); return; }
-    router.push('/dashboard/kunden');
+    if (error) {
+      setApiErr('Fehler beim Speichern. Bitte erneut versuchen.');
+      setIsSaving(false);
+      return;
+    }
+    setSuccess(true);
+    setTimeout(() => router.push('/dashboard/kunden'), 1500);
   }
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/dashboard/kunden" className="text-gray-400 hover:text-gray-600 text-sm">← Zurück</Link>
-        <h1 className="text-2xl font-bold text-gray-900">Neuer Kunde</h1>
-      </div>
+      <PageHeader title="Neuer Kunde" subtitle="Kundendaten eingeben und speichern" />
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
+      {success && <SuccessBanner message="Kunde wurde erfolgreich angelegt. Weiterleitung..." />}
 
-          {/* Kundentyp */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Kundentyp</label>
+      {apiErr && (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-400">
+          {apiErr}
+        </div>
+      )}
+
+      <Card className="p-6">
+        <form onSubmit={handleSubmit}>
+
+          <FormSection title="Kundentyp">
             <div className="flex gap-3">
               {[
                 { value: 'privat', Icon: User, label: 'Privatperson' },
@@ -68,8 +98,8 @@ export default function NeuerKunde() {
               ].map(opt => (
                 <label key={opt.value} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition ${
                   form.kundentyp === opt.value
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-600 dark:text-gray-400'
                 }`}>
                   <input type="radio" name="kundentyp" value={opt.value}
                     checked={form.kundentyp === opt.value} onChange={handleChange} className="hidden" />
@@ -78,112 +108,96 @@ export default function NeuerKunde() {
                 </label>
               ))}
             </div>
-          </div>
+          </FormSection>
 
-          {/* Name / Firmenname */}
-          <div className={form.kundentyp === 'firma' ? 'grid grid-cols-2 gap-4' : ''}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {form.kundentyp === 'firma' ? 'Ansprechpartner *' : 'Name *'}
-              </label>
-              <input type="text" name="name" required value={form.name} onChange={handleChange}
-                placeholder="Max Mustermann"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            {form.kundentyp === 'firma' && (
+          <FormSection title="Stammdaten">
+            <div className={form.kundentyp === 'firma' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : ''}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Firmenname *</label>
-                <input type="text" name="firmenname" required={form.kundentyp === 'firma'}
-                  value={form.firmenname} onChange={handleChange}
-                  placeholder="Mustermann GmbH"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <FormInput
+                  label={form.kundentyp === 'firma' ? 'Ansprechpartner *' : 'Name *'}
+                  id="name" required value={form.name} onChange={setField('name')}
+                  placeholder="Max Mustermann"
+                />
+                {errors.name && <FormError>{errors.name}</FormError>}
               </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-              <input type="tel" name="telefon" value={form.telefon} onChange={handleChange}
-                placeholder="+49 211 123456"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              {form.kundentyp === 'firma' && (
+                <div>
+                  <FormInput label="Firmenname *" id="firmenname" required
+                    value={form.firmenname} onChange={setField('firmenname')}
+                    placeholder="Mustermann GmbH"
+                  />
+                  {errors.firmenname && <FormError>{errors.firmenname}</FormError>}
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange}
-                placeholder="kunde@beispiel.de"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormInput label="Telefon" id="telefon" type="tel"
+                value={form.telefon} onChange={setField('telefon')} placeholder="+49 211 123456" />
+              <FormInput label="E-Mail" id="email" type="email"
+                value={form.email} onChange={setField('email')} placeholder="kunde@beispiel.de" />
             </div>
-          </div>
+            <FormInput label="Adresse (Einsatzort / Lieferadresse)" id="adresse"
+              value={form.adresse} onChange={setField('adresse')}
+              placeholder="Musterstrasse 1, 40000 Duesseldorf" />
+          </FormSection>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Adresse (Einsatzort / Lieferadresse)</label>
-            <input type="text" name="adresse" value={form.adresse} onChange={handleChange}
-              placeholder="Musterstraße 1, 40000 Düsseldorf"
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-
-          {/* Rechnungsadresse */}
-          <div>
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="checkbox" name="rechnungsadresse_abweichend"
-                checked={form.rechnungsadresse_abweichend} onChange={handleChange}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-sm font-medium text-gray-700">Rechnungsadresse weicht von Einsatzort ab</span>
-            </label>
+          <FormSection title="Rechnungsadresse">
+            <FormCheckbox
+              id="rechnungsadresse_abweichend"
+              checked={form.rechnungsadresse_abweichend}
+              onChange={e => setForm(p => ({ ...p, rechnungsadresse_abweichend: e.target.checked }))}
+              label="Rechnungsadresse weicht von Einsatzort ab"
+            />
             {form.rechnungsadresse_abweichend && (
-              <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rechnungsadresse</p>
-                <input type="text" name="rechnung_strasse" value={form.rechnung_strasse} onChange={handleChange}
-                  placeholder="Rechnungsstraße 5"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-                <div className="grid grid-cols-3 gap-3">
-                  <input type="text" name="rechnung_plz" value={form.rechnung_plz} onChange={handleChange}
-                    placeholder="40000"
-                    className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-                  <input type="text" name="rechnung_ort" value={form.rechnung_ort} onChange={handleChange}
-                    placeholder="Düsseldorf"
-                    className="col-span-2 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+              <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 space-y-3">
+                <FormInput label="Strasse" id="rechnung_strasse"
+                  value={form.rechnung_strasse} onChange={setField('rechnung_strasse')}
+                  placeholder="Rechnungsstrasse 5" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <FormInput label="PLZ" id="rechnung_plz"
+                    value={form.rechnung_plz} onChange={setField('rechnung_plz')} placeholder="40000" />
+                  <div className="md:col-span-2">
+                    <FormInput label="Ort" id="rechnung_ort"
+                      value={form.rechnung_ort} onChange={setField('rechnung_ort')} placeholder="Duesseldorf" />
+                  </div>
                 </div>
               </div>
             )}
-          </div>
+          </FormSection>
 
-          {/* Vertrags- / Wartungskunde */}
-          <div className="flex gap-6 pt-1">
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="checkbox" name="ist_vertragskunde" checked={form.ist_vertragskunde} onChange={handleChange}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <FileText size={18} />
-              <span className="text-sm font-medium text-gray-700">Vertragskunde</span>
-            </label>
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="checkbox" name="ist_wartungskunde" checked={form.ist_wartungskunde} onChange={handleChange}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <Wrench size={18} />
-              <span className="text-sm font-medium text-gray-700">Wartungskunde</span>
-            </label>
-          </div>
+          <FormSection title="Kundenstatus">
+            <div className="flex gap-6 flex-wrap">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none min-h-[44px]">
+                <input type="checkbox" name="ist_vertragskunde" checked={form.ist_vertragskunde}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <FileText size={18} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Vertragskunde</span>
+              </label>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none min-h-[44px]">
+                <input type="checkbox" name="ist_wartungskunde" checked={form.ist_wartungskunde}
+                  onChange={handleChange}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <Wrench size={18} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Wartungskunde</span>
+              </label>
+            </div>
+          </FormSection>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notizen</label>
-            <textarea name="notizen" value={form.notizen} onChange={handleChange} rows={3}
-              placeholder="Interne Notizen..."
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          </div>
+          <FormSection title="Notizen">
+            <FormTextarea id="notizen" value={form.notizen} onChange={setField('notizen')}
+              placeholder="Interne Notizen..." rows={3} />
+          </FormSection>
 
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={laden}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-60 text-sm">
-              {laden ? 'Wird gespeichert...' : 'Kunde speichern'}
-            </button>
-            <Link href="/dashboard/kunden"
-              className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm">
-              Abbrechen
-            </Link>
-          </div>
+          <FormFooter>
+            <SecondaryButton type="button" onClick={() => router.back()}>Abbrechen</SecondaryButton>
+            <PrimaryButton type="submit" disabled={isSaving}>
+              {isSaving ? 'Speichern...' : 'Kunde speichern'}
+            </PrimaryButton>
+          </FormFooter>
+
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
