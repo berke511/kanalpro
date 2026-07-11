@@ -5,12 +5,13 @@ import Link from 'next/link';
 import {
   Plus, UserPlus, FileText, Receipt, Calendar, AlertTriangle,
   Truck, ClipboardList, Users, CheckCircle, Clock, Activity,
+  LayoutDashboard,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import {
   KpiCard, StatusBadge, PrioritaetBadge, EmptyState,
   PageHeader, PageSection, PrimaryButton, SecondaryButton,
-  Card, NotdienstBadge, FilterBar,
+  Card, NotdienstBadge, FilterBar, MobileCommandBar,
 } from '@/components/ui/KanalProUI';
 
 // ===== HELPERS =====
@@ -31,12 +32,12 @@ function timeAgo(dateStr) {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Neuer Auftrag',  sub: 'Auftrag anlegen',       href: '/dashboard/auftraege/neu',                icon: Plus,          color: 'bg-blue-100 text-blue-600' },
-  { label: 'Neuer Kunde',    sub: 'Kundendaten erfassen',   href: '/dashboard/kunden/neu',                   icon: UserPlus,      color: 'bg-green-100 text-green-600' },
-  { label: 'Neues Angebot',  sub: 'Angebot erstellen',      href: '/dashboard/angebote/neu',                 icon: FileText,      color: 'bg-purple-100 text-purple-600' },
-  { label: 'Neue Rechnung',  sub: 'Rechnung ausstellen',    href: '/dashboard/rechnungen/neu',               icon: Receipt,       color: 'bg-orange-100 text-orange-600' },
-  { label: 'Einsatz planen', sub: 'Disposition & Planung',  href: '/dashboard/disposition/tagesplanung',     icon: Calendar,      color: 'bg-teal-100 text-teal-600' },
-  { label: 'Notdienst',      sub: 'Notdienst einrichten',   href: '/dashboard/disposition/notdienstplanung', icon: AlertTriangle, color: 'bg-red-100 text-red-600' },
+  { label: 'Neuer Auftrag', sub: 'Auftrag anlegen', href: '/dashboard/auftraege/neu', icon: Plus, color: 'bg-blue-100 text-blue-600' },
+  { label: 'Neuer Kunde', sub: 'Kundendaten erfassen', href: '/dashboard/kunden/neu', icon: UserPlus, color: 'bg-green-100 text-green-600' },
+  { label: 'Neues Angebot', sub: 'Angebot erstellen', href: '/dashboard/angebote/neu', icon: FileText, color: 'bg-purple-100 text-purple-600' },
+  { label: 'Neue Rechnung', sub: 'Rechnung ausstellen', href: '/dashboard/rechnungen/neu', icon: Receipt, color: 'bg-orange-100 text-orange-600' },
+  { label: 'Einsatz planen', sub: 'Disposition & Planung', href: '/dashboard/disposition/tagesplanung', icon: Calendar, color: 'bg-teal-100 text-teal-600' },
+  { label: 'Notdienst', sub: 'Notdienst einrichten', href: '/dashboard/disposition/notdienstplanung', icon: AlertTriangle, color: 'bg-red-100 text-red-600' },
 ];
 
 export default function Dashboard() {
@@ -60,7 +61,6 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Nutzername aus company_members (graceful fallback)
       try {
         const { data: member } = await supabase
           .from('company_members')
@@ -72,7 +72,6 @@ export default function Dashboard() {
         }
       } catch (_) {}
 
-      // Parallele Hauptqueries
       const [
         { count: auftraegeHeuteCount },
         { count: auftraegeOffenCount },
@@ -87,8 +86,8 @@ export default function Dashboard() {
         supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
         supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
         supabase.from('rechnungen').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
-        supabase.from('auftraege').select('id, datum, uhrzeit, kundenname, techniker, status, prioritaet').eq('user_id', user.id).eq('datum', today).order('uhrzeit', { ascending: true }),
-        supabase.from('auftraege').select('id, created_at, kundenname').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
+        supabase.from('auftraege').select('id, datum, uhrzeit, kundelname, techniker, status, prioritaet').eq('user_id', user.id).eq('datum', today).order('uhrzeit', { ascending: true }),
+        supabase.from('auftraege').select('id, created_at, kundelname').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('rechnungen').select('id, created_at, rechnungsnummer').eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
         supabase.from('kunden').select('id, created_at, name').eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
       ]);
@@ -104,9 +103,7 @@ export default function Dashboard() {
 
       setHeutigeAuftraege(heuteAuftraege ?? []);
 
-      // Fokus-Karten aufbauen
       const fokus = [];
-
       try {
         const { count: notdienste } = await supabase
           .from('auftraege')
@@ -136,11 +133,10 @@ export default function Dashboard() {
 
       setFokusKarten(fokus.slice(0, 5));
 
-      // Timeline zusammenführen
       const events = [
         ...(neuesteAuftraege ?? []).map(a => ({
           id: 'a-' + a.id,
-          text: 'Neuer Auftrag: ' + (a.kundenname || 'Unbekannt'),
+          text: 'Neuer Auftrag: ' + (a.kundelname || 'Unbekannt'),
           time: a.created_at,
           color: 'bg-blue-500',
           href: `/dashboard/auftraege/${a.id}`,
@@ -177,17 +173,45 @@ export default function Dashboard() {
   if (stats.rechnungenOffen > 0) subtitleParts.push(`${stats.rechnungenOffen} Rechnungen offen`);
 
   const gruppiertAuftraege = {
-    offen:          (heutigeAuftraege ?? []).filter(a => a.status === 'offen'),
+    offen: (heutigeAuftraege ?? []).filter(a => a.status === 'offen'),
     in_bearbeitung: (heutigeAuftraege ?? []).filter(a => a.status === 'in_bearbeitung'),
-    abgeschlossen:  (heutigeAuftraege ?? []).filter(a => a.status === 'abgeschlossen'),
+    abgeschlossen: (heutigeAuftraege ?? []).filter(a => a.status === 'abgeschlossen'),
   };
 
+  // Mobile Command Bar Actions
+  const cmdBarActions = [
+    {
+      icon: <LayoutDashboard size={20} />,
+      label: 'Dashboard',
+      onClick: () => router.push('/dashboard'),
+      active: true,
+    },
+    {
+      icon: <ClipboardList size={20} />,
+      label: 'Aufträge',
+      onClick: () => router.push('/dashboard/auftraege'),
+      active: false,
+    },
+    {
+      icon: <Plus size={22} />,
+      label: 'Neu',
+      onClick: () => router.push('/dashboard/auftraege/neu'),
+      active: false,
+    },
+    {
+      icon: <Users size={20} />,
+      label: 'Techniker',
+      onClick: () => router.push('/dashboard/techniker'),
+      active: false,
+    },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto pb-20 md:pb-0">
 
       {/* SEKTION 1: HERO-BEGRÜSSUNG */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">
           {greeting}{userName ? `, ${userName}` : ''}.
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
@@ -223,17 +247,18 @@ export default function Dashboard() {
       {/* SEKTION 3: SCHNELLAKTIONEN */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Schnellaktionen</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.href} href={action.href}>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all duration-200 cursor-pointer group hover:scale-[1.01]">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${action.color}`}>
-                    <Icon size={18} />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all duration-200 cursor-pointer group hover:sscale-[1.01]">
+                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-2 md:mb-3 ${action.color}`}>
+                    <Icon size={16} className="md:hidden" />
+                    <Icon size={18} className="hidden md:block" />
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{action.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{action.sub}</p>
+                  <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white leading-tight">{action.label}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden md:block">{action.sub}</p>
                 </div>
               </Link>
             );
@@ -245,14 +270,14 @@ export default function Dashboard() {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Kennzahlen</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard label="Aufträge heute"     value={stats.auftraegeHeute}        icon={Calendar}      color="blue"   loading={laden} />
-          <KpiCard label="Offen"               value={stats.auftraegeOffen}        icon={Clock}         color="yellow" loading={laden} />
-          <KpiCard label="Abgeschlossen"       value={stats.auftraegeAbgeschlossen} icon={CheckCircle}   color="green"  loading={laden} />
-          <KpiCard label="Rechnungen offen"    value={stats.rechnungenOffen}        icon={Receipt}       color="orange" loading={laden} />
+          <KpiCard label="Aufträge heute" value={stats.auftraegeHeute} icon={Calendar} color="blue" loading={laden} />
+          <KpiCard label="Offen" value={stats.auftraegeOffen} icon={Clock} color="yellow" loading={laden} />
+          <KpiCard label="Abgeschlossen" value={stats.auftraegeAbgeschlossen} icon={CheckCircle} color="green" loading={laden} />
+          <KpiCard label="Rechnungen offen" value={stats.rechnungenOffen} icon={Receipt} color="orange" loading={laden} />
         </div>
       </div>
 
-      {/* SEKTIONEN 4 + 6: TIMELINE + HEUTE-BEREICH */}
+      {/* SEKTIONEN 4 + 6: TIMELINE + HEUTE -BEREICH */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
         {/* SEKTION 4: LIVE-AKTIVITÄTEN */}
@@ -318,24 +343,24 @@ export default function Dashboard() {
                 {['offen', 'in_bearbeitung', 'abgeschlossen'].map((status) =>
                   gruppiertAuftraege[status].length > 0
                     ? gruppiertAuftraege[status].map((auftrag) => (
-                        <Link key={auftrag.id} href={`/dashboard/auftraege/${auftrag.id}`}>
-                          <div className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all cursor-pointer group">
-                            {auftrag.uhrzeit && (
-                              <span className="text-xs font-mono text-gray-400 w-10 shrink-0">
-                                {String(auftrag.uhrzeit).slice(0, 5)}
-                              </span>
-                            )}
-                            <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">
-                              {auftrag.kundenname || '–'}
+                      <Link key={auftrag.id} href={`/dashboard/auftraege/${auftrag.id}`}>
+                        <div className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all cursor-pointer group min-h-[48px]">
+                          {auftrag.uhrzeit && (
+                            <span className="text-xs font-mono text-gray-400 w-10 shrink-0">
+                              {String(auftrag.uhrzeit).slice(0, 5)}
                             </span>
-                            {auftrag.prioritaet === 'notfall' && <NotdienstBadge />}
-                            <StatusBadge status={auftrag.status} />
-                            <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              Öffnen →
-                            </span>
-                          </div>
-                        </Link>
-                      ))
+                          )}
+                          <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">
+                            {auftrag.kundelname || '–'}
+                          </span>
+                          {auftrag.prioritaet === 'notfall' && <NotdienstBadge />}
+                          <StatusBadge status={auftrag.status} />
+                          <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            Öffnen →
+                          </span>
+                        </div>
+                      </Link>
+                    ))
                     : null
                 )}
               </div>
@@ -343,6 +368,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Command Bar */}
+      <MobileCommandBar actions={cmdBarActions} />
 
     </div>
   );
