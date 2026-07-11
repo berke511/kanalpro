@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import { PageHeader, PrimaryButton, SecondaryButton } from '@/components/ui/KanalProUI';
 
 /* ─────────────────────────────────────────────────────────────
    Konstanten
@@ -327,48 +328,35 @@ export default function AuftragErstellen() {
     <div className="space-y-6 max-w-3xl">
 
       {/* ─── Seitenkopf ─── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Neuer Auftrag</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Erstelle einen neuen Auftrag und bereite ihn für die Einsatzplanung vor.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => speichern(false)}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 border border-blue-200 text-blue-600 bg-blue-50 rounded-xl text-sm font-medium hover:bg-blue-100 transition disabled:opacity-50"
-          >
-            {saving
-              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-              : <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            }
-            Auftrag speichern
-          </button>
-          <button
-            type="button"
-            onClick={() => speichern(true)}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {saving
-              ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-              : <Svg d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            }
-            Speichern & zur Einsatzplanung
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/auftraege')}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-500 hover:bg-gray-50 transition"
-          >
-            Abbrechen
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Neuer Auftrag"
+        subtitle="Erstelle einen neuen Auftrag und bereite ihn fuer die Einsatzplanung vor."
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
+            <SecondaryButton
+              type="button"
+              onClick={() => speichern(false)}
+              disabled={saving}
+            >
+              {saving ? 'Speichern...' : 'Auftrag speichern'}
+            </SecondaryButton>
+            <PrimaryButton
+              type="button"
+              onClick={() => speichern(true)}
+              disabled={saving}
+            >
+              {saving ? 'Speichern...' : 'Speichern & zur Einsatzplanung'}
+            </PrimaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => router.push('/dashboard/auftraege')}
+              disabled={saving}
+            >
+              Abbrechen
+            </SecondaryButton>
+          </div>
+        }
+      />
 
       {/* ─── Fehlermeldungen ─── */}
       {apiErr && (
@@ -699,43 +687,32 @@ export default function AuftragErstellen() {
       </SectionCard>
 
       {/* ─── Aktionsleiste unten ─── */}
-      <div className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-sm">
-        <button
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 px-5 py-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shadow-sm">
+        <SecondaryButton
           type="button"
           onClick={() => router.push('/dashboard/auftraege')}
           disabled={saving}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 transition disabled:opacity-50 sm:w-auto w-full"
         >
           Abbrechen
-        </button>
+        </SecondaryButton>
 
         <div className="flex-1" />
 
-        <button
+        <SecondaryButton
           type="button"
           onClick={() => speichern(false)}
           disabled={saving}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-blue-200 text-blue-600 bg-blue-50 rounded-xl text-sm font-medium hover:bg-blue-100 transition disabled:opacity-50 sm:w-auto w-full"
         >
-          {saving
-            ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-            : <Svg d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          }
-          Auftrag speichern
-        </button>
+          {saving ? 'Speichern...' : 'Auftrag speichern'}
+        </SecondaryButton>
 
-        <button
+        <PrimaryButton
           type="button"
           onClick={() => speichern(true)}
           disabled={saving}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition disabled:opacity-50 sm:w-auto w-full"
         >
-          {saving
-            ? <Svg d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" cls="w-4 h-4 animate-spin" />
-            : <Svg d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          }
-          Speichern & zur Einsatzplanung
-        </button>
+          {saving ? 'Speichern...' : 'Speichern & zur Einsatzplanung'}
+        </PrimaryButton>
       </div>
 
     </div>
