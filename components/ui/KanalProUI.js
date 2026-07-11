@@ -2,7 +2,7 @@
 // KanalPro Design System â PX-001
 // Alle Komponenten sind projektweit standardisiert
 
-import { X, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 
 // ===== DESIGN TOKENS =====
 
@@ -334,51 +334,6 @@ export function FormCheckbox({ label, id, checked, onChange }) {
   );
 }
 
-
-// ===== FORM SECTION / FOOTER / HELPER / ERROR / SUCCESS (PX-004) =====
-
-export function FormSection({ title, description, children }) {
-  return (
-    <div className="mb-6">
-      {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>}
-      {description && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{description}</p>}
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-export function FormHelper({ children }) {
-  return (
-    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{children}</p>
-  );
-}
-
-export function FormError({ children }) {
-  return (
-    <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-      <span>&#9888;</span>{children}
-    </p>
-  );
-}
-
-export function FormFooter({ children }) {
-  return (
-    <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-700 mt-6">
-      {children}
-    </div>
-  );
-}
-
-export function SuccessBanner({ message, onDismiss }) {
-  return (
-    <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg mb-6">
-      <span className="text-green-600 dark:text-green-400 text-lg">&#10003;</span>
-      <span className="text-sm text-green-800 dark:text-green-200 flex-1">{message}</span>
-      {onDismiss && <button onClick={onDismiss} className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-lg leading-none">&#215;</button>}
-    </div>
-  );
-}
-
 // ===== TABELLE =====
 
 export function Table({ headers = [], children }) {
@@ -410,7 +365,7 @@ export function TableRow({ children, onClick, className = '' }) {
   return (
     <tr
       onClick={onClick}
-      className={`group transition ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''} ${className}`}
+      className={`transition ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''} ${className}`}
     >
       {children}
     </tr>
@@ -422,61 +377,6 @@ export function TableCell({ children, className = '' }) {
     <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 ${className}`}>
       {children}
     </td>
-  );
-}
-
-// ===== TABELLEN-UTILITIES (PX-003) =====
-
-// Sortier-Icon (Universal)
-// direction: 'asc' | 'desc' | null
-export function SortIcon({ direction }) {
-  if (direction === 'asc') return <ChevronUp size={14} className="inline-block text-blue-500 ml-1" />;
-  if (direction === 'desc') return <ChevronDown size={14} className="inline-block text-blue-500 ml-1" />;
-  return <ChevronsUpDown size={14} className="inline-block text-gray-400 ml-1" />;
-}
-
-// Skeleton Row fuer Loading-State
-export function TableSkeleton({ rows = 5, cols = 4 }) {
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-      <div className="divide-y divide-gray-50 dark:divide-gray-700">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex gap-4 px-5 py-3 animate-pulse">
-            {Array.from({ length: cols }).map((_, j) => (
-              <div
-                key={j}
-                className="h-4 bg-gray-100 dark:bg-gray-700 rounded flex-1"
-                style={{ maxWidth: j === 0 ? '40%' : undefined }}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Checkbox fuer Massenauswahl (touchfreundlich, min 44px Klickflaeche)
-export function TableCheckbox({ checked, indeterminate, onChange }) {
-  return (
-    <div className="flex items-center justify-center min-h-[44px] min-w-[44px]">
-      <input
-        type="checkbox"
-        checked={checked}
-        ref={el => { if (el) el.indeterminate = !!indeterminate; }}
-        onChange={onChange}
-        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-      />
-    </div>
-  );
-}
-
-// Action Zone (Hover-Aktionen rechts) â braucht group-Klasse auf dem tr
-export function TableActions({ children }) {
-  return (
-    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-      {children}
-    </div>
   );
 }
 
@@ -601,3 +501,36 @@ export function PageSection({ title, children }) {
     </section>
   );
 }
+
+// ===== NAVIGATION =====
+
+export const NavGroupLabel = ({ children }) => (
+  <div className="px-3 mb-1 mt-4 first:mt-0">
+    <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+      {children}
+    </span>
+  </div>
+);
+
+export const NavItem = ({ href, icon: Icon, label, active, badge }) => (
+  <a href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+    active
+      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+  }`}>
+    {Icon && <Icon size={16} className="shrink-0" />}
+    <span className="flex-1">{label}</span>
+    {badge && <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full px-2 py-0.5">{badge}</span>}
+  </a>
+);
+
+export const NavSubItem = ({ href, label, active }) => (
+  <a href={href} className={`flex items-center gap-2 pl-8 pr-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+    active
+      ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20'
+      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+  }`}>
+    <span className="w-1 h-1 rounded-full bg-current shrink-0" />
+    {label}
+  </a>
+);
