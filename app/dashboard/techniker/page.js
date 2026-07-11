@@ -6,15 +6,16 @@ import {
   Clock, MapPin, Phone, FileText, CheckCircle,
   AlertTriangle, ChevronRight, Truck, User, RefreshCw, Calendar,
 } from 'lucide-react';
+import { KpiCard, StatusBadge, PrioritaetBadge, NotdienstBadge, EmptyState } from '@/components/ui/KanalProUI';
 
-/* âââ Hilfsfunktionen ââââââââââââââââââââââââââââââââââââââââââ */
+// ── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
 function heute() {
   return new Date().toISOString().split('T')[0];
 }
 
 function fmtUhrzeit(t) {
-  if (!t) return 'â';
+  if (!t) return '—';
   return String(t).slice(0, 5);
 }
 
@@ -23,53 +24,16 @@ function buildMapsUrl(adresse) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(adresse)}`;
 }
 
-/* âââ Farb-Konfiguration âââââââââââââââââââââââââââââââââââââââ */
-
-const PRIO = {
-  notfall: { label: 'Notfall', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
-  hoch:    { label: 'Hoch',    cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' },
-  normal:  { label: 'Normal',  cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  niedrig: { label: 'Niedrig', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-};
-
-const STAT = {
-  offen:          { label: 'Offen',          cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
-  in_bearbeitung: { label: 'In Bearbeitung', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
-  abgeschlossen:  { label: 'Abgeschlossen',  cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-};
-
-/* âââ KPI-Karte ââââââââââââââââââââââââââââââââââââââââââââââââ */
-
-function KpiKarte({ label, wert, icon: Icon, farbe, laden }) {
-  return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${farbe}`}>
-        <Icon size={20} />
-      </div>
-      <div className="min-w-0">
-        <div className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
-          {laden
-            ? <span className="inline-block w-7 h-6 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-            : wert}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{label}</div>
-      </div>
-    </div>
-  );
-}
-
-/* âââ Einsatz-Karte ââââââââââââââââââââââââââââââââââââââââââââ */
+// ── Einsatz-Karte ─────────────────────────────────────────────────────────────
 
 function EinsatzKarte({ auftrag, hatNaechsten, onNaechster }) {
   const router = useRouter();
 
-  const prio      = PRIO[auftrag.prioritaet?.toLowerCase()] ?? PRIO.normal;
-  const stat      = STAT[auftrag.status] ?? STAT.offen;
-  const kunde     = auftrag.kunden;
+  const kunde = auftrag.kunden;
   const einsatzort = auftrag.adresse ?? kunde?.adresse ?? '';
-  const telefon   = kunde?.telefon ?? '';
-  const mapsUrl   = buildMapsUrl(einsatzort);
-  const abgeschl  = auftrag.status === 'abgeschlossen';
+  const telefon = kunde?.telefon ?? '';
+  const mapsUrl = buildMapsUrl(einsatzort);
+  const abgeschl = auftrag.status === 'abgeschlossen';
 
   return (
     <div className={`bg-white dark:bg-gray-900 rounded-2xl border dark:border-gray-800 overflow-hidden
@@ -82,18 +46,10 @@ function EinsatzKarte({ auftrag, hatNaechsten, onNaechster }) {
             <Clock size={14} className="text-gray-400 shrink-0" />
             {fmtUhrzeit(auftrag.uhrzeit)}
           </div>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${prio.cls}`}>
-            {prio.label}
-          </span>
-          {auftrag.notdienst && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white">
-              Notdienst
-            </span>
-          )}
+          <PrioritaetBadge prioritaet={auftrag.prioritaet?.toLowerCase()} />
+          {auftrag.notdienst && <NotdienstBadge />}
         </div>
-        <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold ${stat.cls}`}>
-          {stat.label}
-        </span>
+        <StatusBadge status={auftrag.status} />
       </div>
 
       {/* Kundeninfo */}
@@ -101,7 +57,7 @@ function EinsatzKarte({ auftrag, hatNaechsten, onNaechster }) {
         <div className="flex items-center gap-2">
           <User size={13} className="text-gray-400 shrink-0" />
           <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-            {kunde?.name ?? 'â'}
+            {kunde?.name ?? '—'}
           </span>
         </div>
         {(auftrag.titel || auftrag.beschreibung) && (
@@ -158,14 +114,14 @@ function EinsatzKarte({ auftrag, hatNaechsten, onNaechster }) {
         </div>
       )}
 
-      {/* NÃ¤chster Einsatz Button */}
+      {/* Nächster Einsatz Button */}
       {abgeschl && hatNaechsten && (
         <div className="border-t border-gray-50 dark:border-gray-800 px-4 py-3">
           <button
             onClick={onNaechster}
             className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition min-h-[44px]">
             <ChevronRight size={16} />
-            NÃ¤chsten Einsatz Ã¶ffnen
+            Nächsten Einsatz öffnen
           </button>
         </div>
       )}
@@ -173,7 +129,7 @@ function EinsatzKarte({ auftrag, hatNaechsten, onNaechster }) {
   );
 }
 
-/* âââ Lade-Skeleton ââââââââââââââââââââââââââââââââââââââââââââ */
+// ── Lade-Skeleton ─────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
@@ -192,13 +148,13 @@ function Skeleton() {
   );
 }
 
-/* âââ Hauptseite âââââââââââââââââââââââââââââââââââââââââââââââ */
+// ── Hauptseite ────────────────────────────────────────────────────────────────
 
 export default function TechnikerDashboard() {
   const router = useRouter();
-  const [laden, setLaden]       = useState(true);
-  const [fehler, setFehler]     = useState('');
-  const [vorname, setVorname]   = useState('');
+  const [laden, setLaden] = useState(true);
+  const [fehler, setFehler] = useState('');
+  const [vorname, setVorname] = useState('');
   const [auftraege, setAuftraege] = useState([]);
 
   const ladeDaten = useCallback(async () => {
@@ -241,13 +197,12 @@ export default function TechnikerDashboard() {
 
   useEffect(() => { ladeDaten(); }, [ladeDaten]);
 
-  /* KPI-Werte */
-  const gesamt     = auftraege.length;
-  const offen      = auftraege.filter(a => a.status === 'offen' || a.status === 'in_bearbeitung').length;
-  const abgeschl   = auftraege.filter(a => a.status === 'abgeschlossen').length;
+  // KPI-Werte
+  const gesamt   = auftraege.length;
+  const offen    = auftraege.filter(a => a.status === 'offen' || a.status === 'in_bearbeitung').length;
+  const abgeschl = auftraege.filter(a => a.status === 'abgeschlossen').length;
   const notdienste = auftraege.filter(a => a.notdienst === true || a.prioritaet === 'notfall').length;
 
-  /* NÃ¤chsten offenen Einsatz Ã¶ffnen */
   function oeffneNaechsten(vonIdx) {
     for (let i = vonIdx + 1; i < auftraege.length; i++) {
       if (auftraege[i].status !== 'abgeschlossen') {
@@ -277,10 +232,10 @@ export default function TechnikerDashboard() {
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {laden
-                ? 'Wird geladenâ¦'
+                ? 'Wird geladen…'
                 : gesamt === 0
-                  ? 'Keine EinsÃ¤tze heute geplant'
-                  : `${gesamt} Einsatz${gesamt !== 1 ? 'Ã¤tze' : ''} heute`}
+                  ? 'Keine Einsätze heute geplant'
+                  : `${gesamt} Einsatz${gesamt !== 1 ? 'ätze' : ''} heute`}
             </p>
           </div>
           <button
@@ -302,36 +257,12 @@ export default function TechnikerDashboard() {
           </div>
         )}
 
-        {/* KPI-Karten */}
+        {/* KPI-Karten — Design System KpiCard */}
         <div className="grid grid-cols-2 gap-3">
-          <KpiKarte
-            label="EinsÃ¤tze heute"
-            wert={gesamt}
-            icon={Truck}
-            farbe="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-            laden={laden}
-          />
-          <KpiKarte
-            label="Noch offen"
-            wert={offen}
-            icon={Clock}
-            farbe="bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
-            laden={laden}
-          />
-          <KpiKarte
-            label="Abgeschlossen"
-            wert={abgeschl}
-            icon={CheckCircle}
-            farbe="bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-            laden={laden}
-          />
-          <KpiKarte
-            label="Notdienste"
-            wert={notdienste}
-            icon={AlertTriangle}
-            farbe="bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-            laden={laden}
-          />
+          <KpiCard label="Einsätze heute"  value={gesamt}    icon={Truck}          color="blue"   loading={laden} />
+          <KpiCard label="Noch offen"      value={offen}     icon={Clock}          color="yellow" loading={laden} />
+          <KpiCard label="Abgeschlossen"   value={abgeschl}  icon={CheckCircle}    color="green"  loading={laden} />
+          <KpiCard label="Notdienste"      value={notdienste} icon={AlertTriangle} color="red"    loading={laden} />
         </div>
 
         {/* Lade-Skeleton */}
@@ -339,13 +270,11 @@ export default function TechnikerDashboard() {
 
         {/* Leer-Zustand */}
         {!laden && !fehler && gesamt === 0 && (
-          <div className="text-center py-16">
-            <Truck size={40} className="mx-auto mb-3 text-gray-200 dark:text-gray-700" />
-            <p className="font-semibold text-gray-500 dark:text-gray-400">Keine EinsÃ¤tze heute</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              Dir wurden heute keine AuftrÃ¤ge zugewiesen.
-            </p>
-          </div>
+          <EmptyState
+            icon={Truck}
+            title="Keine Einsätze heute"
+            description="Dir wurden heute keine Aufträge zugewiesen."
+          />
         )}
 
         {/* Einsatzliste */}
