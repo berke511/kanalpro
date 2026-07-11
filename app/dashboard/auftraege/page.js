@@ -3,33 +3,23 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import { ClipboardList, ExternalLink, FileText, Receipt, AlertTriangle, User, Truck, Pencil, X, Search } from 'lucide-react';
+import { ClipboardList, ExternalLink, FileText, Receipt, AlertTriangle, User, Truck, Pencil, X, Search, Plus, RefreshCw, LayoutDashboard } from 'lucide-react';
 import {
   PageHeader, FilterBar, FilterButton, FilterSelect,
   Table, TableRow, TableCell, TableSkeleton, TableCheckbox, TableActions,
-  StatusBadge, WarningBadge, EmptyState,
+  StatusBadge, WarningBadge, EmptyState, MobileCommandBar,
 } from '@/components/ui/KanalProUI';
 
-// Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
-// const COLUMN_CONFIG = [
-//   { key: 'titel',     label: 'Titel',     sortable: true,  visible: true },
-//   { key: 'kunde',     label: 'Kunde',     sortable: true,  visible: true },
-//   { key: 'datum',     label: 'Datum',     sortable: true,  visible: true },
-//   { key: 'status',    label: 'Status',    sortable: false, visible: true },
-//   { key: 'techniker', label: 'Techniker', sortable: false, visible: true },
-//   { key: 'fahrzeug',  label: 'Fahrzeug',  sortable: false, visible: true },
-// ];
-
 const QUICK_FILTER_OPTS = [
-  { key: 'alle',           label: 'Alle' },
-  { key: 'heute',          label: 'Heute' },
-  { key: 'morgen',         label: 'Morgen' },
-  { key: 'diese_woche',    label: 'Diese Woche' },
-  { key: 'offen',          label: 'Offen' },
+  { key: 'alle', label: 'Alle' },
+  { key: 'heute', label: 'Heute' },
+  { key: 'morgen', label: 'Morgen' },
+  { key: 'diese_woche', label: 'Diese Woche' },
+  { key: 'offen', label: 'Offen' },
   { key: 'in_bearbeitung', label: 'In Bearbeitung' },
-  { key: 'abgeschlossen',  label: 'Abgeschlossen' },
-  { key: 'notdienst',      label: 'Notdienst' },
-  { key: 'hoch',           label: 'Hohe Prioritaet' },
+  { key: 'abgeschlossen', label: 'Abgeschlossen' },
+  { key: 'notdienst', label: 'Notdienst' },
+  { key: 'hoch', label: 'Hoche Priorität' },
 ];
 
 function todayStr() { return new Date().toISOString().split('T')[0]; }
@@ -78,42 +68,43 @@ export default function Auftraege() {
     loadCompany();
   }, []);
 
+  const loadData = async (cId) => {
+    setLaden(true);
+    const [{ data: members }, { data: fz }] = await Promise.all([
+      supabase.from('company_members').select('id, vorname, nachname').eq('company_id', cId).eq('is_active', true).order('nachname'),
+      supabase.from('fahrzeuge').select('id, kennzeichen, marke').eq('company_id', cId).order('kennzeichen'),
+    ]);
+    setMitarbeiterListe(members ?? []);
+    setFahrzeugListe(fx ?? []);
+    const { data, error } = await supabase
+      .from('auftraege')
+      .select('id, titel, status, datum, uhrzeit, dauer_minuten, prioritaet, adresse, techniker_id, fahrzeug_id, kunden:kunde_id(name, firmenname), mitarbeiter:techniker_id(vorname, nachname)')
+      .eq('company_id', cId)
+      .order('datum', { ascending: false, nullsFirst: false });
+    if (!error) {
+      const rows = data ?? [];
+      setAuftraege(rows);
+      setHatFahrzeugSpalte(true);
+      const ids = rows.map(r => r.id);
+      if (ids.length > 0) {
+        const { data: dok } = await supabase.from('einsatz_dokumentation').select('auftrag_id').in('auftrag_id', ids).eq('company_id', cId);
+        setDokumentiertIds(new Set((dok ?? []).map(d => d.auftrag_id)));
+      } else { setDokumentiertIds(new Set()); }
+    } else {
+      const { data: data2 } = await supabase
+        .from('auftraege')
+        .select('id, titel, status, datum, uhrzeit, dauer_minuten, prioritaet, adresse, techniker_id, kunden:kunde_id(name, firmenname), mitarbeiter:techniker_id(vorname, nachname)')
+        .eq('company_id', cId)
+        .order('datum', { ascending: false, nullsFirst: false });
+      setAuftraege(data2 ?? []);
+      setHatFahrzeugSpalte(false);
+    }
+    setLaden(false);
+  };
+
   useEffect(() => {
     if (!companyId) return;
-    const load = async () => {
-      setLaden(true);
-      const [{ data: members }, { data: fz }] = await Promise.all([
-        supabase.from('company_members').select('id, vorname, nachname').eq('company_id', companyId).eq('is_active', true).order('nachname'),
-        supabase.from('fahrzeuge').select('id, kennzeichen, marke').eq('company_id', companyId).order('kennzeichen'),
-      ]);
-      setMitarbeiterListe(members ?? []);
-      setFahrzeugListe(fz ?? []);
-      const { data, error } = await supabase
-        .from('auftraege')
-        .select('id, titel, status, datum, uhrzeit, dauer_minuten, prioritaet, adresse, techniker_id, fahrzeug_id, kunden:kunde_id(name, firmenname), mitarbeiter:techniker_id(vorname, nachname)')
-        .eq('company_id', companyId)
-        .order('datum', { ascending: false, nullsFirst: false });
-      if (!error) {
-        const rows = data ?? [];
-        setAuftraege(rows);
-        setHatFahrzeugSpalte(true);
-        const ids = rows.map(r => r.id);
-        if (ids.length > 0) {
-          const { data: dok } = await supabase.from('einsatz_dokumentation').select('auftrag_id').in('auftrag_id', ids).eq('company_id', companyId);
-          setDokumentiertIds(new Set((dok ?? []).map(d => d.auftrag_id)));
-        } else { setDokumentiertIds(new Set()); }
-      } else {
-        const { data: data2 } = await supabase
-          .from('auftraege')
-          .select('id, titel, status, datum, uhrzeit, dauer_minuten, prioritaet, adresse, techniker_id, kunden:kunde_id(name, firmenname), mitarbeiter:techniker_id(vorname, nachname)')
-          .eq('company_id', companyId)
-          .order('datum', { ascending: false, nullsFirst: false });
-        setAuftraege(data2 ?? []);
-        setHatFahrzeugSpalte(false);
-      }
-      setLaden(false);
-    };
-    load();
+    loadData(companyId);
   }, [companyId]);
 
   const konflikte = useMemo(() => {
@@ -178,9 +169,8 @@ export default function Auftraege() {
     setWechselId(null);
   }
 
-  // Massenauswahl
   const alleGewaehlt = gefiltert.length > 0 && gefiltert.every(a => selectedIds.has(a.id));
-  const teilGewaehlt = gefiltert.some(a => selectedIds.has(a.id)) && !alleGewaehlt;
+  const teilGewaehlt = gefiltert.some(a => selectedIdshas(a.id)) && !alleGewaehlt;
 
   function toggleAlle() {
     if (alleGewaehlt) {
@@ -212,16 +202,44 @@ export default function Auftraege() {
     ...fahrzeugListe.map(f => ({ value: f.id, label: f.kennzeichen + (f.marke ? ` - ${f.marke}` : '') })),
   ];
 
+  // Mobile Command Bar Actions
+  const cmdBarActions = [
+    {
+      icon: <Search size={20} />,
+      label: 'Suchen',
+      onClick: () => document.getElementById('auftrag-suche')?.focus(),
+      active: !!suche,
+    },
+    {
+      icon: <LayoutDashboard size={20} />,
+      label: 'Filter',
+      onClick: () => setFilter(filter === 'alle' ? 'heute' : 'alle'),
+      active: filter !== 'alle',
+    },
+    {
+      icon: <Plus size={22} />,
+      label: 'Neu',
+      onClick: () => router.push('/dashboard/auftraege/erstellen'),
+      active: false,
+    },
+    {
+      icon: <RefreshCw size={20} />,
+      label: 'Refresh',
+      onClick: () => companyId && loadData(companyId),
+      active: false,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-0">
 
       {/* Header */}
       <PageHeader
-        title="Auftraege"
-        subtitle={laden ? '...' : `${gefiltert.length} / ${auftraege.length} Auftraege`}
+        title="Aufträge"
+        subtitle={laden ? '...' : `${gefiltert.length} / ${auftraege.length} Aufträge`}
         action={
           <Link href="/dashboard/auftraege/erstellen"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition min-h-[48px] flex items-center">
             + Neuer Auftrag
           </Link>
         }
@@ -245,30 +263,33 @@ export default function Auftraege() {
         </div>
       )}
 
-      {/* Suchleiste */}
-      <div className="relative max-w-sm">
+      {/* Suchleiste — full-width auf Mobile */}
+      <div className="relative w-full md:max-w-sm">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
+          id="auftrag-suche"
           type="text"
           value={suche}
           onChange={e => setSuche(e.target.value)}
           placeholder="Suchen..."
-          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition min-h-[48px]"
         />
         {suche && (
-          <button onClick={() => setSuche('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => setSuche('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 min-h-[48px] min-w-[48px] flex items-center justify-center">
             <X size={14} />
           </button>
         )}
       </div>
 
-      {/* Filter */}
+      {/* Filter — horizontal scroll auf Mobile */}
       <div className="space-y-2">
-        <FilterBar>
-          {QUICK_FILTER_OPTS.map(f => (
-            <FilterButton key={f.key} label={f.label} active={filter === f.key} onClick={() => setFilter(f.key)} />
-          ))}
-        </FilterBar>
+        <div className="overflow-x-auto pb-1">
+          <FilterBar>
+            {QUICK_FILTER_OPTS.map(f => (
+              <FilterButton key={f.key} label={f.label} active={filter === f.key} onClick={() => setFilter(f.key)} />
+            ))}
+          </FilterBar>
+        </div>
         <FilterBar>
           {mitarbeiterListe.length > 0 && (
             <FilterSelect label="Techniker" value={technikerFilter} onChange={e => setTechnikerFilter(e.target.value)} options={technikerOptionen} />
@@ -279,9 +300,9 @@ export default function Auftraege() {
           {hatFilter && (
             <button
               onClick={() => { setFilter('alle'); setTechnikerFilter(''); setFahrzeugFilter(''); setSuche(''); }}
-              className="px-3 py-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition flex items-center gap-1"
+              className="px-3 py-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition flex items-center gap-1 min-h-[36px]"
             >
-              <X size={12} />Filter zuruecksetzen
+              <X size={12} />Filter zurücksetzen
             </button>
           )}
         </FilterBar>
@@ -290,7 +311,7 @@ export default function Auftraege() {
       {/* Bulk-Action-Bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl text-sm">
-          <span className="font-medium text-blue-700 dark:text-blue-300">{selectedIds.size} ausgewaehlt</span>
+          <span className="font-medium text-blue-700 dark:text-blue-300">{selectedIds.size} ausgewählt</span>
           <button onClick={() => setSelectedIds(new Set())} className="text-xs text-blue-500 hover:text-blue-700 underline">
             Auswahl aufheben
           </button>
@@ -308,7 +329,7 @@ export default function Auftraege() {
       ) : gefiltert.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title={auftraege.length === 0 ? 'Keine Auftraege vorhanden.' : 'Keine Auftraege entsprechen dem Filter.'}
+          title={auftraege.length === 0 ? 'Keine Aufträge vorhanden.' : 'Keine Aufträge entsprechen dem Filter.'}
         />
       ) : (
         <>
@@ -329,7 +350,7 @@ export default function Auftraege() {
                 const istWechsel = wechselId === a.id;
                 const isSelected = selectedIds.has(a.id);
                 return (
-                  <TableRow key={a.id} className={`${farbe} ${isSelected ? 'ring-1 ring-inset ring-blue-400' : ''}`}>
+                  <TableRow key={a.id} className={`group ${farbe} ${isSelected ? 'ring-1 ring-inset ring-blue-400' : ''}`}>
                     <TableCell className="pl-3 pr-0 w-10">
                       <div onClick={e => { e.stopPropagation(); toggleEiner(a.id); }}>
                         <TableCheckbox checked={isSelected} onChange={() => toggleEiner(a.id)} />
@@ -346,10 +367,10 @@ export default function Auftraege() {
                       )}
                     </TableCell>
                     <TableCell onClick={() => router.push('/dashboard/auftraege/' + a.id)}>
-                      {a.kunden ? (a.kunden.firmenname || a.kunden.name) : 'â'}
+                      {a.kunden ? (a.kunden.firmenname || a.kunden.name) : '—'}
                     </TableCell>
                     <TableCell onClick={() => router.push('/dashboard/auftraege/' + a.id)}>
-                      {a.datum ? new Date(a.datum + 'T00:00:00').toLocaleDateString('de-DE') : 'â'}
+                      {a.datum ? new Date(a.datum + 'T00:00:00').toLocaleDateString('de-DE') : '—'}
                       {a.uhrzeit && <span className="ml-1 text-gray-400 text-xs">{a.uhrzeit.slice(0,5)}</span>}
                     </TableCell>
                     <TableCell onClick={() => router.push('/dashboard/auftraege/' + a.id)}>
@@ -359,12 +380,12 @@ export default function Auftraege() {
                       {istWechsel ? (
                         <select value={wechselTech} onChange={e => setWechselTech(e.target.value)}
                           className="px-2 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-                          <option value="">â kein â</option>
+                          <option value="">— kein —</option>
                           {mitarbeiterListe.map(m => <option key={m.id} value={m.id}>{m.vorname} {m.nachname}</option>)}
                         </select>
                       ) : (
                         <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 text-xs">
-                          {tech ? <><User size={11} className="text-gray-400" />{tech}</> : <span className="text-gray-300">â</span>}
+                          {tech ? <><User size={11} className="text-gray-400" />{tech}</> : <span className="text-gray-300">—</span>}
                         </span>
                       )}
                     </td>
@@ -373,12 +394,12 @@ export default function Auftraege() {
                         {istWechsel ? (
                           <select value={wechselFz} onChange={e => setWechselFz(e.target.value)}
                             className="px-2 py-1 border border-gray-200 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-                            <option value="">â kein â</option>
+                            <option value="">— kein —</option>
                             {fahrzeugListe.map(f => <option key={f.id} value={f.id}>{f.kennzeichen}</option>)}
                           </select>
                         ) : (
                           <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 text-xs">
-                            {fz ? <><Truck size={11} className="text-gray-400" />{fz.kennzeichen}</> : <span className="text-gray-300">â</span>}
+                            {fz ? <><Truck size={11} className="text-gray-400" />{fz.kennzeichen}</> : <span className="text-gray-300">—</span>}
                           </span>
                         )}
                       </td>
@@ -398,7 +419,7 @@ export default function Auftraege() {
                         ) : (
                           <TableActions>
                             <Link href={'/dashboard/auftraege/' + a.id} onClick={e => e.stopPropagation()}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" title="Auftrag oeffnen">
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition" title="Auftrag öffnen">
                               <ExternalLink size={13} />
                             </Link>
                             <Link href={'/dashboard/auftraege/einsatzbericht?id=' + a.id} onClick={e => e.stopPropagation()}
@@ -436,7 +457,7 @@ export default function Auftraege() {
                 <div
                   key={a.id}
                   onClick={() => router.push('/dashboard/auftraege/' + a.id)}
-                  className={`rounded-2xl border p-4 cursor-pointer transition ${istUeberfaellig ? 'bg-red-50 border-red-100' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-blue-100'}`}
+                  className={`rounded-2xl border p-4 cursor-pointer transition active:scale-[0.99] ${istUeberfaellig ? 'bg-red-50 border-red-100' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-blue-100'}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="font-semibold text-gray-900 dark:text-white text-sm leading-snug">{a.titel}</p>
@@ -444,7 +465,7 @@ export default function Auftraege() {
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                     {a.kunden && <p>{a.kunden.firmenname || a.kunden.name}</p>}
-                    <p>{a.datum ? new Date(a.datum + 'T00:00:00').toLocaleDateString('de-DE') : 'â'}{a.uhrzeit ? ' Â· ' + a.uhrzeit.slice(0,5) : ''}</p>
+                    <p>{a.datum ? new Date(a.datum + 'T00:00:00').toLocaleDateString('de-DE') : '—'}{a.uhrzeit ? ' · ' + a.uhrzeit.slice(0,5) : ''}</p>
                     {tech && <p><User size={11} className="inline mr-1" />{tech}</p>}
                     {fz && <p><Truck size={11} className="inline mr-1" />{fz.kennzeichen}</p>}
                   </div>
@@ -455,11 +476,11 @@ export default function Auftraege() {
                   )}
                   <div className="mt-3 flex gap-2" onClick={e => e.stopPropagation()}>
                     <Link href={'/dashboard/auftraege/' + a.id}
-                      className="flex-1 text-center py-2 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 transition">
-                      Oeffnen
+                      className="flex-1 text-center py-2.5 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 transition min-h-[44px] flex items-center justify-center">
+                      Öffnen
                     </Link>
                     <Link href={'/dashboard/auftraege/einsatzbericht?id=' + a.id}
-                      className="flex-1 text-center py-2 text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 transition">
+                      className="flex-1 text-center py-2.5 text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 transition min-h-[44px] flex items-center justify-center">
                       Bericht
                     </Link>
                   </div>
@@ -469,6 +490,10 @@ export default function Auftraege() {
           </div>
         </>
       )}
+
+      {/* Mobile Command Bar */}
+      <MobileCommandBar actions={cmdBarActions} />
+
     </div>
   );
 }
