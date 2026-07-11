@@ -740,7 +740,8 @@ export default function NeuesAngebot() {
           <SecondaryButton type="button" onClick={() => router.push('/dashboard/angebote')}>
             Abbrechen
           </SecondaryButton>
-        </div>
+        </div>      </form>
+
 
       {/* ── Vorlage Modal ── */}
       {vorlageModal && (
