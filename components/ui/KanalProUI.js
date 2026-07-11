@@ -1,8 +1,8 @@
 'use client';
-// KanalPro Design System — PX-001
+// KanalPro Design System â PX-001
 // Alle Komponenten sind projektweit standardisiert
 
-import { X } from 'lucide-react';
+import { X, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 // ===== DESIGN TOKENS =====
 
@@ -125,7 +125,7 @@ export function KpiCard({ label, value, icon: Icon, trend, color = 'blue', loadi
       <div className="min-w-0">
         {trend != null && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full block mb-1 w-fit ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
+            {trend >= 0 ? 'â' : 'â'} {Math.abs(trend)}%
           </span>
         )}
         <div className="text-2xl font-bold text-gray-900 dark:text-white leading-tight">
@@ -215,7 +215,7 @@ export function RechnungBadge({ status }) {
   const label = {
     offen:       'Offen',
     bezahlt:     'Bezahlt',
-    ueberfaellig:'\u00dcberf\u00e4llig',
+    ueberfaellig:'ÃberfÃ¤llig',
   };
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${cfg[status] ?? 'bg-gray-100 text-gray-700'}`}>
@@ -365,7 +365,7 @@ export function TableRow({ children, onClick, className = '' }) {
   return (
     <tr
       onClick={onClick}
-      className={`transition ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''} ${className}`}
+      className={`group transition ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : ''} ${className}`}
     >
       {children}
     </tr>
@@ -377,6 +377,61 @@ export function TableCell({ children, className = '' }) {
     <td className={`px-5 py-3 text-gray-500 dark:text-gray-400 ${className}`}>
       {children}
     </td>
+  );
+}
+
+// ===== TABELLEN-UTILITIES (PX-003) =====
+
+// Sortier-Icon (Universal)
+// direction: 'asc' | 'desc' | null
+export function SortIcon({ direction }) {
+  if (direction === 'asc') return <ChevronUp size={14} className="inline-block text-blue-500 ml-1" />;
+  if (direction === 'desc') return <ChevronDown size={14} className="inline-block text-blue-500 ml-1" />;
+  return <ChevronsUpDown size={14} className="inline-block text-gray-400 ml-1" />;
+}
+
+// Skeleton Row fuer Loading-State
+export function TableSkeleton({ rows = 5, cols = 4 }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="divide-y divide-gray-50 dark:divide-gray-700">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex gap-4 px-5 py-3 animate-pulse">
+            {Array.from({ length: cols }).map((_, j) => (
+              <div
+                key={j}
+                className="h-4 bg-gray-100 dark:bg-gray-700 rounded flex-1"
+                style={{ maxWidth: j === 0 ? '40%' : undefined }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Checkbox fuer Massenauswahl (touchfreundlich, min 44px Klickflaeche)
+export function TableCheckbox({ checked, indeterminate, onChange }) {
+  return (
+    <div className="flex items-center justify-center min-h-[44px] min-w-[44px]">
+      <input
+        type="checkbox"
+        checked={checked}
+        ref={el => { if (el) el.indeterminate = !!indeterminate; }}
+        onChange={onChange}
+        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+      />
+    </div>
+  );
+}
+
+// Action Zone (Hover-Aktionen rechts) â braucht group-Klasse auf dem tr
+export function TableActions({ children }) {
+  return (
+    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      {children}
+    </div>
   );
 }
 
