@@ -3,375 +3,558 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus, UserPlus, FileText, Receipt, Calendar, AlertTriangle,
-  Truck, ClipboardList, Users, CheckCircle, Clock, Activity,
-  LayoutDashboard,
+  AlertTriangle,
+  Clock,
+  FileX,
+  Receipt,
+  Truck,
+  Users,
+  TrendingUp,
+  CheckCircle,
+  Zap,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import {
-  KpiCard, StatusBadge, PrioritaetBadge, EmptyState,
-  PageHeader, PageSection, PrimaryButton, SecondaryButton,
-  Card, NotdienstBadge, FilterBar, MobileCommandBar,
+  KpiCard,
+  SecondaryButton,
+  PageSection,
+  EmptyState,
 } from '@/components/ui/KanalProUI';
 
-// ===== HELPERS =====
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Guten Morgen';
-  if (h < 18) return 'Guten Tag';
-  return 'Guten Abend';
+// ============================================================
+// HILFSFUNKTION: Company-ID ermitteln
+// ============================================================
+async function getCompanyId(userId) {
+  try {
+    const { data } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', userId)
+      .single();
+    return data?.company_id ?? null;
+  } catch {
+    return null;
+  }
 }
 
-function timeAgo(dateStr) {
-  const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60) return 'gerade eben';
-  if (diff < 3600) return `vor ${Math.floor(diff / 60)} Min`;
-  if (diff < 86400) return `vor ${Math.floor(diff / 3600)} Std`;
-  return `vor ${Math.floor(diff / 86400)} Tagen`;
+// ============================================================
+// SMART RULES ENGINE — SX-001
+// ============================================================
+
+// Regel 1: Notdienst heute unbesetzt
+async function regelNotdienstUnbesetzt(companyId, heute) {
+  try {
+    const { count } = await supabase
+      .from('auftraege')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('notdienst', true)
+      .eq('datum', heute)
+      .is('techniker_id', null);
+    const c = count ?? 0;
+    return {
+      id: 'notdienst_unbesetzt',
+      priority: 'critical',
+      icon: AlertTriangle,
+      title: 'Notdienst unbesetzt',
+      description: `${c} Notdienst-Auftrag${c !== 1 ? 'e haben' : ' hat'} heute keinen Techniker`,
+      count: c,
+      cta: 'Jetzt zuweisen',
+      href: '/dashboard/disposition/tagesplanung',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
 }
 
-const QUICK_ACTIONS = [
-  { label: 'Neuer Auftrag', sub: 'Auftrag anlegen', href: '/dashboard/auftraege/neu', icon: Plus, color: 'bg-blue-100 text-blue-600' },
-  { label: 'Neuer Kunde', sub: 'Kundendaten erfassen', href: '/dashboard/kunden/neu', icon: UserPlus, color: 'bg-green-100 text-green-600' },
-  { label: 'Neues Angebot', sub: 'Angebot erstellen', href: '/dashboard/angebote/neu', icon: FileText, color: 'bg-purple-100 text-purple-600' },
-  { label: 'Neue Rechnung', sub: 'Rechnung ausstellen', href: '/dashboard/rechnungen/neu', icon: Receipt, color: 'bg-orange-100 text-orange-600' },
-  { label: 'Einsatz planen', sub: 'Disposition & Planung', href: '/dashboard/disposition/tagesplanung', icon: Calendar, color: 'bg-teal-100 text-teal-600' },
-  { label: 'Notdienst', sub: 'Notdienst einrichten', href: '/dashboard/disposition/notdienstplanung', icon: AlertTriangle, color: 'bg-red-100 text-red-600' },
-];
+// Regel 2: Auftraege aelter als 3 Tage offen
+async function regelAuftraegeUeberfaellig(companyId) {
+  try {
+    const grenz = new Date();
+    grenz.setDate(grenz.getDate() - 3);
+    const grenzDatum = grenz.toISOString().split('T')[0];
+    const { count } = await supabase
+      .from('auftraege')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('status', 'offen')
+      .lt('datum', grenzDatum);
+    const c = count ?? 0;
+    return {
+      id: 'auftraege_ueberfaellig',
+      priority: 'warning',
+      icon: Clock,
+      title: 'Aufträge überfällig',
+      description: `${c} offene${c !== 1 ? 'r' : ''} Auftrag${c !== 1 ? 'e sind' : ' ist'} seit über 3 Tagen offen`,
+      count: c,
+      cta: 'Aufträge prüfen',
+      href: '/dashboard/auftraege',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
+}
 
+// Regel 3: Fehlende Einsatzberichte (abgeschlossene ohne interne Notiz)
+async function regelFehlendeEinsatzberichte(companyId) {
+  try {
+    const { count } = await supabase
+      .from('auftraege')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('status', 'abgeschlossen')
+      .is('interne_notiz', null);
+    const c = count ?? 0;
+    return {
+      id: 'fehlende_einsatzberichte',
+      priority: 'warning',
+      icon: FileX,
+      title: 'Fehlende Einsatzberichte',
+      description: `${c} abgeschlossene${c !== 1 ? 'n' : 'm'} Auftrag${c !== 1 ? 'en fehlt' : ' fehlt'} die interne Dokumentation`,
+      count: c,
+      cta: 'Berichte nachtragen',
+      href: '/dashboard/auftraege',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
+}
+
+// Regel 4: Rechnungen bereit (abgeschlossene ohne Rechnung)
+async function regelRechnungenBereit(companyId) {
+  try {
+    const { data: abgeschlossen } = await supabase
+      .from('auftraege')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('status', 'abgeschlossen');
+    if (!abgeschlossen || abgeschlossen.length === 0) return { show: false };
+    const auftragIds = abgeschlossen.map((a) => a.id);
+    const { data: rechnungen } = await supabase
+      .from('rechnungen')
+      .select('auftrag_id')
+      .in('auftrag_id', auftragIds);
+    const mitRechnung = new Set((rechnungen ?? []).map((r) => r.auftrag_id));
+    const c = abgeschlossen.filter((a) => !mitRechnung.has(a.id)).length;
+    return {
+      id: 'rechnungen_bereit',
+      priority: 'info',
+      icon: Receipt,
+      title: 'Rechnungen bereit',
+      description: `${c} abgeschlossene${c !== 1 ? 'r' : ''} Auftrag${c !== 1 ? 'e können' : ' kann'} jetzt abgerechnet werden`,
+      count: c,
+      cta: 'Rechnungen erstellen',
+      href: '/dashboard/rechnungen',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
+}
+
+// Regel 5: Fahrzeuge ausser Betrieb
+async function regelFahrzeugeAusserBetrieb(companyId) {
+  try {
+    const { count } = await supabase
+      .from('fahrzeuge')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('zustand', 'ausser_betrieb');
+    const c = count ?? 0;
+    return {
+      id: 'fahrzeuge_ausser_betrieb',
+      priority: 'warning',
+      icon: Truck,
+      title: 'Fahrzeuge außer Betrieb',
+      description: `${c} Fahrzeug${c !== 1 ? 'e sind' : ' ist'} aktuell nicht einsatzbereit`,
+      count: c,
+      cta: 'Fahrzeuge verwalten',
+      href: '/dashboard/fahrzeuge',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
+}
+
+// Regel 6: Kapazitaetsengpass heute
+async function regelKapazitaetsengpass(companyId, heute) {
+  try {
+    const [{ count: einsaetze }, { count: techniker }] = await Promise.all([
+      supabase
+        .from('auftraege')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('datum', heute),
+      supabase
+        .from('company_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .in('role', ['techniker', 'admin', 'inhaber'])
+        .eq('is_active', true),
+    ]);
+    const e = einsaetze ?? 0;
+    const t = Math.max(techniker ?? 0, 1);
+    const show = e > t;
+    return {
+      id: 'kapazitaetsengpass',
+      priority: 'critical',
+      icon: Users,
+      title: 'Kapazitätsengpass heute',
+      description: `${e} Einsätze heute, aber nur ${t} Techniker verfügbar`,
+      count: e - t,
+      cta: 'Disposition öffnen',
+      href: '/dashboard/disposition/tagesplanung',
+      show,
+    };
+  } catch {
+    return { show: false };
+  }
+}
+
+// Regel 7: Offene Rechnungen (ausstehende Forderungen)
+async function regelOffeneRechnungen(companyId) {
+  try {
+    const { data } = await supabase
+      .from('rechnungen')
+      .select('positionen, steuersatz')
+      .eq('company_id', companyId)
+      .eq('status', 'offen');
+    const c = (data ?? []).length;
+    const summe = (data ?? []).reduce((total, r) => {
+      const netto = (r.positionen || []).reduce(
+        (s, p) => s + (Number(p.menge) || 1) * (Number(p.preis) || 0),
+        0
+      );
+      return total + netto * (1 + (parseFloat(r.steuersatz) || 19) / 100);
+    }, 0);
+    const sumFormatiert = summe.toLocaleString('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    });
+    return {
+      id: 'offene_rechnungen',
+      priority: 'info',
+      icon: TrendingUp,
+      title: 'Offene Forderungen',
+      description: `${c} offene Rechnung${c !== 1 ? 'en' : ''} — ${sumFormatiert} ausstehend`,
+      count: c,
+      cta: 'Rechnungen prüfen',
+      href: '/dashboard/rechnungen',
+      show: c > 0,
+    };
+  } catch {
+    return { show: false };
+  }
+}
+
+// ============================================================
+// PRIORITY COLOR MAP
+// ============================================================
+const PRIORITY_COLORS = {
+  critical: {
+    card: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700',
+    icon: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  },
+  warning: {
+    card: 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-700',
+    icon: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400',
+    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  },
+  info: {
+    card: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700',
+    icon: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  },
+};
+
+// ============================================================
+// DASHBOARD COMPONENT
+// ============================================================
 export default function Dashboard() {
   const router = useRouter();
-  const today = new Date().toISOString().split('T')[0];
-
-  const [laden, setLaden] = useState(true);
-  const [userName, setUserName] = useState('');
   const [stats, setStats] = useState({
-    auftraegeHeute: 0,
-    auftraegeOffen: 0,
-    auftraegeAbgeschlossen: 0,
-    rechnungenOffen: 0,
+    kunden: 0,
+    offen: 0,
+    abgeschlossen: 0,
+    heuteEinsaetze: 0,
   });
-  const [fokusKarten, setFokusKarten] = useState([]);
-  const [timeline, setTimeline] = useState([]);
-  const [heutigeAuftraege, setHeutigeAuftraege] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isLoadingSmart, setIsLoadingSmart] = useState(true);
+
+  const heute = new Date().toISOString().split('T')[0];
+  const wochentag = new Date().toLocaleDateString('de-DE', { weekday: 'long' });
+  const datumFormatiert = new Date().toLocaleDateString('de-DE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+    async function loadAll() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      try {
-        const { data: member } = await supabase
-          .from('company_members')
-          .select('full_name, vorname')
-          .eq('user_id', user.id)
-          .single();
-        if (member) {
-          setUserName(member.vorname || member.full_name?.split(' ')[0] || '');
-        }
-      } catch (_) {}
-
+      // Basis-KPIs parallel laden
       const [
-        { count: auftraegeHeuteCount },
-        { count: auftraegeOffenCount },
-        { count: auftraegeAbgCount },
-        { count: rechnungenOffenCount },
-        { data: heuteAuftraege },
-        { data: neuesteAuftraege },
-        { data: neuesteRechnungen },
-        { data: neuesteKunden },
+        { count: kunden },
+        { count: offen },
+        { count: abgeschlossen },
+        { count: heuteEinsaetze },
       ] = await Promise.all([
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('datum', today),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
-        supabase.from('rechnungen').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
-        supabase.from('auftraege').select('id, datum, uhrzeit, kundelname, techniker, status, prioritaet').eq('user_id', user.id).eq('datum', today).order('uhrzeit', { ascending: true }),
-        supabase.from('auftraege').select('id, created_at, kundelname').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('rechnungen').select('id, created_at, rechnungsnummer').eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
-        supabase.from('kunden').select('id, created_at, name').eq('user_id', user.id).order('created_at', { ascending: false }).limit(4),
-      ]);
-
-      const rechnOffen = rechnungenOffenCount ?? 0;
-
-      setStats({
-        auftraegeHeute: auftraegeHeuteCount ?? 0,
-        auftraegeOffen: auftraegeOffenCount ?? 0,
-        auftraegeAbgeschlossen: auftraegeAbgCount ?? 0,
-        rechnungenOffen: rechnOffen,
-      });
-
-      setHeutigeAuftraege(heuteAuftraege ?? []);
-
-      const fokus = [];
-      try {
-        const { count: notdienste } = await supabase
+        supabase
+          .from('kunden')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
           .from('auftraege')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .eq('prioritaet', 'notfall')
-          .eq('datum', today);
-        if ((notdienste ?? 0) > 0) {
-          fokus.push({ key: 'notdienst', count: notdienste, label: 'Notdienste heute', icon: AlertTriangle, color: 'red', href: '/dashboard/auftraege' });
-        }
-      } catch (_) {}
-
-      try {
-        const { count: ausserBetrieb } = await supabase
-          .from('fahrzeuge')
+          .eq('status', 'offen'),
+        supabase
+          .from('auftraege')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .eq('status', 'ausser_betrieb');
-        if ((ausserBetrieb ?? 0) > 0) {
-          fokus.push({ key: 'fahrzeug', count: ausserBetrieb, label: 'Fahrzeug außer Betrieb', icon: Truck, color: 'gray', href: '/dashboard/fahrzeuge' });
-        }
-      } catch (_) {}
+          .eq('status', 'abgeschlossen'),
+        supabase
+          .from('auftraege')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('datum', heute),
+      ]);
+      setStats({
+        kunden: kunden ?? 0,
+        offen: offen ?? 0,
+        abgeschlossen: abgeschlossen ?? 0,
+        heuteEinsaetze: heuteEinsaetze ?? 0,
+      });
+      setIsLoadingStats(false);
 
-      if (rechnOffen > 0) {
-        fokus.push({ key: 'rechnungen', count: rechnOffen, label: 'Offene Rechnungen', icon: Receipt, color: 'blue', href: '/dashboard/rechnungen' });
+      // Company-ID ermitteln
+      const companyId = await getCompanyId(user.id);
+      if (!companyId) {
+        setIsLoadingSmart(false);
+        return;
       }
 
-      setFokusKarten(fokus.slice(0, 5));
+      // Alle 7 Smart Rules parallel ausführen
+      const results = await Promise.all([
+        regelNotdienstUnbesetzt(companyId, heute),
+        regelAuftraegeUeberfaellig(companyId),
+        regelFehlendeEinsatzberichte(companyId),
+        regelRechnungenBereit(companyId),
+        regelFahrzeugeAusserBetrieb(companyId),
+        regelKapazitaetsengpass(companyId, heute),
+        regelOffeneRechnungen(companyId),
+      ]);
 
-      const events = [
-        ...(neuesteAuftraege ?? []).map(a => ({
-          id: 'a-' + a.id,
-          text: 'Neuer Auftrag: ' + (a.kundelname || 'Unbekannt'),
-          time: a.created_at,
-          color: 'bg-blue-500',
-          href: `/dashboard/auftraege/${a.id}`,
-        })),
-        ...(neuesteRechnungen ?? []).map(r => ({
-          id: 'r-' + r.id,
-          text: 'Rechnung erstellt: ' + (r.rechnungsnummer || '#' + r.id),
-          time: r.created_at,
-          color: 'bg-orange-500',
-          href: `/dashboard/rechnungen/${r.id}`,
-        })),
-        ...(neuesteKunden ?? []).map(k => ({
-          id: 'k-' + k.id,
-          text: 'Neuer Kunde: ' + (k.name || 'Unbekannt'),
-          time: k.created_at,
-          color: 'bg-green-500',
-          href: `/dashboard/kunden/${k.id}`,
-        })),
-      ];
-      events.sort((a, b) => new Date(b.time) - new Date(a.time));
-      setTimeline(events.slice(0, 8));
+      const priorityOrder = { critical: 0, warning: 1, info: 2 };
+      const activeAlerts = results
+        .filter((r) => r.show)
+        .sort(
+          (a, b) =>
+            (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3)
+        )
+        .slice(0, 5);
 
-      setLaden(false);
+      setAlerts(activeAlerts);
+      setIsLoadingSmart(false);
     }
-    load();
-  }, [today]);
+    loadAll();
+  }, []);
 
-  const greeting = getGreeting();
-
-  const subtitleParts = [];
-  if (stats.auftraegeHeute > 0) subtitleParts.push(`${stats.auftraegeHeute} Einsätze heute`);
-  const notdienstFokus = fokusKarten.find(f => f.key === 'notdienst');
-  if (notdienstFokus) subtitleParts.push(`${notdienstFokus.count} Notdienste`);
-  if (stats.rechnungenOffen > 0) subtitleParts.push(`${stats.rechnungenOffen} Rechnungen offen`);
-
-  const gruppiertAuftraege = {
-    offen: (heutigeAuftraege ?? []).filter(a => a.status === 'offen'),
-    in_bearbeitung: (heutigeAuftraege ?? []).filter(a => a.status === 'in_bearbeitung'),
-    abgeschlossen: (heutigeAuftraege ?? []).filter(a => a.status === 'abgeschlossen'),
-  };
-
-  // Mobile Command Bar Actions
-  const cmdBarActions = [
-    {
-      icon: <LayoutDashboard size={20} />,
-      label: 'Dashboard',
-      onClick: () => router.push('/dashboard'),
-      active: true,
-    },
-    {
-      icon: <ClipboardList size={20} />,
-      label: 'Aufträge',
-      onClick: () => router.push('/dashboard/auftraege'),
-      active: false,
-    },
-    {
-      icon: <Plus size={22} />,
-      label: 'Neu',
-      onClick: () => router.push('/dashboard/auftraege/neu'),
-      active: false,
-    },
-    {
-      icon: <Users size={20} />,
-      label: 'Techniker',
-      onClick: () => router.push('/dashboard/techniker'),
-      active: false,
-    },
-  ];
+  // Smart Summary Text
+  function getSummaryText() {
+    if (isLoadingSmart) return '';
+    const critical = alerts.filter((a) => a.priority === 'critical').length;
+    const warning = alerts.filter((a) => a.priority === 'warning').length;
+    const info = alerts.filter((a) => a.priority === 'info').length;
+    if (alerts.length === 0) {
+      return 'Alles im grünen Bereich. Keine dringenden Aufgaben heute.';
+    }
+    const parts = [];
+    if (critical > 0)
+      parts.push(
+        `${critical} Bereich${critical > 1 ? 'e benötigen' : ' benötigt'} kritische Aufmerksamkeit`
+      );
+    if (warning > 0)
+      parts.push(
+        `${warning} Warnung${warning > 1 ? 'en liegen' : ' liegt'} vor`
+      );
+    if (info > 0)
+      parts.push(
+        `${info} Hinweis${info > 1 ? 'e sind' : ' ist'} verfügbar`
+      );
+    return 'Heute: ' + parts.join(' · ') + '.';
+  }
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 md:pb-0">
-
-      {/* SEKTION 1: HERO-BEGRÜSSUNG */}
+    <div className="max-w-5xl mx-auto">
+      {/* HERO */}
       <div className="mb-8">
-        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white">
-          {greeting}{userName ? `, ${userName}` : ''}.
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-          {subtitleParts.length > 0 ? subtitleParts.join(' • ') : 'Alles ruhig heute.'}
+        <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">
+          {wochentag}, {datumFormatiert}
         </p>
-        <div className="mt-4 border-t border-gray-100 dark:border-gray-800" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Guten Morgen
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">
+          Ihr digitaler Betriebsassistent analysiert Ihre heutigen Aufgaben.
+        </p>
       </div>
 
-      {/* SEKTION 2: HEUTE IM FOKUS */}
-      {fokusKarten.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Heute im Fokus</h2>
-          <div className={`grid gap-3 ${
-            fokusKarten.length === 1 ? 'grid-cols-1 max-w-xs' :
-            fokusKarten.length === 2 ? 'grid-cols-2' :
-            'grid-cols-2 md:grid-cols-3'
-          }`}>
-            {fokusKarten.map((k) => (
-              <Link key={k.key} href={k.href} className="block hover:scale-[1.01] transition-transform duration-200">
-                <KpiCard
-                  label={k.label}
-                  value={laden ? '–' : k.count}
-                  icon={k.icon}
-                  color={k.color}
-                  loading={laden}
-                />
-              </Link>
-            ))}
-          </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <KpiCard
+          label="Kunden gesamt"
+          value={stats.kunden}
+          icon={Users}
+          color="blue"
+          loading={isLoadingStats}
+        />
+        <KpiCard
+          label="Offene Aufträge"
+          value={stats.offen}
+          icon={Clock}
+          color="yellow"
+          loading={isLoadingStats}
+        />
+        <KpiCard
+          label="Abgeschlossen"
+          value={stats.abgeschlossen}
+          icon={CheckCircle}
+          color="green"
+          loading={isLoadingStats}
+        />
+        <KpiCard
+          label="Einsätze heute"
+          value={stats.heuteEinsaetze}
+          icon={Zap}
+          color="orange"
+          loading={isLoadingStats}
+        />
+      </div>
+
+      {/* SMART SUMMARY */}
+      {isLoadingSmart ? (
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6 h-12 animate-pulse" />
+      ) : (
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {getSummaryText()}
+          </p>
         </div>
       )}
 
-      {/* SEKTION 3: SCHNELLAKTIONEN */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Schnellaktionen</h2>
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-3">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link key={action.href} href={action.href}>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 md:p-5 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all duration-200 cursor-pointer group hover:sscale-[1.01]">
-                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center mb-2 md:mb-3 ${action.color}`}>
-                    <Icon size={16} className="md:hidden" />
-                    <Icon size={18} className="hidden md:block" />
+      {/* SMART EMPFEHLUNGEN */}
+      {!isLoadingSmart && alerts.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {alerts.map((alert) => (
+            <button
+              key={alert.id}
+              type="button"
+              onClick={() => router.push(alert.href)}
+              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+            >
+              → {alert.cta}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* SMART FOKUS-KARTEN */}
+      <PageSection title="Heute im Fokus">
+        {isLoadingSmart ? (
+          <div className="grid grid-cols-1 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-20 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : alerts.length === 0 ? (
+          <EmptyState
+            icon={CheckCircle}
+            title="Alles erledigt"
+            description="Keine offenen Aufgaben. Heute läuft alles nach Plan."
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {alerts.map((alert) => {
+              const colors =
+                PRIORITY_COLORS[alert.priority] ?? PRIORITY_COLORS.info;
+              const IconComp = alert.icon;
+              return (
+                <div
+                  key={alert.id}
+                  className={`border rounded-xl p-4 flex items-center gap-4 ${colors.card}`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${colors.icon}`}
+                  >
+                    <IconComp size={18} />
                   </div>
-                  <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white leading-tight">{action.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden md:block">{action.sub}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {alert.title}
+                      </p>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${colors.badge}`}
+                      >
+                        {alert.count}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {alert.description}
+                    </p>
+                  </div>
+                  <SecondaryButton
+                    className="shrink-0"
+                    onClick={() => router.push(alert.href)}
+                  >
+                    {alert.cta}
+                  </SecondaryButton>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SEKTION 5: KPI-BEREICH */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Kennzahlen</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard label="Aufträge heute" value={stats.auftraegeHeute} icon={Calendar} color="blue" loading={laden} />
-          <KpiCard label="Offen" value={stats.auftraegeOffen} icon={Clock} color="yellow" loading={laden} />
-          <KpiCard label="Abgeschlossen" value={stats.auftraegeAbgeschlossen} icon={CheckCircle} color="green" loading={laden} />
-          <KpiCard label="Rechnungen offen" value={stats.rechnungenOffen} icon={Receipt} color="orange" loading={laden} />
-        </div>
-      </div>
-
-      {/* SEKTIONEN 4 + 6: TIMELINE + HEUTE -BEREICH */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-
-        {/* SEKTION 4: LIVE-AKTIVITÄTEN */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Letzte Aktivitäten</h2>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 min-h-[200px]">
-            {laden ? (
-              <div className="space-y-4 animate-pulse">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="w-2 h-2 rounded-full bg-gray-200 mt-2 shrink-0" />
-                    <div className="flex-1">
-                      <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-3/4 mb-1" />
-                      <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded w-1/4" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : timeline.length === 0 ? (
-              <EmptyState
-                icon={Activity}
-                title="Noch keine Aktivitäten"
-                description="Legen Sie Ihren ersten Auftrag oder Kunden an."
-              />
-            ) : (
-              <div className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-4">
-                {timeline.map((event) => (
-                  <Link key={event.id} href={event.href}>
-                    <div className="relative flex gap-3 group cursor-pointer">
-                      <div className={`absolute -left-5 w-2 h-2 rounded-full mt-1.5 shrink-0 ${event.color}`} />
-                      <div className="min-w-0">
-                        <p className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{event.text}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{timeAgo(event.time)}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+              );
+            })}
           </div>
-        </div>
+        )}
+      </PageSection>
 
-        {/* SEKTION 6: HEUTIGE AUFTRÄGE */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Heutige Einsätze</h2>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 min-h-[200px]">
-            {laden ? (
-              <div className="space-y-3 animate-pulse">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-12 bg-gray-100 dark:bg-gray-700 rounded-lg" />
-                ))}
-              </div>
-            ) : heutigeAuftraege.length === 0 ? (
-              <EmptyState
-                icon={Calendar}
-                title="Keine Einsätze heute"
-                description="Planen Sie Ihren ersten Einsatz für heute."
-                action={() => router.push('/dashboard/auftraege/neu')}
-                actionLabel="+ Auftrag anlegen"
-              />
-            ) : (
-              <div className="space-y-1">
-                {['offen', 'in_bearbeitung', 'abgeschlossen'].map((status) =>
-                  gruppiertAuftraege[status].length > 0
-                    ? gruppiertAuftraege[status].map((auftrag) => (
-                      <Link key={auftrag.id} href={`/dashboard/auftraege/${auftrag.id}`}>
-                        <div className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all cursor-pointer group min-h-[48px]">
-                          {auftrag.uhrzeit && (
-                            <span className="text-xs font-mono text-gray-400 w-10 shrink-0">
-                              {String(auftrag.uhrzeit).slice(0, 5)}
-                            </span>
-                          )}
-                          <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">
-                            {auftrag.kundelname || '–'}
-                          </span>
-                          {auftrag.prioritaet === 'notfall' && <NotdienstBadge />}
-                          <StatusBadge status={auftrag.status} />
-                          <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                            Öffnen →
-                          </span>
-                        </div>
-                      </Link>
-                    ))
-                    : null
-                )}
-              </div>
-            )}
+      {/* SCHNELLZUGRIFF */}
+      <div className="mt-8">
+        <PageSection title="Schnellzugriff">
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/dashboard/kunden/neu"
+              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
+            >
+              + Neuer Kunde
+            </Link>
+            <Link
+              href="/dashboard/auftraege/neu"
+              className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
+            >
+              + Neuer Auftrag
+            </Link>
+            <Link
+              href="/dashboard/rechnungen"
+              className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
+            >
+              Rechnungen
+            </Link>
           </div>
-        </div>
+        </PageSection>
       </div>
-
-      {/* Mobile Command Bar */}
-      <MobileCommandBar actions={cmdBarActions} />
-
     </div>
   );
 }
