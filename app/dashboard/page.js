@@ -1,560 +1,298 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import {
-  AlertTriangle,
-  Clock,
-  FileX,
-  Receipt,
-  Truck,
-  Users,
-  TrendingUp,
-  CheckCircle,
-  Zap,
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import {
-  KpiCard,
-  SecondaryButton,
-  PageSection,
-  EmptyState,
+  TrendingUp, AlertTriangle, CheckCircle, Clock, Users, Truck,
+  FileText, Receipt, ClipboardList, Plus, ArrowRight, RefreshCw,
+  Calendar, Euro, Target, Activity
+} from 'lucide-react';
+import {
+  Card, KpiCard, StatusBadge, PrioritaetBadge, RechnungBadge,
+  PrimaryButton, SecondaryButton, GhostButton, EmptyState,
+  WarningCard, SuccessCard
 } from '@/components/ui/KanalProUI';
 
-// ============================================================
-// HILFSFUNKTION: Company-ID ermitteln
-// ============================================================
-async function getCompanyId(userId) {
-  try {
-    const { data } = await supabase
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', userId)
-      .single();
-    return data?.company_id ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// ============================================================
-// SMART RULES ENGINE — SX-001
-// ============================================================
-
-// Regel 1: Notdienst heute unbesetzt
-async function regelNotdienstUnbesetzt(companyId, heute) {
-  try {
-    const { count } = await supabase
-      .from('auftraege')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('notdienst', true)
-      .eq('datum', heute)
-      .is('techniker_id', null);
-    const c = count ?? 0;
-    return {
-      id: 'notdienst_unbesetzt',
-      priority: 'critical',
-      icon: AlertTriangle,
-      title: 'Notdienst unbesetzt',
-      description: `${c} Notdienst-Auftrag${c !== 1 ? 'e haben' : ' hat'} heute keinen Techniker`,
-      count: c,
-      cta: 'Jetzt zuweisen',
-      href: '/dashboard/disposition/tagesplanung',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 2: Auftraege aelter als 3 Tage offen
-async function regelAuftraegeUeberfaellig(companyId) {
-  try {
-    const grenz = new Date();
-    grenz.setDate(grenz.getDate() - 3);
-    const grenzDatum = grenz.toISOString().split('T')[0];
-    const { count } = await supabase
-      .from('auftraege')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'offen')
-      .lt('datum', grenzDatum);
-    const c = count ?? 0;
-    return {
-      id: 'auftraege_ueberfaellig',
-      priority: 'warning',
-      icon: Clock,
-      title: 'Aufträge überfällig',
-      description: `${c} offene${c !== 1 ? 'r' : ''} Auftrag${c !== 1 ? 'e sind' : ' ist'} seit über 3 Tagen offen`,
-      count: c,
-      cta: 'Aufträge prüfen',
-      href: '/dashboard/auftraege',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 3: Fehlende Einsatzberichte (abgeschlossene ohne interne Notiz)
-async function regelFehlendeEinsatzberichte(companyId) {
-  try {
-    const { count } = await supabase
-      .from('auftraege')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'abgeschlossen')
-      .is('interne_notiz', null);
-    const c = count ?? 0;
-    return {
-      id: 'fehlende_einsatzberichte',
-      priority: 'warning',
-      icon: FileX,
-      title: 'Fehlende Einsatzberichte',
-      description: `${c} abgeschlossene${c !== 1 ? 'n' : 'm'} Auftrag${c !== 1 ? 'en fehlt' : ' fehlt'} die interne Dokumentation`,
-      count: c,
-      cta: 'Berichte nachtragen',
-      href: '/dashboard/auftraege',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 4: Rechnungen bereit (abgeschlossene ohne Rechnung)
-async function regelRechnungenBereit(companyId) {
-  try {
-    const { data: abgeschlossen } = await supabase
-      .from('auftraege')
-      .select('id')
-      .eq('company_id', companyId)
-      .eq('status', 'abgeschlossen');
-    if (!abgeschlossen || abgeschlossen.length === 0) return { show: false };
-    const auftragIds = abgeschlossen.map((a) => a.id);
-    const { data: rechnungen } = await supabase
-      .from('rechnungen')
-      .select('auftrag_id')
-      .in('auftrag_id', auftragIds);
-    const mitRechnung = new Set((rechnungen ?? []).map((r) => r.auftrag_id));
-    const c = abgeschlossen.filter((a) => !mitRechnung.has(a.id)).length;
-    return {
-      id: 'rechnungen_bereit',
-      priority: 'info',
-      icon: Receipt,
-      title: 'Rechnungen bereit',
-      description: `${c} abgeschlossene${c !== 1 ? 'r' : ''} Auftrag${c !== 1 ? 'e können' : ' kann'} jetzt abgerechnet werden`,
-      count: c,
-      cta: 'Rechnungen erstellen',
-      href: '/dashboard/rechnungen',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 5: Fahrzeuge ausser Betrieb
-async function regelFahrzeugeAusserBetrieb(companyId) {
-  try {
-    const { count } = await supabase
-      .from('fahrzeuge')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('zustand', 'ausser_betrieb');
-    const c = count ?? 0;
-    return {
-      id: 'fahrzeuge_ausser_betrieb',
-      priority: 'warning',
-      icon: Truck,
-      title: 'Fahrzeuge außer Betrieb',
-      description: `${c} Fahrzeug${c !== 1 ? 'e sind' : ' ist'} aktuell nicht einsatzbereit`,
-      count: c,
-      cta: 'Fahrzeuge verwalten',
-      href: '/dashboard/fahrzeuge',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 6: Kapazitaetsengpass heute
-async function regelKapazitaetsengpass(companyId, heute) {
-  try {
-    const [{ count: einsaetze }, { count: techniker }] = await Promise.all([
-      supabase
-        .from('auftraege')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .eq('datum', heute),
-      supabase
-        .from('company_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .in('role', ['techniker', 'admin', 'inhaber'])
-        .eq('is_active', true),
-    ]);
-    const e = einsaetze ?? 0;
-    const t = Math.max(techniker ?? 0, 1);
-    const show = e > t;
-    return {
-      id: 'kapazitaetsengpass',
-      priority: 'critical',
-      icon: Users,
-      title: 'Kapazitätsengpass heute',
-      description: `${e} Einsätze heute, aber nur ${t} Techniker verfügbar`,
-      count: e - t,
-      cta: 'Disposition öffnen',
-      href: '/dashboard/disposition/tagesplanung',
-      show,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// Regel 7: Offene Rechnungen (ausstehende Forderungen)
-async function regelOffeneRechnungen(companyId) {
-  try {
-    const { data } = await supabase
-      .from('rechnungen')
-      .select('positionen, steuersatz')
-      .eq('company_id', companyId)
-      .eq('status', 'offen');
-    const c = (data ?? []).length;
-    const summe = (data ?? []).reduce((total, r) => {
-      const netto = (r.positionen || []).reduce(
-        (s, p) => s + (Number(p.menge) || 1) * (Number(p.preis) || 0),
-        0
-      );
-      return total + netto * (1 + (parseFloat(r.steuersatz) || 19) / 100);
-    }, 0);
-    const sumFormatiert = summe.toLocaleString('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    });
-    return {
-      id: 'offene_rechnungen',
-      priority: 'info',
-      icon: TrendingUp,
-      title: 'Offene Forderungen',
-      description: `${c} offene Rechnung${c !== 1 ? 'en' : ''} — ${sumFormatiert} ausstehend`,
-      count: c,
-      cta: 'Rechnungen prüfen',
-      href: '/dashboard/rechnungen',
-      show: c > 0,
-    };
-  } catch {
-    return { show: false };
-  }
-}
-
-// ============================================================
-// PRIORITY COLOR MAP
-// ============================================================
-const PRIORITY_COLORS = {
-  critical: {
-    card: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700',
-    icon: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  },
-  warning: {
-    card: 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-700',
-    icon: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400',
-    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  },
-  info: {
-    card: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700',
-    icon: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  },
+const formatCurrency = (n) => n != null ? `${Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : '–';
+const formatRelTime = (d) => {
+  if (!d) return '–';
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Gerade eben';
+  if (mins < 60) return `vor ${mins} Min.`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `vor ${hours} Std.`;
+  return `vor ${Math.floor(hours / 24)} Tagen`;
+};
+const getTageszeit = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Guten Morgen';
+  if (h < 18) return 'Guten Tag';
+  return 'Guten Abend';
 };
 
-// ============================================================
-// DASHBOARD COMPONENT
-// ============================================================
-export default function Dashboard() {
+export default function ExecutiveCenter() {
   const router = useRouter();
+  const today = new Date().toISOString().split('T')[0];
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
   const [stats, setStats] = useState({
-    kunden: 0,
-    offen: 0,
-    abgeschlossen: 0,
-    heuteEinsaetze: 0,
+    einsaetzeHeute: 0, auftraegeOffen: 0, rechnungenBereit: 0,
+    umsatzMonat: 0, offeneForderungen: 0, offeneAngebote: 0,
+    freieMonteure: 0, fahrzeugeVerfuegbar: 0, notdienste: 0,
   });
-  const [alerts, setAlerts] = useState([]);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [isLoadingSmart, setIsLoadingSmart] = useState(true);
+  const [priorities, setPriorities] = useState([]);
+  const [aktivitaeten, setAktivitaeten] = useState([]);
+  const [ceoSummary, setCeoSummary] = useState('');
 
-  const heute = new Date().toISOString().split('T')[0];
-  const wochentag = new Date().toLocaleDateString('de-DE', { weekday: 'long' });
-  const datumFormatiert = new Date().toLocaleDateString('de-DE', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const load = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: member } = await supabase.from('company_members').select('company_id, role, vorname, nachname').eq('user_id', user.id).single();
+    if (!member) return;
+    const companyId = member.company_id;
+    setUserName(member.vorname || user.email?.split('@')[0] || 'Chef');
 
-  useEffect(() => {
-    async function loadAll() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
-      const companyId = await getCompanyId(user.id);
-      if (!companyId) return;
+    const [
+      auftragHeuteRes,
+      auftragOffenRes,
+      rechnungEntwurfRes,
+      rechnungBezahltRes,
+      rechnungGesendtRes,
+      angebotRes,
+      mitarbeiterRes,
+      fahrzeugRes,
+    ] = await Promise.all([
+      supabase.from('auftraege').select('id,status,titel,prioritaet,notdienst,datum,kunden_id,techniker_id').eq('company_id', companyId).eq('datum', today),
+      supabase.from('auftraege').select('id,status,titel,prioritaet,notdienst,datum').eq('company_id', companyId).eq('status', 'offen').order('datum', { ascending: true }).limit(10),
+      supabase.from('rechnungen').select('id,status,gesamtbetrag,betrag,created_at').eq('company_id', companyId).eq('status', 'entwurf'),
+      supabase.from('rechnungen').select('gesamtbetrag,betrag').eq('company_id', companyId).eq('status', 'bezahlt').gte('created_at', startOfMonth),
+      supabase.from('rechnungen').select('id,status,gesamtbetrag,betrag,created_at').eq('company_id', companyId).eq('status', 'gesendet'),
+      supabase.from('angebote').select('id,status,created_at').eq('company_id', companyId).eq('status', 'offen'),
+      supabase.from('company_members').select('id,vorname,nachname').eq('company_id', companyId),
+      supabase.from('fahrzeuge').select('id,kennzeichen,status,zustand').eq('company_id', companyId),
+    ]);
 
-      // Basis-KPIs parallel laden
-      const [
-        { count: kunden },
-        { count: offen },
-        { count: abgeschlossen },
-        { count: heuteEinsaetze },
-      ] = await Promise.all([
-        supabase
-          .from('kunden')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', companyId),
-        supabase
-          .from('auftraege')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', companyId)
-          .eq('status', 'offen'),
-        supabase
-          .from('auftraege')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', companyId)
-          .eq('status', 'abgeschlossen'),
-        supabase
-          .from('auftraege')
-          .select('*', { count: 'exact', head: true })
-          .eq('company_id', companyId)
-          .eq('datum', heute),
-      ]);
-      setStats({
-        kunden: kunden ?? 0,
-        offen: offen ?? 0,
-        abgeschlossen: abgeschlossen ?? 0,
-        heuteEinsaetze: heuteEinsaetze ?? 0,
-      });
-      setIsLoadingStats(false);
+    const heuteAuftraege = auftragHeuteRes.data || [];
+    const offeneAuftraege = auftragOffenRes.data || [];
+    const rechnungenEntwurf = rechnungEntwurfRes.data || [];
+    const rechnungenGesendet = rechnungGesendtRes.data || [];
+    const rechnungenBezahlt = rechnungBezahltRes.data || [];
+    const offeneAngebote = angebotRes.data || [];
+    const mitarbeiter = mitarbeiterRes.data || [];
+    const fahrzeuge = fahrzeugRes.data || [];
 
-      if (!companyId) {
-        setIsLoadingSmart(false);
-        return;
-      }
+    const umsatzMonat = rechnungenBezahlt.reduce((s, r) => s + Number(r.gesamtbetrag || r.betrag || 0), 0);
+    const offeneForderungen = rechnungenGesendet.reduce((s, r) => s + Number(r.gesamtbetrag || r.betrag || 0), 0);
+    const notdienste = heuteAuftraege.filter(a => a.notdienst || a.prioritaet === 'notfall').length;
+    const freieMonteure = mitarbeiter.filter(m => !heuteAuftraege.some(a => a.techniker_id === m.id && a.status === 'in_bearbeitung')).length;
+    const fahrzeugeVerfuegbar = fahrzeuge.filter(f => f.status !== 'in_werkstatt' && f.zustand !== 'in_werkstatt' && f.status !== 'außer_betrieb' && f.zustand !== 'außer_betrieb').length;
 
-      // Alle 7 Smart Rules parallel ausführen
-      const results = await Promise.all([
-        regelNotdienstUnbesetzt(companyId, heute),
-        regelAuftraegeUeberfaellig(companyId),
-        regelFehlendeEinsatzberichte(companyId),
-        regelRechnungenBereit(companyId),
-        regelFahrzeugeAusserBetrieb(companyId),
-        regelKapazitaetsengpass(companyId, heute),
-        regelOffeneRechnungen(companyId),
-      ]);
+    setStats({
+      einsaetzeHeute: heuteAuftraege.length,
+      auftraegeOffen: offeneAuftraege.length,
+      rechnungenBereit: rechnungenEntwurf.length,
+      umsatzMonat,
+      offeneForderungen,
+      offeneAngebote: offeneAngebote.length,
+      freieMonteure,
+      fahrzeugeVerfuegbar,
+      notdienste,
+    });
 
-      const priorityOrder = { critical: 0, warning: 1, info: 2 };
-      const activeAlerts = results
-        .filter((r) => r.show)
-        .sort(
-          (a, b) =>
-            (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3)
-        )
-        .slice(0, 5);
+    // CEO Summary
+    const problems = [];
+    if (notdienste > 0) problems.push(`${notdienste} Notdienst${notdienste > 1 ? 'e' : ''} aktiv`);
+    const ueberfaellig = offeneAuftraege.filter(a => a.datum && new Date(a.datum) < new Date());
+    if (ueberfaellig.length > 0) problems.push(`${ueberfaellig.length} überfällige${ueberfaellig.length > 1 ? ' Aufträge' : 'r Auftrag'}`);
+    const problemText = problems.length > 0 ? ` ${problems.join(' und ')} benötigen Aufmerksamkeit.` : ' Alles läuft nach Plan.';
+    const rechnungText = rechnungenEntwurf.length > 0 ? ` ${rechnungenEntwurf.length} Rechnung${rechnungenEntwurf.length > 1 ? 'en können' : ' kann'} erstellt werden.` : '';
+    setCeoSummary(`Heute laufen ${heuteAuftraege.length} Einsätze.${problemText}${rechnungText} ${fahrzeugeVerfuegbar} von ${fahrzeuge.length} Fahrzeugen verfügbar.`);
 
-      setAlerts(activeAlerts);
-      setIsLoadingSmart(false);
-    }
-    loadAll();
-  }, []);
+    // Priorities (max 5)
+    const prios = [];
+    if (notdienste > 0) prios.push({ type: 'critical', title: `${notdienste} Notdienst${notdienste > 1 ? 'e' : ''}`, desc: 'Sofortiger Handlungsbedarf', cta: 'Zum Operations Center', href: '/dashboard/disposition' });
+    if (ueberfaellig.length > 0) prios.push({ type: 'warning', title: `${ueberfaellig.length} überfällige Aufträge`, desc: 'Diese Aufträge waren für früher geplant', cta: 'Aufträge ansehen', href: '/dashboard/auftraege' });
+    if (rechnungenEntwurf.length > 0) prios.push({ type: 'info', title: `${rechnungenEntwurf.length} Rechnungen bereit`, desc: `Gesamt: ${formatCurrency(rechnungenEntwurf.reduce((s, r) => s + Number(r.gesamtbetrag || r.betrag || 0), 0))}`, cta: 'Rechnungen öffnen', href: '/dashboard/rechnungen' });
+    if (rechnungenGesendet.length > 3) prios.push({ type: 'warning', title: `${rechnungenGesendet.length} offene Forderungen`, desc: formatCurrency(offeneForderungen), cta: 'Rechnungen verwalten', href: '/dashboard/rechnungen' });
+    if (offeneAngebote.length > 0) prios.push({ type: 'info', title: `${offeneAngebote.length} offene Angebote`, desc: 'Warten auf Rückmeldung', cta: 'Angebote ansehen', href: '/dashboard/angebote' });
+    setPriorities(prios.slice(0, 5));
 
-  // Smart Summary Text
-  function getSummaryText() {
-    if (isLoadingSmart) return '';
-    const critical = alerts.filter((a) => a.priority === 'critical').length;
-    const warning = alerts.filter((a) => a.priority === 'warning').length;
-    const info = alerts.filter((a) => a.priority === 'info').length;
-    if (alerts.length === 0) {
-      return 'Alles im grünen Bereich. Keine dringenden Aufgaben heute.';
-    }
-    const parts = [];
-    if (critical > 0)
-      parts.push(
-        `${critical} Bereich${critical > 1 ? 'e benötigen' : ' benötigt'} kritische Aufmerksamkeit`
-      );
-    if (warning > 0)
-      parts.push(
-        `${warning} Warnung${warning > 1 ? 'en liegen' : ' liegt'} vor`
-      );
-    if (info > 0)
-      parts.push(
-        `${info} Hinweis${info > 1 ? 'e sind' : ' ist'} verfügbar`
-      );
-    return 'Heute: ' + parts.join(' · ') + '.';
-  }
+    // Aktivitäten-Timeline
+    const events = [
+      ...heuteAuftraege.map(a => ({ type: 'auftrag', date: a.datum, title: `Auftrag: ${a.titel || 'Einsatz'}`, status: a.status })),
+      ...rechnungenEntwurf.map(r => ({ type: 'rechnung', date: r.created_at, title: 'Rechnung bereit zur Versendung', status: r.status })),
+      ...rechnungenGesendet.slice(0, 3).map(r => ({ type: 'rechnung', date: r.created_at, title: `Rechnung gesendet: ${formatCurrency(r.gesamtbetrag || r.betrag)}`, status: r.status })),
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+    setAktivitaeten(events);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const prioColor = {
+    critical: 'border-l-4 border-red-500 bg-red-50 dark:bg-red-900/10',
+    warning: 'border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-900/10',
+    info: 'border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/10',
+  };
+  const prioIcon = {
+    critical: <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />,
+    warning: <Clock className="w-4 h-4 text-orange-500 shrink-0" />,
+    info: <CheckCircle className="w-4 h-4 text-blue-500 shrink-0" />,
+  };
+
+  if (loading) return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-80 animate-pulse" />
+      <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[...Array(5)].map((_, i) => <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />)}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />)}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* HERO */}
-      <div className="mb-8">
-        <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">
-          {wochentag}, {datumFormatiert}
-        </p>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Guten Morgen
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Ihr digitaler Betriebsassistent analysiert Ihre heutigen Aufgaben.
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <KpiCard
-          label="Kunden gesamt"
-          value={stats.kunden}
-          icon={Users}
-          color="blue"
-          loading={isLoadingStats}
-        />
-        <KpiCard
-          label="Offene Aufträge"
-          value={stats.offen}
-          icon={Clock}
-          color="yellow"
-          loading={isLoadingStats}
-        />
-        <KpiCard
-          label="Abgeschlossen"
-          value={stats.abgeschlossen}
-          icon={CheckCircle}
-          color="green"
-          loading={isLoadingStats}
-        />
-        <KpiCard
-          label="Einsätze heute"
-          value={stats.heuteEinsaetze}
-          icon={Zap}
-          color="orange"
-          loading={isLoadingStats}
-        />
-      </div>
-
-      {/* SMART SUMMARY */}
-      {isLoadingSmart ? (
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6 h-12 animate-pulse" />
-      ) : (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {getSummaryText()}
-          </p>
-        </div>
-      )}
-
-      {/* SMART EMPFEHLUNGEN */}
-      {!isLoadingSmart && alerts.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {alerts.map((alert) => (
-            <button
-              key={alert.id}
-              type="button"
-              onClick={() => router.push(alert.href)}
-              className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-            >
-              → {alert.cta}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* SMART FOKUS-KARTEN */}
-      <PageSection title="Heute im Fokus">
-        {isLoadingSmart ? (
-          <div className="grid grid-cols-1 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-20 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse"
-              />
-            ))}
+        {/* GREETING */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{getTageszeit()}, {userName}.</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
           </div>
-        ) : alerts.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle}
-            title="Alles erledigt"
-            description="Keine offenen Aufgaben. Heute läuft alles nach Plan."
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {alerts.map((alert) => {
-              const colors =
-                PRIORITY_COLORS[alert.priority] ?? PRIORITY_COLORS.info;
-              const IconComp = alert.icon;
-              return (
-                <div
-                  key={alert.id}
-                  className={`border rounded-xl p-4 flex items-center gap-4 ${colors.card}`}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${colors.icon}`}
-                  >
-                    <IconComp size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                        {alert.title}
-                      </p>
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${colors.badge}`}
-                      >
-                        {alert.count}
-                      </span>
+          <GhostButton onClick={load}><RefreshCw className="w-4 h-4 mr-1" /> Aktualisieren</GhostButton>
+        </div>
+
+        {/* CEO SUMMARY */}
+        {ceoSummary && (
+          <Card>
+            <div className="p-5 flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Tages-Zusammenfassung</p>
+                <p className="text-gray-800 dark:text-gray-200 text-base leading-relaxed">{ceoSummary}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* BUSINESS HEALTH — KPI Strip */}
+        <div>
+          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Business Health</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <KpiCard label="Umsatz (Monat)" value={formatCurrency(stats.umsatzMonat)} />
+            <KpiCard label="Offene Forderungen" value={formatCurrency(stats.offeneForderungen)} />
+            <KpiCard label="Rechnungen bereit" value={stats.rechnungenBereit} />
+            <KpiCard label="Offene Angebote" value={stats.offeneAngebote} />
+            <KpiCard label="Einsätze heute" value={stats.einsaetzeHeute} />
+          </div>
+        </div>
+
+        {/* OPERATIONS STATUS */}
+        <div>
+          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Operations Status</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card><div className="p-4 flex items-center gap-3"><div className="w-9 h-9 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-green-600 dark:text-green-400" /></div><div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.freieMonteure}</p><p className="text-xs text-gray-500 dark:text-gray-400">Freie Monteure</p></div></div></Card>
+            <Card><div className="p-4 flex items-center gap-3"><div className="w-9 h-9 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center shrink-0"><Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div><div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.fahrzeugeVerfuegbar}</p><p className="text-xs text-gray-500 dark:text-gray-400">Fahrzeuge frei</p></div></div></Card>
+            <Card><div className="p-4 flex items-center gap-3"><div className={`w-9 h-9 ${stats.notdienste > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'} rounded-lg flex items-center justify-center shrink-0`}><AlertTriangle className={`w-5 h-5 ${stats.notdienste > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} /></div><div><p className={`text-2xl font-bold ${stats.notdienste > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>{stats.notdienste}</p><p className="text-xs text-gray-500 dark:text-gray-400">Notdienste</p></div></div></Card>
+            <Card><div className="p-4 flex items-center gap-3"><div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center shrink-0"><ClipboardList className="w-5 h-5 text-orange-600 dark:text-orange-400" /></div><div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.auftraegeOffen}</p><p className="text-xs text-gray-500 dark:text-gray-400">Offene Aufträge</p></div></div></Card>
+          </div>
+        </div>
+
+        {/* 2-COLUMN: Priorities + Aktivitäten */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* TOP PRIORITIES */}
+          <div>
+            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Top Prioritäten</h2>
+            {priorities.length === 0 ? (
+              <Card><div className="p-8"><EmptyState title="Keine Prioritäten" description="Alles läuft nach Plan. Kein Handlungsbedarf." /></div></Card>
+            ) : (
+              <div className="space-y-3">
+                {priorities.map((p, i) => (
+                  <div key={i} className={`rounded-xl p-4 ${prioColor[p.type]}`}>
+                    <div className="flex items-start gap-3">
+                      {prioIcon[p.type]}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{p.title}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{p.desc}</p>
+                      </div>
+                      <GhostButton onClick={() => router.push(p.href)} className="shrink-0 text-xs">
+                        {p.cta} <ArrowRight className="w-3 h-3 ml-1" />
+                      </GhostButton>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {alert.description}
-                    </p>
                   </div>
-                  <SecondaryButton
-                    className="shrink-0"
-                    onClick={() => router.push(alert.href)}
-                  >
-                    {alert.cta}
-                  </SecondaryButton>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* LIVE AKTIVITÄTEN */}
+          <div>
+            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Live Aktivitäten</h2>
+            <Card>
+              <div className="p-5">
+                {aktivitaeten.length === 0 ? (
+                  <EmptyState title="Keine Aktivitäten" description="Noch keine Ereignisse heute." />
+                ) : (
+                  <div className="border-l-2 border-gray-200 dark:border-gray-700 ml-2 space-y-0">
+                    {aktivitaeten.map((e, i) => (
+                      <div key={i} className="flex gap-3 relative pl-5 pb-4">
+                        <div className={`absolute left-[-5px] top-2 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${e.type === 'rechnung' ? 'bg-purple-500' : 'bg-blue-500'}`} />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{e.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{formatRelTime(e.date)}</p>
+                            {e.status && <StatusBadge status={e.status} />}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* SCHNELLZUGRIFF */}
+        <div>
+          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Schnellzugriff</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {[
+              { label: 'Neuer Auftrag', icon: ClipboardList, href: '/dashboard/auftraege/erstellen', color: 'bg-blue-500' },
+              { label: 'Neuer Kunde', icon: Users, href: '/dashboard/kunden/neu', color: 'bg-green-500' },
+              { label: 'Angebot', icon: FileText, href: '/dashboard/angebote/neu', color: 'bg-orange-500' },
+              { label: 'Rechnung', icon: Receipt, href: '/dashboard/rechnungen/neu', color: 'bg-purple-500' },
+              { label: 'Disposition', icon: Calendar, href: '/dashboard/disposition', color: 'bg-indigo-500' },
+              { label: 'Operations', icon: Activity, href: '/dashboard/disposition', color: 'bg-teal-500' },
+            ].map(a => {
+              const Icon = a.icon;
+              return (
+                <div key={a.label} onClick={() => router.push(a.href)} className="cursor-pointer group">
+                  <Card>
+                    <div className="p-4 flex flex-col items-center gap-2 text-center group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 transition-colors rounded-xl">
+                      <div className={`w-10 h-10 ${a.color} rounded-xl flex items-center justify-center`}><Icon className="w-5 h-5 text-white" /></div>
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{a.label}</p>
+                    </div>
+                  </Card>
                 </div>
               );
             })}
           </div>
-        )}
-      </PageSection>
+        </div>
 
-      {/* SCHNELLZUGRIFF */}
-      <div className="mt-8">
-        <PageSection title="Schnellzugriff">
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/dashboard/kunden/neu"
-              className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm"
-            >
-              + Neuer Kunde
-            </Link>
-            <Link
-              href="/dashboard/auftraege/neu"
-              className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
-            >
-              + Neuer Auftrag
-            </Link>
-            <Link
-              href="/dashboard/rechnungen"
-              className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm"
-            >
-              Rechnungen
-            </Link>
-          </div>
-        </PageSection>
       </div>
     </div>
   );
