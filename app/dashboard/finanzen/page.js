@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   FileText, TrendingUp, Clock, AlertTriangle,
   CheckCircle, FileSearch, Plus, Users,
-  Briefcase, Calendar, DollarSign,,
+  Briefcase, Calendar, DollarSign,
   Wrench, CreditCard, FileCheck, Activity
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
