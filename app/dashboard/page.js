@@ -302,6 +302,9 @@ export default function Dashboard() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      const companyId = await getCompanyId(user.id);
+      if (!companyId) return;
+
       // Basis-KPIs parallel laden
       const [
         { count: kunden },
@@ -312,21 +315,21 @@ export default function Dashboard() {
         supabase
           .from('kunden')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id),
+          .eq('company_id', companyId),
         supabase
           .from('auftraege')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
+          .eq('company_id', companyId)
           .eq('status', 'offen'),
         supabase
           .from('auftraege')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
+          .eq('company_id', companyId)
           .eq('status', 'abgeschlossen'),
         supabase
           .from('auftraege')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
+          .eq('company_id', companyId)
           .eq('datum', heute),
       ]);
       setStats({
