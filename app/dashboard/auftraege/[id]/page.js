@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabaseClient';
+import supabase from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Phone, Mail, MapPin, Calendar, Clock, User, Truck, FileText,
@@ -13,7 +13,6 @@ import {
   Modal, FormTextarea, SuccessCard
 } from '@/components/ui/KanalProUI';
 
-const supabase = createClient();
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '–';
 const formatTime = (d) => d ? new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
