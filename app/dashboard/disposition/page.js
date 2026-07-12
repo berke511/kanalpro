@@ -56,7 +56,7 @@ export default function OperationsCenter() {
         .eq('is_active', true)
         .order('nachname'),
       supabase.from('fahrzeuge')
-        .select('id, kennzeichen, marke, status')
+        .select('id, kennzeichen, marke, zustand')
         .eq('company_id', companyId)
         .order('kennzeichen'),
       supabase.from('rechnungen')
@@ -83,8 +83,8 @@ export default function OperationsCenter() {
       !auftragData.some(a => a.techniker_id === m.id && a.status === 'in_bearbeitung')
     ).length;
     const fahrzeugeVerfuegbar = fahrzeugData.filter(f =>
-      f.status !== 'in_werkstatt' && f.status !== 'außer_betrieb'
-    ).length || fahrzeugData.length;
+      f.zustand !== 'wartung' && f.zustand !== 'ausser_betrieb'
+    ).length;
 
     setStats({
       einsaetzeHeute: auftragData.length,
@@ -99,7 +99,7 @@ export default function OperationsCenter() {
     if (notdienste > 0) newAlerts.push({ type: 'warning', msg: `${notdienste} Notdienst${notdienste > 1 ? 'e' : ''} heute` });
     const ueberfaellig = alleAuftraege.filter(a => a.datum && a.datum < today && a.status === 'offen');
     if (ueberfaellig.length > 0) newAlerts.push({ type: 'critical', msg: `${ueberfaellig.length} überfällige${ueberfaellig.length > 1 ? ' Aufträge' : 'r Auftrag'}` });
-    fahrzeugData.filter(f => f.status === 'in_werkstatt').forEach(f =>
+    fahrzeugData.filter(f => f.zustand === 'wartung').forEach(f =>
       newAlerts.push({ type: 'warning', msg: `${f.kennzeichen} in Werkstatt` })
     );
     setAlerts(newAlerts);
@@ -309,7 +309,7 @@ export default function OperationsCenter() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {fahrzeuge.map(f => {
                 const inEinsatz = auftraege.some(a => a.fahrzeug_id === f.id && a.status === 'in_bearbeitung');
-                const inWerkstatt = f.status === 'in_werkstatt';
+                const inWerkstatt = f.zustand === 'wartung';
                 const statusLabel = inEinsatz ? 'Im Einsatz' : inWerkstatt ? 'Werkstatt' : 'Verfügbar';
                 const statusColor = inEinsatz ? 'bg-blue-500' : inWerkstatt ? 'bg-red-500' : 'bg-green-500';
                 return (
