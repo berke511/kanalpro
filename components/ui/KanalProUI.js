@@ -426,7 +426,7 @@ export function TableActions({ children }) {
 export function EmptyState({ icon: Icon, title, description, action, actionLabel }) {
   return (
     <div className="text-center py-12">
-      {Icon && () {
+      {Icon && (
         <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
           <Icon size={24} className="text-gray-300 dark:text-gray-600" />
         </div>
