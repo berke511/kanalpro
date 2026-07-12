@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, ClipboardList, Users, FileText, Receipt,
   Calendar, Map, Truck, CheckSquare, UserCheck, Car, Package,
-  Settings, Menu, X, Search, LogOut, Moon, Sun, Zap,
+  Settings, Menu, X, Search, LogOut, Moon, Sun, Zap, Briefcase,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { checkAndDowngrade, getSubscriptionStatus, canAccess } from '@/lib/subscription';
@@ -69,6 +69,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/techniker', label: 'Techniker', icon: UserCheck },
       { href: '/dashboard/fahrzeuge', label: 'Fahrzeuge', icon: Car },
       { href: '/dashboard/material', label: 'Material', icon: Package },
+      { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: Briefcase },
     ],
   },
   {
