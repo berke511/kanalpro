@@ -340,8 +340,6 @@ export default function Dashboard() {
       });
       setIsLoadingStats(false);
 
-      // Company-ID ermitteln
-      const companyId = await getCompanyId(user.id);
       if (!companyId) {
         setIsLoadingSmart(false);
         return;
