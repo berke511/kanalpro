@@ -7,6 +7,7 @@ import {
   PageHeader, PageSection, Card, KpiCard, StatusBadge, PrioritaetBadge, RechnungBadge,
   PrimaryButton, SecondaryButton, GhostButton, EmptyState, SuccessBadge, WarningBadge
 } from '@/components/ui/KanalProUI';
+import { getCustomerActivities } from '@/lib/activityEngine';
 
 
 const formatRelativeTime = (dateStr) => {
@@ -63,12 +64,15 @@ export default function KundenWorkspace() {
       setRechnungen(rechnungData);
       setAngebote(angebotData);
 
-      const tl = [
-        ...auftragData.map(x => ({ type: 'auftrag', date: x.created_at, title: `Auftrag: ${x.titel || x.beschreibung || 'Auftrag'}`, status: x.status, color: x.status === 'abgeschlossen' ? 'green' : x.status === 'in_bearbeitung' ? 'blue' : 'gray' })),
-        ...rechnungData.map(x => ({ type: 'rechnung', date: x.created_at, title: `Rechnung: ${formatCurrency(x.gesamtbetrag || x.betrag)}`, status: x.status, color: x.status === 'bezahlt' ? 'green' : x.status === 'gesendet' ? 'blue' : 'gray' })),
-        ...angebotData.map(x => ({ type: 'angebot', date: x.created_at, title: `Angebot erstellt`, status: x.status, color: x.status === 'angenommen' ? 'green' : 'gray' })),
-      ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
-      setTimeline(tl);
+      const acts = await getCustomerActivities(supabase, id, companyId);
+      const tl = acts.map(a => ({
+        type: a.type, date: a.timestamp, title: a.title,
+        status: a.status, link: a.link,
+        color: a.type === 'auftrag_abgeschlossen' || a.type === 'rechnung_bezahlt' || a.type === 'angebot_angenommen' ? 'green'
+          : a.type.startsWith('auftrag') ? 'blue'
+          : a.type.startsWith('angebot') ? 'orange' : 'gray',
+      }));
+      setTimeline(tl.slice(0, 10));
 
       const gesamtumsatz = rechnungData.filter(r => r.status === 'bezahlt').reduce((s, r) => s + Number(r.gesamtbetrag || r.betrag || 0), 0);
       const letzterAuftrag = auftragData[0]?.created_at;
