@@ -5,9 +5,11 @@ import Link from 'next/link';
 import {
   FileText, TrendingUp, Clock, AlertTriangle,
   CheckCircle, FileSearch, Plus, Users,
-  Briefcase, Calendar, DollarSign,
+  Briefcase, Calendar, DollarSign,,
+  Wrench, CreditCard, FileCheck, Activity
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
+import { getActivities } from '@/lib/activityEngine';
 import {
   Card, KpiCard, PrimaryButton, SecondaryButton,
   EmptyState, PageHeader, PageSection,
@@ -59,6 +61,7 @@ function RechnungBadgeLocal({ r }) {
 
 export default function FinanceCenter() {
   const [laden, setLaden]           = useState(true);
+  const [activities, setActivities] = useState([]);
   const [rechnungen, setRechnungen] = useState([]);
   const [angebote, setAngebote]     = useState([]);
 
@@ -75,7 +78,7 @@ export default function FinanceCenter() {
       const companyId = member?.company_id;
       if (!companyId) { setLaden(false); return; }
 
-      const [{ data: rech }, { data: ang }] = await Promise.all([
+      const [{ data: rech }, { data: ang }, acts] = await Promise.all([
         supabase
           .from('rechnungen')
           .select('*, kunden(name)')
@@ -88,10 +91,12 @@ export default function FinanceCenter() {
           .eq('company_id', companyId)
           .order('erstellt_am', { ascending: false })
           .limit(100),
+        getActivities(supabase, companyId, { limit: 15 }),
       ]);
 
       setRechnungen(rech ?? []);
       setAngebote(ang ?? []);
+      setActivities(acts);
       setLaden(false);
     }
     load();
@@ -291,56 +296,31 @@ export default function FinanceCenter() {
       </PageSection>
 
       {/* BEREICH 5: ZAHLUNGS-TIMELINE */}
-      <PageSection title="Letzte Aktivitäten">
-        {laden ? (
-          <div className="space-y-1.5">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-11 rounded-lg bg-gray-100 animate-pulse" />
-            ))}
-          </div>
-        ) : rechnungen.length === 0 ? (
-          <EmptyState
-            icon={Calendar}
-            title="Keine Aktivitäten"
-            description="Noch keine Rechnungen vorhanden."
-          />
-        ) : (
-          <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
-            {rechnungen.slice(0, 15).map(r => {
-              const overdue = istUeberfaellig(r);
-              let dotCls   = 'bg-blue-400';
-              let labelCls = 'text-blue-600';
-              let aktLabel = 'Gesendet';
-              if (r.status === 'bezahlt') { dotCls = 'bg-green-400'; labelCls = 'text-green-600'; aktLabel = 'Bezahlt'; }
-              if (overdue)               { dotCls = 'bg-red-400';   labelCls = 'text-red-600';   aktLabel = 'Überfällig'; }
-              if (r.status === 'entwurf'){ dotCls = 'bg-gray-300';  labelCls = 'text-gray-400';  aktLabel = 'Entwurf'; }
-              return (
-                <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${dotCls}`} />
-                  <Link
-                    href={`/dashboard/rechnungen/${r.id}`}
-                    className="flex-1 min-w-0 flex items-center gap-2 hover:text-blue-600 transition"
-                  >
-                    <span className="font-mono text-xs font-semibold text-gray-900">
-                      {r.rechnungsnummer ?? '–'}
-                    </span>
-                    <span className="text-xs text-gray-500 truncate">{r.kunden?.name ?? '–'}</span>
+        <PageSection title="Letzte Aktivitäten">
+          {laden ? (
+            <div className="space-y-1.5">
+              {[1,2,3,4,5].map(i => <div key={i} className="h-11 rounded-lg bg-gray-100 animate-pulse" />)}
+            </div>
+          ) : activities.length === 0 ? (
+            <EmptyState icon={Calendar} title="Keine Aktivitäten" description="Noch keine Aktivitäten vorhanden." />
+          ) : (
+            <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+              {activities.map(a => {
+                const ICONS = { Wrench, CreditCard, FileCheck, Activity };
+                const IconComp = ICONS[a.icon] ?? Activity;
+                return (
+                  <Link key={a.id} href={a.link} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition">
+                    <IconComp size={14} className={a.color} />
+                    <span className="flex-1 text-sm text-gray-700 truncate">{a.title}</span>
+                    {a.description && <span className="text-xs text-gray-400 truncate hidden md:block max-w-xs">{a.description}</span>}
+                    <span className="text-xs text-gray-300 shrink-0">{new Date(a.timestamp).toLocaleDateString('de-DE')}</span>
                   </Link>
-                  <span className={`text-xs font-semibold shrink-0 ${labelCls}`}>{aktLabel}</span>
-                  <span className="text-xs font-medium text-gray-700 shrink-0">{fmtEuro(calcBrutto(r))}</span>
-                  {r.erstellt_am && (
-                    <span className="text-xs text-gray-300 shrink-0 hidden md:block">
-                      {new Date(r.erstellt_am).toLocaleDateString('de-DE')}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </PageSection>
-
-      {/* BEREICH 6: SCHNELLAKTIONEN */}
+                );
+              })}
+            </div>
+          )}
+        </PageSection>
+        {/* BEREICH 6: SCHNELLAKTIONEN */}
       <PageSection title="Schnellaktionen">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
