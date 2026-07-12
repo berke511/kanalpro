@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabaseClient';
+import supabase from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { Phone, Mail, MapPin, Calendar, Clock, ArrowLeft, Plus, FileText, ClipboardList, Receipt } from 'lucide-react';
 import {
@@ -8,7 +8,6 @@ import {
   PrimaryButton, SecondaryButton, GhostButton, EmptyState, SuccessBadge, WarningBadge
 } from '@/components/ui/KanalProUI';
 
-const supabase = createClient();
 
 const formatRelativeTime = (dateStr) => {
   if (!dateStr) return '–';
