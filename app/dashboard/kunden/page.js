@@ -4,6 +4,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, UserPlus, Users, ChevronRight, Trash2 } from 'lucide-react';
 import supabase from '@/lib/supabase';
+import {
+  PageHeader,
+  EmptyState,
+  FilterBar,
+  FilterButton,
+  GhostButton,
+  DangerButton,
+  PrimaryButton,
+} from '@/components/ui/KanalProUI';
 
 function initialen(name) {
   const teile = name.trim().split(' ');
@@ -94,20 +103,18 @@ export default function Kunden() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Kunden</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{kunden.length} Kunden gesamt</p>
-        </div>
-        <Link
-          href="/dashboard/kunden/neu"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition min-h-[40px]"
-        >
-          <UserPlus size={16} />
-          Neuer Kunde
-        </Link>
-      </div>
+      <PageHeader
+        title="Kunden"
+        subtitle={`${kunden.length} Kunden gesamt`}
+        action={
+          <Link href="/dashboard/kunden/neu">
+            <PrimaryButton className="inline-flex items-center gap-2">
+              <UserPlus size={16} />
+              Neuer Kunde
+            </PrimaryButton>
+          </Link>
+        }
+      />
 
       {/* Suche + Filter-Tabs */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -121,41 +128,20 @@ export default function Kunden() {
             className="w-full h-10 rounded-lg border border-gray-200 pl-9 pr-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
           />
         </div>
-        <div className="flex gap-1.5">
+        <FilterBar>
           {[
             { key: 'alle', label: 'Alle' },
             { key: 'firma', label: 'Firma' },
             { key: 'privat', label: 'Privat' },
           ].map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTypFilter(key)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition border ${
-                typFilter === key
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {label}
-            </button>
+            <FilterButton key={key} label={label} active={typFilter === key} onClick={() => setTypFilter(key)} />
           ))}
-        </div>
+        </FilterBar>
       </div>
 
       {/* A-Z Register */}
       <div className="flex flex-wrap gap-1 mb-4">
-        <button
-          type="button"
-          onClick={() => setBuchstabe(null)}
-          className={`px-2.5 h-8 rounded-md text-xs font-medium transition border ${
-            !buchstabe
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-          }`}
-        >
-          Alle
-        </button>
+        <FilterButton label="Alle" active={!buchstabe} onClick={() => setBuchstabe(null)} />
         {ALPHABET.map(b => (
           <button
             key={b}
@@ -176,26 +162,17 @@ export default function Kunden() {
 
       {/* Empty State */}
       {gefiltertKunden.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Users size={48} className="text-gray-300 mb-4" />
-          <p className="text-base font-medium text-gray-700 mb-1">
-            {suche || buchstabe || typFilter !== 'alle' ? 'Keine Kunden gefunden' : 'Noch keine Kunden'}
-          </p>
-          <p className="text-sm text-gray-400 mb-6">
-            {suche || buchstabe || typFilter !== 'alle'
+        <EmptyState
+          icon={Users}
+          title={suche || buchstabe || typFilter !== 'alle' ? 'Keine Kunden gefunden' : 'Noch keine Kunden'}
+          description={
+            suche || buchstabe || typFilter !== 'alle'
               ? 'Passe die Filter an oder suche anders.'
-              : 'Lege jetzt deinen ersten Kunden an.'}
-          </p>
-          {!suche && !buchstabe && typFilter === 'alle' && (
-            <Link
-              href="/dashboard/kunden/neu"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition"
-            >
-              <UserPlus size={16} />
-              Ersten Kunden anlegen
-            </Link>
-          )}
-        </div>
+              : 'Lege jetzt deinen ersten Kunden an.'
+          }
+          action={!suche && !buchstabe && typFilter === 'alle' ? () => router.push('/dashboard/kunden/neu') : undefined}
+          actionLabel={!suche && !buchstabe && typFilter === 'alle' ? 'Ersten Kunden anlegen' : undefined}
+        />
       ) : (
         <>
           {/* Desktop-Tabelle */}
@@ -279,18 +256,18 @@ export default function Kunden() {
                         {loeschenId === k.id ? (
                           <div className="flex items-center gap-2 justify-end">
                             <span className="text-xs text-red-600">Loeschen?</span>
-                            <button
+                            <DangerButton
                               onClick={() => handleDelete(k.id)}
-                              className={`text-xs px-2 py-1 rounded transition ${loeschenBestaetigt ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+                              className="!text-xs !px-2 !py-1 !min-h-0"
                             >
                               {loeschenBestaetigt ? 'Endgueltig' : 'Ja'}
-                            </button>
-                            <button
+                            </DangerButton>
+                            <GhostButton
                               onClick={() => { setLoeschenId(null); setLoeschenBestaetigt(false); }}
-                              className="text-xs px-2 py-1 rounded text-gray-400 hover:bg-gray-100"
+                              className="!text-xs !px-2 !py-1 !min-h-0"
                             >
                               Nein
-                            </button>
+                            </GhostButton>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-150">
