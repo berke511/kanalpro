@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Users, Wrench, CheckCircle, Plus } from 'lucide-react';
 import supabase from '@/lib/supabase';
 
 export default function Dashboard() {
@@ -22,92 +23,54 @@ export default function Dashboard() {
     load();
   }, []);
 
-  const gesamt = stats.offen + stats.abgeschlossen;
-  const quote = gesamt > 0 ? Math.round(stats.abgeschlossen / gesamt * 100) : 0;
+  const kpiCards = [
+    { label: 'Kunden gesamt',   value: stats.kunden,        href: '/dashboard/kunden',    Icon: Users,       color: 'bg-blue-50 text-blue-600'    },
+    { label: 'Offene AuftrÃ¤ge', value: stats.offen,         href: '/dashboard/auftraege', Icon: Wrench,      color: 'bg-yellow-50 text-yellow-600' },
+    { label: 'Abgeschlossen',   value: stats.abgeschlossen, href: '/dashboard/auftraege', Icon: CheckCircle, color: 'bg-green-50 text-green-600'  },
+  ];
 
   return (
-    <div className="max-w-screen-2xl mx-auto">
+    <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Übersicht</h1>
-        <p className="text-sm text-gray-500 mt-1">Willkommen bei KanalPro</p>
+        <h1 className="text-2xl font-semibold text-gray-900">Ãbersicht</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Willkommen bei KanalPro</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-
-        {/* ── Hauptspalte ── */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* KPI Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[
-              { label: 'Kunden gesamt',   value: stats.kunden,        href: '/dashboard/kunden',    accent: 'text-blue-600'   },
-              { label: 'Offene Aufträge', value: stats.offen,         href: '/dashboard/auftraege', accent: 'text-yellow-600' },
-              { label: 'Abgeschlossen',   value: stats.abgeschlossen, href: '/dashboard/auftraege', accent: 'text-green-600'  },
-            ].map(c => (
-              <Link key={c.label} href={c.href}>
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
-                  <div className={`text-3xl font-bold mb-1 ${c.accent}`}>
-                    {laden ? <span className="inline-block w-8 h-8 bg-gray-100 rounded animate-pulse" /> : c.value}
-                  </div>
-                  <div className="text-xs font-medium text-gray-500">{c.label}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {/* Schnellzugriff */}
-          <div>
-            <p className="sticky top-0 bg-white/80 backdrop-blur-sm py-3 -mx-1 px-1 z-10 text-sm font-semibold text-gray-700 mb-4">
-              Schnellzugriff
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/dashboard/kunden/neu"
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-                + Neuer Kunde
-              </Link>
-              <Link href="/dashboard/auftraege/neu"
-                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-sm">
-                + Neuer Auftrag
-              </Link>
-              <Link href="/dashboard/rechnungen/neu"
-                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-sm">
-                + Neue Rechnung
-              </Link>
-            </div>
-          </div>
-
-        </div>
-
-        {/* ── Rechte Sidebar ── */}
-        <div className="lg:col-span-1 space-y-4">
-
-          <p className="text-sm font-semibold text-gray-700">Zusammenfassung</p>
-
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-            {[
-              { label: 'Gesamtaufträge', value: laden ? '–' : String(gesamt) },
-              { label: 'Abschlussrate',  value: laden ? '–' : gesamt === 0 ? '–' : quote + ' %' },
-              { label: 'Kundenstamm',    value: laden ? '–' : String(stats.kunden) },
-            ].map(row => (
-              <div key={row.label} className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">{row.label}</span>
-                <span className="text-sm font-bold text-gray-900">{row.value}</span>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-5 mb-10">
+        {kpiCards.map(c => (
+          <Link
+            key={c.label}
+            href={c.href}
+            className="group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-xl"
+          >
+            <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+              <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${c.color} mb-4`}>
+                <c.Icon size={20} aria-hidden="true" />
               </div>
-            ))}
-          </div>
-
-          <Link href="/dashboard/finanzen"
-            className="block bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-xl p-5 text-white hover:from-blue-700 hover:to-blue-900 transition-all duration-200">
-            <p className="text-xs font-medium text-blue-200 mb-1">Finance Center</p>
-            <p className="text-sm font-semibold">Rechnungen &amp; Angebote</p>
+              <div className="text-3xl font-bold text-gray-900 mb-1">{laden ? 'â' : c.value}</div>
+              <div className="text-xs font-medium text-gray-500">{c.label}</div>
+            </div>
           </Link>
+        ))}
+      </div>
 
-          <Link href="/dashboard/disposition"
-            className="block bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-            <p className="text-xs font-medium text-gray-400 mb-1">Operations</p>
-            <p className="text-sm font-semibold text-gray-900">Disposition &amp; Planung</p>
+      <div>
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Schnellzugriff</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/dashboard/kunden/neu"
+            className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <Plus size={16} aria-hidden="true" />
+            Neuer Kunde
           </Link>
-
+          <Link
+            href="/dashboard/auftraege/neu"
+            className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <Plus size={16} aria-hidden="true" />
+            Neuer Auftrag
+          </Link>
         </div>
       </div>
     </div>
