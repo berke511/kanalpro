@@ -1,47 +1,35 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Wrench, CheckCircle, FileText, CreditCard, FileCheck, User, AlertTriangle, Activity } from 'lucide-react';
 import supabase from '@/lib/supabase';
-import { getActivities } from '@/lib/activityEngine';
-
-const LUCIDE = { Wrench, CheckCircle, FileText, CreditCard, FileCheck, User, AlertTriangle, Activity };
-
-function ActivityIcon({ name, className }) {
-  const Icon = LUCIDE[name] ?? LUCIDE.Activity;
-  return <Icon size={14} className={className} />;
-}
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 export default function Dashboard() {
-  const [stats, setStats]           = useState({ kunden: 0, offen: 0, abgeschlossen: 0 });
-  const [activities, setActivities] = useState([]);
-  const [laden, setLaden]           = useState(true);
+  const [stats,  setStats]  = useState({ kunden: 0, offen: 0, abgeschlossen: 0 });
+  const [laden,  setLaden]  = useState(true);
+  const [userId, setUserId] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [{ count: kunden }, { count: offen }, { count: abgeschlossen }] = await Promise.all([
+      supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
+      supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
+    ]);
+    setStats({ kunden: kunden ?? 0, offen: offen ?? 0, abgeschlossen: abgeschlossen ?? 0 });
+    setLaden(false);
+  }, []);
 
   useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+    fetchData();
+  }, [fetchData]);
 
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .single();
-      const companyId = member?.company_id;
-
-      const [{ count: kunden }, { count: offen }, { count: abgeschlossen }, acts] = await Promise.all([
-        supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
-        companyId ? getActivities(supabase, companyId, { limit: 10 }) : Promise.resolve([]),
-      ]);
-
-      setStats({ kunden: kunden ?? 0, offen: offen ?? 0, abgeschlossen: abgeschlossen ?? 0 });
-      setActivities(acts);
-      setLaden(false);
-    }
-    load();
-  }, []);
+  // OS-003: Live Sync — refetch on any company event
+  useRealtimeSync(userId, fetchData);
 
   return (
     <div>
@@ -71,25 +59,6 @@ export default function Dashboard() {
           <Link href="/dashboard/auftraege/neu" className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition text-sm">+ Neuer Auftrag</Link>
         </div>
       </div>
-      {activities.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">Letzte Aktivitäten</h2>
-          <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
-            {activities.map(a => (
-              <Link key={a.id} href={a.link} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition">
-                <ActivityIcon name={a.icon} className={a.color} />
-                <span className="flex-1 text-sm text-gray-700 min-w-0 truncate">{a.title}</span>
-                {a.description && (
-                  <span className="text-xs text-gray-400 truncate hidden md:block max-w-xs">{a.description}</span>
-                )}
-                <span className="text-xs text-gray-300 shrink-0">
-                  {new Date(a.timestamp).toLocaleDateString('de-DE')}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
