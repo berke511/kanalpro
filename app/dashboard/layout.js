@@ -3,28 +3,30 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
-import NotificationCenter from '@/components/ui/NotificationCenter';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
+import ConnectionStatus from '@/components/ui/ConnectionStatus';
 
 const navLinks = [
-  { href: '/dashboard',              label: 'Übersicht',    icon: '🏠' },
-  { href: '/dashboard/kunden',       label: 'Kunden',       icon: '👥' },
-  { href: '/dashboard/auftraege',    label: 'Aufträge',     icon: '📋' },
-  { href: '/dashboard/rechnungen',   label: 'Rechnungen',   icon: '🧾' },
-  { href: '/dashboard/einstellungen',label: 'Einstellungen',icon: '⚙️' },
+  { href: '/dashboard',               label: 'Übersicht',     icon: '🏠' },
+  { href: '/dashboard/kunden',        label: 'Kunden',        icon: '👥' },
+  { href: '/dashboard/auftraege',     label: 'Aufträge',      icon: '📋' },
+  { href: '/dashboard/rechnungen',    label: 'Rechnungen',    icon: '🧾' },
+  { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: '⚙️' },
 ];
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState(null);
-  const [abo, setAbo] = useState(null);
-  const [companyId, setCompanyId] = useState(null);
+  const [user,   setUser]   = useState(null);
+  const [abo,    setAbo]    = useState(null);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user: u } } = await supabase.auth.getUser();
       if (!u) { router.push('/login'); return; }
       setUser(u);
+      setUserId(u.id);
 
       const { data: a } = await supabase.from('abonnements').select('*').eq('user_id', u.id).single();
       if (!a) {
@@ -33,13 +35,6 @@ export default function DashboardLayout({ children }) {
       } else {
         setAbo(a);
       }
-
-      const { data: member } = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', u.id)
-        .single();
-      if (member?.company_id) setCompanyId(member.company_id);
 
       if (sessionStorage.getItem('tempLogin') === '1') {
         const fn = () => supabase.auth.signOut();
@@ -62,6 +57,9 @@ export default function DashboardLayout({ children }) {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
+  // OS-003: Live Sync Engine — layout-level connection status for topbar
+  const { connectionStatus, reconnect } = useRealtimeSync(userId, () => {});
+
   const tage = trialTage();
   const trialLäuft = abo?.status === 'trial';
   const abgelaufen = trialLäuft && tage === 0;
@@ -69,7 +67,6 @@ export default function DashboardLayout({ children }) {
 
   if (!user) return null;
 
-  // Trial abgelaufen → Upgrade-Seite erzwingen
   if (abgelaufen && pathname !== '/dashboard/upgrade') {
     router.push('/dashboard/upgrade');
     return null;
@@ -77,7 +74,6 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Trial-Banner */}
       {trialLäuft && tage > 0 && (
         <div className={`px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 ${warnung ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'}`}>
           <span>
@@ -90,7 +86,7 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1">
         <aside className="w-56 bg-white border-r border-gray-100 flex flex-col shrink-0">
           <div className="px-5 py-5 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -129,12 +125,10 @@ export default function DashboardLayout({ children }) {
           </div>
         </aside>
 
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* Topbar */}
-          <header className="h-12 bg-white border-b border-gray-100 flex items-center justify-end px-4 shrink-0">
-            {companyId && <NotificationCenter companyId={companyId} />}
+        <div className="flex-1 flex flex-col min-h-0">
+          <header className="h-12 bg-white border-b border-gray-100 px-6 flex items-center justify-end gap-3 shrink-0">
+            <ConnectionStatus status={connectionStatus} onReconnect={reconnect} />
           </header>
-
           <main className="flex-1 overflow-auto p-8">{children}</main>
         </div>
       </div>
