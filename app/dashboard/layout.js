@@ -11,7 +11,7 @@ import supabase from '@/lib/supabase';
 const navLinks = [
   { href: '/dashboard',               label: 'Ãbersicht',    Icon: LayoutDashboard },
   { href: '/dashboard/kunden',        label: 'Kunden',       Icon: Users           },
-  { href: '/dashboard/auftraege',     label: 'AuftrÃ¤ge',     Icon: ClipboardList   },
+  { href: '/dashboard/auftraege',     label: 'Aufträge',     Icon: ClipboardList   },
   { href: '/dashboard/rechnungen',    label: 'Rechnungen',   Icon: Receipt         },
   { href: '/dashboard/einstellungen', label: 'Einstellungen',Icon: Settings        },
 ];
@@ -58,9 +58,9 @@ export default function DashboardLayout({ children }) {
   }
 
   const tage = trialTage();
-  const trialLÃ¤uft = abo?.status === 'trial';
-  const abgelaufen = trialLÃ¤uft && tage === 0;
-  const warnung = trialLÃ¤uft && tage <= 7 && tage > 0;
+  const trialLäuft = abo?.status === 'trial';
+  const abgelaufen = trialLäuft && tage === 0;
+  const warnung = trialLäuft && tage <= 7 && tage > 0;
 
   if (!user) return null;
 
@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Trial-Banner */}
-      {trialLÃ¤uft && tage > 0 && (
+      {trialLäuft && tage > 0 && (
         <div className={`px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 ${warnung ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'}`}>
           <span className="flex items-center gap-1.5">
             {warnung
@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }) {
 
           {/* Footer */}
           <div className="px-3 py-4 border-t border-gray-100">
-            {trialLÃ¤uft && (
+            {trialLäuft && (
               <Link
                 href="/dashboard/upgrade"
                 className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
