@@ -2,7 +2,7 @@
 // KanalPro Design System â PX-010 Premium Audit
 // Alle Komponenten sind projektweit standardisiert
 
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 // ===== DESIGN TOKENS =====
 
@@ -499,5 +499,136 @@ export function PageSection({ title, children }) {
       )}
       {children}
     </section>
+  );
+}
+
+
+// ===== NEUE DESIGN SYSTEM KOMPONENTEN (XS-004A) =====
+
+export function SearchInput({ placeholder = 'Suchen...', value, onChange, className = '' }) {
+  return (
+    <div className={`relative ${className}`}>
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className="w-full h-10 rounded-lg border border-gray-200 pl-9 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+      />
+    </div>
+  );
+}
+
+export function FilterPill({ children, active = false, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer border ${
+        active
+          ? 'bg-blue-50 text-blue-700 border-blue-200'
+          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function AvatarCircle({ name = '', size = 'md', color = 'blue' }) {
+  const initials = name.trim().slice(0, 2).toUpperCase() || '?';
+  const sizeClasses = { sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-11 h-11 text-base' };
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-700',
+    green: 'bg-green-100 text-green-700',
+    purple: 'bg-purple-100 text-purple-700',
+    orange: 'bg-orange-100 text-orange-700',
+    gray: 'bg-gray-100 text-gray-700',
+  };
+  return (
+    <div className={`rounded-full flex items-center justify-center font-medium flex-shrink-0 ${sizeClasses[size]} ${colorClasses[color] || colorClasses.blue}`}>
+      {initials}
+    </div>
+  );
+}
+
+export function TypeBadge({ type = '', label }) {
+  const displayLabel = label || type;
+  const isCompany = ['firma', 'unternehmen', 'company'].includes(type?.toLowerCase());
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+      isCompany
+        ? 'bg-blue-50 text-blue-700 border-blue-200'
+        : 'bg-gray-50 text-gray-700 border-gray-200'
+    }`}>
+      {displayLabel}
+    </span>
+  );
+}
+
+export function ActionCell({ children }) {
+  return (
+    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      {children}
+    </div>
+  );
+}
+
+export function LoadingRow({ columns = 4 }) {
+  return (
+    <tr className="border-b border-gray-50">
+      {Array.from({ length: columns }).map((_, i) => (
+        <td key={i} className="px-4 py-4">
+          <div className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: i === 0 ? '60%' : i === columns - 1 ? '30%' : '80%' }} />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+export function LoadingCard() {
+  return (
+    <div className="rounded-xl border border-gray-100 p-4 mb-3">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-gray-100 animate-pulse flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
+          <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2" />
+        </div>
+        <div className="w-16 h-5 bg-gray-100 rounded-full animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+export function SectionTitle({ children, className = '' }) {
+  return (
+    <h2 className={`text-base font-semibold text-gray-900 mb-4 ${className}`}>
+      {children}
+    </h2>
+  );
+}
+
+export function StatHeader({ title, value, subtitle, icon: Icon, color = 'blue' }) {
+  const colorMap = {
+    blue: 'bg-blue-50 text-blue-600',
+    green: 'bg-green-50 text-green-600',
+    amber: 'bg-amber-50 text-amber-600',
+    red: 'bg-red-50 text-red-600',
+    purple: 'bg-purple-50 text-purple-600',
+  };
+  return (
+    <div className="rounded-xl border border-gray-100 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer">
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{title}</p>
+        {Icon && (
+          <div className={`p-2.5 rounded-lg ${colorMap[color] || colorMap.blue}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+        )}
+      </div>
+      <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
+      {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+    </div>
   );
 }
