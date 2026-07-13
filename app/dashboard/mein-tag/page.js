@@ -37,34 +37,34 @@ const getAvatarColor = (name) => {
 };
 
 const CHECKLIST = [
-  { id: 'ankunft',        label: 'Ankunft bestätigen'  },
-  { id: 'kunde_info',     label: 'Kunde informiert'     },
-  { id: 'fotos_vorher',   label: 'Fotos vorher'         },
-  { id: 'arbeit_begonnen',label: 'Arbeit begonnen'      },
-  { id: 'material_erfasst',label:'Material erfasst'     },
-  { id: 'fotos_nachher',  label: 'Fotos nachher'        },
-  { id: 'unterschrift',   label: 'Unterschrift'         },
-  { id: 'abgeschlossen',  label: 'Einsatz abgeschlossen'},
+  { id: 'ankunft',         label: 'Ankunft bestÃ¤tigen'   },
+  { id: 'kunde_info',      label: 'Kunde informiert'      },
+  { id: 'fotos_vorher',    label: 'Fotos vorher'          },
+  { id: 'arbeit_begonnen', label: 'Arbeit begonnen'       },
+  { id: 'material_erfasst',label: 'Material erfasst'      },
+  { id: 'fotos_nachher',   label: 'Fotos nachher'         },
+  { id: 'unterschrift',    label: 'Unterschrift'          },
+  { id: 'abgeschlossen',   label: 'Einsatz abgeschlossen' },
 ];
 
 export default function MeinTag() {
   const router = useRouter();
-  const [loading, setLoading]         = useState(true);
-  const [member, setMember]           = useState(null);
-  const [auftraege, setAuftraege]     = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [member, setMember]                 = useState(null);
+  const [auftraege, setAuftraege]           = useState([]);
   const [aktiverAuftrag, setAktiverAuftrag] = useState(null);
-  const [checklist, setChecklist]     = useState({});
-  const [timer, setTimer]             = useState(0);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [notiz, setNotiz]             = useState('');
-  const [notizModal, setNotizModal]   = useState(false);
-  const [success, setSuccess]         = useState('');
-  const canvasRef                     = useRef(null);
-  const [signing, setSigning]         = useState(false);
-  const [signatureDone, setSignatureDone] = useState(false);
+  const [checklist, setChecklist]           = useState({});
+  const [timer, setTimer]                   = useState(0);
+  const [timerRunning, setTimerRunning]     = useState(false);
+  const [notiz, setNotiz]                   = useState('');
+  const [notizModal, setNotizModal]         = useState(false);
+  const [success, setSuccess]               = useState('');
+  const canvasRef                           = useRef(null);
+  const [signing, setSigning]               = useState(false);
+  const [signatureDone, setSignatureDone]   = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  // ── Daten laden ────────────────────────────────────────────────────────────
+  // ââ Daten laden ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +79,6 @@ export default function MeinTag() {
       if (!m) { setLoading(false); return; }
       setMember(m);
 
-      // Aufträge für heute (dem eingeloggten Techniker zugewiesen)
       const { data: a } = await supabase
         .from('auftraege')
         .select('id, titel, beschreibung, status, datum, uhrzeit, prioritaet, notdienst, adresse, kunden(name, telefon, adresse)')
@@ -91,7 +90,6 @@ export default function MeinTag() {
       const liste = a ?? [];
       setAuftraege(liste);
 
-      // Aktiven Auftrag (in_bearbeitung) direkt aufklappen
       const aktiv = liste.find(x => x.status === 'in_bearbeitung');
       if (aktiv) setAktiverAuftrag(aktiv);
 
@@ -100,7 +98,7 @@ export default function MeinTag() {
     load();
   }, []);
 
-  // ── Timer ────────────────────────────────────────────────────────────────────
+  // ââ Timer ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   useEffect(() => {
     if (!timerRunning) return;
     const iv = setInterval(() => setTimer(t => t + 1), 1000);
@@ -111,7 +109,7 @@ export default function MeinTag() {
     setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
   const checkCount = Object.values(checklist).filter(Boolean).length;
 
-  // ── Canvas Unterschrift ───────────────────────────────────────────────────────
+  // ââ Canvas Unterschrift âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   useEffect(() => {
     if (!signing || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -161,7 +159,7 @@ export default function MeinTag() {
     }
   };
 
-  // ── Einsatz abschließen ───────────────────────────────────────────────────────
+  // ââ Einsatz abschlieÃen âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   const handleAbschliessen = async () => {
     if (!aktiverAuftrag) return;
     await supabase
@@ -181,12 +179,12 @@ export default function MeinTag() {
     setTimeout(() => setSuccess(''), 4000);
   };
 
-  const vorname     = member?.vorname || 'Techniker';
-  const notdienste  = auftraege.filter(a => a.notdienst || a.prioritaet === 'notfall').length;
-  const einsatzort  = (a) => a.adresse || a.kunden?.adresse || '';
-  const telefon     = (a) => a.kunden?.telefon || '';
+  const vorname    = member?.vorname || 'Techniker';
+  const notdienste = auftraege.filter(a => a.notdienst || a.prioritaet === 'notfall').length;
+  const einsatzort = (a) => a.adresse || a.kunden?.adresse || '';
+  const telefon    = (a) => a.kunden?.telefon || '';
 
-  // ── Skeleton ─────────────────────────────────────────────────────────────────
+  // ââ Skeleton ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   if (loading) return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-2xl animate-pulse" />
@@ -200,7 +198,7 @@ export default function MeinTag() {
     </div>
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ââ Render ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 md:pb-8">
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
@@ -208,7 +206,7 @@ export default function MeinTag() {
         {/* SUCCESS BANNER */}
         {success && (
           <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-700 dark:text-green-400">
-            <CheckCircle className="w-5 h-5 shrink-0" />
+            <CheckCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
             <span className="text-sm font-medium">{success}</span>
           </div>
         )}
@@ -216,7 +214,7 @@ export default function MeinTag() {
         {/* HEADER */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
               {getTageszeit()}, {vorname}.
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
@@ -230,15 +228,15 @@ export default function MeinTag() {
 
         {/* KPI STRIP */}
         <div className="grid grid-cols-3 gap-3">
-          <KpiCard label="Einsätze"   value={auftraege.length} color="blue"  />
-          <KpiCard label="Notdienste" value={notdienste}       color="red"   />
+          <KpiCard label="EinsÃ¤tze"    value={auftraege.length} color="blue" />
+          <KpiCard label="Notdienste"  value={notdienste}       color="red"  />
           <KpiCard label="Arbeitszeit" value={formatTime(timer)} color="gray" />
         </div>
 
         {/* ZEITERFASSUNG */}
         <Card>
           <div className="p-5">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+            <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
               Zeiterfassung
             </h2>
             <div className="text-center mb-5">
@@ -246,35 +244,35 @@ export default function MeinTag() {
                 {formatTime(timer)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {timerRunning ? 'Läuft…' : 'Gestoppt'}
+                {timerRunning ? 'LÃ¤uftâ¦' : 'Gestoppt'}
               </p>
             </div>
             <div className="flex gap-3 justify-center">
               {!timerRunning ? (
                 <PrimaryButton onClick={() => setTimerRunning(true)} className="px-8 py-4 text-base">
-                  <Play className="w-5 h-5 mr-2 inline" /> Start
+                  <Play className="w-5 h-5 mr-2 inline" aria-hidden="true" /> Start
                 </PrimaryButton>
               ) : (
                 <SecondaryButton onClick={() => setTimerRunning(false)} className="px-8 py-4 text-base">
-                  <Pause className="w-5 h-5 mr-2 inline" /> Pause
+                  <Pause className="w-5 h-5 mr-2 inline" aria-hidden="true" /> Pause
                 </SecondaryButton>
               )}
-              <DangerButton onClick={() => { setTimerRunning(false); setTimer(0); }} className="py-4">
-                <Square className="w-5 h-5" />
+              <DangerButton onClick={() => { setTimerRunning(false); setTimer(0); }} className="py-4 px-4">
+                <Square className="w-5 h-5" aria-hidden="true" />
               </DangerButton>
             </div>
           </div>
         </Card>
 
-        {/* MEIN TAG — Einsatzkarten */}
+        {/* MEIN TAG â Einsatzkarten */}
         <div>
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
             Mein Tag ({auftraege.length})
           </h2>
           {auftraege.length === 0 ? (
             <EmptyState
-              title="Keine Einsätze heute"
-              description="Für heute sind keine Aufträge geplant."
+              title="Keine EinsÃ¤tze heute"
+              description="FÃ¼r heute sind keine AuftrÃ¤ge geplant."
             />
           ) : (
             <div className="space-y-3">
@@ -293,11 +291,11 @@ export default function MeinTag() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="text-base font-bold text-gray-900 dark:text-white">
-                              {a.uhrzeit ? String(a.uhrzeit).slice(0,5) : '–'}
+                              {a.uhrzeit ? String(a.uhrzeit).slice(0,5) : 'â'}
                             </span>
                             <StatusBadge status={a.status} />
                             {(a.notdienst || a.prioritaet === 'notfall') && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                                 Notdienst
                               </span>
                             )}
@@ -307,18 +305,18 @@ export default function MeinTag() {
                           </p>
                           {a.kunden?.name && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                              <User className="w-3 h-3" />{a.kunden.name}
+                              <User className="w-3 h-3" aria-hidden="true" />{a.kunden.name}
                             </p>
                           )}
                           {ort && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                              <MapPin className="w-3 h-3" />{ort}
+                              <MapPin className="w-3 h-3" aria-hidden="true" />{ort}
                             </p>
                           )}
                         </div>
                         {isAktiv
-                          ? <ChevronUp   className="w-5 h-5 text-gray-400 shrink-0 mt-1" />
-                          : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0 mt-1" />}
+                          ? <ChevronUp   className="w-5 h-5 text-gray-400 shrink-0 mt-1" aria-hidden="true" />
+                          : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0 mt-1" aria-hidden="true" />}
                       </div>
 
                       {/* Ausgeklappt */}
@@ -335,14 +333,14 @@ export default function MeinTag() {
                                 rel="noopener noreferrer"
                               >
                                 <PrimaryButton className="py-3 min-h-[48px]">
-                                  <Navigation className="w-4 h-4 mr-1.5 inline" /> Navigation
+                                  <Navigation className="w-4 h-4 mr-1.5 inline" aria-hidden="true" /> Navigation
                                 </PrimaryButton>
                               </a>
                             )}
                             {tel && (
                               <a href={`tel:${tel}`}>
                                 <SecondaryButton className="py-3 min-h-[48px]">
-                                  <Phone className="w-4 h-4 mr-1.5 inline" /> Anrufen
+                                  <Phone className="w-4 h-4 mr-1.5 inline" aria-hidden="true" /> Anrufen
                                 </SecondaryButton>
                               </a>
                             )}
@@ -350,7 +348,7 @@ export default function MeinTag() {
                               className="py-3 min-h-[48px]"
                               onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${a.id}`)}
                             >
-                              <ArrowRight className="w-4 h-4 mr-1.5 inline" /> Einsatzbericht
+                              <ArrowRight className="w-4 h-4 mr-1.5 inline" aria-hidden="true" /> Einsatzbericht
                             </SecondaryButton>
                           </div>
                         </div>
@@ -368,7 +366,7 @@ export default function MeinTag() {
           <Card>
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Checkliste
                 </h2>
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -389,7 +387,7 @@ export default function MeinTag() {
                   <button
                     key={item.id}
                     onClick={() => toggleCheck(item.id)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all min-h-[56px] ${
+                    className={`w-full flex items-center gap-3 p-4 rounded-xl text-left transition-all min-h-[56px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
                       checklist[item.id]
                         ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
                         : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700'
@@ -400,7 +398,7 @@ export default function MeinTag() {
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-400 dark:border-gray-500'
                     }`}>
-                      {checklist[item.id] && <CheckCircle className="w-4 h-4 text-white" />}
+                      {checklist[item.id] && <CheckCircle className="w-4 h-4 text-white" aria-hidden="true" />}
                     </div>
                     <span className={`text-sm font-medium ${
                       checklist[item.id]
@@ -420,7 +418,7 @@ export default function MeinTag() {
         {aktiverAuftrag && (
           <Card>
             <div className="p-5">
-              <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+              <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
                 Kundenunterschrift
               </h2>
               {!signing ? (
@@ -428,7 +426,7 @@ export default function MeinTag() {
                   {signatureDone ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-5 h-5" aria-hidden="true" />
                         <span className="text-sm font-medium">Unterschrift vorhanden</span>
                       </div>
                       <GhostButton onClick={() => { setSigning(true); clearCanvas(); }}>
@@ -440,7 +438,7 @@ export default function MeinTag() {
                       onClick={() => setSigning(true)}
                       className="w-full py-4 text-base"
                     >
-                      <User className="w-5 h-5 mr-2 inline" /> Jetzt unterschreiben
+                      <User className="w-5 h-5 mr-2 inline" aria-hidden="true" /> Jetzt unterschreiben
                     </PrimaryButton>
                   )}
                 </div>
@@ -457,7 +455,7 @@ export default function MeinTag() {
                   </div>
                   <div className="flex gap-2">
                     <GhostButton onClick={clearCanvas} className="flex-1">
-                      <Trash2 className="w-4 h-4 mr-1 inline" /> Löschen
+                      <Trash2 className="w-4 h-4 mr-1 inline" aria-hidden="true" /> LÃ¶schen
                     </GhostButton>
                     <PrimaryButton
                       onClick={() => {
@@ -467,7 +465,7 @@ export default function MeinTag() {
                       }}
                       className="flex-1"
                     >
-                      <CheckCircle className="w-4 h-4 mr-1 inline" /> Übernehmen
+                      <CheckCircle className="w-4 h-4 mr-1 inline" aria-hidden="true" /> Ãbernehmen
                     </PrimaryButton>
                   </div>
                 </div>
@@ -480,11 +478,11 @@ export default function MeinTag() {
         <Card>
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Notiz
               </h2>
               <GhostButton onClick={() => setNotizModal(true)}>
-                <Plus className="w-4 h-4 mr-1 inline" /> Hinzufügen
+                <Plus className="w-4 h-4 mr-1 inline" aria-hidden="true" /> HinzufÃ¼gen
               </GhostButton>
             </div>
             {notiz ? (
@@ -504,14 +502,14 @@ export default function MeinTag() {
               onClick={handleAbschliessen}
               className="w-full py-5 text-lg"
             >
-              <CheckCircle className="w-6 h-6 mr-2 inline" /> Einsatz abschließen
+              <CheckCircle className="w-6 h-6 mr-2 inline" aria-hidden="true" /> Einsatz abschlieÃen
             </PrimaryButton>
           </div>
         )}
 
         {/* SCHNELLZUGRIFF */}
         <div>
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+          <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
             Schnellzugriff
           </h2>
           <div className="grid grid-cols-2 gap-3">
@@ -529,7 +527,7 @@ export default function MeinTag() {
               onClick={() => router.push('/dashboard/auftraege')}
               className="w-full py-4 border border-gray-200 dark:border-gray-700 rounded-xl"
             >
-              Alle Aufträge
+              Alle AuftrÃ¤ge
             </GhostButton>
           </div>
         </div>
@@ -539,7 +537,7 @@ export default function MeinTag() {
       {/* NOTIZ MODAL */}
       <Modal
         isOpen={notizModal}
-        title="Notiz hinzufügen"
+        title="Notiz hinzufÃ¼gen"
         onClose={() => setNotizModal(false)}
       >
         <div className="space-y-4">
@@ -547,7 +545,7 @@ export default function MeinTag() {
             label="Notiz"
             value={notiz}
             onChange={e => setNotiz(e.target.value)}
-            placeholder="Deine Notiz…"
+            placeholder="Deine Notizâ¦"
             rows={5}
           />
           <div className="flex gap-2 justify-end">
