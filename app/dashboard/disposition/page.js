@@ -1,373 +1,126 @@
 'use client';
 import { useState, useEffect } from 'react';
-import supabase from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import {
-  Truck, AlertTriangle, Clock, Phone, MapPin,
-  Plus, FileText, Receipt, ClipboardList, Navigation, User, RefreshCw
-} from 'lucide-react';
-import {
-  Card, KpiCard, StatusBadge, PrioritaetBadge,
-  PrimaryButton, GhostButton, EmptyState
-} from '@/components/ui/KanalProUI';
+import TabNav from '@/components/ui/TabNav';
+import supabase from '@/lib/supabase';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '–';
-const getKW = (d) => {
-  const date = new Date(d);
-  const startOfYear = new Date(date.getFullYear(), 0, 1);
-  return Math.ceil(((date - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+const DISPOSITION_TABS = [
+  { id: 'tagesplanung',  label: 'Tagesplanung'       },
+  { id: 'wochenplanung', label: 'Wochenplanung'      },
+  { id: 'mitarbeiter',   label: 'Mitarbeiterplanung' },
+  { id: 'fahrzeuge',     label: 'Fahrzeugplanung'    },
+  { id: 'notdienst',     label: 'Notdienstplanung'   },
+  { id: 'routen',        label: 'Routenplanung'      },
+];
+
+const MODULE = {
+  tagesplanung: {
+    titel: 'Tagesplanung',
+    beschreibung: 'Plane alle heutigen Einsätze übersichtlich nach Uhrzeit. Behalte den Überblick über laufende und anstehende Einsätze des Tages.',
+    button: 'Tagesplanung öffnen', route: '/dashboard/disposition/tagesplanung',
+    iconColor: 'bg-blue-50', textColor: 'text-blue-600', btnColor: 'bg-blue-600 hover:bg-blue-700',
+    icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+  },
+  wochenplanung: {
+    titel: 'Wochenplanung',
+    beschreibung: 'Plane Einsätze für die gesamte Woche. Behalte freie Slots und Kapazitäten aller Mitarbeiter auf einen Blick.',
+    button: 'Wochenplanung öffnen', route: '/dashboard/disposition/wochenplanung',
+    iconColor: 'bg-indigo-50', textColor: 'text-indigo-600', btnColor: 'bg-indigo-600 hover:bg-indigo-700',
+    icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+  },
+  mitarbeiter: {
+    titel: 'Mitarbeiterplanung',
+    beschreibung: 'Teile Mitarbeiter gezielt für Einsätze ein. Sieh Verfügbarkeit, Qualifikationen und aktuelle Auslastung auf einen Blick.',
+    button: 'Mitarbeiterplanung öffnen', route: '/dashboard/disposition/mitarbeiterplanung',
+    iconColor: 'bg-purple-50', textColor: 'text-purple-600', btnColor: 'bg-purple-600 hover:bg-purple-700',
+    icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+  },
+  fahrzeuge: {
+    titel: 'Fahrzeugplanung',
+    beschreibung: 'Plane den Einsatz von Fahrzeugen und Transportmitteln. Verfolge Verfügbarkeit und Auslastung aller Fahrzeuge.',
+    button: 'Fahrzeugplanung öffnen', route: '/dashboard/disposition/fahrzeugplanung',
+    iconColor: 'bg-amber-50', textColor: 'text-amber-600', btnColor: 'bg-amber-600 hover:bg-amber-700',
+    icon: 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
+  },
+  notdienst: {
+    titel: 'Notdienstplanung',
+    beschreibung: 'Plane und verwalte den Notdienst. Lege fest, welche Mitarbeiter in welcher Woche Bereitschaft haben.',
+    button: 'Notdienst öffnen', route: '/dashboard/disposition/notdienstplanung',
+    iconColor: 'bg-red-50', textColor: 'text-red-600', btnColor: 'bg-red-600 hover:bg-red-700',
+    icon: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+  },
+  routen: {
+    titel: 'Routenplanung',
+    beschreibung: 'Plane und optimiere die Fahrtrouten deiner Mitarbeiter. Verfolge aktive Fahrten und Entfernungen in Echtzeit.',
+    button: 'Routenplanung öffnen', route: '/dashboard/disposition/routenplanung',
+    iconColor: 'bg-green-50', textColor: 'text-green-600', btnColor: 'bg-green-600 hover:bg-green-700',
+    icon: 'M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c-.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z',
+  },
 };
-const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
-const getAvatarColor = (name) => {
-  const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-indigo-500', 'bg-teal-500'];
-  return colors[(name?.charCodeAt(0) || 0) % colors.length];
-};
 
-export default function OperationsCenter() {
-  const router = useRouter();
-  const today = new Date().toISOString().split('T')[0];
-  const [loading, setLoading] = useState(true);
-  const [auftraege, setAuftraege] = useState([]);
-  const [mitarbeiter, setMitarbeiter] = useState([]);
-  const [fahrzeuge, setFahrzeuge] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [stats, setStats] = useState({
-    einsaetzeHeute: 0, freieMonteure: 0, fahrzeugeVerfuegbar: 0,
-    notdienste: 0, offeneBerichte: 0, offeneRechnungen: 0
-  });
-
-  const load = async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
-    const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).single();
-    if (!member) { setLoading(false); return; }
-    const companyId = member.company_id;
-
-    const [auftragRes, mitarbeiterRes, fahrzeugRes, rechnungRes, alleAuftraegeRes] = await Promise.all([
-      supabase.from('auftraege')
-        .select('id, titel, status, datum, uhrzeit, prioritaet, adresse, techniker_id, fahrzeug_id, mitarbeiter:techniker_id(vorname, nachname)')
-        .eq('company_id', companyId)
-        .eq('datum', today)
-        .order('uhrzeit', { ascending: true, nullsFirst: true }),
-      supabase.from('company_members')
-        .select('id, vorname, nachname, telefon')
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .order('nachname'),
-      supabase.from('fahrzeuge')
-        .select('id, kennzeichen, marke, zustand')
-        .eq('company_id', companyId)
-        .order('kennzeichen'),
-      supabase.from('rechnungen')
-        .select('id, status')
-        .eq('company_id', companyId)
-        .eq('status', 'entwurf'),
-      supabase.from('auftraege')
-        .select('id, datum, status, prioritaet')
-        .eq('company_id', companyId)
-        .neq('status', 'abgeschlossen'),
-    ]);
-
-    const auftragData = auftragRes.data || [];
-    const mitarbeiterData = mitarbeiterRes.data || [];
-    const fahrzeugData = fahrzeugRes.data || [];
-    const alleAuftraege = alleAuftraegeRes.data || [];
-
-    setAuftraege(auftragData);
-    setMitarbeiter(mitarbeiterData);
-    setFahrzeuge(fahrzeugData);
-
-    const notdienste = auftragData.filter(a => a.prioritaet === 'notfall').length;
-    const freieMonteure = mitarbeiterData.filter(m =>
-      !auftragData.some(a => a.techniker_id === m.id && a.status === 'in_bearbeitung')
-    ).length;
-    const fahrzeugeVerfuegbar = fahrzeugData.filter(f =>
-      f.zustand !== 'wartung' && f.zustand !== 'ausser_betrieb'
-    ).length;
-
-    setStats({
-      einsaetzeHeute: auftragData.length,
-      freieMonteure,
-      fahrzeugeVerfuegbar,
-      notdienste,
-      offeneBerichte: 0,
-      offeneRechnungen: rechnungRes.data?.length || 0,
-    });
-
-    const newAlerts = [];
-    if (notdienste > 0) newAlerts.push({ type: 'warning', msg: `${notdienste} Notdienst${notdienste > 1 ? 'e' : ''} heute` });
-    const ueberfaellig = alleAuftraege.filter(a => a.datum && a.datum < today && a.status === 'offen');
-    if (ueberfaellig.length > 0) newAlerts.push({ type: 'critical', msg: `${ueberfaellig.length} überfällige${ueberfaellig.length > 1 ? ' Aufträge' : 'r Auftrag'}` });
-    fahrzeugData.filter(f => f.zustand === 'wartung').forEach(f =>
-      newAlerts.push({ type: 'warning', msg: `${f.kennzeichen} in Werkstatt` })
-    );
-    setAlerts(newAlerts);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const alertColor = {
-    critical: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400',
-    warning: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400',
-    info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400',
-  };
-
-  const getMitarbeiterAuftraege = (mId) => auftraege.filter(a => a.techniker_id === mId);
-  const getMitarbeiterStatus = (mId) => {
-    const a = auftraege.find(a => a.techniker_id === mId);
-    if (!a) return 'frei';
-    if (a.status === 'in_bearbeitung') return 'im_einsatz';
-    return 'geplant';
-  };
-
-  if (loading) return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-72 animate-pulse" />
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        {[...Array(6)].map((_, i) => <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />)}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />)}
+function ModulKarte({ tabId, router }) {
+  const m = MODULE[tabId];
+  if (!m) return null;
+  return (
+    <div className="max-w-lg">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${m.iconColor}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            strokeWidth={1.5} stroke="currentColor" className={`w-7 h-7 ${m.textColor}`} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-2">{m.titel}</h2>
+          <p className="text-sm text-gray-500 leading-relaxed">{m.beschreibung}</p>
+        </div>
+        <button
+          onClick={() => router.push(m.route)}
+          className={`inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl text-sm font-semibold transition ${m.btnColor}`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            strokeWidth={2} stroke="currentColor" className="w-4 h-4" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+          {m.button}
+        </button>
       </div>
     </div>
   );
+}
+
+export default function Disposition() {
+  const router = useRouter();
+  const [aktiveTab, setAktiveTab] = useState('tagesplanung');
+  const [userId,    setUserId]    = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
+
+  // OS-003: Live Sync Engine — hub ready; sub-pages handle their own fetchData
+  useRealtimeSync(userId, () => {});
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
-
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Operations Center</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {formatDate(new Date())} · KW {getKW(new Date())}
-            </p>
-          </div>
-          <GhostButton onClick={load}>
-            <RefreshCw className="w-4 h-4 mr-1" /> Aktualisieren
-          </GhostButton>
-        </div>
-
-        {/* KPI STRIP */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <KpiCard label="Einsätze heute" value={stats.einsaetzeHeute} />
-          <KpiCard label="Freie Monteure" value={stats.freieMonteure} />
-          <KpiCard label="Fahrzeuge frei" value={stats.fahrzeugeVerfuegbar} />
-          <KpiCard label="Notdienste" value={stats.notdienste} />
-          <KpiCard label="Fehl. Berichte" value={stats.offeneBerichte} />
-          <KpiCard label="Off. Rechnungen" value={stats.offeneRechnungen} />
-        </div>
-
-        {/* LIVE ALERTS */}
-        {alerts.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Live Alerts</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-              {alerts.map((a, i) => (
-                <div key={i} className={`flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium ${alertColor[a.type]}`}>
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {a.msg}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TEAM BOARD */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Live Team Board</h2>
-            <GhostButton onClick={() => router.push('/dashboard/mitarbeiter')}>Alle anzeigen</GhostButton>
-          </div>
-          {mitarbeiter.length === 0 ? (
-            <EmptyState title="Keine Mitarbeiter" description="Noch keine aktiven Mitarbeiter angelegt." />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {mitarbeiter.map(m => {
-                const status = getMitarbeiterStatus(m.id);
-                const mAuftraege = getMitarbeiterAuftraege(m.id);
-                const fullName = `${m.vorname} ${m.nachname}`;
-                const statusDot = { frei: 'bg-green-500', im_einsatz: 'bg-blue-500', geplant: 'bg-orange-500' };
-                const statusLabel = { frei: 'Frei', im_einsatz: 'Im Einsatz', geplant: 'Geplant' };
-                const statusText = { frei: 'text-green-600 dark:text-green-400', im_einsatz: 'text-blue-600 dark:text-blue-400', geplant: 'text-orange-600 dark:text-orange-400' };
-                return (
-                  <Card key={m.id}>
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="relative shrink-0">
-                          <div className={`w-11 h-11 ${getAvatarColor(fullName)} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                            {getInitials(fullName)}
-                          </div>
-                          <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${statusDot[status] || 'bg-gray-400'}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{fullName}</p>
-                          <span className={`text-xs font-medium ${statusText[status]}`}>{statusLabel[status]}</span>
-                        </div>
-                      </div>
-                      {mAuftraege.length > 0 && (
-                        <div className="space-y-1">
-                          {mAuftraege.slice(0, 2).map(a => (
-                            <div key={a.id} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 rounded px-2 py-1">
-                              <Clock className="w-3 h-3 shrink-0" />
-                              <span className="truncate">{a.uhrzeit ? a.uhrzeit.slice(0, 5) : '–'} · {a.titel || 'Einsatz'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {m.telefon && (
-                        <a href={`tel:${m.telefon}`} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
-                          <Phone className="w-3 h-3" />{m.telefon}
-                        </a>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* OPERATIONS BOARD */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-              Einsätze heute ({auftraege.length})
-            </h2>
-            <PrimaryButton onClick={() => router.push('/dashboard/auftraege/erstellen')}>
-              <Plus className="w-4 h-4 mr-1" /> Neuer Auftrag
-            </PrimaryButton>
-          </div>
-          {auftraege.length === 0 ? (
-            <EmptyState title="Keine Einsätze heute" description="Für heute sind keine Aufträge geplant." />
-          ) : (
-            <div className="space-y-3">
-              {auftraege.map(a => {
-                const fz = fahrzeuge.find(f => f.id === a.fahrzeug_id);
-                const techName = a.mitarbeiter ? `${a.mitarbeiter.vorname} ${a.mitarbeiter.nachname}` : null;
-                return (
-                  <div
-                    key={a.id}
-                    onClick={() => router.push(`/dashboard/auftraege/${a.id}`)}
-                    className="cursor-pointer group"
-                  >
-                    <Card>
-                      <div className="p-4 group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 transition-colors rounded-xl">
-                        <div className="flex flex-col md:flex-row md:items-center gap-3">
-                          <div className="shrink-0 text-center md:w-16">
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                              {a.uhrzeit ? a.uhrzeit.slice(0, 5) : '–'}
-                            </p>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{a.titel || 'Einsatz'}</p>
-                              <StatusBadge status={a.status} />
-                              {a.prioritaet === 'notfall' && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Notdienst</span>
-                              )}
-                              {a.prioritaet && a.prioritaet !== 'notfall' && (
-                                <PrioritaetBadge prioritaet={a.prioritaet} />
-                              )}
-                            </div>
-                            <div className="flex items-center flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
-                              {a.adresse && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{a.adresse}</span>}
-                              {techName && <span className="flex items-center gap-1"><User className="w-3 h-3" />{techName}</span>}
-                              {fz && <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{fz.kennzeichen}</span>}
-                            </div>
-                          </div>
-                          <div className="flex gap-2 shrink-0" onClick={e => e.stopPropagation()}>
-                            <GhostButton onClick={() => router.push(`/dashboard/auftraege/einsatzbericht?id=${a.id}`)}>
-                              <ClipboardList className="w-4 h-4" />
-                            </GhostButton>
-                            <GhostButton onClick={() => router.push(`/dashboard/rechnungen/neu?auftragId=${a.id}`)}>
-                              <Receipt className="w-4 h-4" />
-                            </GhostButton>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* FAHRZEUGE */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fahrzeugstatus</h2>
-            <GhostButton onClick={() => router.push('/dashboard/fahrzeuge')}>Alle Fahrzeuge</GhostButton>
-          </div>
-          {fahrzeuge.length === 0 ? (
-            <EmptyState title="Keine Fahrzeuge" description="Noch keine Fahrzeuge angelegt." />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {fahrzeuge.map(f => {
-                const inEinsatz = auftraege.some(a => a.fahrzeug_id === f.id && a.status === 'in_bearbeitung');
-                const inWerkstatt = f.zustand === 'wartung';
-                const statusLabel = inEinsatz ? 'Im Einsatz' : inWerkstatt ? 'Werkstatt' : 'Verfügbar';
-                const statusColor = inEinsatz ? 'bg-blue-500' : inWerkstatt ? 'bg-red-500' : 'bg-green-500';
-                return (
-                  <Card key={f.id}>
-                    <div className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center shrink-0">
-                        <Truck className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 dark:text-white font-mono text-sm">{f.kennzeichen}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{f.marke || '–'}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <div className={`w-2 h-2 rounded-full ${statusColor}`} />
-                        <span className="text-xs text-gray-600 dark:text-gray-400">{statusLabel}</span>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* SCHNELLAKTIONEN */}
-        <div>
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Schnellaktionen</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {[
-              { label: 'Neuer Auftrag', icon: ClipboardList, href: '/dashboard/auftraege/erstellen', color: 'bg-blue-500' },
-              { label: 'Notdienst', icon: AlertTriangle, href: '/dashboard/auftraege/erstellen?prioritaet=notfall', color: 'bg-red-500' },
-              { label: 'Neuer Kunde', icon: User, href: '/dashboard/kunden/neu', color: 'bg-green-500' },
-              { label: 'Rechnung', icon: Receipt, href: '/dashboard/rechnungen/neu', color: 'bg-purple-500' },
-              { label: 'Angebot', icon: FileText, href: '/dashboard/angebote/neu', color: 'bg-orange-500' },
-              { label: 'Routenplanung', icon: Navigation, href: '/dashboard/disposition/routenplanung', color: 'bg-indigo-500' },
-            ].map(action => {
-              const Icon = action.icon;
-              return (
-                <div
-                  key={action.label}
-                  onClick={() => router.push(action.href)}
-                  className="cursor-pointer group"
-                >
-                  <Card>
-                    <div className="p-4 flex flex-col items-center gap-2 text-center group-hover:bg-gray-50 dark:group-hover:bg-gray-800/50 transition-colors rounded-xl">
-                      <div className={`w-10 h-10 ${action.color} rounded-xl flex items-center justify-center`}>
-                        <Icon className="w-5 h-5 text-white" />
-                      </div>
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{action.label}</p>
-                    </div>
-                  </Card>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
+    <div className="space-y-5 max-w-6xl pb-10">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">Disposition</h1>
+        <p className="text-sm text-gray-400 mt-0.5">
+          Plane Einsätze, Mitarbeiter, Fahrzeuge und Routen.
+        </p>
       </div>
+      <TabNav
+        id="disposition-tabs"
+        tabs={DISPOSITION_TABS}
+        activeTab={aktiveTab}
+        onChange={setAktiveTab}
+        label="Dispositionsnavigation"
+        className="mb-5"
+      />
+      <ModulKarte tabId={aktiveTab} router={router} />
     </div>
   );
 }
