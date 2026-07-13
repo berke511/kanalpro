@@ -4,16 +4,16 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard, Users, ClipboardList, Receipt,
-  Settings, LogOut, Zap, AlertTriangle, Sparkles,
+  Settings, LogOut, Star, AlertTriangle, Zap,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 
 const navLinks = [
-  { href: '/dashboard',               label: 'Übersicht',     Icon: LayoutDashboard },
-  { href: '/dashboard/kunden',        label: 'Kunden',        Icon: Users           },
-  { href: '/dashboard/auftraege',     label: 'Aufträge',      Icon: ClipboardList   },
-  { href: '/dashboard/rechnungen',    label: 'Rechnungen',    Icon: Receipt         },
-  { href: '/dashboard/einstellungen', label: 'Einstellungen', Icon: Settings        },
+  { href: '/dashboard',               label: 'Ãbersicht',    Icon: LayoutDashboard },
+  { href: '/dashboard/kunden',        label: 'Kunden',       Icon: Users           },
+  { href: '/dashboard/auftraege',     label: 'AuftrÃ¤ge',     Icon: ClipboardList   },
+  { href: '/dashboard/rechnungen',    label: 'Rechnungen',   Icon: Receipt         },
+  { href: '/dashboard/einstellungen', label: 'Einstellungen',Icon: Settings        },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -58,9 +58,9 @@ export default function DashboardLayout({ children }) {
   }
 
   const tage = trialTage();
-  const trialLäuft = abo?.status === 'trial';
-  const abgelaufen = trialLäuft && tage === 0;
-  const warnung = trialLäuft && tage <= 7 && tage > 0;
+  const trialLÃ¤uft = abo?.status === 'trial';
+  const abgelaufen = trialLÃ¤uft && tage === 0;
+  const warnung = trialLÃ¤uft && tage <= 7 && tage > 0;
 
   if (!user) return null;
 
@@ -72,67 +72,87 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Trial-Banner */}
-      {trialLäuft && tage > 0 && (
+      {trialLÃ¤uft && tage > 0 && (
         <div className={`px-6 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-3 ${warnung ? 'bg-orange-500 text-white' : 'bg-blue-600 text-white'}`}>
           <span className="flex items-center gap-1.5">
             {warnung
-              ? <AlertTriangle size={14} />
-              : <Sparkles size={14} />}
+              ? <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
+              : <Zap size={14} className="shrink-0" aria-hidden="true" />}
             Noch {tage} {tage === 1 ? 'Tag' : 'Tage'} kostenlose Testphase
           </span>
-          <Link href="/dashboard/upgrade"
-            className="bg-white text-blue-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-50 transition">
+          <Link
+            href="/dashboard/upgrade"
+            className="bg-white text-blue-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-blue-600"
+          >
             Jetzt upgraden
           </Link>
         </div>
       )}
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0">
         <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shrink-0">
-          <div className="h-16 px-5 border-b border-gray-100 flex items-center">
+          {/* Logo */}
+          <div className="px-5 py-5 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
                 <span className="text-white font-bold text-sm">K</span>
               </div>
-              <span className="font-bold text-lg text-gray-900">KanalPro</span>
+              <span className="font-bold text-lg text-gray-900 leading-none">KanalPro</span>
             </div>
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {/* Navigation */}
+          <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Hauptnavigation">
             {navLinks.map((link) => {
-              const active = pathname === link.href || pathname.startsWith(link.href + '/');
+              const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
               return (
-                <Link key={link.href} href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${
-                    active
-                      ? 'bg-blue-50 text-blue-700 font-medium'
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}>
-                  <link.Icon size={16} className={active ? 'text-blue-600' : 'text-gray-400'} />
+                  }`}
+                >
+                  <link.Icon
+                    className={`shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}
+                    style={{ width: 18, height: 18 }}
+                    aria-hidden="true"
+                  />
                   {link.label}
                 </Link>
               );
             })}
           </nav>
 
+          {/* Footer */}
           <div className="px-3 py-4 border-t border-gray-100">
-            {trialLäuft && (
-              <Link href="/dashboard/upgrade"
-                className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">
-                <Zap size={12} />
-                Upgrade — ab 29 €/Monat
+            {trialLÃ¤uft && (
+              <Link
+                href="/dashboard/upgrade"
+                className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <Star size={13} aria-hidden="true" />
+                Upgrade â ab 29 â¬/Monat
               </Link>
             )}
             <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
-            <button onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition">
-              <LogOut size={15} className="text-gray-400" />
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+            >
+              <LogOut style={{ width: 18, height: 18 }} className="text-gray-400 shrink-0" aria-hidden="true" />
               Abmelden
             </button>
           </div>
         </aside>
 
-        <main className="flex-1 overflow-auto p-6 md:p-8 lg:p-12">{children}</main>
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-screen-2xl mx-auto p-8">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
