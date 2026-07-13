@@ -6,10 +6,8 @@ import {
   FileText, TrendingUp, Clock, AlertTriangle,
   CheckCircle, FileSearch, Plus, Users,
   Briefcase, Calendar, DollarSign,
-  Wrench, CreditCard, FileCheck, Activity
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
-import { getActivities } from '@/lib/activityEngine';
 import {
   Card, KpiCard, PrimaryButton, SecondaryButton,
   EmptyState, PageHeader, PageSection,
@@ -53,7 +51,7 @@ function RechnungBadgeLocal({ r }) {
   const key = istUeberfaellig(r) ? 'ueberfaellig' : (r.status ?? 'entwurf');
   const cfg = R_BADGE[key] ?? R_BADGE.entwurf;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
       {cfg.label}
     </span>
   );
@@ -61,7 +59,6 @@ function RechnungBadgeLocal({ r }) {
 
 export default function FinanceCenter() {
   const [laden, setLaden]           = useState(true);
-  const [activities, setActivities] = useState([]);
   const [rechnungen, setRechnungen] = useState([]);
   const [angebote, setAngebote]     = useState([]);
 
@@ -78,7 +75,7 @@ export default function FinanceCenter() {
       const companyId = member?.company_id;
       if (!companyId) { setLaden(false); return; }
 
-      const [{ data: rech }, { data: ang }, acts] = await Promise.all([
+      const [{ data: rech }, { data: ang }] = await Promise.all([
         supabase
           .from('rechnungen')
           .select('*, kunden(name)')
@@ -91,12 +88,10 @@ export default function FinanceCenter() {
           .eq('company_id', companyId)
           .order('erstellt_am', { ascending: false })
           .limit(100),
-        getActivities(supabase, companyId, { limit: 15 }),
       ]);
 
       setRechnungen(rech ?? []);
       setAngebote(ang ?? []);
-      setActivities(acts);
       setLaden(false);
     }
     load();
@@ -121,7 +116,7 @@ export default function FinanceCenter() {
     .slice(0, 20);
 
   return (
-    <div className="space-y-6 pb-32 md:pb-8">
+    <div className="max-w-screen-2xl mx-auto space-y-6 pb-32 md:pb-8">
 
       {/* BEREICH 1: FINANCE HEADER */}
       <div>
@@ -139,13 +134,13 @@ export default function FinanceCenter() {
             </Link>
           }
         />
-        <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           {[
             { label: 'Heute erstellt',     value: laden ? null : String(rechnungenHeute) },
             { label: 'Offene Forderungen', value: laden ? null : fmtEuro(offeneForderungen) },
             { label: 'Monatsumsatz',       value: laden ? null : fmtEuro(monatsumsatz) },
             { label: 'Offene Angebote',    value: laden ? null : String(offeneAngebote.length) },
-            { label: 'Ø Zahlungsdauer', value: '–' },
+            { label: 'Ø Zahlungsdauer',    value: '–' },
           ].map(kpi => (
             <div key={kpi.label} className="text-center">
               {kpi.value === null
@@ -162,186 +157,220 @@ export default function FinanceCenter() {
       <PageSection title="Rechnungs-KPIs">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <KpiCard label="Entwürfe (bereit)"   value={entwuerfe.length}           icon={FileText}      color="gray"    loading={laden} />
-          <KpiCard label="Offen (gesendet)"         value={offenListe.length}          icon={Clock}         color="yellow"  loading={laden} />
-          <KpiCard label="Bezahlt"                  value={bezahlt.length}             icon={CheckCircle}   color="green"   loading={laden} />
-          <KpiCard label="Mahnrelevant"             value={ueberfaelligListe.length}   icon={AlertTriangle} color="red"     loading={laden} />
-          <KpiCard label="Monatsumsatz"             value={fmtEuro(monatsumsatz)}      icon={TrendingUp}    color="emerald" loading={laden} />
-          <KpiCard label="Offene Forderungen"       value={fmtEuro(offeneForderungen)} icon={DollarSign}    color="orange"  loading={laden} />
+          <KpiCard label="Offen (gesendet)"     value={offenListe.length}          icon={Clock}         color="yellow"  loading={laden} />
+          <KpiCard label="Bezahlt"              value={bezahlt.length}             icon={CheckCircle}   color="green"   loading={laden} />
+          <KpiCard label="Mahnrelevant"         value={ueberfaelligListe.length}   icon={AlertTriangle} color="red"     loading={laden} />
+          <KpiCard label="Monatsumsatz"         value={fmtEuro(monatsumsatz)}      icon={TrendingUp}    color="emerald" loading={laden} />
+          <KpiCard label="Offene Forderungen"   value={fmtEuro(offeneForderungen)} icon={DollarSign}    color="orange"  loading={laden} />
         </div>
       </PageSection>
 
-      {/* BEREICH 3: ARBEITSLISTE */}
-      <PageSection title="Arbeitsliste – Offene & Überfällige Rechnungen">
-        {laden ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse" />
-            ))}
-          </div>
-        ) : arbeitsliste.length === 0 ? (
-          <EmptyState
-            icon={CheckCircle}
-            title="Alles erledigt"
-            description="Keine offenen oder überfälligen Rechnungen vorhanden."
-          />
-        ) : (
-          <div className="space-y-2">
-            {arbeitsliste.map(r => {
-              const overdue = istUeberfaellig(r);
-              const faelligkeit = r.faelligkeitsdatum ?? (r.datum
-                ? new Date(new Date(r.datum).getTime() + 30 * 24 * 60 * 60 * 1000)
-                    .toISOString().split('T')[0]
-                : null);
-              return (
-                <Card key={r.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-bold text-gray-900">
+      {/* Three-Column auf xl */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Linke Spalte xl:col-span-2 */}
+        <div className="xl:col-span-2 space-y-6">
+
+          {/* ARBEITSLISTE */}
+          <PageSection title="Arbeitsliste – Offene & Überfällige Rechnungen">
+            {laden ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ) : arbeitsliste.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle}
+                title="Alles erledigt"
+                description="Keine offenen oder überfälligen Rechnungen vorhanden."
+              />
+            ) : (
+              <div className="space-y-2">
+                {arbeitsliste.map(r => {
+                  const overdue = istUeberfaellig(r);
+                  const faelligkeit = r.faelligkeitsdatum ?? (r.datum
+                    ? new Date(new Date(r.datum).getTime() + 30 * 24 * 60 * 60 * 1000)
+                        .toISOString().split('T')[0]
+                    : null);
+                  return (
+                    <Card key={r.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm font-bold text-gray-900">
+                              {r.rechnungsnummer ?? '–'}
+                            </span>
+                            <RechnungBadgeLocal r={r} />
+                            {overdue && (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+                                <AlertTriangle size={11} />
+                                Überfällig
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-0.5">{r.kunden?.name ?? '–'}</p>
+                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                            <span className="text-base font-bold text-gray-900">
+                              {fmtEuro(calcBrutto(r))}
+                            </span>
+                            {faelligkeit && (
+                              <span className={`text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                                Fällig: {new Date(faelligkeit).toLocaleDateString('de-DE')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Link href={`/dashboard/rechnungen/${r.id}`}>
+                          <SecondaryButton className="shrink-0 text-xs">
+                            Öffnen
+                          </SecondaryButton>
+                        </Link>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </PageSection>
+
+          {/* ANGEBOTE */}
+          <PageSection title="Offene Angebote">
+            {laden ? (
+              <div className="space-y-2">
+                {[1, 2].map(i => (
+                  <div key={i} className="h-20 rounded-xl bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ) : offeneAngebote.length === 0 ? (
+              <EmptyState
+                icon={FileSearch}
+                title="Keine offenen Angebote"
+                description="Alle Angebote wurden bearbeitet oder es gibt noch keine."
+              />
+            ) : (
+              <div className="space-y-2">
+                {offeneAngebote.slice(0, 20).map(a => {
+                  const bruttoA = calcBrutto(a);
+                  const tage = a.erstellt_am
+                    ? Math.floor((Date.now() - new Date(a.erstellt_am).getTime()) / 86400000)
+                    : null;
+                  const cfg = A_BADGE[a.status] ?? A_BADGE.entwurf;
+                  return (
+                    <Card key={a.id} className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm font-bold text-gray-900">
+                              {a.angebotsnummer ?? '–'}
+                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
+                              {cfg.label}
+                            </span>
+                            {tage !== null && tage > 14 && (
+                              <span className="text-xs font-medium text-amber-500">
+                                {tage} Tage alt
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-0.5">{a.kunden?.name ?? '–'}</p>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-base font-bold text-gray-900">{fmtEuro(bruttoA)}</span>
+                            {tage !== null && (
+                              <span className="text-xs text-gray-400">
+                                Erstellt vor {tage} {tage === 1 ? 'Tag' : 'Tagen'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Link href={`/dashboard/angebote/${a.id}`}>
+                          <SecondaryButton className="shrink-0 text-xs">
+                            Öffnen
+                          </SecondaryButton>
+                        </Link>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </PageSection>
+
+        </div>
+
+        {/* Rechte Sidebar xl:col-span-1 */}
+        <div className="xl:col-span-1 space-y-6">
+
+          {/* ZAHLUNGS-TIMELINE */}
+          <PageSection title="Letzte Aktivitäten">
+            {laden ? (
+              <div className="space-y-1.5">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-11 rounded-lg bg-gray-100 animate-pulse" />
+                ))}
+              </div>
+            ) : rechnungen.length === 0 ? (
+              <EmptyState
+                icon={Calendar}
+                title="Keine Aktivitäten"
+                description="Noch keine Rechnungen vorhanden."
+              />
+            ) : (
+              <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                {rechnungen.slice(0, 15).map(r => {
+                  const overdue = istUeberfaellig(r);
+                  let dotCls   = 'bg-blue-400';
+                  let labelCls = 'text-blue-600';
+                  let aktLabel = 'Gesendet';
+                  if (r.status === 'bezahlt') { dotCls = 'bg-green-400'; labelCls = 'text-green-600'; aktLabel = 'Bezahlt'; }
+                  if (overdue)               { dotCls = 'bg-red-400';   labelCls = 'text-red-600';   aktLabel = 'Überfällig'; }
+                  if (r.status === 'entwurf'){ dotCls = 'bg-gray-300';  labelCls = 'text-gray-400';  aktLabel = 'Entwurf'; }
+                  return (
+                    <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${dotCls}`} />
+                      <Link
+                        href={`/dashboard/rechnungen/${r.id}`}
+                        className="flex-1 min-w-0 flex items-center gap-2 hover:text-blue-600 transition"
+                      >
+                        <span className="font-mono text-xs font-semibold text-gray-900">
                           {r.rechnungsnummer ?? '–'}
                         </span>
-                        <RechnungBadgeLocal r={r} />
-                        {overdue && (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-                            <AlertTriangle size={11} />
-                            Überfällig
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{r.kunden?.name ?? '–'}</p>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="text-base font-bold text-gray-900">
-                          {fmtEuro(calcBrutto(r))}
-                        </span>
-                        {faelligkeit && (
-                          <span className={`text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-                            Fällig: {new Date(faelligkeit).toLocaleDateString('de-DE')}
-                          </span>
-                        )}
-                      </div>
+                        <span className="text-xs text-gray-500 truncate">{r.kunden?.name ?? '–'}</span>
+                      </Link>
+                      <span className={`text-xs font-semibold shrink-0 ${labelCls}`}>{aktLabel}</span>
+                      <span className="text-xs font-medium text-gray-700 shrink-0">{fmtEuro(calcBrutto(r))}</span>
                     </div>
-                    <Link href={`/dashboard/rechnungen/${r.id}`}>
-                      <SecondaryButton className="shrink-0 text-xs">
-                        Öffnen
-                      </SecondaryButton>
-                    </Link>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </PageSection>
-
-      {/* BEREICH 4: ANGEBOTE */}
-      <PageSection title="Offene Angebote">
-        {laden ? (
-          <div className="space-y-2">
-            {[1, 2].map(i => (
-              <div key={i} className="h-20 rounded-xl bg-gray-100 animate-pulse" />
-            ))}
-          </div>
-        ) : offeneAngebote.length === 0 ? (
-          <EmptyState
-            icon={FileSearch}
-            title="Keine offenen Angebote"
-            description="Alle Angebote wurden bearbeitet oder es gibt noch keine."
-          />
-        ) : (
-          <div className="space-y-2">
-            {offeneAngebote.slice(0, 20).map(a => {
-              const bruttoA = calcBrutto(a);
-              const tage = a.erstellt_am
-                ? Math.floor((Date.now() - new Date(a.erstellt_am).getTime()) / 86400000)
-                : null;
-              const cfg = A_BADGE[a.status] ?? A_BADGE.entwurf;
-              return (
-                <Card key={a.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-bold text-gray-900">
-                          {a.angebotsnummer ?? '–'}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${cfg.cls}`}>
-                          {cfg.label}
-                        </span>
-                        {tage !== null && tage > 14 && (
-                          <span className="text-xs font-medium text-amber-500">
-                            {tage} Tage alt
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{a.kunden?.name ?? '–'}</p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-base font-bold text-gray-900">{fmtEuro(bruttoA)}</span>
-                        {tage !== null && (
-                          <span className="text-xs text-gray-400">
-                            Erstellt vor {tage} {tage === 1 ? 'Tag' : 'Tagen'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Link href={`/dashboard/angebote/${a.id}`}>
-                      <SecondaryButton className="shrink-0 text-xs">
-                        Öffnen
-                      </SecondaryButton>
-                    </Link>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </PageSection>
-
-      {/* BEREICH 5: ZAHLUNGS-TIMELINE */}
-        <PageSection title="Letzte Aktivitäten">
-          {laden ? (
-            <div className="space-y-1.5">
-              {[1,2,3,4,5].map(i => <div key={i} className="h-11 rounded-lg bg-gray-100 animate-pulse" />)}
-            </div>
-          ) : activities.length === 0 ? (
-            <EmptyState icon={Calendar} title="Keine Aktivitäten" description="Noch keine Aktivitäten vorhanden." />
-          ) : (
-            <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
-              {activities.map(a => {
-                const ICONS = { Wrench, CreditCard, FileCheck, Activity };
-                const IconComp = ICONS[a.icon] ?? Activity;
-                return (
-                  <Link key={a.id} href={a.link} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition">
-                    <IconComp size={14} className={a.color} />
-                    <span className="flex-1 text-sm text-gray-700 truncate">{a.title}</span>
-                    {a.description && <span className="text-xs text-gray-400 truncate hidden md:block max-w-xs">{a.description}</span>}
-                    <span className="text-xs text-gray-300 shrink-0">{new Date(a.timestamp).toLocaleDateString('de-DE')}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </PageSection>
-        {/* BEREICH 6: SCHNELLAKTIONEN */}
-      <PageSection title="Schnellaktionen">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: 'Neue Rechnung', href: '/dashboard/rechnungen/neu', Icon: FileText,   primary: true  },
-            { label: 'Neues Angebot', href: '/dashboard/angebote/neu',   Icon: FileSearch, primary: false },
-            { label: 'Kundenliste',   href: '/dashboard/kunden',         Icon: Users,      primary: false },
-            { label: 'Alle Aufträge', href: '/dashboard/auftraege', Icon: Briefcase,  primary: false },
-          ].map(({ label, href, Icon, primary }) => (
-            <Link key={label} href={href}>
-              <div className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition cursor-pointer text-center ${
-                primary
-                  ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`}>
-                <Icon size={18} />
-                <span className="text-xs font-semibold">{label}</span>
+                  );
+                })}
               </div>
-            </Link>
-          ))}
+            )}
+          </PageSection>
+
+          {/* SCHNELLAKTIONEN */}
+          <PageSection title="Schnellaktionen">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Neue Rechnung', href: '/dashboard/rechnungen/neu', Icon: FileText,   primary: true  },
+                { label: 'Neues Angebot', href: '/dashboard/angebote/neu',   Icon: FileSearch, primary: false },
+                { label: 'Kundenliste',   href: '/dashboard/kunden',         Icon: Users,      primary: false },
+                { label: 'Alle Aufträge', href: '/dashboard/auftraege',      Icon: Briefcase,  primary: false },
+              ].map(({ label, href, Icon, primary }) => (
+                <Link key={label} href={href}>
+                  <div className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition cursor-pointer text-center ${
+                    primary
+                      ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}>
+                    <Icon size={18} />
+                    <span className="text-xs font-semibold">{label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </PageSection>
+
         </div>
-      </PageSection>
+      </div>
 
     </div>
   );
