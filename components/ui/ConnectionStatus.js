@@ -1,16 +1,18 @@
 'use client';
 // components/ui/ConnectionStatus.js
-// OS-003 Live Sync Engine — Connection Status Indicator for Dashboard Topbar
+// OS-003-A Live Sync Engine — Self-contained Connection Status Indicator
 
 import { WifiOff, RefreshCw } from 'lucide-react';
+import { useRealtimeContext } from '@/components/providers/RealtimeSyncProvider';
 
 /**
  * Compact connection status indicator for the dashboard topbar.
- * Minimized (green dot only) when connected; expands to show status + action when degraded.
- *
- * @param {{ status: 'connected'|'connecting'|'offline'|'reconnecting', onReconnect: function }} props
+ * Self-contained: reads status and reconnect directly from RealtimeSyncContext.
+ * No props required.
  */
-export default function ConnectionStatus({ status, onReconnect }) {
+export default function ConnectionStatus() {
+  const { connectionStatus: status, reconnect } = useRealtimeContext();
+
   if (status === 'connected') {
     return (
       <div
@@ -45,16 +47,14 @@ export default function ConnectionStatus({ status, onReconnect }) {
     >
       <WifiOff size={12} className="shrink-0" aria-hidden="true" />
       <span>Offline</span>
-      {onReconnect && (
-        <button
-          type="button"
-          onClick={onReconnect}
-          aria-label="Erneut verbinden"
-          className="ml-1 p-0.5 rounded hover:bg-red-100 transition focus:outline-none focus:ring-1 focus:ring-red-400"
-        >
-          <RefreshCw size={11} aria-hidden="true" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={reconnect}
+        aria-label="Erneut verbinden"
+        className="ml-1 p-0.5 rounded hover:bg-red-100 transition focus:outline-none focus:ring-1 focus:ring-red-400"
+      >
+        <RefreshCw size={11} aria-hidden="true" />
+      </button>
     </div>
   );
 }
