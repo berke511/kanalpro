@@ -13,10 +13,16 @@ export default function Dashboard() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: memberData } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      const companyId = memberData?.company_id;
       const [{ count: kunden }, { count: offen }, { count: abgeschlossen }] = await Promise.all([
-        supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'offen'),
-        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'abgeschlossen'),
+        supabase.from('kunden').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'offen'),
+        supabase.from('auftraege').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'abgeschlossen'),
       ]);
       setStats({ kunden: kunden ?? 0, offen: offen ?? 0, abgeschlossen: abgeschlossen ?? 0 });
       setLaden(false);
