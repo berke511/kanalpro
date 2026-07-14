@@ -1,5 +1,5 @@
 'use client';
-// KanalPro Design System â PX-010 Premium Audit
+// KanalPro Design System — PX-010 Premium Audit
 // Alle Komponenten sind projektweit standardisiert
 
 import { X, Search } from 'lucide-react';
@@ -125,7 +125,7 @@ export function KpiCard({ label, value, icon: Icon, trend, color = 'blue', loadi
       <div className="min-w-0">
         {trend != null && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full block mb-1 w-fit ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {trend >= 0 ? 'â' : 'â'} {Math.abs(trend)}%
+            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
         )}
         <div className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
@@ -215,7 +215,7 @@ export function RechnungBadge({ status }) {
   const label = {
     offen:        'Offen',
     bezahlt:      'Bezahlt',
-    ueberfaellig: 'ÃberfÃ¤llig',
+    ueberfaellig: 'Überfällig',
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg[status] ?? 'bg-gray-100 text-gray-700'}`}>
