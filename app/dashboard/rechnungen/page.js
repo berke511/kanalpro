@@ -268,7 +268,7 @@ export default function Rechnungen() {
           ) : keinFirmaFehler ? (
             <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{keinFirmaFehler}</div>
           ) : gefiltert.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
               <EmptyState
                 icon={Receipt}
                 title={rechnungen.length === 0 ? 'Noch keine Rechnungen' : 'Keine Rechnungen gefunden'}
@@ -337,7 +337,7 @@ export default function Rechnungen() {
                     <div
                       key={r.id}
                       onClick={() => router.push(`/dashboard/rechnungen/${r.id}`)}
-                      className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-100 transition"
+                      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-100 transition"
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <p className="font-mono font-semibold text-gray-900 dark:text-white">{r.rechnungsnummer}</p>
@@ -365,7 +365,7 @@ export default function Rechnungen() {
             {fehler && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>}
             {gespeichert && <div className="bg-green-50 text-green-700 text-sm px-4 py-3 rounded-lg font-medium">Erfolgreich gespeichert!</div>}
             {firmaFelder.map(section => (
-              <div key={section.section} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+              <div key={section.section} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
                 <h2 className="font-semibold text-sm uppercase tracking-wide text-blue-600">{section.section}</h2>
                 {section.items.map(f => (
                   <div key={f.name}>
@@ -384,7 +384,7 @@ export default function Rechnungen() {
           </form>
 
           {/* Firmenlogo */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
             <h2 className="font-semibold text-sm uppercase tracking-wide text-blue-600 mb-4">Firmenlogo</h2>
             {logoUrl ? (
               <div className="mb-3 flex items-center gap-4">
