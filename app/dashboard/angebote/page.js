@@ -25,6 +25,7 @@ export default function Angebote() {
   const [tab, setTab]           = useState('angebote');
   const [angebote, setAngebote] = useState([]);
   const [laden, setLaden]       = useState(true);
+  const [keinUnternehmen, setKeinUnternehmen] = useState(false);
 
   // PDF-Export state
   const [selectedId, setSelectedId] = useState('');
@@ -43,19 +44,32 @@ export default function Angebote() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLaden(false); return; }
+
+      const { data: memberData } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      const companyId = memberData?.company_id;
+
+      if (!companyId) {
+        setKeinUnternehmen(true);
+        setLaden(false);
+        return;
+      }
+
       const { data } = await supabase
         .from('angebote')
         .select('*, kunden(name, adresse, email)')
+        .eq('company_id', companyId)
         .order('erstellt_am', { ascending: false });
       setAngebote(data ?? []);
       setLaden(false);
+
       // Logo laden
-      const { data: member } = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).maybeSingle();
-      if (member) {
-        const { data: co } = await supabase.from('companies').select('logo_url').eq('id', member.company_id).single();
-        setLogoUrl(co?.logo_url ?? null);
-      }
+      const { data: co } = await supabase.from('companies').select('logo_url').eq('id', companyId).single();
+      setLogoUrl(co?.logo_url ?? null);
     }
     load().catch(() => setLaden(false));
   }, []);
@@ -261,6 +275,8 @@ export default function Angebote() {
       {tab === 'angebote' && (
         laden ? (
           <p className="text-gray-400 text-sm">Wird geladen…</p>
+        ) : keinUnternehmen ? (
+          <p className="text-sm text-red-500">Dein Benutzer ist keinem Unternehmen zugeordnet.</p>
         ) : offeneAngebote.length === 0 ? (
           <div className="text-center py-20 px-6">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -333,6 +349,8 @@ export default function Angebote() {
 
             {laden ? (
               <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
+            ) : keinUnternehmen ? (
+              <p className="text-sm text-red-500">Dein Benutzer ist keinem Unternehmen zugeordnet.</p>
             ) : angebote.length === 0 ? (
               <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
@@ -420,6 +438,8 @@ export default function Angebote() {
 
             {laden ? (
               <p className="text-gray-400 text-sm">Angebote werden geladen…</p>
+            ) : keinUnternehmen ? (
+              <p className="text-sm text-red-500">Dein Benutzer ist keinem Unternehmen zugeordnet.</p>
             ) : angebote.length === 0 ? (
               <p className="text-sm text-gray-500">Keine Angebote vorhanden. <Link href="/dashboard/angebote/neu" className="text-blue-600 hover:underline">Neues Angebot erstellen →</Link></p>
             ) : (
