@@ -5,9 +5,9 @@ import { ArrowRight } from 'lucide-react';
 import TabNav from '@/components/ui/TabNav';
 import { Card } from '@/components/ui/KanalProUI';
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ────────────────────────────────────────────────────────────────
    TAB-KONFIGURATION
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+──────────────────────────────────────────────────────────────── */
 
 const DISPOSITION_TABS = [
   { id: 'tagesplanung',  label: 'Tagesplanung'       },
@@ -18,15 +18,15 @@ const DISPOSITION_TABS = [
   { id: 'routen',        label: 'Routenplanung'      },
 ];
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ────────────────────────────────────────────────────────────────
    MODUL-DEFINITIONEN
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+──────────────────────────────────────────────────────────────── */
 
 const MODULE = {
   tagesplanung: {
     titel:        'Tagesplanung',
-    beschreibung: 'Plane alle heutigen EinsÃ¤tze Ã¼bersichtlich nach Uhrzeit. Behalte den Ãberblick Ã¼ber laufende und anstehende EinsÃ¤tze des Tages.',
-    button:       'Tagesplanung Ã¶ffnen',
+    beschreibung: 'Plane alle heutigen Einsätze übersichtlich nach Uhrzeit. Behalte den Überblick über laufende und anstehende Einsätze des Tages.',
+    button:       'Tagesplanung öffnen',
     route:        '/dashboard/disposition/tagesplanung',
     iconColor:    'bg-blue-50',
     textColor:    'text-blue-600',
@@ -35,8 +35,8 @@ const MODULE = {
   },
   wochenplanung: {
     titel:        'Wochenplanung',
-    beschreibung: 'Plane EinsÃ¤tze fÃ¼r die gesamte Woche. Behalte freie Slots und KapazitÃ¤ten aller Mitarbeiter auf einen Blick.',
-    button:       'Wochenplanung Ã¶ffnen',
+    beschreibung: 'Plane Einsätze für die gesamte Woche. Behalte freie Slots und Kapazitäten aller Mitarbeiter auf einen Blick.',
+    button:       'Wochenplanung öffnen',
     route:        '/dashboard/disposition/wochenplanung',
     iconColor:    'bg-indigo-50',
     textColor:    'text-indigo-600',
@@ -45,8 +45,8 @@ const MODULE = {
   },
   mitarbeiter: {
     titel:        'Mitarbeiterplanung',
-    beschreibung: 'Teile Mitarbeiter gezielt fÃ¼r EinsÃ¤tze ein. Sieh VerfÃ¼gbarkeit, Qualifikationen und aktuelle Auslastung auf einen Blick.',
-    button:       'Mitarbeiterplanung Ã¶ffnen',
+    beschreibung: 'Teile Mitarbeiter gezielt für Einsätze ein. Sieh Verfügbarkeit, Qualifikationen und aktuelle Auslastung auf einen Blick.',
+    button:       'Mitarbeiterplanung öffnen',
     route:        '/dashboard/disposition/mitarbeiterplanung',
     iconColor:    'bg-purple-50',
     textColor:    'text-purple-600',
@@ -55,8 +55,8 @@ const MODULE = {
   },
   fahrzeuge: {
     titel:        'Fahrzeugplanung',
-    beschreibung: 'Plane den Einsatz von Fahrzeugen und Transportmitteln. Verfolge VerfÃ¼gbarkeit und Auslastung aller Fahrzeuge.',
-    button:       'Fahrzeugplanung Ã¶ffnen',
+    beschreibung: 'Plane den Einsatz von Fahrzeugen und Transportmitteln. Verfolge Verfügbarkeit und Auslastung aller Fahrzeuge.',
+    button:       'Fahrzeugplanung öffnen',
     route:        '/dashboard/disposition/fahrzeugplanung',
     iconColor:    'bg-amber-50',
     textColor:    'text-amber-600',
@@ -66,7 +66,7 @@ const MODULE = {
   notdienst: {
     titel:        'Notdienstplanung',
     beschreibung: 'Plane und verwalte den Notdienst. Lege fest, welche Mitarbeiter in welcher Woche Bereitschaft haben.',
-    button:       'Notdienst Ã¶ffnen',
+    button:       'Notdienst öffnen',
     route:        '/dashboard/disposition/notdienstplanung',
     iconColor:    'bg-red-50',
     textColor:    'text-red-600',
@@ -76,7 +76,7 @@ const MODULE = {
   routen: {
     titel:        'Routenplanung',
     beschreibung: 'Plane und optimiere die Fahrtrouten deiner Mitarbeiter. Verfolge aktive Fahrten und Entfernungen in Echtzeit.',
-    button:       'Routenplanung Ã¶ffnen',
+    button:       'Routenplanung öffnen',
     route:        '/dashboard/disposition/routenplanung',
     iconColor:    'bg-green-50',
     textColor:    'text-green-600',
@@ -85,9 +85,9 @@ const MODULE = {
   },
 };
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ────────────────────────────────────────────────────────────────
    MODUL-KARTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+──────────────────────────────────────────────────────────────── */
 
 function ModulKarte({ tabId, router }) {
   const m = MODULE[tabId];
@@ -129,9 +129,9 @@ function ModulKarte({ tabId, router }) {
   );
 }
 
-/* ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+/* ────────────────────────────────────────────────────────────────
    HAUPTKOMPONENTE
-ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+──────────────────────────────────────────────────────────────── */
 
 export default function Disposition() {
   const router = useRouter();
@@ -140,15 +140,15 @@ export default function Disposition() {
   return (
     <div className="space-y-5 max-w-6xl pb-10">
 
-      {/* ââ Header ââ */}
+      {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Disposition</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Plane EinsÃ¤tze, Mitarbeiter, Fahrzeuge und Routen.
+          Plane Einsätze, Mitarbeiter, Fahrzeuge und Routen.
         </p>
       </div>
 
-      {/* ââ Tab-Navigation ââ */}
+      {/* ── Tab-Navigation ── */}
       <TabNav
         id="disposition-tabs"
         tabs={DISPOSITION_TABS}
@@ -158,7 +158,7 @@ export default function Disposition() {
         className="mb-5"
       />
 
-      {/* ââ Tab-Panels ââ */}
+      {/* ── Tab-Panels ── */}
       <ModulKarte tabId={aktiveTab} router={router} />
 
     </div>
