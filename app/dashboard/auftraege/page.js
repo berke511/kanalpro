@@ -27,12 +27,33 @@ export default function Auftraege() {
   const [auftraege, setAuftraege] = useState([]);
   const [filter, setFilter] = useState('alle');
   const [laden, setLaden] = useState(true);
+  const [fehler, setFehler] = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data } = await supabase.from('auftraege').select('*, kunden(name)').eq('user_id', user.id).order('erstellt_am', { ascending: false });
-      setAuftraege(data ?? []); setLaden(false);
+
+      const { data: memberData } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      const companyId = memberData?.company_id;
+
+      if (!companyId) {
+        setFehler('Dein Benutzer ist keinem Unternehmen zugeordnet.');
+        setLaden(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('auftraege')
+        .select('*, kunden(name)')
+        .eq('company_id', companyId)
+        .order('erstellt_am', { ascending: false });
+
+      setAuftraege(data ?? []);
+      setLaden(false);
     }
     load();
   }, []);
@@ -64,6 +85,8 @@ export default function Auftraege() {
       </div>
       {laden ? (
         <p className="text-gray-400">Wird geladen...</p>
+      ) : fehler ? (
+        <p className="text-red-500">{fehler}</p>
       ) : gefiltert.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
