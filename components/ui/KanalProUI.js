@@ -380,6 +380,52 @@ export function TableCell({ children, className = '' }) {
   );
 }
 
+
+export function TableSkeleton({ rows = 5, cols = 4 }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
+            {Array.from({ length: rows }).map((_, i) => (
+              <tr key={i} className="border-b border-gray-50">
+                {Array.from({ length: cols }).map((__, j) => (
+                  <td key={j} className="px-5 py-4">
+                    <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" style={{ width: j === 0 ? '60%' : j === cols - 1 ? '30%' : '80%' }} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function TableCheckbox({ checked, onChange, indeterminate = false }) {
+  function setRef(el) {
+    if (el) el.indeterminate = indeterminate;
+  }
+  return (
+    <input
+      ref={setRef}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+    />
+  );
+}
+
+export function TableActions({ children }) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {children}
+    </div>
+  );
+}
+
 // ===== EMPTY STATE =====
 
 export function EmptyState({ icon: Icon, title, description, action, actionLabel }) {
@@ -449,7 +495,7 @@ export function FilterButton({ label, active, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
         active
           ? 'bg-blue-600 text-white'
           : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700'
