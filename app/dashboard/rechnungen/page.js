@@ -11,7 +11,7 @@ import {
   EmptyState, RechnungBadge,
 } from '@/components/ui/KanalProUI';
 
-// Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
+// Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
 // const COLUMN_CONFIG = [
 //   { key: 'nummer',  label: 'Nummer',         sortable: true,  visible: true },
 //   { key: 'kunde',   label: 'Kunde',           sortable: true,  visible: true },
@@ -62,6 +62,7 @@ export default function Rechnungen() {
   const [firma, setFirma] = useState({ firmenname:'', adresse:'', telefon:'', email:'', steuernummer:'', ust_id:'', iban:'', bic:'', bank:'' });
   const [gespeichert, setGespeichert] = useState(false);
   const [fehler, setFehler] = useState('');
+  const [keinFirmaFehler, setKeinFirmaFehler] = useState('');
 
   // Logo
   const [myMember, setMyMember]     = useState(null);
@@ -74,8 +75,22 @@ export default function Rechnungen() {
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
+
+      const { data: memberData } = await supabase
+        .from('company_members')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+      const companyId = memberData?.company_id;
+
+      if (!companyId) {
+        setKeinFirmaFehler('Dein Benutzer ist keinem Unternehmen zugeordnet.');
+        setLaden(false);
+        return;
+      }
+
       const [{ data: rech }, { data: einst }] = await Promise.all([
-        supabase.from('rechnungen').select('*, kunden(name)').eq('user_id', user.id).order('erstellt_am', { ascending: false }),
+        supabase.from('rechnungen').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false }),
         supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
       ]);
       setRechnungen(rech ?? []);
@@ -250,6 +265,8 @@ export default function Rechnungen() {
           {/* Inhalt */}
           {laden ? (
             <TableSkeleton rows={5} cols={5} />
+          ) : keinFirmaFehler ? (
+            <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-lg">{keinFirmaFehler}</div>
           ) : gefiltert.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
               <EmptyState
@@ -288,9 +305,9 @@ export default function Rechnungen() {
                         <TableCell className="font-mono font-medium text-gray-900 dark:text-white">
                           {r.rechnungsnummer}
                         </TableCell>
-                        <TableCell>{r.kunden?.name ?? 'â'}</TableCell>
+                        <TableCell>{r.kunden?.name ?? '—'}</TableCell>
                         <TableCell>
-                          {r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}
+                          {r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '—'}
                         </TableCell>
                         <TableCell className="font-medium text-gray-900 dark:text-white">
                           {brutto(r).toFixed(2).replace('.', ',')} &euro;
@@ -326,9 +343,9 @@ export default function Rechnungen() {
                         <p className="font-mono font-semibold text-gray-900 dark:text-white">{r.rechnungsnummer}</p>
                         <span className={`px-2 py-1 rounded-md text-xs font-medium shrink-0 ${cfg.cls}`}>{cfg.label}</span>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{r.kunden?.name ?? 'â'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{r.kunden?.name ?? '—'}</p>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-gray-400">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : 'â'}</p>
+                        <p className="text-xs text-gray-400">{r.datum ? new Date(r.datum).toLocaleDateString('de-DE') : '—'}</p>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                           {brutto(r).toFixed(2).replace('.', ',')} &euro;
                         </p>
