@@ -10,7 +10,7 @@ import {
   EmptyState, IconButton,
 } from '@/components/ui/KanalProUI';
 
-// Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
+// Geplante Spalten-Konfiguration (noch nicht funktional – vorbereitet fuer PX-004)
 // const COLUMN_CONFIG = [
 //   { key: 'kennzeichen', label: 'Kennzeichen', sortable: true,  visible: true },
 //   { key: 'typ',         label: 'Typ',         sortable: false, visible: true },
@@ -266,11 +266,11 @@ export default function FahrzeugePage() {
                       {f.kennzeichen}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {TYP_LABELS[f.typ] ?? f.typ ?? 'â'}
+                      {TYP_LABELS[f.typ] ?? f.typ ?? '—'}
                     </TableCell>
                     <TableCell>
-                      {[f.marke, f.modell].filter(Boolean).join(' ') || 'â'}
-                      {f.baujahr ? <span className="text-gray-400 ml-1 text-xs">Â· {f.baujahr}</span> : null}
+                      {[f.marke, f.modell].filter(Boolean).join(' ') || '—'}
+                      {f.baujahr ? <span className="text-gray-400 ml-1 text-xs">· {f.baujahr}</span> : null}
                     </TableCell>
                     <TableCell>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ZUSTAND_COLORS[f.zustand] ?? 'bg-gray-50 text-gray-500'}`}>
@@ -310,7 +310,7 @@ export default function FahrzeugePage() {
                   {(f.marke || f.modell) && (
                     <p className="text-xs text-gray-400 mt-0.5">
                       {[f.marke, f.modell].filter(Boolean).join(' ')}
-                      {f.baujahr ? ` Â· ${f.baujahr}` : ''}
+                      {f.baujahr ? ` · ${f.baujahr}` : ''}
                     </p>
                   )}
                 </div>
