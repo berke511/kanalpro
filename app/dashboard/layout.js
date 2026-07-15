@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, DollarSign, Settings,
   Search, LogOut, Truck, Calendar, AlertTriangle, Zap,
+  ScrollText, TrendingUp, Car, UserCheck,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import NotificationCenter from '@/components/ui/NotificationCenter';
@@ -15,29 +16,41 @@ import { CommandPaletteProvider, useCommandPalette } from '@/hooks/useCommandPal
 import CommandPalette from '@/components/ui/CommandPalette';
 
 const navLinks = [
-  { href: '/dashboard',               label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/dashboard/kunden',        label: 'Kunden',         icon: Users           },
-  { href: '/dashboard/auftraege',     label: 'Aufträge', icon: FileText        },
-  { href: '/dashboard/rechnungen',    label: 'Rechnungen',     icon: DollarSign      },
-  { href: '/dashboard/einstellungen', label: 'Einstellungen',  icon: Settings        },
+  { href: '/dashboard', label: 'Übersicht', icon: LayoutDashboard },
+  { href: '/dashboard/kunden', label: 'Kunden', icon: Users },
+  { href: '/dashboard/auftraege', label: 'Aufträge', icon: FileText },
+  { href: '/dashboard/angebote', label: 'Angebote', icon: ScrollText },
+  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: DollarSign },
+  { href: '/dashboard/finanzen', label: 'Finanzen', icon: TrendingUp },
+  { href: '/dashboard/disposition', label: 'Disposition', icon: Truck },
+  { href: '/dashboard/mein-tag', label: 'Mein Tag', icon: Calendar },
+  { href: '/dashboard/fahrzeuge', label: 'Fahrzeuge', icon: Car },
+  { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: UserCheck },
+  { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
 ];
 
 const mobileNavItems = [
-  { href: '/dashboard',             label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/dashboard/auftraege',   label: 'Aufträge', icon: FileText        },
-  { href: '/dashboard/kunden',      label: 'Kunden',         icon: Users           },
-  { href: '/dashboard/disposition', label: 'Disposition',    icon: Truck           },
-  { href: '/dashboard/mein-tag',    label: 'Mein Tag',       icon: Calendar        },
+  { href: '/dashboard', label: 'Übersicht', icon: LayoutDashboard },
+  { href: '/dashboard/kunden', label: 'Kunden', icon: Users },
+  { href: '/dashboard/auftraege', label: 'Aufträge', icon: FileText },
+  { href: '/dashboard/angebote', label: 'Angebote', icon: ScrollText },
+  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: DollarSign },
+  { href: '/dashboard/finanzen', label: 'Finanzen', icon: TrendingUp },
+  { href: '/dashboard/disposition', label: 'Disposition', icon: Truck },
+  { href: '/dashboard/mein-tag', label: 'Mein Tag', icon: Calendar },
+  { href: '/dashboard/fahrzeuge', label: 'Fahrzeuge', icon: Car },
+  { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: UserCheck },
+  { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
 ];
 
 function DashboardShell({ children }) {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
   const { open } = useCommandPalette();
 
-  const [user,      setUser]      = useState(null);
+  const [user, setUser] = useState(null);
   const [companyId, setCompanyId] = useState(null);
-  const [abo,       setAbo]       = useState(null);
+  const [abo, setAbo] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -89,10 +102,10 @@ function DashboardShell({ children }) {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
-  const tage       = trialTage();
+  const tage = trialTage();
   const trialLauft = abo?.status === 'trial';
   const abgelaufen = trialLauft && tage === 0;
-  const warnung    = trialLauft && tage <= 7 && tage > 0;
+  const warnung = trialLauft && tage <= 7 && tage > 0;
 
   if (!user) return null;
 
@@ -165,7 +178,7 @@ function DashboardShell({ children }) {
               <Link href="/dashboard/upgrade"
                 className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">
                 <Zap size={12} aria-hidden="true" />
-                Upgrade — ab 29 €/Monat
+                Upgrade — ab 29 €/Monat
               </Link>
             )}
             <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
