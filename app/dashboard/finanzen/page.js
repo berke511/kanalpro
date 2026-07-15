@@ -10,11 +10,11 @@ import {
 import supabase from '@/lib/supabase';
 import {
   Card, KpiCard, PrimaryButton, SecondaryButton,
-  EmptyState, PageHeader, PageSection,
+  EmptyState, PageHeader, PageSection, RechnungBadge,
 } from '@/components/ui/KanalProUI';
 
 function fmtEuro(n) {
-  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' â¬';
+  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
 
 function calcBrutto(item) {
@@ -33,29 +33,12 @@ function istUeberfaellig(r) {
   return ref ? new Date(ref) < new Date() : false;
 }
 
-const R_BADGE = {
-  entwurf:      { label: 'Entwurf',    cls: 'bg-gray-100 text-gray-600' },
-  gesendet:     { label: 'Offen',      cls: 'bg-yellow-100 text-yellow-800' },
-  bezahlt:      { label: 'Bezahlt',    cls: 'bg-green-100 text-green-700' },
-  ueberfaellig: { label: 'ÃberfÃ¤llig', cls: 'bg-red-100 text-red-700' },
-};
-
 const A_BADGE = {
   entwurf:    { label: 'Entwurf',    cls: 'bg-gray-100 text-gray-600' },
   gesendet:   { label: 'Gesendet',   cls: 'bg-blue-100 text-blue-700' },
   angenommen: { label: 'Angenommen', cls: 'bg-green-100 text-green-700' },
   abgelehnt:  { label: 'Abgelehnt',  cls: 'bg-red-100 text-red-600' },
 };
-
-function RechnungBadgeLocal({ r }) {
-  const key = istUeberfaellig(r) ? 'ueberfaellig' : (r.status ?? 'entwurf');
-  const cfg = R_BADGE[key] ?? R_BADGE.entwurf;
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
-      {cfg.label}
-    </span>
-  );
-}
 
 export default function FinanceCenter() {
   const [laden, setLaden]           = useState(true);
@@ -140,7 +123,7 @@ export default function FinanceCenter() {
             { label: 'Offene Forderungen', value: laden ? null : fmtEuro(offeneForderungen) },
             { label: 'Monatsumsatz',       value: laden ? null : fmtEuro(monatsumsatz) },
             { label: 'Offene Angebote',    value: laden ? null : String(offeneAngebote.length) },
-            { label: 'Ã Zahlungsdauer',    value: 'â' },
+            { label: 'Ø Zahlungsdauer',    value: '–' },
           ].map(kpi => (
             <div key={kpi.label} className="text-center">
               {kpi.value === null
@@ -156,7 +139,7 @@ export default function FinanceCenter() {
       {/* BEREICH 2: KPI CARDS */}
       <PageSection title="Rechnungs-KPIs">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <KpiCard label="EntwÃ¼rfe (bereit)"    value={entwuerfe.length}           icon={FileText}      color="gray"    loading={laden} />
+          <KpiCard label="Entwürfe (bereit)"    value={entwuerfe.length}           icon={FileText}      color="gray"    loading={laden} />
           <KpiCard label="Offen (gesendet)"     value={offenListe.length}          icon={Clock}         color="yellow"  loading={laden} />
           <KpiCard label="Bezahlt"              value={bezahlt.length}             icon={CheckCircle}   color="green"   loading={laden} />
           <KpiCard label="Mahnrelevant"         value={ueberfaelligListe.length}   icon={AlertTriangle} color="red"     loading={laden} />
@@ -166,7 +149,7 @@ export default function FinanceCenter() {
       </PageSection>
 
       {/* BEREICH 3: ARBEITSLISTE */}
-      <PageSection title="Arbeitsliste â Offene & ÃberfÃ¤llige Rechnungen">
+      <PageSection title="Arbeitsliste – Offene & Überfällige Rechnungen">
         {laden ? (
           <div className="space-y-2">
             {[1, 2, 3].map(i => (
@@ -177,7 +160,7 @@ export default function FinanceCenter() {
           <EmptyState
             icon={CheckCircle}
             title="Alles erledigt"
-            description="Keine offenen oder Ã¼berfÃ¤lligen Rechnungen vorhanden."
+            description="Keine offenen oder überfälligen Rechnungen vorhanden."
           />
         ) : (
           <div className="space-y-2">
@@ -193,31 +176,31 @@ export default function FinanceCenter() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-sm font-bold text-gray-900">
-                          {r.rechnungsnummer ?? 'â'}
+                          {r.rechnungsnummer ?? '–'}
                         </span>
-                        <RechnungBadgeLocal r={r} />
+                        <RechnungBadge status={istUeberfaellig(r) ? 'ueberfaellig' : r.status === 'gesendet' ? 'offen' : (r.status ?? 'entwurf')} />
                         {overdue && (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
                             <AlertTriangle size={11} />
-                            ÃberfÃ¤llig
+                            Überfällig
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{r.kunden?.name ?? 'â'}</p>
+                      <p className="text-sm text-gray-600 mt-0.5">{r.kunden?.name ?? '–'}</p>
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                         <span className="text-base font-bold text-gray-900">
                           {fmtEuro(calcBrutto(r))}
                         </span>
                         {faelligkeit && (
                           <span className={`text-xs ${overdue ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-                            FÃ¤llig: {new Date(faelligkeit).toLocaleDateString('de-DE')}
+                            Fällig: {new Date(faelligkeit).toLocaleDateString('de-DE')}
                           </span>
                         )}
                       </div>
                     </div>
                     <Link href={`/dashboard/rechnungen/${r.id}`}>
                       <SecondaryButton className="shrink-0 text-xs">
-                        Ãffnen
+                        Öffnen
                       </SecondaryButton>
                     </Link>
                   </div>
@@ -256,7 +239,7 @@ export default function FinanceCenter() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-sm font-bold text-gray-900">
-                          {a.angebotsnummer ?? 'â'}
+                          {a.angebotsnummer ?? '–'}
                         </span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
                           {cfg.label}
@@ -267,7 +250,7 @@ export default function FinanceCenter() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{a.kunden?.name ?? 'â'}</p>
+                      <p className="text-sm text-gray-600 mt-0.5">{a.kunden?.name ?? '–'}</p>
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="text-base font-bold text-gray-900">{fmtEuro(bruttoA)}</span>
                         {tage !== null && (
@@ -279,7 +262,7 @@ export default function FinanceCenter() {
                     </div>
                     <Link href={`/dashboard/angebote/${a.id}`}>
                       <SecondaryButton className="shrink-0 text-xs">
-                        Ãffnen
+                        Öffnen
                       </SecondaryButton>
                     </Link>
                   </div>
@@ -291,7 +274,7 @@ export default function FinanceCenter() {
       </PageSection>
 
       {/* BEREICH 5: ZAHLUNGS-TIMELINE */}
-      <PageSection title="Letzte AktivitÃ¤ten">
+      <PageSection title="Letzte Aktivitäten">
         {laden ? (
           <div className="space-y-1.5">
             {[1, 2, 3, 4, 5].map(i => (
@@ -301,7 +284,7 @@ export default function FinanceCenter() {
         ) : rechnungen.length === 0 ? (
           <EmptyState
             icon={Calendar}
-            title="Keine AktivitÃ¤ten"
+            title="Keine Aktivitäten"
             description="Noch keine Rechnungen vorhanden."
           />
         ) : (
@@ -312,7 +295,7 @@ export default function FinanceCenter() {
               let labelCls = 'text-blue-600';
               let aktLabel = 'Gesendet';
               if (r.status === 'bezahlt') { dotCls = 'bg-green-400'; labelCls = 'text-green-600'; aktLabel = 'Bezahlt'; }
-              if (overdue)               { dotCls = 'bg-red-400';   labelCls = 'text-red-600';   aktLabel = 'ÃberfÃ¤llig'; }
+              if (overdue)               { dotCls = 'bg-red-400';   labelCls = 'text-red-600';   aktLabel = 'Überfällig'; }
               if (r.status === 'entwurf'){ dotCls = 'bg-gray-300';  labelCls = 'text-gray-400';  aktLabel = 'Entwurf'; }
               return (
                 <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
@@ -322,9 +305,9 @@ export default function FinanceCenter() {
                     className="flex-1 min-w-0 flex items-center gap-2 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded"
                   >
                     <span className="font-mono text-xs font-semibold text-gray-900">
-                      {r.rechnungsnummer ?? 'â'}
+                      {r.rechnungsnummer ?? '–'}
                     </span>
-                    <span className="text-xs text-gray-500 truncate">{r.kunden?.name ?? 'â'}</span>
+                    <span className="text-xs text-gray-500 truncate">{r.kunden?.name ?? '–'}</span>
                   </Link>
                   <span className={`text-xs font-semibold shrink-0 ${labelCls}`}>{aktLabel}</span>
                   <span className="text-xs font-medium text-gray-700 shrink-0">{fmtEuro(calcBrutto(r))}</span>
@@ -347,7 +330,7 @@ export default function FinanceCenter() {
             { label: 'Neue Rechnung', href: '/dashboard/rechnungen/neu', Icon: FileText,   primary: true  },
             { label: 'Neues Angebot', href: '/dashboard/angebote/neu',   Icon: FileSearch, primary: false },
             { label: 'Kundenliste',   href: '/dashboard/kunden',         Icon: Users,      primary: false },
-            { label: 'Alle AuftrÃ¤ge', href: '/dashboard/auftraege',      Icon: Briefcase,  primary: false },
+            { label: 'Alle Aufträge', href: '/dashboard/auftraege',      Icon: Briefcase,  primary: false },
           ].map(({ label, href, Icon, primary }) => (
             <Link key={label} href={href} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-xl">
               <div className={`flex flex-col items-center justify-center gap-2 p-5 rounded-xl border transition-all duration-200 cursor-pointer text-center min-h-[88px] ${
