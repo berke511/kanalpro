@@ -37,7 +37,7 @@ const getAvatarColor = (name) => {
 };
 
 const CHECKLIST = [
-  { id: 'ankunft',         label: 'Ankunft bestÃ¤tigen'   },
+  { id: 'ankunft',         label: 'Ankunft bestätigen'   },
   { id: 'kunde_info',      label: 'Kunde informiert'      },
   { id: 'fotos_vorher',    label: 'Fotos vorher'          },
   { id: 'arbeit_begonnen', label: 'Arbeit begonnen'       },
@@ -64,7 +64,7 @@ export default function MeinTag() {
   const [signatureDone, setSignatureDone]   = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
-  // ââ Daten laden ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Daten laden ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -98,7 +98,7 @@ export default function MeinTag() {
     load();
   }, []);
 
-  // ââ Timer ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Timer ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!timerRunning) return;
     const iv = setInterval(() => setTimer(t => t + 1), 1000);
@@ -109,7 +109,7 @@ export default function MeinTag() {
     setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
   const checkCount = Object.values(checklist).filter(Boolean).length;
 
-  // ââ Canvas Unterschrift âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Canvas Unterschrift ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!signing || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -159,7 +159,7 @@ export default function MeinTag() {
     }
   };
 
-  // ââ Einsatz abschlieÃen âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Einsatz abschließen ───────────────────────────────────────────────────────
   const handleAbschliessen = async () => {
     if (!aktiverAuftrag) return;
     await supabase
@@ -184,7 +184,7 @@ export default function MeinTag() {
   const einsatzort = (a) => a.adresse || a.kunden?.adresse || '';
   const telefon    = (a) => a.kunden?.telefon || '';
 
-  // ââ Skeleton ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Skeleton ─────────────────────────────────────────────────────────────────
   if (loading) return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-2xl animate-pulse" />
@@ -198,7 +198,7 @@ export default function MeinTag() {
     </div>
   );
 
-  // ââ Render ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32 md:pb-8">
       <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
@@ -228,7 +228,7 @@ export default function MeinTag() {
 
         {/* KPI STRIP */}
         <div className="grid grid-cols-3 gap-3">
-          <KpiCard label="EinsÃ¤tze"    value={auftraege.length} color="blue" />
+          <KpiCard label="Einsätze"    value={auftraege.length} color="blue" />
           <KpiCard label="Notdienste"  value={notdienste}       color="red"  />
           <KpiCard label="Arbeitszeit" value={formatTime(timer)} color="gray" />
         </div>
@@ -244,7 +244,7 @@ export default function MeinTag() {
                 {formatTime(timer)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {timerRunning ? 'LÃ¤uftâ¦' : 'Gestoppt'}
+                {timerRunning ? 'Läuft…' : 'Gestoppt'}
               </p>
             </div>
             <div className="flex gap-3 justify-center">
@@ -264,15 +264,15 @@ export default function MeinTag() {
           </div>
         </Card>
 
-        {/* MEIN TAG â Einsatzkarten */}
+        {/* MEIN TAG – Einsatzkarten */}
         <div>
           <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
             Mein Tag ({auftraege.length})
           </h2>
           {auftraege.length === 0 ? (
             <EmptyState
-              title="Keine EinsÃ¤tze heute"
-              description="FÃ¼r heute sind keine AuftrÃ¤ge geplant."
+              title="Keine Einsätze heute"
+              description="Für heute sind keine Aufträge geplant."
             />
           ) : (
             <div className="space-y-3">
@@ -291,7 +291,7 @@ export default function MeinTag() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="text-base font-bold text-gray-900 dark:text-white">
-                              {a.uhrzeit ? String(a.uhrzeit).slice(0,5) : 'â'}
+                              {a.uhrzeit ? String(a.uhrzeit).slice(0,5) : '—'}
                             </span>
                             <StatusBadge status={a.status} />
                             {(a.notdienst || a.prioritaet === 'notfall') && (
@@ -455,7 +455,7 @@ export default function MeinTag() {
                   </div>
                   <div className="flex gap-2">
                     <GhostButton onClick={clearCanvas} className="flex-1">
-                      <Trash2 className="w-4 h-4 mr-1 inline" aria-hidden="true" /> LÃ¶schen
+                      <Trash2 className="w-4 h-4 mr-1 inline" aria-hidden="true" /> Löschen
                     </GhostButton>
                     <PrimaryButton
                       onClick={() => {
@@ -465,7 +465,7 @@ export default function MeinTag() {
                       }}
                       className="flex-1"
                     >
-                      <CheckCircle className="w-4 h-4 mr-1 inline" aria-hidden="true" /> Ãbernehmen
+                      <CheckCircle className="w-4 h-4 mr-1 inline" aria-hidden="true" /> Übernehmen
                     </PrimaryButton>
                   </div>
                 </div>
@@ -482,7 +482,7 @@ export default function MeinTag() {
                 Notiz
               </h2>
               <GhostButton onClick={() => setNotizModal(true)}>
-                <Plus className="w-4 h-4 mr-1 inline" aria-hidden="true" /> HinzufÃ¼gen
+                <Plus className="w-4 h-4 mr-1 inline" aria-hidden="true" /> Hinzufügen
               </GhostButton>
             </div>
             {notiz ? (
@@ -502,7 +502,7 @@ export default function MeinTag() {
               onClick={handleAbschliessen}
               className="w-full py-5 text-lg"
             >
-              <CheckCircle className="w-6 h-6 mr-2 inline" aria-hidden="true" /> Einsatz abschlieÃen
+              <CheckCircle className="w-6 h-6 mr-2 inline" aria-hidden="true" /> Einsatz abschließen
             </PrimaryButton>
           </div>
         )}
@@ -527,7 +527,7 @@ export default function MeinTag() {
               onClick={() => router.push('/dashboard/auftraege')}
               className="w-full py-4 border border-gray-200 dark:border-gray-700 rounded-xl"
             >
-              Alle AuftrÃ¤ge
+              Alle Aufträge
             </GhostButton>
           </div>
         </div>
@@ -537,7 +537,7 @@ export default function MeinTag() {
       {/* NOTIZ MODAL */}
       <Modal
         isOpen={notizModal}
-        title="Notiz hinzufÃ¼gen"
+        title="Notiz hinzufügen"
         onClose={() => setNotizModal(false)}
       >
         <div className="space-y-4">
@@ -545,7 +545,7 @@ export default function MeinTag() {
             label="Notiz"
             value={notiz}
             onChange={e => setNotiz(e.target.value)}
-            placeholder="Deine Notizâ¦"
+            placeholder="Deine Notiz…"
             rows={5}
           />
           <div className="flex gap-2 justify-end">
