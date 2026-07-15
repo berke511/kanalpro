@@ -26,6 +26,7 @@ export default function Kunden() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
   const [laden, setLaden] = useState(true);
+  const [fehler, setFehler] = useState(null);
   const [buchstabe, setBuchstabe] = useState(null);
   const [loeschenId, setLoeschenId] = useState(null);
   const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
@@ -36,10 +37,24 @@ export default function Kunden() {
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: memberData } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .single();
+    const companyId = memberData?.company_id;
+
+    if (!companyId) {
+      setFehler('Dein Benutzer ist keinem Unternehmen zugeordnet.');
+      setLaden(false);
+      return;
+    }
+
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
-      .eq('user_id', user.id)
+      .eq('company_id', companyId)
       .order('name');
     setKunden(data ?? []);
     setLaden(false);
@@ -97,6 +112,14 @@ export default function Kunden() {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (fehler) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <p className="text-red-600 text-sm">{fehler}</p>
       </div>
     );
   }
