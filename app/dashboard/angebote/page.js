@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
+import { PageHeader } from '@/components/ui/KanalProUI';
 
 const ANGEBOTE_TABS = [
   { id: 'angebote', label: 'Angebote'      },
@@ -248,20 +249,21 @@ export default function Angebote() {
 
   return (
     <div>
-      {/* ── Tab-Navigation + Actions ── */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <Link
-          href="/dashboard/angebote/vorlagen"
-          className="text-sm font-medium text-gray-500 hover:text-blue-600 transition"
-        >
-          Vorlagen →
-        </Link>
-        {tab === 'angebote' && (
+      {/* ── Header ── */}
+      <PageHeader
+        title="Angebote"
+        action={tab === 'angebote' ? (
           <Link href="/dashboard/angebote/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
             + Neues Angebot
           </Link>
-        )}
-      </div>
+        ) : undefined}
+      />
+      <Link
+        href="/dashboard/angebote/vorlagen"
+        className="text-sm font-medium text-gray-500 hover:text-blue-600 transition"
+      >
+        Vorlagen →
+      </Link>
       <TabNav
         id="angebote-tabs"
         tabs={ANGEBOTE_TABS}
