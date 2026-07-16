@@ -91,7 +91,7 @@ export default function Rechnungen() {
 
       const [{ data: rech }, { data: einst }] = await Promise.all([
         supabase.from('rechnungen').select('*, kunden(name)').eq('company_id', companyId).order('erstellt_am', { ascending: false }),
-        supabase.from('einstellungen').select('*').eq('user_id', user.id).single(),
+        supabase.from('einstellungen').select('*').eq('company_id', companyId).single(),
       ]);
       setRechnungen(rech ?? []);
       if (einst) setFirma(einst);
