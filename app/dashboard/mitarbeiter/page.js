@@ -60,7 +60,7 @@ export default function MitarbeiterPage() {
           <p className="text-gray-400 text-sm">Lädt…</p>
         </div>
       ) : mitarbeiter.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl border border-gray-100">
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-gray-100">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-gray-300 mb-3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
           </svg>
@@ -75,7 +75,7 @@ export default function MitarbeiterPage() {
             <Link
               key={m.id}
               href={`/dashboard/mitarbeiter/${m.id}`}
-              className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-sm transition group"
+              className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition group"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
