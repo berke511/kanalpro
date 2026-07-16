@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, FileText, DollarSign, Settings,
   Search, LogOut, Truck, Calendar, AlertTriangle, Zap,
-  ScrollText, TrendingUp, Car, UserCheck,
+  ScrollText, TrendingUp, Car, UserCheck, MoreHorizontal,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import NotificationCenter from '@/components/ui/NotificationCenter';
@@ -16,41 +16,34 @@ import { CommandPaletteProvider, useCommandPalette } from '@/hooks/useCommandPal
 import CommandPalette from '@/components/ui/CommandPalette';
 
 const navLinks = [
-  { href: '/dashboard', label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/dashboard/kunden', label: 'Kunden', icon: Users },
-  { href: '/dashboard/auftraege', label: 'Aufträge', icon: FileText },
-  { href: '/dashboard/angebote', label: 'Angebote', icon: ScrollText },
-  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: DollarSign },
-  { href: '/dashboard/finanzen', label: 'Finanzen', icon: TrendingUp },
-  { href: '/dashboard/disposition', label: 'Disposition', icon: Truck },
-  { href: '/dashboard/mein-tag', label: 'Mein Tag', icon: Calendar },
-  { href: '/dashboard/fahrzeuge', label: 'Fahrzeuge', icon: Car },
-  { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: UserCheck },
-  { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
+  { href: '/dashboard',               label: 'Übersicht',    icon: LayoutDashboard },
+  { href: '/dashboard/kunden',        label: 'Kunden',       icon: Users           },
+  { href: '/dashboard/auftraege',     label: 'Aufträge',     icon: FileText        },
+  { href: '/dashboard/angebote',      label: 'Angebote',     icon: ScrollText      },
+  { href: '/dashboard/rechnungen',    label: 'Rechnungen',   icon: DollarSign      },
+  { href: '/dashboard/finanzen',      label: 'Finanzen',     icon: TrendingUp      },
+  { href: '/dashboard/disposition',   label: 'Disposition',  icon: Truck           },
+  { href: '/dashboard/mein-tag',      label: 'Mein Tag',     icon: Calendar        },
+  { href: '/dashboard/fahrzeuge',     label: 'Fahrzeuge',    icon: Car             },
+  { href: '/dashboard/mitarbeiter',   label: 'Mitarbeiter',  icon: UserCheck       },
+  { href: '/dashboard/einstellungen', label: 'Einstellungen',icon: Settings        },
 ];
 
-const mobileNavItems = [
-  { href: '/dashboard', label: 'Übersicht', icon: LayoutDashboard },
-  { href: '/dashboard/kunden', label: 'Kunden', icon: Users },
-  { href: '/dashboard/auftraege', label: 'Aufträge', icon: FileText },
-  { href: '/dashboard/angebote', label: 'Angebote', icon: ScrollText },
-  { href: '/dashboard/rechnungen', label: 'Rechnungen', icon: DollarSign },
-  { href: '/dashboard/finanzen', label: 'Finanzen', icon: TrendingUp },
-  { href: '/dashboard/disposition', label: 'Disposition', icon: Truck },
-  { href: '/dashboard/mein-tag', label: 'Mein Tag', icon: Calendar },
-  { href: '/dashboard/fahrzeuge', label: 'Fahrzeuge', icon: Car },
-  { href: '/dashboard/mitarbeiter', label: 'Mitarbeiter', icon: UserCheck },
-  { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
+const mobileBottomNav = [
+  { href: '/dashboard',             label: 'Übersicht',   icon: LayoutDashboard },
+  { href: '/dashboard/auftraege',   label: 'Aufträge',    icon: FileText        },
+  { href: '/dashboard/kunden',      label: 'Kunden',      icon: Users           },
+  { href: '/dashboard/disposition', label: 'Disposition', icon: Truck           },
 ];
 
 function DashboardShell({ children }) {
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
   const { open } = useCommandPalette();
 
-  const [user, setUser] = useState(null);
+  const [user,      setUser]      = useState(null);
   const [companyId, setCompanyId] = useState(null);
-  const [abo, setAbo] = useState(null);
+  const [abo,       setAbo]       = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -102,10 +95,10 @@ function DashboardShell({ children }) {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }
 
-  const tage = trialTage();
+  const tage       = trialTage();
   const trialLauft = abo?.status === 'trial';
   const abgelaufen = trialLauft && tage === 0;
-  const warnung = trialLauft && tage <= 7 && tage > 0;
+  const warnung    = trialLauft && tage <= 7 && tage > 0;
 
   if (!user) return null;
 
@@ -135,7 +128,7 @@ function DashboardShell({ children }) {
 
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex w-64 bg-white border-r border-gray-100 flex-col shrink-0">
-          <div className="px-5 py-5 border-b border-gray-100">
+          <div className="px-6 py-5 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">K</span>
@@ -145,7 +138,7 @@ function DashboardShell({ children }) {
           </div>
 
           {/* Search Trigger */}
-          <div className="px-3 pt-3">
+          <div className="px-4 pt-4">
             <button
               type="button"
               onClick={open}
@@ -157,7 +150,7 @@ function DashboardShell({ children }) {
             </button>
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-1">
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navLinks.map((link) => {
               const NavIcon = link.icon;
               return (
@@ -167,13 +160,13 @@ function DashboardShell({ children }) {
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}>
-                  <NavIcon size={16} aria-hidden="true" />{link.label}
+                  <NavIcon className="h-5 w-5 shrink-0" aria-hidden="true" />{link.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="px-3 py-4 border-t border-gray-100">
+          <div className="px-4 py-4 border-t border-gray-100">
             {trialLauft && (
               <Link href="/dashboard/upgrade"
                 className="flex items-center justify-center gap-2 px-3 py-2 mb-3 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition">
@@ -184,7 +177,7 @@ function DashboardShell({ children }) {
             <p className="text-xs text-gray-400 px-3 mb-2 truncate">{user.email}</p>
             <button onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition">
-              <LogOut size={16} aria-hidden="true" />
+              <LogOut className="h-5 w-5" aria-hidden="true" />
               Abmelden
             </button>
           </div>
@@ -193,7 +186,7 @@ function DashboardShell({ children }) {
         {/* Right column: Topbar + Main */}
         <div className="flex flex-col flex-1 min-w-0">
 
-          {/* Mobile Topbar */}
+          {/* Mobile Header */}
           <header className="flex md:hidden items-center justify-between px-4 h-14 bg-white border-b border-gray-100 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -208,20 +201,32 @@ function DashboardShell({ children }) {
           </header>
 
           {/* Desktop Topbar */}
-          <header className="hidden md:flex items-center justify-end px-6 h-14 bg-white border-b border-gray-100 shrink-0">
-            <div className="flex items-center gap-2">
+          <header className="hidden md:flex items-center justify-between px-6 h-16 bg-white border-b border-gray-100 shrink-0">
+            <div />
+            <div className="flex items-center gap-3">
               <ConnectionStatus />
               <NotificationCenter companyId={companyId} />
+              {user?.email && (
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-blue-700 font-semibold text-sm select-none">
+                    {user.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">{children}</main>
+          <main className="flex-1 overflow-auto p-6 pb-24 md:pb-6">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
         </div>
       </div>
 
       {/* Mobile Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex md:hidden">
-        {mobileNavItems.map((item) => {
+        {mobileBottomNav.map((item) => {
           const ItemIcon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -234,6 +239,14 @@ function DashboardShell({ children }) {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => {}}
+          className="flex-1 flex flex-col items-center justify-center min-h-[56px] gap-1 text-gray-400 hover:text-gray-600 transition"
+        >
+          <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+          <span className="text-[10px] font-medium">Mehr</span>
+        </button>
       </nav>
 
       {/* Command Palette */}
