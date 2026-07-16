@@ -231,7 +231,7 @@ export default function Einstellungen() {
 
       {/* ── Tab: Team ── */}
       {activeTab === 'team' && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="font-semibold text-gray-800">Team</h2>
@@ -390,7 +390,7 @@ export default function Einstellungen() {
       {/* ── Tab: Firmendaten ── */}
       {activeTab === 'firma' && (
         <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center">
               <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -416,7 +416,7 @@ export default function Einstellungen() {
         <div className="space-y-5">
 
           {/* Konto-Info */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-800 mb-4">Konto</h2>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
@@ -439,7 +439,7 @@ export default function Einstellungen() {
           <StorageBar />
 
           {/* Passwort ändern */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-800 mb-4">Passwort ändern</h2>
             <form onSubmit={handlePasswort} className="space-y-3">
               {passError && (
@@ -476,7 +476,7 @@ export default function Einstellungen() {
           </div>
 
           {/* Abmelden */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="font-semibold text-gray-800 mb-3">Sitzung beenden</h2>
             <button
               onClick={handleAbmelden}
@@ -492,7 +492,7 @@ export default function Einstellungen() {
       {/* ── Tab: Rollen & Rechte ── */}
       {activeTab === 'rollen' && (
         <div className="max-w-lg">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 flex flex-col items-center text-center gap-5">
             <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center">
               <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -514,7 +514,7 @@ export default function Einstellungen() {
       )}
 
       {/* ── App-Info (immer sichtbar) ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="font-semibold text-gray-800 mb-3">App-Info</h2>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between items-center">
