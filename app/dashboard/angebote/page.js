@@ -299,7 +299,7 @@ export default function Angebote() {
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden"><div className="overflow-x-auto">
             <table className="w-full min-w-[550px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
@@ -336,7 +336,7 @@ export default function Angebote() {
       {/* ── PDF-Export-Tab ── */}
       {tab === 'pdf' && (
         <div className="max-w-xl space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -425,7 +425,7 @@ export default function Angebote() {
       {/* ── E-Mail-Versand-Tab ── */}
       {tab === 'email' && (
         <div className="max-w-xl space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
