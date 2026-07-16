@@ -1,5 +1,5 @@
 'use client';
-// KanalPro Design System — PX-010 Premium Audit
+// KanalPro Design System â PX-010 Premium Audit
 // Alle Komponenten sind projektweit standardisiert
 
 import { X, Search } from 'lucide-react';
@@ -125,7 +125,7 @@ export function KpiCard({ label, value, icon: Icon, trend, color = 'blue', loadi
       <div className="min-w-0">
         {trend != null && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full block mb-1 w-fit ${trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+            {trend >= 0 ? 'â' : 'â'} {Math.abs(trend)}%
           </span>
         )}
         <div className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
@@ -215,7 +215,7 @@ export function RechnungBadge({ status }) {
   const label = {
     offen:        'Offen',
     bezahlt:      'Bezahlt',
-    ueberfaellig: 'Überfällig',
+    ueberfaellig: 'ÃberfÃ¤llig',
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${cfg[status] ?? 'bg-gray-100 text-gray-700'}`}>
@@ -675,6 +675,87 @@ export function StatHeader({ title, value, subtitle, icon: Icon, color = 'blue' 
       </div>
       <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
       {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+    </div>
+  );
+}
+
+
+// ─── Ergänzte Exporte (P0-001) ───────────────────────────────────────────────
+
+export function FormSection({ title, description, children, className = '' }) {
+  return (
+    <div className={`space-y-4 ${className}`}>
+      {title && (
+        <div className="pb-2 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+          {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function SuccessBanner({ message, children, onClose, className = '' }) {
+  const text = message || children;
+  if (!text) return null;
+  return (
+    <div className={`bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-start gap-3 ${className}`}>
+      <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+      <p className="text-sm text-green-700 flex-1">{text}</p>
+      {onClose && (
+        <button onClick={onClose} className="text-green-400 hover:text-green-600 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function FormError({ message, children, className = '' }) {
+  const text = message || children;
+  if (!text) return null;
+  return (
+    <div className={`bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-3 ${className}`}>
+      <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+      </svg>
+      <p className="text-sm text-red-700">{text}</p>
+    </div>
+  );
+}
+
+export function FormFooter({ children, className = '' }) {
+  return (
+    <div className={`flex items-center gap-3 pt-5 border-t border-gray-100 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+export function MobileCommandBar({ actions = [], children, className = '' }) {
+  return (
+    <div className={`fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-2 z-50 md:hidden ${className}`}>
+      {children
+        ? children
+        : actions.map((action, i) => (
+            <button
+              key={i}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              className={`flex-1 py-2.5 px-3 rounded-lg text-sm font-semibold transition disabled:opacity-60 ${
+                action.primary
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {action.label}
+            </button>
+          ))}
     </div>
   );
 }
