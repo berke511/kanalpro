@@ -11,7 +11,7 @@ import {
 import {
   Card, KpiCard, StatusBadge, PrioritaetBadge,
   PrimaryButton, SecondaryButton, GhostButton, DangerButton,
-  EmptyState, Modal, FormTextarea
+  EmptyState, Modal, FormTextarea, PageHeader
 } from '@/components/ui/KanalProUI';
 
 const formatTime = (secs) => {
@@ -212,19 +212,15 @@ export default function MeinTag() {
         )}
 
         {/* HEADER */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              {getTageszeit()}, {vorname}.
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
-            </p>
-          </div>
-          <div className={`w-11 h-11 ${getAvatarColor(vorname)} rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0`}>
-            {getInitials(vorname)}
-          </div>
-        </div>
+        <PageHeader
+          title={`${getTageszeit()}, ${vorname}.`}
+          subtitle={new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}
+          action={
+            <div className={`w-11 h-11 ${getAvatarColor(vorname)} rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+              {getInitials(vorname)}
+            </div>
+          }
+        />
 
         {/* KPI STRIP */}
         <div className="grid grid-cols-3 gap-3">
