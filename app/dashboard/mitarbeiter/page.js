@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import supabase from '@/lib/supabase';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
+import { PageHeader } from '@/components/ui/KanalProUI';
 
 export default function MitarbeiterPage() {
   const router = useRouter();
@@ -38,21 +39,21 @@ export default function MitarbeiterPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mitarbeiter</h1>
-          <p className="text-sm text-gray-500 mt-1">Verwalte dein Team</p>
-        </div>
-        <Link
-          href="/dashboard/mitarbeiter/neu"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Neuer Mitarbeiter
-        </Link>
-      </div>
+      <PageHeader
+        title="Mitarbeiter"
+        subtitle="Verwalte dein Team"
+        action={
+          <Link
+            href="/dashboard/mitarbeiter/neu"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Neuer Mitarbeiter
+          </Link>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center h-48">
