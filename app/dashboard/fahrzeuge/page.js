@@ -147,7 +147,7 @@ export default function FahrzeugePage() {
 
       {/* Neu-Formular */}
       {neuShown && (
-        <form onSubmit={handleNeu} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
+        <form onSubmit={handleNeu} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Neues Fahrzeug anlegen</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -229,7 +229,7 @@ export default function FahrzeugePage() {
       {loading ? (
         <TableSkeleton rows={5} cols={4} />
       ) : gefiltert.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
           <EmptyState
             icon={Truck}
             title={fahrzeuge.length === 0 ? 'Noch keine Fahrzeuge' : 'Keine Fahrzeuge gefunden'}
@@ -297,7 +297,7 @@ export default function FahrzeugePage() {
               <Link
                 key={f.id}
                 href={`/dashboard/fahrzeuge/${f.id}`}
-                className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 px-4 py-4 hover:border-blue-100 dark:hover:border-blue-800 transition"
+                className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-4 hover:border-blue-100 dark:hover:border-blue-800 transition"
               >
                 <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center shrink-0">
                   <Truck size={18} className="text-gray-400" />
