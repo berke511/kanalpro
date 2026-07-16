@@ -6,6 +6,7 @@ import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
 import { PLANS } from '@/lib/plans';
 import StorageBar from '@/components/StorageBar';
 import TabNav from '@/components/ui/TabNav';
+import { PageHeader } from '@/components/ui/KanalProUI';
 import { CheckCircle, LogOut } from 'lucide-react';
 
 const INVITABLE_ROLES = [
@@ -213,10 +214,10 @@ export default function Einstellungen() {
     <div className="space-y-5 max-w-3xl pb-10">
 
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">Einstellungen</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Konto, Team und App-Einstellungen verwalten.</p>
-      </div>
+      <PageHeader
+        title="Einstellungen"
+        subtitle="Konto, Team und App-Einstellungen verwalten."
+      />
 
       {/* ── Tab-Navigation ── */}
       <TabNav
