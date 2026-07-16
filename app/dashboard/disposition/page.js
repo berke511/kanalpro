@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import TabNav from '@/components/ui/TabNav';
-import { Card } from '@/components/ui/KanalProUI';
+import { Card, PageHeader } from '@/components/ui/KanalProUI';
 
 /* ────────────────────────────────────────────────────────────────
    TAB-KONFIGURATION
@@ -141,12 +141,10 @@ export default function Disposition() {
     <div className="space-y-5 max-w-6xl pb-10">
 
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Disposition</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Plane Einsätze, Mitarbeiter, Fahrzeuge und Routen.
-        </p>
-      </div>
+      <PageHeader
+        title="Disposition"
+        subtitle="Plane Einsätze, Mitarbeiter, Fahrzeuge und Routen."
+      />
 
       {/* ── Tab-Navigation ── */}
       <TabNav
