@@ -67,7 +67,7 @@ function createMarkerIcon(color, number) {
 function buildAddress(auftrag) {
   const k = auftrag.kunden;
   if (!k) return '';
-  return [k.strasse, k.plz, k.ort].filter(Boolean).join(', ');
+  return k.adresse || '';
 }
 
 export default function RoutEnplanungPage() {
@@ -159,9 +159,9 @@ export default function RoutEnplanungPage() {
       const [{ data: tech }, { data: fz }] = await Promise.all([
         supabase
           .from('company_members')
-          .select('user_id, full_name')
+          .select('id, vorname, nachname')
           .eq('company_id', companyId)
-          .order('full_name'),
+          .order('nachname'),
         supabase
           .from('fahrzeuge')
           .select('id, kennzeichen')
@@ -182,10 +182,10 @@ export default function RoutEnplanungPage() {
       let query = supabase
         .from('auftraege')
         .select(`
-          id, datum, uhrzeit, prioritaet, status,
-          kunden(name, strasse, plz, ort),
-          techniker:company_members!techniker_id(user_id, full_name),
-          fahrzeuge(id, kennzeichen)
+          id, datum, uhrzeit, prioritaet, status, techniker_id, fahrzeug_id,
+          kunden:kunde_id(name, adresse),
+          mitarbeiter:techniker_id(vorname, nachname),
+          fahrzeuge:fahrzeug_id(id, kennzeichen)
         `)
         .eq('company_id', companyId)
         .eq('datum', filterDatum)
@@ -266,7 +266,7 @@ export default function RoutEnplanungPage() {
           <div style="font-weight:700;margin-bottom:4px;">${a.kunden?.name || 'â'}</div>
           <div style="color:#555;margin-bottom:2px;">${addr}</div>
           <div style="margin-bottom:2px;">Uhrzeit: <b>${a.uhrzeit || 'â'}</b></div>
-          <div style="margin-bottom:2px;">Techniker: ${a.techniker?.full_name || 'â'}</div>
+          <div style="margin-bottom:2px;">Techniker: ${a.mitarbeiter ? [a.mitarbeiter.vorname, a.mitarbeiter.nachname].filter(Boolean).join(' ') || 'â' : 'â'}</div>
           <div style="margin-bottom:2px;">Fahrzeug: ${a.fahrzeuge?.kennzeichen || 'â'}</div>
           <div style="margin-bottom:8px;">PrioritÃ¤t: <b style="color:${color}">${a.prioritaet || 'â'}</b></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -351,7 +351,7 @@ export default function RoutEnplanungPage() {
           >
             <option value="">Alle Techniker</option>
             {techniker.map(t => (
-              <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
+              <option key={t.id} value={t.id}>{t.vorname} {t.nachname}</option>
             ))}
           </select>
 
@@ -496,7 +496,7 @@ export default function RoutEnplanungPage() {
                           {edit.editingTech ? (
                             <select
                               autoFocus
-                              defaultValue={a.techniker?.user_id || ''}
+                              defaultValue={a.techniker_id || ''}
                               onClick={e => e.stopPropagation()}
                               onChange={e => { e.stopPropagation(); updateTechniker(a.id, e.target.value); }}
                               onBlur={() => setInlineEdit(p => ({ ...p, [a.id]: { ...p[a.id], editingTech: false } }))}
@@ -505,7 +505,7 @@ export default function RoutEnplanungPage() {
                             >
                               <option value="">â Techniker â</option>
                               {techniker.map(t => (
-                                <option key={t.user_id} value={t.user_id}>{t.full_name}</option>
+                                <option key={t.id} value={t.id}>{t.vorname} {t.nachname}</option>
                               ))}
                             </select>
                           ) : (
@@ -516,7 +516,7 @@ export default function RoutEnplanungPage() {
                               }}
                               className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted"
                             >
-                              {a.techniker?.full_name || 'â Techniker zuweisen'}
+                              {a.mitarbeiter ? [a.mitarbeiter.vorname, a.mitarbeiter.nachname].filter(Boolean).join(' ') || 'â Techniker zuweisen' : 'â Techniker zuweisen'}
                             </button>
                           )}
                         </div>
