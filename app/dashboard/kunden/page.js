@@ -12,6 +12,9 @@ import {
   GhostButton,
   DangerButton,
   PrimaryButton,
+  Table,
+  TableRow,
+  TableCell,
 } from '@/components/ui/KanalProUI';
 
 function initialen(name) {
@@ -26,7 +29,6 @@ export default function Kunden() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
   const [laden, setLaden] = useState(true);
-  const [fehler, setFehler] = useState(null);
   const [buchstabe, setBuchstabe] = useState(null);
   const [loeschenId, setLoeschenId] = useState(null);
   const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
@@ -37,24 +39,10 @@ export default function Kunden() {
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
-
-    const { data: memberData } = await supabase
-      .from('company_members')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .single();
-    const companyId = memberData?.company_id;
-
-    if (!companyId) {
-      setFehler('Dein Benutzer ist keinem Unternehmen zugeordnet.');
-      setLaden(false);
-      return;
-    }
-
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
-      .eq('company_id', companyId)
+      .eq('user_id', user.id)
       .order('name');
     setKunden(data ?? []);
     setLaden(false);
@@ -112,14 +100,6 @@ export default function Kunden() {
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
-
-  if (fehler) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <p className="text-red-600 text-sm">{fehler}</p>
       </div>
     );
   }
@@ -199,83 +179,72 @@ export default function Kunden() {
       ) : (
         <>
           {/* Desktop-Tabelle */}
-          <div className="hidden md:block overflow-hidden rounded-xl border border-gray-100 shadow-sm">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-100">
-                <tr>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Kunde</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Kontakt</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Typ</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Auftraege</th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Letzter Einsatz</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {gefiltertKunden.map(k => {
-                  const anzeigeName = anzeigeNameVon(k);
-                  const sortiert = (k.auftraege ?? []).slice().sort((a, b) => new Date(b.datum ?? 0) - new Date(a.datum ?? 0));
-                  const letzter = sortiert[0];
-                  return (
-                    <tr
-                      key={k.id}
-                      onClick={() => router.push('/dashboard/kunden/' + k.id)}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer group border-b border-gray-50 last:border-0"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-medium flex-shrink-0">
-                            {initialen(anzeigeName)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{anzeigeName}</p>
-                            {k.kundentyp === 'firma' && k.name && (
-                              <p className="text-xs text-gray-400">{k.name}</p>
-                            )}
-                            {(k.ist_vertragskunde || k.ist_wartungskunde) && (
-                              <div className="flex gap-1 mt-0.5">
-                                {k.ist_vertragskunde && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Vertrag</span>
-                                )}
-                                {k.ist_wartungskunde && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">Wartung</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
+          <div className="hidden md:block">
+            <Table headers={['Kunde', 'Kontakt', 'Typ', 'Auftraege', 'Letzter Einsatz', '']}>
+              {gefiltertKunden.map(k => {
+                const anzeigeName = anzeigeNameVon(k);
+                const sortiert = (k.auftraege ?? []).slice().sort((a, b) => new Date(b.datum ?? 0) - new Date(a.datum ?? 0));
+                const letzter = sortiert[0];
+                return (
+                  <TableRow
+                    key={k.id}
+                    onClick={() => router.push('/dashboard/kunden/' + k.id)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                          {initialen(anzeigeName)}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="space-y-0.5">
-                          {k.telefon && (
-                            <a href={'tel:' + k.telefon} onClick={e => e.stopPropagation()}
-                              className="block text-blue-600 hover:underline text-xs">{k.telefon}</a>
+                        <div>
+                          <p className="font-medium text-gray-900">{anzeigeName}</p>
+                          {k.kundentyp === 'firma' && k.name && (
+                            <p className="text-xs text-gray-400">{k.name}</p>
                           )}
-                          {k.email && (
-                            <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
-                              className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-[160px]">{k.email}</a>
+                          {(k.ist_vertragskunde || k.ist_wartungskunde) && (
+                            <div className="flex gap-1 mt-0.5">
+                              {k.ist_vertragskunde && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">Vertrag</span>
+                              )}
+                              {k.ist_wartungskunde && (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 font-medium">Wartung</span>
+                              )}
+                            </div>
                           )}
-                          {!k.telefon && !k.email && <span className="text-gray-300 text-xs">-</span>}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          k.kundentyp === 'firma'
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {k.kundentyp === 'firma' ? 'Firma' : 'Privat'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-                          {k.auftraege?.length ?? 0}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs hidden lg:table-cell">
-                        {letzter?.datum ? new Date(letzter.datum).toLocaleDateString('de-DE') : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        {k.telefon && (
+                          <a href={'tel:' + k.telefon} onClick={e => e.stopPropagation()}
+                            className="block text-blue-600 hover:underline text-xs">{k.telefon}</a>
+                        )}
+                        {k.email && (
+                          <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
+                            className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-[160px]">{k.email}</a>
+                        )}
+                        {!k.telefon && !k.email && <span className="text-gray-300 text-xs">-</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        k.kundentyp === 'firma'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {k.kundentyp === 'firma' ? 'Firma' : 'Privat'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                        {k.auftraege?.length ?? 0}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-gray-400 text-xs hidden lg:table-cell">
+                      {letzter?.datum ? new Date(letzter.datum).toLocaleDateString('de-DE') : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div onClick={e => e.stopPropagation()}>
                         {loeschenId === k.id ? (
                           <div className="flex items-center gap-2 justify-end">
                             <span className="text-xs text-red-600">Loeschen?</span>
@@ -308,12 +277,12 @@ export default function Kunden() {
                             </button>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </Table>
           </div>
 
           {/* Mobile Cards */}
