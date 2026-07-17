@@ -8,6 +8,7 @@ import {
   PageHeader, FilterBar, FilterButton,
   Table, TableRow, TableCell, TableSkeleton, TableCheckbox, TableActions,
   EmptyState, IconButton,
+PrimaryButton, SecondaryButton, GhostButton,
 } from '@/components/ui/KanalProUI';
 
 // Geplante Spalten-Konfiguration (noch nicht funktional – vorbereitet fuer PX-004)
@@ -134,15 +135,10 @@ export default function FahrzeugePage() {
         title="Fahrzeuge"
         subtitle={`${fahrzeuge.length} Fahrzeug${fahrzeuge.length !== 1 ? 'e' : ''}`}
         action={
-          <button
-            type="button"
-            onClick={() => setNeuShown(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition"
-          >
+          <PrimaryButton type="button" onClick={()=>setNeuShown(s=>!s)} className="gap-2">
             <Plus size={16} />
             Neues Fahrzeug
-          </button>
-        }
+          </PrimaryButton>        }
       />
 
       {/* Neu-Formular */}
@@ -174,15 +170,9 @@ export default function FahrzeugePage() {
           </div>
           {neuError && <p className="text-xs text-red-500">{neuError}</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={neuSaving}
-              className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">
+            <PrimaryButton type="submit" disabled={neuSaving}>
               {neuSaving ? 'Speichert...' : 'Anlegen'}
-            </button>
-            <button type="button" onClick={() => setNeuShown(false)}
-              className="px-4 py-2 text-sm text-gray-500 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-              Abbrechen
-            </button>
-          </div>
+            </PrimaryButton>            <GhostButton type="button" onClick={()=>setNeuShown(false)}>Abbrechen</GhostButton>          </div>
         </form>
       )}
 
@@ -218,10 +208,7 @@ export default function FahrzeugePage() {
             Auswahl aufheben
           </button>
           <div className="ml-auto flex gap-2">
-            <button className="px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 transition">
-              Exportieren
-            </button>
-          </div>
+            <SecondaryButton className="text-xs">Exportieren</SecondaryButton>          </div>
         </div>
       )}
 
