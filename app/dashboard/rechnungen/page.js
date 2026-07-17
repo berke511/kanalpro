@@ -8,7 +8,7 @@ import { Receipt, Search, X, ExternalLink } from 'lucide-react';
 import {
   PageHeader, FilterBar, FilterButton,
   Table, TableRow, TableCell, TableSkeleton, TableCheckbox, TableActions,
-  EmptyState, RechnungBadge,
+  EmptyState, RechnungBadge, PrimaryButton, SecondaryButton,
 } from '@/components/ui/KanalProUI';
 
 // Geplante Spalten-Konfiguration (noch nicht funktional â vorbereitet fuer PX-004)
@@ -388,10 +388,10 @@ export default function Rechnungen() {
                   <img src={logoUrl} alt="Firmenlogo" className="max-w-full max-h-full object-contain p-1" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <PrimaryButton onClick={()=>logoInputRef.current?.click()} disabled={logoLaden}> logoInputRef.current?.click()} disabled={logoLaden}
-                    className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
+                  <PrimaryButton onClick={()=>logoInputRef.current?.click()} disabled={logoLaden}>
                     Logo ersetzen
-                  </PrimaryButton>                  <button type="button" onClick={handleLogoEntfernen} disabled={logoLaden}
+                  </PrimaryButton>
+                  <button type="button" onClick={handleLogoEntfernen} disabled={logoLaden}
                     className="px-3.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition">
                     Logo entfernen
                   </button>
