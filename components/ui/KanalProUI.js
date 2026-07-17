@@ -403,7 +403,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }) {
   );
 }
 
-export function TableCheckbox({ checked, onChange, indeterminate = false }) {
+export function TableCheckbox({ checked, onChange, indeterminate = false, ariaLabel = 'Zeile auswaehlen' }) {
   function setRef(el) {
     if (el) el.indeterminate = indeterminate;
   }
@@ -413,6 +413,7 @@ export function TableCheckbox({ checked, onChange, indeterminate = false }) {
       type="checkbox"
       checked={checked}
       onChange={onChange}
+      aria-label={ariaLabel}
       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
     />
   );
@@ -420,7 +421,7 @@ export function TableCheckbox({ checked, onChange, indeterminate = false }) {
 
 export function TableActions({ children }) {
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150">
       {children}
     </div>
   );
