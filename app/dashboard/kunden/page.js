@@ -130,7 +130,7 @@ export default function Kunden() {
 
       {/* Suche + Filter-Tabs */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-wç-[200px]">
+        <div className="relative flex-1 min-wÃ§-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="text"
@@ -227,7 +227,7 @@ export default function Kunden() {
                         {k.telefon && (
                           <a href={'tel:' + k.telefon} onClick={e => e.stopPropagation()}
                             className="block text-blue-600 hover:underline text-xs">{k.telefon}</a>
-                        }
+                        )}
                         {k.email && (
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-[160px]">{k.email}</a>
