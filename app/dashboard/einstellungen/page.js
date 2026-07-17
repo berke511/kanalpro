@@ -6,7 +6,7 @@ import { ROLE_LABELS, ROLE_COLORS } from '@/lib/roles';
 import { PLANS } from '@/lib/plans';
 import StorageBar from '@/components/StorageBar';
 import TabNav from '@/components/ui/TabNav';
-import { PageHeader } from '@/components/ui/KanalProUI';
+import { PageHeader, PrimaryButton } from '@/components/ui/KanalProUI';
 import { CheckCircle, LogOut } from 'lucide-react';
 
 const INVITABLE_ROLES = [
@@ -245,13 +245,7 @@ export default function Einstellungen() {
                   {nutzerCount} / {nutzerLimit} Nutzer
                 </span>
                 {canInvite && (
-                  <button
-                    onClick={() => { setShowModal(true); setInvError(''); setInvSuccess(''); }}
-                    className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition"
-                  >
-                    + Einladen
-                  </button>
-                )}
+                  <PrimaryButton className="text-xs" onClick={()=>{setShowModal(true);setInvError('');setInvSuccess('');}}>+ Einladen</PrimaryButton>                )}
                 {canManage && plan === 'starter' && (
                   <button
                     onClick={() => router.push('/dashboard/billing')}
@@ -401,13 +395,7 @@ export default function Einstellungen() {
               <h3 className="text-base font-semibold text-gray-900">Firmendaten</h3>
               <p className="text-sm text-gray-500 mt-1">Verwalte Firmenname, Adresse und Unternehmensdaten.</p>
             </div>
-            <button
-              onClick={() => router.push('/dashboard/einstellungen/firmendaten')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl text-sm font-semibold transition bg-blue-600 hover:bg-blue-700"
-            >
-              Firmendaten öffnen
-            </button>
-          </div>
+            <PrimaryButton onClick={()=>router.push('/dashboard/einstellungen/firmendaten')}>Firmendaten öffnen</PrimaryButton>          </div>
         </div>
       )}
 
@@ -466,13 +454,7 @@ export default function Einstellungen() {
                   className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <button
-                type="submit" disabled={passLaden || !neuesPasswort}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 text-sm"
-              >
-                {passLaden ? 'Wird geändert...' : 'Passwort ändern'}
-              </button>
-            </form>
+              <PrimaryButton type="submit" disabled={passLaden||!neuesPasswort}>{passLaden?'Wird geändert...':'Passwort ändern'}</PrimaryButton>            </form>
           </div>
 
           {/* Abmelden */}
@@ -596,14 +578,7 @@ export default function Einstellungen() {
                 >
                   Abbrechen
                 </button>
-                <button
-                  type="submit"
-                  disabled={invLaden || !invEmail}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 text-sm"
-                >
-                  {invLaden ? 'Wird gesendet…' : 'Einladung senden'}
-                </button>
-              </div>
+                <PrimaryButton type="submit" disabled={invLaden||!invEmail} className="flex-1">{invLaden?'Wird gesendet…':'Einladung senden'}</PrimaryButton>              </div>
             </form>
           </div>
         </div>
