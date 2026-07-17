@@ -34,15 +34,25 @@ export default function Kunden() {
   const [loeschenBestaetigt, setLoeschenBestaetigt] = useState(false);
   const [suche, setSuche] = useState('');
   const [typFilter, setTypFilter] = useState('alle');
+  const [companyId, setCompanyId] = useState(null);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+    if (!member) { setLaden(false); return; }
+    setCompanyId(member.company_id);
     const { data } = await supabase
       .from('kunden')
       .select('*, auftraege(id, datum, status)')
-      .eq('user_id', user.id)
+      .eq('company_id', member.company_id)
       .order('name');
     setKunden(data ?? []);
     setLaden(false);
@@ -50,7 +60,7 @@ export default function Kunden() {
 
   async function handleDelete(id) {
     if (!loeschenBestaetigt) { setLoeschenBestaetigt(true); return; }
-    await supabase.from('kunden').delete().eq('id', id);
+    await supabase.from('kunden').delete().eq('id', id).eq('company_id', companyId);
     setLoeschenId(null);
     setLoeschenBestaetigt(false);
     load();
@@ -72,7 +82,6 @@ export default function Kunden() {
       if (!buchstabe) return true;
       return anzeigeNameVon(k).toUpperCase().startsWith(buchstabe);
     });
-
   const vorhandeneBuchstaben = new Set(kunden.map(k => anzeigeNameVon(k)[0]?.toUpperCase()));
 
   if (laden) {
@@ -121,7 +130,7 @@ export default function Kunden() {
 
       {/* Suche + Filter-Tabs */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-wç-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="text"
@@ -218,7 +227,7 @@ export default function Kunden() {
                         {k.telefon && (
                           <a href={'tel:' + k.telefon} onClick={e => e.stopPropagation()}
                             className="block text-blue-600 hover:underline text-xs">{k.telefon}</a>
-                        )}
+                        }
                         {k.email && (
                           <a href={'mailto:' + k.email} onClick={e => e.stopPropagation()}
                             className="block text-gray-400 hover:text-gray-600 text-xs truncate max-w-[160px]">{k.email}</a>
