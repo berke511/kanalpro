@@ -205,9 +205,9 @@ export default function Rechnungen() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Rechnungen</h1>
         {tab === 'liste' && (
-          <Link href="/dashboard/rechnungen/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-            + Neue Rechnung
-          </Link>
+          <Link href="/dashboard/rechnungen/neu">
+      <PrimaryButton>+ Neue Rechnung</PrimaryButton>
+    </Link>
         )}
       </div>
 
@@ -255,10 +255,7 @@ export default function Rechnungen() {
                 Auswahl aufheben
               </button>
               <div className="ml-auto flex gap-2">
-                <button className="px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 transition">
-                  Exportieren
-                </button>
-              </div>
+                <SecondaryButton className="text-xs">Exportieren</SecondaryButton>              </div>
             </div>
           )}
 
@@ -378,8 +375,7 @@ export default function Rechnungen() {
               </div>
             ))}
             <div>
-              <button type="submit" className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-sm">Firmendaten speichern</button>
-              <p className="text-xs text-gray-400 mt-3">Diese Daten erscheinen automatisch auf deinen Rechnungs-PDFs.</p>
+              <PrimaryButton type="submit">Firmendaten speichern</PrimaryButton>              <p className="text-xs text-gray-400 mt-3">Diese Daten erscheinen automatisch auf deinen Rechnungs-PDFs.</p>
             </div>
           </form>
 
@@ -392,11 +388,10 @@ export default function Rechnungen() {
                   <img src={logoUrl} alt="Firmenlogo" className="max-w-full max-h-full object-contain p-1" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <button type="button" onClick={() => logoInputRef.current?.click()} disabled={logoLaden}
+                  <PrimaryButton onClick={()=>logoInputRef.current?.click()} disabled={logoLaden}> logoInputRef.current?.click()} disabled={logoLaden}
                     className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition">
                     Logo ersetzen
-                  </button>
-                  <button type="button" onClick={handleLogoEntfernen} disabled={logoLaden}
+                  </PrimaryButton>                  <button type="button" onClick={handleLogoEntfernen} disabled={logoLaden}
                     className="px-3.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition">
                     Logo entfernen
                   </button>
