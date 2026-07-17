@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import TabNav from '@/components/ui/TabNav';
-import { PageHeader } from '@/components/ui/KanalProUI';
+import { PageHeader, PrimaryButton } from '@/components/ui/KanalProUI';
 
 const ANGEBOTE_TABS = [
   { id: 'angebote', label: 'Angebote'      },
@@ -253,9 +253,9 @@ export default function Angebote() {
       <PageHeader
         title="Angebote"
         action={tab === 'angebote' ? (
-          <Link href="/dashboard/angebote/neu" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-            + Neues Angebot
-          </Link>
+          <Link href="/dashboard/angebote/neu">
+    <PrimaryButton>+ Neues Angebot</PrimaryButton>
+  </Link>
         ) : undefined}
       />
       <Link
@@ -288,14 +288,13 @@ export default function Angebote() {
             </div>
             <p className="text-sm font-semibold text-gray-700">Noch keine Angebote</p>
             <p className="text-sm text-gray-400 mt-1.5 max-w-xs mx-auto">Erstelle dein erstes Angebot und sende es direkt an deinen Kunden.</p>
-            <Link
-              href="/dashboard/angebote/neu"
-              className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+            <Link href="/dashboard/angebote/neu">
+              <PrimaryButton className="mt-6 gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              Erstes Angebot erstellen
+                Erstes Angebot erstellen
+              </PrimaryButton>
             </Link>
           </div>
         ) : (
@@ -394,11 +393,11 @@ export default function Angebote() {
                   </div>
                 )}
 
-                <button
-                  onClick={handlePDF}
-                  disabled={!selectedId || pdfLaden}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                >
+                <PrimaryButton
+                onClick={handlePDF}
+                disabled={!selectedId || pdfLaden}
+                className="w-full"
+              >
                   {pdfLaden ? (
                     <>
                       <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -415,7 +414,7 @@ export default function Angebote() {
                       Als PDF herunterladen
                     </>
                   )}
-                </button>
+                </PrimaryButton>
               </>
             )}
           </div>
