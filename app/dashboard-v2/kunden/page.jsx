@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -75,7 +77,7 @@ export default function KundenV2Page() {
                 {laden ? (
                   <Table.Row>
                     <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
-                      Lädt...
+                      Laedt...
                     </Table.Cell>
                   </Table.Row>
                 ) : gefilterteKunden.length === 0 ? (
@@ -94,9 +96,13 @@ export default function KundenV2Page() {
                         <Table.Cell>
                           <Badge variant={statusVariant(k.status)}>{k.status ?? '-'}</Badge>
                         </Table.Cell>
-                        <Table.Cell></Table.Cell>
-                      </Table.Row>
-                    );
+                        <Table.Cell>
+                          <Table.Cell>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/kunden/' + k.id); }}>
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Bearbeiten
+                          </Button>
+                        </Table.Cell>                 );
                   })
                 )}
               </Table.Body>
