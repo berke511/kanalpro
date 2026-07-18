@@ -40,7 +40,7 @@ export default function KundenV2Page() {
 
     function statusVariant(status) {
         if (status === 'aktiv') return 'success';
-        if (status === 'inaktiv') return 'default';
+        if (status === 'inaktiv') return 'danger';
         return 'default';
     }
 
