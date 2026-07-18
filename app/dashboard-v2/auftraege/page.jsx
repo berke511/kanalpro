@@ -13,6 +13,7 @@ import Input from '@/components/ui/v2/Input';
 export default function AuftraegeV2Page() {
     const [auftraege, setAuftraege] = useState([]);
     const [laden, setLaden] = useState(true);
+    const [suchbegriff, setSuchbegriff] = useState('');
     const router = useRouter();
 
     useEffect(function() { load(); }, []);
@@ -40,6 +41,15 @@ export default function AuftraegeV2Page() {
         return d ? new Date(d).toLocaleDateString('de-DE') : '-';
     }
 
+    var q = suchbegriff.toLowerCase();
+    var gefilterteAuftraege = auftraege.filter(function(a) {
+        return (
+            (a.titel ?? '').toLowerCase().includes(q) ||
+            (a.kunden?.name ?? '').toLowerCase().includes(q) ||
+            (a.status ?? '').toLowerCase().includes(q)
+        );
+    });
+
     return (
         <Page>
           <Page.Header>
@@ -50,7 +60,7 @@ export default function AuftraegeV2Page() {
             <Card>
               <Card.Content>
                 <div className="mb-4 flex items-center justify-between gap-4">
-                  <Input placeholder="Auftraege durchsuchen..." className="max-w-xs" />
+                  <Input placeholder="Auftraege durchsuchen..." className="max-w-xs" value={suchbegriff} onChange={function(e) { setSuchbegriff(e.target.value); }} />
                   <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Auftrag anlegen</Button>
                 </div>
                 <Table>
@@ -76,8 +86,14 @@ export default function AuftraegeV2Page() {
                           Keine Auftraege vorhanden.
                         </Table.Cell>
                       </Table.Row>
+                    ) : gefilterteAuftraege.length === 0 ? (
+                      <Table.Row>
+                        <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                          Keine passenden Auftraege gefunden.
+                        </Table.Cell>
+                      </Table.Row>
                     ) : (
-                      auftraege.map(function(a) {
+                      gefilterteAuftraege.map(function(a) {
                         return (
                           <Table.Row key={a.id}>
                             <Table.Cell>{a.titel ?? '-'}</Table.Cell>
