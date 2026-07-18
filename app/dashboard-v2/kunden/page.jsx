@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -10,6 +11,7 @@ import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 export default function KundenV2Page() {
+  const router = useRouter();
   const [kunden, setKunden] = useState([]);
   const [laden, setLaden] = useState(true);
 
@@ -51,7 +53,7 @@ export default function KundenV2Page() {
           <Card.Content>
             <div className="mb-4 flex items-center justify-between gap-4">
               <Input placeholder="Kunden durchsuchen..." className="max-w-xs" />
-              <Button variant="primary">Kunde anlegen</Button>
+              <Button variant="primary" onClick={function() { router.push('/dashboard/kunden/neu'); }}>Kunde anlegen</Button>
             </div>
             <Table>
               <Table.Head>
