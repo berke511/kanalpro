@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -12,6 +13,7 @@ import Input from '@/components/ui/v2/Input';
 export default function AuftraegeV2Page() {
     const [auftraege, setAuftraege] = useState([]);
     const [laden, setLaden] = useState(true);
+    const router = useRouter();
 
     useEffect(function() { load(); }, []);
 
@@ -49,7 +51,7 @@ export default function AuftraegeV2Page() {
               <Card.Content>
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <Input placeholder="Auftraege durchsuchen..." className="max-w-xs" />
-                  <Button variant="primary">Auftrag anlegen</Button>
+                  <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Auftrag anlegen</Button>
                 </div>
                 <Table>
                   <Table.Head>
