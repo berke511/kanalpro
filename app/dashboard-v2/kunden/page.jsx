@@ -14,6 +14,7 @@ export default function KundenV2Page() {
   const router = useRouter();
   const [kunden, setKunden] = useState([]);
   const [laden, setLaden] = useState(true);
+  const [suchbegriff, setSuchbegriff] = useState('');
 
   useEffect(function() { load(); }, []);
 
@@ -42,6 +43,11 @@ export default function KundenV2Page() {
     return 'default';
   }
 
+  const gefilterteKunden = kunden.filter(function(k) {
+    const q = suchbegriff.toLowerCase();
+    return (k.firma || '').toLowerCase().includes(q) || (k.ansprechpartner || '').toLowerCase().includes(q) || (k.ort || '').toLowerCase().includes(q);
+  });
+
   return (
     <Page>
       <Page.Header>
@@ -52,7 +58,7 @@ export default function KundenV2Page() {
         <Card>
           <Card.Content>
             <div className="mb-4 flex items-center justify-between gap-4">
-              <Input placeholder="Kunden durchsuchen..." className="max-w-xs" />
+              <Input placeholder="Kunden durchsuchen..." className="max-w-xs" value={suchbegriff} onChange={function(e) { setSuchbegriff(e.target.value); }} />
               <Button variant="primary" onClick={function() { router.push('/dashboard/kunden/neu'); }}>Kunde anlegen</Button>
             </div>
             <Table>
@@ -72,14 +78,14 @@ export default function KundenV2Page() {
                       Lädt...
                     </Table.Cell>
                   </Table.Row>
-                ) : kunden.length === 0 ? (
+                ) : gefilterteKunden.length === 0 ? (
                   <Table.Row>
                     <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
-                      Keine Kunden vorhanden.
+                      {suchbegriff ? 'Keine passenden Kunden gefunden.' : 'Keine Kunden vorhanden.'}
                     </Table.Cell>
                   </Table.Row>
                 ) : (
-                  kunden.map(function(k) {
+                  gefilterteKunden.map(function(k) {
                     return (
                       <Table.Row key={k.id}>
                         <Table.Cell>{k.firma ?? '-'}</Table.Cell>
