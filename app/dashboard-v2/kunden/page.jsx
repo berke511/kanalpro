@@ -1,12 +1,45 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Table from '@/components/ui/v2/Table';
+import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 export default function KundenV2Page() {
+  const [kunden, setKunden] = useState([]);
+  const [laden, setLaden] = useState(true);
+
+  useEffect(function() { load(); }, []);
+
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLaden(false); return; }
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+    if (!member) { setLaden(false); return; }
+    const { data } = await supabase
+      .from('kunden')
+      .select('id, firma, ansprechpartner, ort, status')
+      .eq('company_id', member.company_id)
+      .order('firma');
+    setKunden(data ?? []);
+    setLaden(false);
+  }
+
+  function statusVariant(status) {
+    if (status === 'aktiv') return 'success';
+    if (status === 'inaktiv') return 'default';
+    return 'default';
+  }
+
   return (
     <Page>
       <Page.Header>
@@ -31,11 +64,33 @@ export default function KundenV2Page() {
                 </Table.Row>
               </Table.Head>
               <Table.Body>
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
-                    Keine Kunden vorhanden.
-                  </Table.Cell>
-                </Table.Row>
+                {laden ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Lädt...
+                    </Table.Cell>
+                  </Table.Row>
+                ) : kunden.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Keine Kunden vorhanden.
+                    </Table.Cell>
+                  </Table.Row>
+                ) : (
+                  kunden.map(function(k) {
+                    return (
+                      <Table.Row key={k.id}>
+                        <Table.Cell>{k.firma ?? '-'}</Table.Cell>
+                        <Table.Cell>{k.ansprechpartner ?? '-'}</Table.Cell>
+                        <Table.Cell>{k.ort ?? '-'}</Table.Cell>
+                        <Table.Cell>
+                          <Badge variant={statusVariant(k.status)}>{k.status ?? '-'}</Badge>
+                        </Table.Cell>
+                        <Table.Cell></Table.Cell>
+                      </Table.Row>
+                    );
+                  })
+                )}
               </Table.Body>
             </Table>
           </Card.Content>
