@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -113,7 +114,11 @@ export default function AngeboteV2Page() {
                           <Badge variant={statusVariant(a.status)}>{a.status ?? '-'}</Badge>
                         </Table.Cell>
                         <Table.Cell>{formatDate(a.gueltig_bis)}</Table.Cell>
-                        <Table.Cell></Table.Cell>
+                        <Table.Cell>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/angebote/' + a.id); }}>
+                            <Pencil size={16} />
+                          </Button>
+                        </Table.Cell>
                       </Table.Row>
                     );
                   })
