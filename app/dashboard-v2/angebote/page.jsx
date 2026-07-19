@@ -3,6 +3,7 @@
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Table from '@/components/ui/v2/Table';
+import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
@@ -11,7 +12,7 @@ export default function AngeboteV2Page() {
     <Page>
       <Page.Header>
         <Page.Title>Angebote</Page.Title>
-        <Page.Description>Angebotsverwaltung</Page.Description>
+        <Page.Description>Alle Angebote im Ueberblick</Page.Description>
       </Page.Header>
       <Page.Content>
         <Card>
