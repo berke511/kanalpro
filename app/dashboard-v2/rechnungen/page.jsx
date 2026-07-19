@@ -45,6 +45,7 @@ export default function RechnungenV2Page() {
   function statusVariant(s) {
     if (s === 'entwurf') return 'default';
     if (s === 'gesendet') return 'info';
+    if (s === 'versendet') return 'info';
     if (s === 'bezahlt') return 'success';
     return 'default';
   }
