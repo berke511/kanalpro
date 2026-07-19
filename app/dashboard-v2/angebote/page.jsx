@@ -118,7 +118,8 @@ export default function AngeboteV2Page() {
                         <Table.Cell>{formatDate(a.gueltig_bis)}</Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/angebote/' + a.id); }}>
-                            <Pencil size={16} />
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Bearbeiten
                           </Button>
                         </Table.Cell>
                       </Table.Row>
