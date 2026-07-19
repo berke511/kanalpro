@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Table from '@/components/ui/v2/Table';
@@ -8,6 +10,41 @@ import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 export default function AngeboteV2Page() {
+  const [angebote, setAngebote] = useState([]);
+  const [laden, setLaden] = useState(true);
+
+  useEffect(function() { load(); }, []);
+
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setLaden(false); return; }
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
+    if (!member) { setLaden(false); return; }
+    const { data } = await supabase
+      .from('angebote')
+      .select('id, angebotsnummer, status, gueltig_bis, kunden(name)')
+      .eq('company_id', member.company_id)
+      .order('erstellt_am', { ascending: false });
+    setAngebote(data ?? []);
+    setLaden(false);
+  }
+
+  function formatDate(d) {
+    return d ? new Date(d).toLocaleDateString('de-DE') : '-';
+  }
+
+  function statusVariant(s) {
+    if (s === 'angenommen') return 'success';
+    if (s === 'gesendet') return 'info';
+    if (s === 'abgelehnt') return 'danger';
+    return 'default';
+  }
+
   return (
     <Page>
       <Page.Header>
@@ -32,11 +69,33 @@ export default function AngeboteV2Page() {
                 </Table.Row>
               </Table.Head>
               <Table.Body>
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
-                    Noch keine Angebote vorhanden.
-                  </Table.Cell>
-                </Table.Row>
+                {laden ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Laedt...
+                    </Table.Cell>
+                  </Table.Row>
+                ) : angebote.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Noch keine Angebote vorhanden.
+                    </Table.Cell>
+                  </Table.Row>
+                ) : (
+                  angebote.map(function(a) {
+                    return (
+                      <Table.Row key={a.id}>
+                        <Table.Cell>{a.angebotsnummer ?? '-'}</Table.Cell>
+                        <Table.Cell>{a.kunden?.name ?? '-'}</Table.Cell>
+                        <Table.Cell>
+                          <Badge variant={statusVariant(a.status)}>{a.status ?? '-'}</Badge>
+                        </Table.Cell>
+                        <Table.Cell>{formatDate(a.gueltig_bis)}</Table.Cell>
+                        <Table.Cell></Table.Cell>
+                      </Table.Row>
+                    );
+                  })
+                )}
               </Table.Body>
             </Table>
           </Card.Content>
