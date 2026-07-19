@@ -43,7 +43,7 @@ export default function AuftraegeV2Page() {
   }
 
   function statusVariant(s) {
-    if (s === 'offen') return 'warning';
+    if (s === 'offen') return 'default';
     if (s === 'in_bearbeitung') return 'info';
     if (s === 'abgeschlossen') return 'success';
     if (s === 'storniert') return 'danger';
@@ -52,11 +52,10 @@ export default function AuftraegeV2Page() {
 
   var q = suchbegriff.toLowerCase();
   var gefilterteAuftraege = auftraege.filter(function(a) {
-    return (
-      (a.titel ?? '').toLowerCase().includes(q) ||
-      (a.kunden?.name ?? '').toLowerCase().includes(q) ||
-      (a.status ?? '').toLowerCase().includes(q)
-    );
+    var titel = (a.titel ?? '').toLowerCase();
+    var kunde = (a.kunden && a.kunden.name ? a.kunden.name : '').toLowerCase();
+    var status = (a.status ?? '').toLowerCase();
+    return titel.includes(q) || kunde.includes(q) || status.includes(q);
   });
 
   return (
@@ -69,7 +68,12 @@ export default function AuftraegeV2Page() {
         <Card>
           <Card.Content>
             <div className="mb-4 flex items-center justify-between gap-4">
-              <Input placeholder="Auftraege durchsuchen..." className="max-w-xs" value={suchbegriff} onChange={function(e) { setSuchbegriff(e.target.value); }} />
+              <Input
+                placeholder="Auftraege durchsuchen..."
+                className="max-w-xs"
+                value={suchbegriff}
+                onChange={function(e) { setSuchbegriff(e.target.value); }}
+              />
               <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Auftrag anlegen</Button>
             </div>
             <Table>
@@ -106,14 +110,15 @@ export default function AuftraegeV2Page() {
                     return (
                       <Table.Row key={a.id}>
                         <Table.Cell>{a.titel ?? '-'}</Table.Cell>
-                        <Table.Cell>{a.kunden?.name ?? '-'}</Table.Cell>
+                        <Table.Cell>{a.kunden && a.kunden.name ? a.kunden.name : '-'}</Table.Cell>
                         <Table.Cell>
                           <Badge variant={statusVariant(a.status)}>{a.status ?? '-'}</Badge>
                         </Table.Cell>
                         <Table.Cell>{formatDate(a.datum)}</Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/auftraege/' + a.id); }}>
-                            <Pencil size={14} />
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Bearbeiten
                           </Button>
                         </Table.Cell>
                       </Table.Row>
