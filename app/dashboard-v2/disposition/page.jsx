@@ -19,19 +19,34 @@ function fmtDatum(str) {
   catch (e) { return str; }
 }
 
+// Statuswerte: erstellen→'offen', statussystem→neu/geplant/zugewiesen/unterwegs/vor_ort/in_arbeit/wartend/abgeschlossen/storniert, abschluss→'dokumentiert'
 var STATUS_VARIANT = {
   offen:          'warning',
   in_bearbeitung: 'info',
+  neu:            'info',
+  geplant:        'warning',
+  zugewiesen:     'info',
+  unterwegs:      'warning',
+  vor_ort:        'info',
+  in_arbeit:      'warning',
+  wartend:        'default',
   abgeschlossen:  'success',
-  geplant:        'default',
+  dokumentiert:   'success',
   storniert:      'danger',
 };
 
 var STATUS_LABEL = {
   offen:          'Offen',
   in_bearbeitung: 'In Bearbeitung',
-  abgeschlossen:  'Abgeschlossen',
+  neu:            'Neu',
   geplant:        'Geplant',
+  zugewiesen:     'Zugewiesen',
+  unterwegs:      'Unterwegs',
+  vor_ort:        'Vor Ort',
+  in_arbeit:      'In Arbeit',
+  wartend:        'Wartend',
+  abgeschlossen:  'Abgeschlossen',
+  dokumentiert:   'Dokumentiert',
   storniert:      'Storniert',
 };
 
