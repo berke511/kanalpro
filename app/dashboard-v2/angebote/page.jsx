@@ -43,9 +43,11 @@ export default function AngeboteV2Page() {
   }
 
   function statusVariant(s) {
-    if (s === 'angenommen') return 'success';
+    if (s === 'entwurf') return 'default';
     if (s === 'gesendet') return 'info';
+    if (s === 'angenommen') return 'success';
     if (s === 'abgelehnt') return 'danger';
+    if (s === 'in_auftrag') return 'warning';
     return 'default';
   }
 
