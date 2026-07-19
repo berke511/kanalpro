@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -113,7 +114,11 @@ export default function RechnungenV2Page() {
                           <Badge variant={statusVariant(r.status)}>{r.status ?? '-'}</Badge>
                         </Table.Cell>
                         <Table.Cell>{formatDate(r.faellig_am)}</Table.Cell>
-                        <Table.Cell></Table.Cell>
+                        <Table.Cell>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/rechnungen/' + r.id); }}>
+                            <Pencil size={16} />
+                          </Button>
+                        </Table.Cell>
                       </Table.Row>
                     );
                   })
