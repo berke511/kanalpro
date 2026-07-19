@@ -33,6 +33,9 @@ export default function Finanzen() {
     offeneRechnungen: 0,
     offeneAngebote: 0,
     ueberfaelligeRechnungen: 0,
+    offeneForderungen: 0,
+    entwuerfe: 0,
+    bezahlteRechnungen: 0,
   });
 
   useEffect(function() {
@@ -86,11 +89,21 @@ export default function Finanzen() {
           return istUeberfaellig(r);
         }).length;
 
+        var offeneForderungen = rech
+          .filter(function(r) { return r.status === 'gesendet' || r.status === 'versendet'; })
+          .reduce(function(s, r) { return s + calcBrutto(r); }, 0);
+
+        var entwuerfe = rech.filter(function(r) { return r.status === 'entwurf'; }).length;
+        var bezahlteRechnungen = rech.filter(function(r) { return r.status === 'bezahlt'; }).length;
+
         setKpis({
           umsatz: Number(umsatz || 0),
           offeneRechnungen: Number(offeneRechnungen || 0),
           offeneAngebote: Number(offeneAngebote || 0),
           ueberfaelligeRechnungen: Number(ueberfaelligeRechnungen || 0),
+          offeneForderungen: Number(offeneForderungen || 0),
+          entwuerfe: Number(entwuerfe || 0),
+          bezahlteRechnungen: Number(bezahlteRechnungen || 0),
         });
         setLaden(false);
       } catch (err) {
@@ -160,7 +173,24 @@ export default function Finanzen() {
           <Card.Content>
             {fehler
               ? <p className="text-sm text-red-500">Finanzdaten konnten nicht geladen werden.</p>
-              : <p className="text-sm text-gray-500">Detailansicht wird im naechsten Schritt implementiert.</p>
+              : laden
+                ? <p className="text-sm text-gray-400">Laedt...</p>
+                : (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Rechnungen (Entwurf)</span>
+                      <span className="text-sm font-medium text-gray-900">{Number(kpis.entwuerfe || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Rechnungen bezahlt</span>
+                      <span className="text-sm font-medium text-gray-900">{Number(kpis.bezahlteRechnungen || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t pt-3">
+                      <span className="text-sm font-medium text-gray-700">Offene Forderungen</span>
+                      <span className="text-sm font-semibold text-gray-900">{fmtEuro(kpis.offeneForderungen)}</span>
+                    </div>
+                  </div>
+                )
             }
           </Card.Content>
         </Card>
