@@ -13,6 +13,7 @@ import Input from '@/components/ui/v2/Input';
 export default function AngeboteV2Page() {
   const [angebote, setAngebote] = useState([]);
   const [laden, setLaden] = useState(true);
+  const [suchbegriff, setSuchbegriff] = useState('');
   const router = useRouter();
 
   useEffect(function() { load(); }, []);
@@ -47,6 +48,14 @@ export default function AngeboteV2Page() {
     return 'default';
   }
 
+  var q = suchbegriff.toLowerCase();
+  var gefilterteAngebote = angebote.filter(function(a) {
+    var nr = (a.angebotsnummer ?? '').toLowerCase();
+    var kunde = (a.kunden && a.kunden.name ? a.kunden.name : '').toLowerCase();
+    var status = (a.status ?? '').toLowerCase();
+    return nr.includes(q) || kunde.includes(q) || status.includes(q);
+  });
+
   return (
     <Page>
       <Page.Header>
@@ -57,7 +66,12 @@ export default function AngeboteV2Page() {
         <Card>
           <Card.Content>
             <div className="mb-4 flex items-center justify-between gap-4">
-              <Input placeholder="Angebote durchsuchen..." className="max-w-xs" />
+              <Input
+                placeholder="Angebote durchsuchen..."
+                className="max-w-xs"
+                value={suchbegriff}
+                onChange={function(e) { setSuchbegriff(e.target.value); }}
+              />
               <Button variant="primary" onClick={function() { router.push('/dashboard/angebote/neu'); }}>Angebot erstellen</Button>
             </div>
             <Table>
@@ -83,12 +97,18 @@ export default function AngeboteV2Page() {
                       Noch keine Angebote vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefilterteAngebote.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Angebote gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  angebote.map(function(a) {
+                  gefilterteAngebote.map(function(a) {
                     return (
                       <Table.Row key={a.id}>
                         <Table.Cell>{a.angebotsnummer ?? '-'}</Table.Cell>
-                        <Table.Cell>{a.kunden?.name ?? '-'}</Table.Cell>
+                        <Table.Cell>{a.kunden && a.kunden.name ? a.kunden.name : '-'}</Table.Cell>
                         <Table.Cell>
                           <Badge variant={statusVariant(a.status)}>{a.status ?? '-'}</Badge>
                         </Table.Cell>
