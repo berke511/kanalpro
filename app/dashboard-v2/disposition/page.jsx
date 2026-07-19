@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -34,6 +35,7 @@ var STATUS_LABEL = {
 };
 
 export default function Disposition() {
+  const router = useRouter();
   const [laden, setLaden] = useState(true);
   const [einsaetze, setEinsaetze] = useState([]);
   const [suche, setSuche] = useState('');
@@ -102,7 +104,12 @@ export default function Disposition() {
             value={suche}
             onChange={function(e) { setSuche(e.target.value); }}
           />
-          <Button variant="primary">Einsatz planen</Button>
+          <Button
+            variant="primary"
+            onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}
+          >
+            Einsatz planen
+          </Button>
         </div>
         <Card>
           <Card.Content>
