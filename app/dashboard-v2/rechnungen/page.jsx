@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -13,6 +14,7 @@ export default function RechnungenV2Page() {
   const [rechnungen, setRechnungen] = useState([]);
   const [laden, setLaden] = useState(true);
   const [suchbegriff, setSuchbegriff] = useState('');
+  const router = useRouter();
 
   useEffect(function() { load(); }, []);
 
@@ -70,7 +72,7 @@ export default function RechnungenV2Page() {
                 value={suchbegriff}
                 onChange={function(e) { setSuchbegriff(e.target.value); }}
               />
-              <Button variant="primary">Rechnung erstellen</Button>
+              <Button variant="primary" onClick={function() { router.push('/dashboard/rechnungen/neu'); }}>Rechnung erstellen</Button>
             </div>
             <Table>
               <Table.Head>
