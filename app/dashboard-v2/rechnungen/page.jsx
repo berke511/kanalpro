@@ -117,7 +117,8 @@ export default function RechnungenV2Page() {
                         <Table.Cell>{formatDate(r.faellig_am)}</Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/rechnungen/' + r.id); }}>
-                            <Pencil size={16} />
+                            <Pencil className="w-4 h-4 mr-1" />
+                            Bearbeiten
                           </Button>
                         </Table.Cell>
                       </Table.Row>
