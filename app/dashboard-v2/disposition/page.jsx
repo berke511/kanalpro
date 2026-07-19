@@ -38,7 +38,7 @@ export default function Disposition() {
   const router = useRouter();
   const [laden, setLaden] = useState(true);
   const [einsaetze, setEinsaetze] = useState([]);
-  const [suche, setSuche] = useState('');
+  const [suchbegriff, setSuchbegriff] = useState('');
 
   useEffect(function() {
     async function load() {
@@ -71,12 +71,16 @@ export default function Disposition() {
     load();
   }, []);
 
-  var gefiltertEinsaetze = einsaetze.filter(function(e) {
-    if (!suche) return true;
-    var q = suche.toLowerCase();
+  var gefilterteEinsaetze = einsaetze.filter(function(e) {
+    if (!suchbegriff) return true;
+    var q = suchbegriff.toLowerCase();
     var titel = (e.titel ?? '').toLowerCase();
     var kunde = e.kunden ? ((e.kunden.firmenname || e.kunden.name) ?? '').toLowerCase() : '';
-    return titel.includes(q) || kunde.includes(q);
+    var vn = e.verantw_mitarbeiter ? (e.verantw_mitarbeiter.vorname ?? '') : '';
+    var nn = e.verantw_mitarbeiter ? (e.verantw_mitarbeiter.nachname ?? '') : '';
+    var techniker = (vn + ' ' + nn).trim().toLowerCase();
+    var status = (e.status ?? '').toLowerCase();
+    return titel.includes(q) || kunde.includes(q) || techniker.includes(q) || status.includes(q);
   });
 
   function technikerName(e) {
@@ -101,8 +105,8 @@ export default function Disposition() {
           <Input
             placeholder="Einsaetze durchsuchen..."
             className="max-w-xs"
-            value={suche}
-            onChange={function(e) { setSuche(e.target.value); }}
+            value={suchbegriff}
+            onChange={function(e) { setSuchbegriff(e.target.value); }}
           />
           <Button
             variant="primary"
@@ -131,14 +135,20 @@ export default function Disposition() {
                       Laedt...
                     </Table.Cell>
                   </Table.Row>
-                ) : gefiltertEinsaetze.length === 0 ? (
+                ) : einsaetze.length === 0 ? (
                   <Table.Row>
                     <Table.Cell colSpan={6} className="py-8 text-center text-sm text-gray-400">
                       Keine Einsaetze vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefilterteEinsaetze.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={6} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Einsaetze gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  gefiltertEinsaetze.map(function(e) {
+                  gefilterteEinsaetze.map(function(e) {
                     return (
                       <Table.Row key={e.id}>
                         <Table.Cell className="font-medium text-gray-900">{e.titel || '—'}</Table.Cell>
