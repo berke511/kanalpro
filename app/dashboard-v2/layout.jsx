@@ -1,11 +1,24 @@
 'use client';
 
-const navItems = [
-  'Dashboard', 'Kunden', 'Auftraege', 'Angebote', 'Rechnungen',
-  'Finanzen', 'Disposition', 'Fahrzeuge', 'Mitarbeiter', 'Einstellungen'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+var navItems = [
+  { label: 'Dashboard', href: '/dashboard-v2' },
+  { label: 'Kunden', href: '/dashboard-v2/kunden' },
+  { label: 'Auftraege', href: '/dashboard-v2/auftraege' },
+  { label: 'Angebote', href: '/dashboard-v2/angebote' },
+  { label: 'Rechnungen', href: '/dashboard-v2/rechnungen' },
+  { label: 'Finanzen', href: '/dashboard-v2/finanzen' },
+  { label: 'Disposition', href: '/dashboard-v2/disposition' },
+  { label: 'Fahrzeuge', href: '/dashboard-v2/fahrzeuge' },
+  { label: 'Mitarbeiter', href: '/dashboard-v2/mitarbeiter' },
+  { label: 'Einstellungen', href: '/dashboard-v2/einstellungen' },
 ];
 
 export default function DashboardV2Layout({ children }) {
+  var pathname = usePathname();
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
@@ -14,10 +27,15 @@ export default function DashboardV2Layout({ children }) {
         </div>
         <nav className="p-2">
           {navItems.map(function(item) {
+            var isActive = pathname === item.href || (item.href !== '/dashboard-v2' && pathname.startsWith(item.href));
             return (
-              <div key={item} className="flex items-center rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                {item}
-              </div>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={'flex items-center rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100' + (isActive ? ' bg-gray-100 font-medium' : '')}
+              >
+                {item.label}
+              </Link>
             );
           })}
         </nav>
