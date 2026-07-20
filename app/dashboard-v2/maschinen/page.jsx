@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -127,7 +128,11 @@ export default function Maschinen() {
                         <Table.Cell>
                           <Badge>{m.zustand || '—'}</Badge>
                         </Table.Cell>
-                        <Table.Cell></Table.Cell>
+                        <Table.Cell>
+                          <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/maschinen/' + m.id); }}>
+                            <Pencil size={14} /> Bearbeiten
+                          </Button>
+                        </Table.Cell>
                       </Table.Row>
                     );
                   })
