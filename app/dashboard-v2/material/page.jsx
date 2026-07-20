@@ -11,6 +11,12 @@ import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
+var ZUSTAND_MAP = {
+  aktiv:    { label: 'Aktiv',    variant: 'success' },
+  gesperrt: { label: 'Gesperrt', variant: 'danger'  },
+  leer:     { label: 'Leer',     variant: 'warning'  },
+};
+
 export default function Material() {
   var [materialien, setMaterialien] = useState([]);
   var [laden, setLaden] = useState(true);
@@ -100,6 +106,7 @@ export default function Material() {
                   </Table.Row>
                 ) : (
                   gefiltert.map(function (m) {
+                    var zInfo = ZUSTAND_MAP[m.zustand] || { label: m.zustand || '—', variant: 'default' };
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell>{m.name || '—'}</Table.Cell>
@@ -107,7 +114,7 @@ export default function Material() {
                         <Table.Cell>{m.bestand_aktuell != null ? m.bestand_aktuell : '—'}</Table.Cell>
                         <Table.Cell>{m.einheit || '—'}</Table.Cell>
                         <Table.Cell>
-                          <Badge variant="default">{m.zustand || '—'}</Badge>
+                          <Badge variant={zInfo.variant}>{zInfo.label}</Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/material/' + m.id); }}>
