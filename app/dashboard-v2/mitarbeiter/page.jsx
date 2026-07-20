@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { ROLE_LABELS } from '@/lib/roles';
 import Page from '@/components/ui/v2/Page';
@@ -132,7 +133,16 @@ export default function Mitarbeiter() {
                         <Table.Cell>
                           <Badge variant="default">{m.status || '\u2014'}</Badge>
                         </Table.Cell>
-                        <Table.Cell></Table.Cell>
+                        <Table.Cell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={function() { router.push('/dashboard/mitarbeiter/' + m.id); }}
+                          >
+                            <Pencil size={14} />
+                            Bearbeiten
+                          </Button>
+                        </Table.Cell>
                       </Table.Row>
                     );
                   })
