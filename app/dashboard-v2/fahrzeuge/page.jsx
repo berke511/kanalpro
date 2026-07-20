@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -24,6 +25,7 @@ var ZUSTAND_LABEL = {
 };
 
 export default function Fahrzeuge() {
+  const router = useRouter();
   const [laden, setLaden] = useState(true);
   const [fahrzeuge, setFahrzeuge] = useState([]);
   const [suchbegriff, setSuchbegriff] = useState('');
@@ -79,7 +81,7 @@ export default function Fahrzeuge() {
             value={suchbegriff}
             onChange={function(e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary">
+          <Button variant="primary" onClick={function() { router.push('/dashboard/fahrzeuge'); }}>
             Fahrzeug anlegen
           </Button>
         </div>
