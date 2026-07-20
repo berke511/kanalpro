@@ -55,6 +55,23 @@ export default function Mitarbeiter() {
     return name || '\u2014';
   }
 
+  var q = suchbegriff.toLowerCase();
+  var gefilterteMitarbeiter = q
+    ? mitarbeiter.filter(function(m) {
+        var vorname = (m.vorname ?? '').toLowerCase();
+        var nachname = (m.nachname ?? '').toLowerCase();
+        var name = (vorname + ' ' + nachname).trim();
+        var rolle = (m.rolle ?? '').toLowerCase();
+        var rolleLabel = (ROLE_LABELS[m.rolle] ?? '').toLowerCase();
+        var email = (m.email ?? '').toLowerCase();
+        var telefon = (m.telefon ?? '').toLowerCase();
+        var status = (m.status ?? '').toLowerCase();
+        return vorname.includes(q) || nachname.includes(q) || name.includes(q) ||
+          rolle.includes(q) || rolleLabel.includes(q) ||
+          email.includes(q) || telefon.includes(q) || status.includes(q);
+      })
+    : mitarbeiter;
+
   return (
     <Page>
       <Page.Header>
@@ -98,8 +115,14 @@ export default function Mitarbeiter() {
                       Keine Mitarbeiter vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefilterteMitarbeiter.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={6} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Mitarbeiter gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  mitarbeiter.map(function(m) {
+                  gefilterteMitarbeiter.map(function(m) {
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell className="font-medium text-gray-900">{vollname(m)}</Table.Cell>
