@@ -22,6 +22,7 @@ export default function Einsatzplanung() {
   var router = useRouter();
   var [einsaetze, setEinsaetze] = useState([]);
   var [laden, setLaden] = useState(true);
+  var [suche, setSuche] = useState('');
 
   useEffect(function() {
     async function load() {
@@ -66,6 +67,32 @@ export default function Einsatzplanung() {
     return (v + ' ' + n).trim() || '—';
   }
 
+  function matchSuche(e) {
+    var q = suche.toLowerCase();
+    if (!q) return true;
+    var datumRaw = e.datum || '';
+    var datumDe = fmtDatum(e.datum);
+    var k = e.kunden;
+    var kName = k ? (k.firmenname || k.name || '') : '';
+    var m = e.verantw_mitarbeiter;
+    var vorname = m ? (m.vorname || '') : '';
+    var nachname = m ? (m.nachname || '') : '';
+    var vollName = (vorname + ' ' + nachname).trim();
+    return (
+      (e.titel || '').toLowerCase().includes(q) ||
+      kName.toLowerCase().includes(q) ||
+      datumRaw.toLowerCase().includes(q) ||
+      datumDe.toLowerCase().includes(q) ||
+      (e.uhrzeit || '').toLowerCase().includes(q) ||
+      vorname.toLowerCase().includes(q) ||
+      nachname.toLowerCase().includes(q) ||
+      vollName.toLowerCase().includes(q) ||
+      (e.status || '').toLowerCase().includes(q)
+    );
+  }
+
+  var gefiltert = einsaetze.filter(matchSuche);
+
   return (
     <Page>
       <Page.Header>
@@ -74,8 +101,10 @@ export default function Einsatzplanung() {
       <Page.Content>
         <div className="mb-4 flex items-center justify-between gap-4">
           <Input
-            placeholder="Einsaetze durchsuchen..."
+            placeholder="Einsätze durchsuchen..."
             className="max-w-xs"
+            value={suche}
+            onChange={function(ev) { setSuche(ev.target.value); }}
           />
           <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Einsatz planen</Button>
         </div>
@@ -97,17 +126,23 @@ export default function Einsatzplanung() {
                 {laden ? (
                   <Table.Row>
                     <Table.Cell colSpan={7} className="py-8 text-center text-sm text-gray-400">
-                      Laedt...
+                      Lädt...
                     </Table.Cell>
                   </Table.Row>
                 ) : einsaetze.length === 0 ? (
                   <Table.Row>
                     <Table.Cell colSpan={7} className="py-8 text-center text-sm text-gray-400">
-                      Keine Einsaetze vorhanden.
+                      Keine Einsätze vorhanden.
+                    </Table.Cell>
+                  </Table.Row>
+                ) : gefiltert.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={7} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Einsätze gefunden.
                     </Table.Cell>
                   </Table.Row>
                 ) : (
-                  einsaetze.map(function(e) {
+                  gefiltert.map(function(e) {
                     return (
                       <Table.Row key={e.id}>
                         <Table.Cell className="font-medium text-gray-900">{e.titel || '—'}</Table.Cell>
