@@ -62,6 +62,19 @@ export default function Maschinen() {
 
   if (laden) return null;
 
+  var q = suchbegriff.toLowerCase();
+  var gefiltert = suchbegriff
+    ? maschinen.filter(function (m) {
+        return (
+          (m.name && m.name.toLowerCase().includes(q)) ||
+          (m.typ && m.typ.toLowerCase().includes(q)) ||
+          (MASCHINENTYP_LABELS[m.typ] && MASCHINENTYP_LABELS[m.typ].toLowerCase().includes(q)) ||
+          (m.seriennummer && m.seriennummer.toLowerCase().includes(q)) ||
+          (m.zustand && m.zustand.toLowerCase().includes(q))
+        );
+      })
+    : maschinen;
+
   return (
     <Page>
       <Page.Header>
@@ -98,8 +111,14 @@ export default function Maschinen() {
                       Keine Maschinen vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefiltert.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Maschinen gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  maschinen.map(function (m) {
+                  gefiltert.map(function (m) {
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell>{m.name || '—'}</Table.Cell>
