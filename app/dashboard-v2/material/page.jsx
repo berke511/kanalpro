@@ -13,6 +13,7 @@ import Input from '@/components/ui/v2/Input';
 export default function Material() {
   var [materialien, setMaterialien] = useState([]);
   var [laden, setLaden] = useState(true);
+  var [suchbegriff, setSuchbegriff] = useState('');
   var router = useRouter();
 
   useEffect(function () {
@@ -41,6 +42,18 @@ export default function Material() {
 
   if (laden) return null;
 
+  var q = suchbegriff.toLowerCase();
+  var gefiltert = suchbegriff
+    ? materialien.filter(function (m) {
+        return (
+          (m.name && m.name.toLowerCase().includes(q)) ||
+          (m.typ && m.typ.toLowerCase().includes(q)) ||
+          (m.einheit && m.einheit.toLowerCase().includes(q)) ||
+          (m.zustand && m.zustand.toLowerCase().includes(q))
+        );
+      })
+    : materialien;
+
   return (
     <Page>
       <Page.Header>
@@ -51,6 +64,8 @@ export default function Material() {
           <Input
             placeholder="Material durchsuchen..."
             className="max-w-xs"
+            value={suchbegriff}
+            onChange={function (e) { setSuchbegriff(e.target.value); }}
           />
           <Button variant="primary" onClick={function () { router.push('/dashboard/material'); }}>
             Material anlegen
@@ -76,8 +91,14 @@ export default function Material() {
                       Kein Material vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefiltert.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={6} className="py-8 text-center text-sm text-gray-400">
+                      Kein passendes Material gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  materialien.map(function (m) {
+                  gefiltert.map(function (m) {
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell>{m.name || '—'}</Table.Cell>
