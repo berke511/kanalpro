@@ -1,8 +1,58 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Badge from '@/components/ui/v2/Badge';
+
+var STATUS_VARIANT = {
+  offen:           'warning',
+  in_bearbeitung:  'info',
+  neu:             'info',
+  geplant:         'warning',
+  zugewiesen:      'info',
+  unterwegs:       'warning',
+  vor_ort:         'info',
+  in_arbeit:       'warning',
+  wartend:         'default',
+  abgeschlossen:   'success',
+  dokumentiert:    'success',
+  storniert:       'danger',
+};
+
+var STATUS_LABEL = {
+  offen:           'Offen',
+  in_bearbeitung:  'In Bearbeitung',
+  neu:             'Neu',
+  geplant:         'Geplant',
+  zugewiesen:      'Zugewiesen',
+  unterwegs:       'Unterwegs',
+  vor_ort:         'Vor Ort',
+  in_arbeit:       'In Arbeit',
+  wartend:         'Wartend',
+  abgeschlossen:   'Abgeschlossen',
+  dokumentiert:    'Dokumentiert',
+  storniert:       'Storniert',
+};
+
+function heuteISO() {
+  var d = new Date();
+  var y = d.getFullYear().toString();
+  var mo = (d.getMonth() + 1).toString().padStart(2, '0');
+  var t = d.getDate().toString().padStart(2, '0');
+  return y + '-' + mo + '-' + t;
+}
+
+function fmtUhrzeit(str) {
+  if (!str) return '';
+  return str.substring(0, 5);
+}
+
+function kundeName(a) {
+  if (!a.kunden) return '';
+  return a.kunden.firmenname || a.kunden.name || '';
+}
 
 export default function MeinTagPage() {
   const heute = new Date();
@@ -12,6 +62,52 @@ export default function MeinTagPage() {
     month: 'long',
     day: 'numeric',
   });
+
+  const [auftraege, setAuftraege] = useState([]);
+  const [auftraegeLaden, setAuftraegeLaden] = useState(true);
+  const [auftraegeFehler, setAuftraegeFehler] = useState(false);
+
+  useEffect(function() {
+    async function laden() {
+      try {
+        var authResult = await supabase.auth.getUser();
+        var user = authResult.data && authResult.data.user;
+        if (!user) { setAuftraegeLaden(false); return; }
+
+        var memberResult = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        var companyId = memberResult.data && memberResult.data.company_id;
+        if (!companyId) { setAuftraegeLaden(false); return; }
+
+        var tagDatum = heuteISO();
+        var result = await supabase
+          .from('auftraege')
+          .select('id, titel, uhrzeit, status, adresse, kunden(name, firmenname)')
+          .eq('company_id', companyId)
+          .eq('user_id', user.id)
+          .eq('datum', tagDatum)
+          .order('uhrzeit', { ascending: true, nullsFirst: false });
+
+        if (result.error) {
+          setAuftraegeFehler(true);
+        } else {
+          setAuftraege(result.data ?? []);
+        }
+        setAuftraegeLaden(false);
+      } catch (err) {
+        setAuftraegeFehler(true);
+        setAuftraegeLaden(false);
+      }
+    }
+    laden();
+  }, []);
+
+  var badgeZahl = auftraegeLaden ? '...' : String(auftraege.length);
+  var badgeVariant = auftraegeLaden ? 'default' : 'info';
 
   return (
     <Page>
@@ -25,12 +121,40 @@ export default function MeinTagPage() {
           <Card>
             <Card.Header>
               <div className="flex items-center justify-between">
-                <Card.Title>Meine heutigen Aufträge</Card.Title>
-                <Badge variant="info">0</Badge>
+                <Card.Title>Meine heutigen Auftraege</Card.Title>
+                <Badge variant={badgeVariant}>{badgeZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Noch keine Aufträge für heute.</p>
+              {auftraegeLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : auftraegeFehler ? (
+                <p className="text-sm text-red-500">Auftraege konnten nicht geladen werden.</p>
+              ) : auftraege.length === 0 ? (
+                <p className="text-sm text-gray-500">Fuer heute sind keine Auftraege eingeplant.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {auftraege.map(function(a) {
+                    var kn = kundeName(a);
+                    var uz = fmtUhrzeit(a.uhrzeit);
+                    return (
+                      <li key={a.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
+                            {STATUS_LABEL[a.status] || a.status || '—'}
+                          </Badge>
+                        </div>
+                        {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
+                        <div className="flex items-center gap-3 mt-1">
+                          {uz ? <span className="text-xs text-gray-400">{uz} Uhr</span> : null}
+                          {a.adresse ? <span className="text-xs text-gray-400 truncate">{a.adresse}</span> : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
