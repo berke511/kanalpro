@@ -56,7 +56,7 @@ export default function Mahnungen() {
             value={suchbegriff}
             onChange={function (e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary">
+          <Button variant="primary" onClick={function () { router.push('/dashboard/rechnungen'); }}>
             Mahnung erstellen
           </Button>
         </div>
