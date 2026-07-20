@@ -43,6 +43,19 @@ export default function Mahnungen() {
 
   if (laden) return null;
 
+  var q = suchbegriff.toLowerCase();
+  var gefilterteMahnungen = suchbegriff.trim() === '' ? mahnungen : mahnungen.filter(function (m) {
+    var datum = m.faellig_am ? new Date(m.faellig_am).toLocaleDateString('de-DE') : '';
+    return [
+      m.rechnungsnummer || '',
+      m.kunden && m.kunden.name ? m.kunden.name : '',
+      m.mahnstufe != null ? String(m.mahnstufe) : '',
+      m.status || '',
+      datum,
+      m.faellig_am || ''
+    ].some(function (v) { return v.toLowerCase().indexOf(q) !== -1; });
+  });
+
   return (
     <Page>
       <Page.Header>
@@ -80,8 +93,14 @@ export default function Mahnungen() {
                       Keine Mahnungen vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefilterteMahnungen.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={6} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Mahnungen gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  mahnungen.map(function (m) {
+                  gefilterteMahnungen.map(function (m) {
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell>{m.rechnungsnummer || '—'}</Table.Cell>
