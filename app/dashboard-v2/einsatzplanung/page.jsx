@@ -9,6 +9,7 @@ import Table from '@/components/ui/v2/Table';
 import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
+import { Pencil } from 'lucide-react';
 
 var datumFormat = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -153,7 +154,12 @@ export default function Einsatzplanung() {
                         <Table.Cell>
                           <Badge variant="default">{e.status || '—'}</Badge>
                         </Table.Cell>
-                        <Table.Cell></Table.Cell>
+                        <Table.Cell>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/auftraege/' + e.id); }}>
+                            <Pencil size={14} className="mr-1" />
+                            Bearbeiten
+                          </Button>
+                        </Table.Cell>
                       </Table.Row>
                     );
                   })
