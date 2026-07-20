@@ -31,6 +31,22 @@ var MASCHINENTYP_LABELS = {
   sonstiges: 'Sonstiges',
 };
 
+var ZUSTAND_LABELS = {
+  aktiv: 'Aktiv',
+  in_einsatz: 'Im Einsatz',
+  wartung: 'In Wartung',
+  defekt: 'Defekt',
+  ausser_betrieb: 'Außer Betrieb',
+};
+
+var ZUSTAND_VARIANTE = {
+  aktiv: 'success',
+  in_einsatz: 'info',
+  wartung: 'warning',
+  defekt: 'danger',
+  ausser_betrieb: 'default',
+};
+
 export default function Maschinen() {
   var [maschinen, setMaschinen] = useState([]);
   var [laden, setLaden] = useState(true);
@@ -126,7 +142,9 @@ export default function Maschinen() {
                         <Table.Cell>{MASCHINENTYP_LABELS[m.typ] || m.typ || '—'}</Table.Cell>
                         <Table.Cell>{m.seriennummer || '—'}</Table.Cell>
                         <Table.Cell>
-                          <Badge>{m.zustand || '—'}</Badge>
+                          <Badge variant={ZUSTAND_VARIANTE[m.zustand] || 'default'}>
+                            {ZUSTAND_LABELS[m.zustand] || m.zustand || '—'}
+                          </Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/maschinen/' + m.id); }}>
