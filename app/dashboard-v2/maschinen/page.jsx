@@ -75,7 +75,7 @@ export default function Maschinen() {
             value={suchbegriff}
             onChange={function (e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary">
+          <Button variant="primary" onClick={function () { router.push('/dashboard/maschinen'); }}>
             Maschine anlegen
           </Button>
         </div>
