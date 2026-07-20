@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { ROLE_LABELS } from '@/lib/roles';
 import Page from '@/components/ui/v2/Page';
@@ -11,6 +12,7 @@ import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 export default function Mitarbeiter() {
+  var router = useRouter();
   var [laden, setLaden] = useState(true);
   var [mitarbeiter, setMitarbeiter] = useState([]);
   var [suchbegriff, setSuchbegriff] = useState('');
@@ -66,7 +68,7 @@ export default function Mitarbeiter() {
             value={suchbegriff}
             onChange={function(e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary">
+          <Button variant="primary" onClick={function() { router.push('/dashboard/mitarbeiter/neu'); }}>
             Mitarbeiter anlegen
           </Button>
         </div>
