@@ -44,6 +44,14 @@ export default function Mahnungen() {
 
   if (laden) return null;
 
+  var BADGE_VARIANT = {
+    mahnung: 'warning',
+    bezahlt: 'success',
+    gesendet: 'info',
+    versendet: 'info',
+    entwurf: 'default'
+  };
+
   var q = suchbegriff.toLowerCase();
   var gefilterteMahnungen = suchbegriff.trim() === '' ? mahnungen : mahnungen.filter(function (m) {
     var datum = m.faellig_am ? new Date(m.faellig_am).toLocaleDateString('de-DE') : '';
@@ -109,7 +117,7 @@ export default function Mahnungen() {
                         <Table.Cell>{m.mahnstufe != null ? m.mahnstufe : '—'}</Table.Cell>
                         <Table.Cell>{m.faellig_am ? new Date(m.faellig_am).toLocaleDateString('de-DE') : '—'}</Table.Cell>
                         <Table.Cell>
-                          <Badge variant="default">{m.status || '—'}</Badge>
+                          <Badge variant={BADGE_VARIANT[m.status] || 'default'}>{m.status || '—'}</Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/rechnungen/' + m.id); }}>
