@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Building2, Users, Bell, Plug, Save, ChevronRight } from 'lucide-react';
 import supabase from '@/lib/supabase';
+import { ROLE_LABELS } from '@/lib/roles';
 
 // V2 Card-Komponente
 function SettingsCard({ icon: Icon, title, description, children }) {
@@ -22,28 +23,12 @@ function SettingsCard({ icon: Icon, title, description, children }) {
   );
 }
 
-// Read-Only Info-Zeile (nur für Unternehmen-Bereich)
+// Read-Only Info-Zeile (Unternehmen + Benutzer)
 function InfoRow({ label, value }) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-[#8b8ba7] font-medium uppercase tracking-wide">{label}</p>
       <p className="text-sm text-white">{value || '—'}</p>
-    </div>
-  );
-}
-
-// V2 Input-Komponente (für statische Bereiche)
-function SettingsInput({ label, value, onChange, type = 'text', placeholder }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-[#c4c4d4]">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full bg-[#0f0f23] border border-[#2a2a4a] rounded-lg px-4 py-2.5 text-white placeholder-[#4a4a6a] focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1] transition-colors text-sm"
-      />
     </div>
   );
 }
@@ -101,7 +86,7 @@ function IntegrationItem({ name, description, connected, onToggle }) {
 }
 
 export default function EinstellungenPage() {
-  // ─── Unternehmen — Supabase-Daten ────────────────────────────────────────────
+  // --- Unternehmen - Supabase-Daten ---
   const [firmaLaden, setFirmaLaden] = useState(true);
   const [firmaFehler, setFirmaFehler] = useState(false);
   const [firma, setFirma] = useState(null);
@@ -139,7 +124,6 @@ export default function EinstellungenPage() {
     ladeFirma();
   }, []);
 
-  // Adresse aus mehreren Feldern zusammenführen
   const formatAdresse = (f) => {
     if (!f) return '—';
     const ort = [f.plz, f.ort].filter(Boolean).join(' ');
@@ -147,15 +131,37 @@ export default function EinstellungenPage() {
     return teile.length > 0 ? teile.join(', ') : '—';
   };
 
-  // ─── Benutzer State (statisch — unverändert) ─────────────────────────────────
-  const [user, setUser] = useState({
-    vorname: 'Max',
-    nachname: 'Mustermann',
-    email: 'max@kanalpro.de',
-    rolle: 'Administrator',
-  });
+  // --- Benutzer - Supabase-Daten (read-only) ---
+  const [benutzerLaden, setBenutzerLaden] = useState(true);
+  const [benutzerFehler, setBenutzerFehler] = useState(false);
+  const [benutzerDaten, setBenutzerDaten] = useState(null);
 
-  // ─── Benachrichtigungen State (statisch — unverändert) ───────────────────────
+  useEffect(() => {
+    async function ladeBenutzer() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setBenutzerFehler(true); setBenutzerLaden(false); return; }
+
+        const { data: mitglied, error } = await supabase
+          .from('company_members')
+          .select('vorname, nachname, email, role')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+
+        if (error || !mitglied) { setBenutzerFehler(true); setBenutzerLaden(false); return; }
+
+        setBenutzerDaten(mitglied);
+      } catch {
+        setBenutzerFehler(true);
+      } finally {
+        setBenutzerLaden(false);
+      }
+    }
+    ladeBenutzer();
+  }, []);
+
+  // --- Benachrichtigungen State (statisch - unveraendert) ---
   const [notifications, setNotifications] = useState({
     emailBenachrichtigungen: true,
     auftragsUpdates: true,
@@ -165,7 +171,7 @@ export default function EinstellungenPage() {
     teamNachrichten: false,
   });
 
-  // ─── Integrationen State (statisch — unverändert) ────────────────────────────
+  // --- Integrationen State (statisch - unveraendert) ---
   const [integrations, setIntegrations] = useState({
     slack: true,
     googleCalendar: false,
@@ -206,7 +212,7 @@ export default function EinstellungenPage() {
       {/* Grid mit 4 Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Card 1: Unternehmen — Supabase-Daten (read-only) */}
+        {/* Card 1: Unternehmen - Supabase-Daten (read-only) */}
         <SettingsCard
           icon={Building2}
           title="Unternehmen"
@@ -232,31 +238,32 @@ export default function EinstellungenPage() {
           )}
         </SettingsCard>
 
-        {/* Card 2: Benutzer (statisch — unverändert) */}
+        {/* Card 2: Benutzer - Supabase-Daten (read-only) */}
         <SettingsCard
           icon={Users}
           title="Benutzer"
-          description="Persönliche Kontodaten"
+          description="Dein Konto im Unternehmen"
         >
-          <div className="grid grid-cols-2 gap-3">
-            <SettingsInput label="Vorname" value={user.vorname} onChange={(e) => setUser({ ...user, vorname: e.target.value })} placeholder="Vorname" />
-            <SettingsInput label="Nachname" value={user.nachname} onChange={(e) => setUser({ ...user, nachname: e.target.value })} placeholder="Nachname" />
-          </div>
-          <SettingsInput label="E-Mail" value={user.email} onChange={(e) => setUser({ ...user, email: e.target.value })} type="email" placeholder="benutzer@firma.de" />
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#c4c4d4]">Rolle</label>
-            <select value={user.rolle} onChange={(e) => setUser({ ...user, rolle: e.target.value })} className="w-full bg-[#0f0f23] border border-[#2a2a4a] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-[#6366f1] transition-colors text-sm">
-              <option value="Administrator">Administrator</option>
-              <option value="Manager">Manager</option>
-              <option value="Mitarbeiter">Mitarbeiter</option>
-            </select>
-          </div>
-          <div className="pt-2">
-            <button className="text-sm text-[#6366f1] hover:text-[#818cf8] transition-colors">Passwort ändern →</button>
-          </div>
+          {benutzerLaden ? (
+            <div className="flex items-center gap-3 py-4">
+              <div className="w-5 h-5 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-[#8b8ba7]">Lädt Benutzerdaten…</span>
+            </div>
+          ) : benutzerFehler ? (
+            <div className="py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">Benutzerdaten konnten nicht geladen werden.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              <InfoRow label="Vorname" value={benutzerDaten?.vorname} />
+              <InfoRow label="Nachname" value={benutzerDaten?.nachname} />
+              <InfoRow label="E-Mail" value={benutzerDaten?.email} />
+              <InfoRow label="Rolle" value={ROLE_LABELS[benutzerDaten?.role] || benutzerDaten?.role} />
+            </div>
+          )}
         </SettingsCard>
 
-        {/* Card 3: Benachrichtigungen (statisch — unverändert) */}
+        {/* Card 3: Benachrichtigungen (statisch - unveraendert) */}
         <SettingsCard
           icon={Bell}
           title="Benachrichtigungen"
@@ -265,12 +272,12 @@ export default function EinstellungenPage() {
           <SettingsToggle label="E-Mail-Benachrichtigungen" description="Erhalte Benachrichtigungen per E-Mail" checked={notifications.emailBenachrichtigungen} onChange={(v) => setNotifications({ ...notifications, emailBenachrichtigungen: v })} />
           <SettingsToggle label="Auftrags-Updates" description="Statusänderungen bei Aufträgen" checked={notifications.auftragsUpdates} onChange={(v) => setNotifications({ ...notifications, auftragsUpdates: v })} />
           <SettingsToggle label="System-Warnungen" description="Kritische Systembenachrichtigungen" checked={notifications.systemWarnungen} onChange={(v) => setNotifications({ ...notifications, systemWarnungen: v })} />
-          <SettingsToggle label="Wochenbericht" description="Wöchentliche Zusammenfassung" checked={notifications.wochenbericht} onChange={(v) => setNotifications({ ...notifications, wochenbericht: v })} />
+          <SettingsToggle label="Woèenbericht" description="Wöchentliche Zusammenfassung" checked={notifications.wochenbericht} onChange={(v) => setNotifications({ ...notifications, wochenbericht: v })} />
           <SettingsToggle label="Neue Kommentare" description="Bei neuen Kommentaren benachrichtigen" checked={notifications.neueKommentare} onChange={(v) => setNotifications({ ...notifications, neueKommentare: v })} />
           <SettingsToggle label="Team-Nachrichten" description="Interne Team-Kommunikation" checked={notifications.teamNachrichten} onChange={(v) => setNotifications({ ...notifications, teamNachrichten: v })} />
         </SettingsCard>
 
-        {/* Card 4: Integrationen (statisch — unverändert) */}
+        {/* Card 4: Integrationen (statisch - unveraendert) */}
         <SettingsCard
           icon={Plug}
           title="Integrationen"
