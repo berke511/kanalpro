@@ -68,6 +68,23 @@ export default function Einsatzplanung() {
     return (v + ' ' + n).trim() || '—';
   }
 
+  function statusVariant(s) {
+    var map = {
+      offen:          'warning',
+      in_bearbeitung: 'info',
+      neu:            'info',
+      geplant:        'warning',
+      zugewiesen:     'info',
+      unterwegs:      'warning',
+      vor_ort:        'info',
+      in_arbeit:      'warning',
+      abgeschlossen:  'success',
+      dokumentiert:   'success',
+      storniert:      'danger'
+    };
+    return map[s] || 'default';
+  }
+
   function matchSuche(e) {
     var q = suche.toLowerCase();
     if (!q) return true;
@@ -152,7 +169,7 @@ export default function Einsatzplanung() {
                         <Table.Cell>{e.uhrzeit || '—'}</Table.Cell>
                         <Table.Cell>{technikerName(e)}</Table.Cell>
                         <Table.Cell>
-                          <Badge variant="default">{e.status || '—'}</Badge>
+                          <Badge variant={statusVariant(e.status)}>{e.status || '—'}</Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/auftraege/' + e.id); }}>
