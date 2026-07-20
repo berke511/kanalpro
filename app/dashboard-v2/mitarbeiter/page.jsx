@@ -12,6 +12,19 @@ import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
+var STATUS_LABELS = {
+  verfuegbar: 'Verfügbar',
+  im_einsatz: 'Im Einsatz',
+  urlaub: 'Urlaub',
+  krank: 'Krank'
+};
+var STATUS_VARIANTEN = {
+  verfuegbar: 'success',
+  im_einsatz: 'warning',
+  urlaub: 'info',
+  krank: 'danger'
+};
+
 export default function Mitarbeiter() {
   var router = useRouter();
   var [laden, setLaden] = useState(true);
@@ -53,7 +66,7 @@ export default function Mitarbeiter() {
     var vorname = m.vorname ?? '';
     var nachname = m.nachname ?? '';
     var name = (vorname + ' ' + nachname).trim();
-    return name || '\u2014';
+    return name || '—';
   }
 
   var q = suchbegriff.toLowerCase();
@@ -127,11 +140,13 @@ export default function Mitarbeiter() {
                     return (
                       <Table.Row key={m.id}>
                         <Table.Cell className="font-medium text-gray-900">{vollname(m)}</Table.Cell>
-                        <Table.Cell>{ROLE_LABELS[m.rolle] || m.rolle || '\u2014'}</Table.Cell>
-                        <Table.Cell>{m.email || '\u2014'}</Table.Cell>
-                        <Table.Cell>{m.telefon || '\u2014'}</Table.Cell>
+                        <Table.Cell>{ROLE_LABELS[m.rolle] || m.rolle || '—'}</Table.Cell>
+                        <Table.Cell>{m.email || '—'}</Table.Cell>
+                        <Table.Cell>{m.telefon || '—'}</Table.Cell>
                         <Table.Cell>
-                          <Badge variant="default">{m.status || '\u2014'}</Badge>
+                          <Badge variant={STATUS_VARIANTEN[m.status] || 'default'}>
+                            {STATUS_LABELS[m.status] || m.status || '—'}
+                          </Badge>
                         </Table.Cell>
                         <Table.Cell>
                           <Button
