@@ -52,7 +52,7 @@ export default function Material() {
             placeholder="Material durchsuchen..."
             className="max-w-xs"
           />
-          <Button variant="primary">
+          <Button variant="primary" onClick={function () { router.push('/dashboard/material'); }}>
             Material anlegen
           </Button>
         </div>
