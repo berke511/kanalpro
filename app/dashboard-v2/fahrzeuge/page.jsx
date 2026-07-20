@@ -68,6 +68,17 @@ export default function Fahrzeuge() {
     return name || '—';
   }
 
+  var q = suchbegriff.toLowerCase();
+  var gefilterteFahrzeuge = q
+    ? fahrzeuge.filter(function(f) {
+        var kennzeichen = (f.kennzeichen ?? '').toLowerCase();
+        var name = fahrzeugName(f).toLowerCase();
+        var fahrer = '';
+        var status = (ZUSTAND_LABEL[f.zustand] ?? f.zustand ?? '').toLowerCase();
+        return kennzeichen.includes(q) || name.includes(q) || fahrer.includes(q) || status.includes(q);
+      })
+    : fahrzeuge;
+
   return (
     <Page>
       <Page.Header>
@@ -110,8 +121,14 @@ export default function Fahrzeuge() {
                       Keine Fahrzeuge vorhanden.
                     </Table.Cell>
                   </Table.Row>
+                ) : gefilterteFahrzeuge.length === 0 ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="py-8 text-center text-sm text-gray-400">
+                      Keine passenden Fahrzeuge gefunden.
+                    </Table.Cell>
+                  </Table.Row>
                 ) : (
-                  fahrzeuge.map(function(f) {
+                  gefilterteFahrzeuge.map(function(f) {
                     return (
                       <Table.Row key={f.id}>
                         <Table.Cell className="font-medium text-gray-900">{f.kennzeichen || '—'}</Table.Cell>
