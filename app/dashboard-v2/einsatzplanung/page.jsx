@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
@@ -18,6 +19,7 @@ function fmtDatum(str) {
 }
 
 export default function Einsatzplanung() {
+  var router = useRouter();
   var [einsaetze, setEinsaetze] = useState([]);
   var [laden, setLaden] = useState(true);
 
@@ -75,7 +77,7 @@ export default function Einsatzplanung() {
             placeholder="Einsaetze durchsuchen..."
             className="max-w-xs"
           />
-          <Button variant="primary">Einsatz planen</Button>
+          <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Einsatz planen</Button>
         </div>
         <Card>
           <Card.Content>
