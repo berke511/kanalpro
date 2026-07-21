@@ -93,7 +93,7 @@ export default function Fahrzeuge() {
             value={suchbegriff}
             onChange={function(e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary" onClick={function() { router.push('/dashboard/fahrzeuge'); }}>
+          <Button variant="primary" onClick={function() { router.push('/dashboard-v2/fahrzeuge/neu'); }}>
             Fahrzeug anlegen
           </Button>
         </div>
@@ -144,7 +144,7 @@ export default function Fahrzeuge() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={function() { router.push('/dashboard/fahrzeuge/' + f.id); }}
+                            onClick={function() { router.push('/dashboard-v2/fahrzeuge/' + f.id); }}
                           >
                             <Pencil size={14} />
                             Bearbeiten
