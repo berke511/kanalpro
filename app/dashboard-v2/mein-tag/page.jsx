@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabase';
+import { getNotifications } from '@/lib/notificationEngine';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Badge from '@/components/ui/v2/Badge';
@@ -36,6 +37,10 @@ var STATUS_LABEL = {
   storniert:       'Storniert',
 };
 
+var PRIO_ORDER = { critical: 0, warning: 1, info: 2, success: 3 };
+var PRIO_BADGE = { critical: 'danger', warning: 'warning', info: 'info', success: 'success' };
+var PRIO_LABEL = { critical: 'Kritisch', warning: 'Warnung', info: 'Info', success: 'OK' };
+
 function heuteISO() {
   var d = new Date();
   var y = d.getFullYear().toString();
@@ -54,6 +59,13 @@ function fmtDatum(str) {
   var parts = str.split('-');
   if (parts.length < 3) return str;
   return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+
+function fmtTimestamp(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('de-DE');
 }
 
 function kundeName(a) {
@@ -82,6 +94,10 @@ export default function MeinTagPage() {
   const [offeneAufgabenLaden, setOffeneAufgabenLaden] = useState(true);
   const [offeneAufgabenFehler, setOffeneAufgabenFehler] = useState(false);
 
+  const [hinweise, setHinweise] = useState([]);
+  const [hinweiseLaden, setHinweiseLaden] = useState(true);
+  const [hinweiseFehler, setHinweiseFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
@@ -91,6 +107,7 @@ export default function MeinTagPage() {
           setAuftraegeLaden(false);
           setGeplantLaden(false);
           setOffeneAufgabenLaden(false);
+          setHinweiseLaden(false);
           return;
         }
 
@@ -105,6 +122,7 @@ export default function MeinTagPage() {
           setAuftraegeLaden(false);
           setGeplantLaden(false);
           setOffeneAufgabenLaden(false);
+          setHinweiseLaden(false);
           return;
         }
 
@@ -155,6 +173,16 @@ export default function MeinTagPage() {
         }
         setOffeneAufgabenLaden(false);
 
+        var hinweiseRaw = await getNotifications(supabase, companyId, { limit: 10 });
+        var hinweiseSortiert = hinweiseRaw.slice().sort(function(a, b) {
+          var pa = PRIO_ORDER[a.priority] !== undefined ? PRIO_ORDER[a.priority] : 99;
+          var pb = PRIO_ORDER[b.priority] !== undefined ? PRIO_ORDER[b.priority] : 99;
+          if (pa !== pb) return pa - pb;
+          return new Date(b.timestamp) - new Date(a.timestamp);
+        });
+        setHinweise(hinweiseSortiert);
+        setHinweiseLaden(false);
+
       } catch (err) {
         setAuftraegeFehler(true);
         setAuftraegeLaden(false);
@@ -162,6 +190,8 @@ export default function MeinTagPage() {
         setGeplantLaden(false);
         setOffeneAufgabenFehler(true);
         setOffeneAufgabenLaden(false);
+        setHinweiseFehler(true);
+        setHinweiseLaden(false);
       }
     }
     laden();
@@ -175,6 +205,11 @@ export default function MeinTagPage() {
 
   var offeneZahl = offeneAufgabenLaden ? '...' : String(offeneAufgaben.length);
   var offeneVariant = offeneAufgabenLaden ? 'default' : (offeneAufgaben.length > 0 ? 'warning' : 'default');
+
+  var hinweiseZahl = hinweiseLaden ? '...' : String(hinweise.length);
+  var hasCritical = hinweise.some(function(n) { return n.priority === 'critical'; });
+  var hasWarning = hinweise.some(function(n) { return n.priority === 'warning'; });
+  var hinweiseVariant = hinweiseLaden ? 'default' : (hasCritical ? 'danger' : (hasWarning ? 'warning' : (hinweise.length > 0 ? 'info' : 'default')));
 
   return (
     <Page>
@@ -304,10 +339,37 @@ export default function MeinTagPage() {
 
           <Card>
             <Card.Header>
-              <Card.Title>Hinweise</Card.Title>
+              <div className="flex items-center justify-between">
+                <Card.Title>Hinweise</Card.Title>
+                <Badge variant={hinweiseVariant}>{hinweiseZahl}</Badge>
+              </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Keine Hinweise.</p>
+              {hinweiseLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : hinweiseFehler ? (
+                <p className="text-sm text-red-500">Hinweise konnten nicht geladen werden.</p>
+              ) : hinweise.length === 0 ? (
+                <p className="text-sm text-gray-500">Aktuell liegen keine wichtigen Hinweise vor.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {hinweise.map(function(h) {
+                    var dt = fmtTimestamp(h.timestamp);
+                    return (
+                      <li key={h.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{h.title || '—'}</p>
+                          <Badge variant={PRIO_BADGE[h.priority] || 'default'}>
+                            {PRIO_LABEL[h.priority] || h.priority || '—'}
+                          </Badge>
+                        </div>
+                        {h.message ? <p className="text-xs text-gray-500 mt-1">{h.message}</p> : null}
+                        {dt ? <p className="text-xs text-gray-400 mt-1">{dt}</p> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
