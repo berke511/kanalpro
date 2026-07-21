@@ -29,6 +29,10 @@ export default function TechnikerPage() {
   var [verfuegbarLaden, setVerfuegbarLaden] = useState(true);
   var [verfuegbarFehler, setVerfuegbarFehler] = useState(false);
 
+  var [abwesend, setAbwesend] = useState([]);
+  var [abwesendLaden, setAbwesendLaden] = useState(true);
+  var [abwesendFehler, setAbwesendFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
@@ -37,6 +41,7 @@ export default function TechnikerPage() {
         if (!user) {
           setImEinsatzLaden(false);
           setVerfuegbarLaden(false);
+          setAbwesendLaden(false);
           return;
         }
 
@@ -50,6 +55,7 @@ export default function TechnikerPage() {
         if (!companyId) {
           setImEinsatzLaden(false);
           setVerfuegbarLaden(false);
+          setAbwesendLaden(false);
           return;
         }
 
@@ -106,11 +112,27 @@ export default function TechnikerPage() {
         }
         setVerfuegbarLaden(false);
 
+        var abwResult = await supabase
+          .from('mitarbeiter')
+          .select('id, vorname, nachname, position, status')
+          .eq('company_id', companyId)
+          .in('status', ['urlaub', 'krank'])
+          .order('nachname', { ascending: true });
+
+        if (abwResult.error) {
+          setAbwesendFehler(true);
+        } else {
+          setAbwesend(abwResult.data ?? []);
+        }
+        setAbwesendLaden(false);
+
       } catch (err) {
         setImEinsatzFehler(true);
         setImEinsatzLaden(false);
         setVerfuegbarFehler(true);
         setVerfuegbarLaden(false);
+        setAbwesendFehler(true);
+        setAbwesendLaden(false);
       }
     }
     laden();
@@ -121,6 +143,9 @@ export default function TechnikerPage() {
 
   var verfuegbarZahl = verfuegbarLaden ? '...' : String(verfuegbar.length);
   var verfuegbarVariant = verfuegbarLaden ? 'default' : (verfuegbar.length > 0 ? 'success' : 'default');
+
+  var abwesendZahl = abwesendLaden ? '...' : String(abwesend.length);
+  var abwesendVariant = abwesendLaden ? 'default' : (abwesend.length > 0 ? 'warning' : 'default');
 
   return (
     <Page>
@@ -211,11 +236,34 @@ export default function TechnikerPage() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <Card.Title>Abwesend</Card.Title>
-                <Badge variant="warning">0</Badge>
+                <Badge variant={abwesendVariant}>{abwesendZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Keine Techniker derzeit abwesend.</p>
+              {abwesendLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : abwesendFehler ? (
+                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
+              ) : abwesend.length === 0 ? (
+                <p className="text-sm text-gray-500">Aktuell sind keine Techniker abwesend.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {abwesend.map(function(t) {
+                    var name = (t.vorname || '') + ' ' + (t.nachname || '');
+                    return (
+                      <li key={t.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
+                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                          </Badge>
+                        </div>
+                        {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
