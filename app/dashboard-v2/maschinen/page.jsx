@@ -12,19 +12,19 @@ import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 var MASCHINENTYP_LABELS = {
-  hebebuehne: 'Hebebühne',
+  hebebuehne: 'Hebebuehne',
   kompressor: 'Kompressor',
   generator: 'Generator / Aggregat',
   kran: 'Kran',
   stapler: 'Stapler / Hubwagen',
-  schweissgeraet: 'Schweißgerät',
+  schweissgeraet: 'Schweissgeraet',
   werkzeugmaschine: 'Werkzeugmaschine',
   pumpe: 'Pumpe',
   druckluftwerkzeug: 'Druckluftwerkzeug',
-  hochdruckspueler: 'Hochdruckspüler',
-  fraese: 'Fräse / Bohrwerk',
-  messgeraet: 'Messgerät',
-  pruefgeraet: 'Prüfgerät',
+  hochdruckspueler: 'Hochdruckspueler',
+  fraese: 'Fraese / Bohrwerk',
+  messgeraet: 'Messgeraet',
+  pruefgeraet: 'Pruefgeraet',
   kamera: 'Kamera / Optik',
   werkzeug: 'Werkzeug (Allg.)',
   roboter: 'Roboter',
@@ -36,7 +36,7 @@ var ZUSTAND_LABELS = {
   in_einsatz: 'Im Einsatz',
   wartung: 'In Wartung',
   defekt: 'Defekt',
-  ausser_betrieb: 'Außer Betrieb',
+  ausser_betrieb: 'Ausser Betrieb',
 };
 
 var ZUSTAND_VARIANTE = {
@@ -105,7 +105,7 @@ export default function Maschinen() {
             value={suchbegriff}
             onChange={function (e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary" onClick={function () { router.push('/dashboard/maschinen'); }}>
+          <Button variant="primary" onClick={function () { router.push('/dashboard-v2/maschinen/neu'); }}>
             Maschine anlegen
           </Button>
         </div>
@@ -147,7 +147,7 @@ export default function Maschinen() {
                           </Badge>
                         </Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/maschinen/' + m.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard-v2/maschinen/' + m.id); }}>
                             <Pencil size={14} /> Bearbeiten
                           </Button>
                         </Table.Cell>
