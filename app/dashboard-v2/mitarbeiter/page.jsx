@@ -99,7 +99,7 @@ export default function Mitarbeiter() {
             value={suchbegriff}
             onChange={function(e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary" onClick={function() { router.push('/dashboard/mitarbeiter/neu'); }}>
+          <Button variant="primary" onClick={function() { router.push('/dashboard-v2/mitarbeiter/neu'); }}>
             Mitarbeiter anlegen
           </Button>
         </div>
@@ -152,7 +152,7 @@ export default function Mitarbeiter() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={function() { router.push('/dashboard/mitarbeiter/' + m.id); }}
+                            onClick={function() { router.push('/dashboard-v2/mitarbeiter/' + m.id); }}
                           >
                             <Pencil size={14} />
                             Bearbeiten
