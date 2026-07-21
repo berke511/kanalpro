@@ -74,7 +74,7 @@ export default function RechnungenV2Page() {
                 value={suchbegriff}
                 onChange={function(e) { setSuchbegriff(e.target.value); }}
               />
-              <Button variant="primary" onClick={function() { router.push('/dashboard/rechnungen/neu'); }}>Rechnung erstellen</Button>
+              <Button variant="primary" onClick={function() { router.push('/dashboard-v2/rechnungen/neu'); }}>Rechnung erstellen</Button>
             </div>
             <Table>
               <Table.Head>
@@ -116,7 +116,7 @@ export default function RechnungenV2Page() {
                         </Table.Cell>
                         <Table.Cell>{formatDate(r.faellig_am)}</Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/rechnungen/' + r.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/rechnungen/' + r.id); }}>
                             <Pencil className="w-4 h-4 mr-1" />
                             Bearbeiten
                           </Button>
