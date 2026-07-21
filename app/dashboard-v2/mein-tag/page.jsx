@@ -11,7 +11,7 @@ var STATUS_VARIANT = {
   in_bearbeitung:  'info',
   neu:             'info',
   geplant:         'warning',
-  zugewiesen:      'info',
+  zugwiesen:       'info',
   unterwegs:       'warning',
   vor_ort:         'info',
   in_arbeit:       'warning',
@@ -26,7 +26,7 @@ var STATUS_LABEL = {
   in_bearbeitung:  'In Bearbeitung',
   neu:             'Neu',
   geplant:         'Geplant',
-  zugewiesen:      'Zugewiesen',
+  zugwiesen:       'Zugwiesen',
   unterwegs:       'Unterwegs',
   vor_ort:         'Vor Ort',
   in_arbeit:       'In Arbeit',
@@ -67,12 +67,20 @@ export default function MeinTagPage() {
   const [auftraegeLaden, setAuftraegeLaden] = useState(true);
   const [auftraegeFehler, setAuftraegeFehler] = useState(false);
 
+  const [geplant, setGeplant] = useState([]);
+  const [geplantLaden, setGeplantLaden] = useState(true);
+  const [geplantFehler, setGeplantFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
         var authResult = await supabase.auth.getUser();
         var user = authResult.data && authResult.data.user;
-        if (!user) { setAuftraegeLaden(false); return; }
+        if (!user) {
+          setAuftraegeLaden(false);
+          setGeplantLaden(false);
+          return;
+        }
 
         var memberResult = await supabase
           .from('company_members')
@@ -81,10 +89,15 @@ export default function MeinTagPage() {
           .eq('is_active', true)
           .single();
         var companyId = memberResult.data && memberResult.data.company_id;
-        if (!companyId) { setAuftraegeLaden(false); return; }
+        if (!companyId) {
+          setAuftraegeLaden(false);
+          setGeplantLaden(false);
+          return;
+        }
 
         var tagDatum = heuteISO();
-        var result = await supabase
+
+        var result1 = await supabase
           .from('auftraege')
           .select('id, titel, uhrzeit, status, adresse, kunden(name, firmenname)')
           .eq('company_id', companyId)
@@ -92,15 +105,33 @@ export default function MeinTagPage() {
           .eq('datum', tagDatum)
           .order('uhrzeit', { ascending: true, nullsFirst: false });
 
-        if (result.error) {
+        if (result1.error) {
           setAuftraegeFehler(true);
         } else {
-          setAuftraege(result.data ?? []);
+          setAuftraege(result1.data ?? []);
         }
         setAuftraegeLaden(false);
+
+        var result2 = await supabase
+          .from('auftraege')
+          .select('id, titel, uhrzeit, status, adresse, kunden(name, firmenname)')
+          .eq('company_id', companyId)
+          .eq('datum', tagDatum)
+          .neq('status', 'storniert')
+          .order('uhrzeit', { ascending: true, nullsFirst: false });
+
+        if (result2.error) {
+          setGeplantFehler(true);
+        } else {
+          setGeplant(result2.data ?? []);
+        }
+        setGeplantLaden(false);
+
       } catch (err) {
         setAuftraegeFehler(true);
         setAuftraegeLaden(false);
+        setGeplantFehler(true);
+        setGeplantLaden(false);
       }
     }
     laden();
@@ -108,6 +139,9 @@ export default function MeinTagPage() {
 
   var badgeZahl = auftraegeLaden ? '...' : String(auftraege.length);
   var badgeVariant = auftraegeLaden ? 'default' : 'info';
+
+  var geplantZahl = geplantLaden ? '...' : String(geplant.length);
+  var geplantVariant = geplantLaden ? 'default' : 'info';
 
   return (
     <Page>
@@ -160,10 +194,41 @@ export default function MeinTagPage() {
 
           <Card>
             <Card.Header>
-              <Card.Title>Heute geplant</Card.Title>
+              <div className="flex items-center justify-between">
+                <Card.Title>Heute geplant</Card.Title>
+                <Badge variant={geplantVariant}>{geplantZahl}</Badge>
+              </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Keine Termine geplant.</p>
+              {geplantLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : geplantFehler ? (
+                <p className="text-sm text-red-500">Termine konnten nicht geladen werden.</p>
+              ) : geplant.length === 0 ? (
+                <p className="text-sm text-gray-500">Fuer heute sind keine weiteren Termine geplant.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {geplant.map(function(a) {
+                    var kn = kundeName(a);
+                    var uz = fmtUhrzeit(a.uhrzeit);
+                    return (
+                      <li key={a.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
+                            {STATUS_LABEL[a.status] || a.status || '—'}
+                          </Badge>
+                        </div>
+                        {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
+                        <div className="flex items-center gap-3 mt-1">
+                          {uz ? <span className="text-xs text-gray-400">{uz} Uhr</span> : null}
+                          {a.adresse ? <span className="text-xs text-gray-400 truncate">{a.adresse}</span> : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
