@@ -25,6 +25,10 @@ export default function TechnikerPage() {
   var [imEinsatzLaden, setImEinsatzLaden] = useState(true);
   var [imEinsatzFehler, setImEinsatzFehler] = useState(false);
 
+  var [verfuegbar, setVerfuegbar] = useState([]);
+  var [verfuegbarLaden, setVerfuegbarLaden] = useState(true);
+  var [verfuegbarFehler, setVerfuegbarFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
@@ -32,6 +36,7 @@ export default function TechnikerPage() {
         var user = authResult.data && authResult.data.user;
         if (!user) {
           setImEinsatzLaden(false);
+          setVerfuegbarLaden(false);
           return;
         }
 
@@ -44,6 +49,7 @@ export default function TechnikerPage() {
         var companyId = memberResult.data && memberResult.data.company_id;
         if (!companyId) {
           setImEinsatzLaden(false);
+          setVerfuegbarLaden(false);
           return;
         }
 
@@ -56,40 +62,55 @@ export default function TechnikerPage() {
 
         if (techResult.error) {
           setImEinsatzFehler(true);
-          setImEinsatzLaden(false);
-          return;
-        }
+        } else {
+          var techList = techResult.data ?? [];
 
-        var techList = techResult.data ?? [];
+          if (techList.length > 0) {
+            var ids = techList.map(function(t) { return t.id; });
+            var aufResult = await supabase
+              .from('auftraege')
+              .select('id, titel, adresse, uhrzeit, mitarbeiter_id')
+              .eq('company_id', companyId)
+              .in('mitarbeiter_id', ids)
+              .not('status', 'in', '(abgeschlossen,dokumentiert,storniert)');
 
-        if (techList.length > 0) {
-          var ids = techList.map(function(t) { return t.id; });
-          var aufResult = await supabase
-            .from('auftraege')
-            .select('id, titel, adresse, uhrzeit, mitarbeiter_id')
-            .eq('company_id', companyId)
-            .in('mitarbeiter_id', ids)
-            .not('status', 'in', '(abgeschlossen,dokumentiert,storniert)');
+            var aufMap = {};
+            if (!aufResult.error) {
+              (aufResult.data ?? []).forEach(function(a) {
+                if (!aufMap[a.mitarbeiter_id]) {
+                  aufMap[a.mitarbeiter_id] = a;
+                }
+              });
+            }
 
-          var aufMap = {};
-          if (!aufResult.error) {
-            (aufResult.data ?? []).forEach(function(a) {
-              if (!aufMap[a.mitarbeiter_id]) {
-                aufMap[a.mitarbeiter_id] = a;
-              }
+            techList = techList.map(function(t) {
+              return Object.assign({}, t, { auftrag: aufMap[t.id] || null });
             });
           }
 
-          techList = techList.map(function(t) {
-            return Object.assign({}, t, { auftrag: aufMap[t.id] || null });
-          });
+          setImEinsatz(techList);
         }
-
-        setImEinsatz(techList);
         setImEinsatzLaden(false);
+
+        var verfResult = await supabase
+          .from('mitarbeiter')
+          .select('id, vorname, nachname, position, status')
+          .eq('company_id', companyId)
+          .eq('status', 'verfuegbar')
+          .order('nachname', { ascending: true });
+
+        if (verfResult.error) {
+          setVerfuegbarFehler(true);
+        } else {
+          setVerfuegbar(verfResult.data ?? []);
+        }
+        setVerfuegbarLaden(false);
+
       } catch (err) {
         setImEinsatzFehler(true);
         setImEinsatzLaden(false);
+        setVerfuegbarFehler(true);
+        setVerfuegbarLaden(false);
       }
     }
     laden();
@@ -97,6 +118,9 @@ export default function TechnikerPage() {
 
   var einsatzZahl = imEinsatzLaden ? '...' : String(imEinsatz.length);
   var einsatzVariant = imEinsatzLaden ? 'default' : (imEinsatz.length > 0 ? 'info' : 'default');
+
+  var verfuegbarZahl = verfuegbarLaden ? '...' : String(verfuegbar.length);
+  var verfuegbarVariant = verfuegbarLaden ? 'default' : (verfuegbar.length > 0 ? 'success' : 'default');
 
   return (
     <Page>
@@ -152,11 +176,34 @@ export default function TechnikerPage() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <Card.Title>Heute verfuegbar</Card.Title>
-                <Badge variant="success">0</Badge>
+                <Badge variant={verfuegbarVariant}>{verfuegbarZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Keine Techniker heute verfuegbar.</p>
+              {verfuegbarLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : verfuegbarFehler ? (
+                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
+              ) : verfuegbar.length === 0 ? (
+                <p className="text-sm text-gray-500">Heute sind keine Techniker verfuegbar.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {verfuegbar.map(function(t) {
+                    var name = (t.vorname || '') + ' ' + (t.nachname || '');
+                    return (
+                      <li key={t.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
+                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                          </Badge>
+                        </div>
+                        {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
