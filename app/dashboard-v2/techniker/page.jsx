@@ -33,6 +33,10 @@ export default function TechnikerPage() {
   var [abwesendLaden, setAbwesendLaden] = useState(true);
   var [abwesendFehler, setAbwesendFehler] = useState(false);
 
+  var [team, setTeam] = useState({ gesamt: 0, imEinsatz: 0, verfuegbar: 0, abwesend: 0 });
+  var [teamLaden, setTeamLaden] = useState(true);
+  var [teamFehler, setTeamFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
@@ -42,6 +46,7 @@ export default function TechnikerPage() {
           setImEinsatzLaden(false);
           setVerfuegbarLaden(false);
           setAbwesendLaden(false);
+          setTeamLaden(false);
           return;
         }
 
@@ -56,6 +61,7 @@ export default function TechnikerPage() {
           setImEinsatzLaden(false);
           setVerfuegbarLaden(false);
           setAbwesendLaden(false);
+          setTeamLaden(false);
           return;
         }
 
@@ -126,6 +132,32 @@ export default function TechnikerPage() {
         }
         setAbwesendLaden(false);
 
+        var allResult = await supabase
+          .from('mitarbeiter')
+          .select('status')
+          .eq('company_id', companyId);
+
+        if (allResult.error) {
+          setTeamFehler(true);
+        } else {
+          var alle = allResult.data ?? [];
+          var gesamt = alle.length;
+          var anzImEinsatz = 0;
+          var anzVerfuegbar = 0;
+          var anzAbwesend = 0;
+          alle.forEach(function(m) {
+            if (m.status === 'im_einsatz') {
+              anzImEinsatz = anzImEinsatz + 1;
+            } else if (m.status === 'verfuegbar') {
+              anzVerfuegbar = anzVerfuegbar + 1;
+            } else if (m.status === 'urlaub' || m.status === 'krank') {
+              anzAbwesend = anzAbwesend + 1;
+            }
+          });
+          setTeam({ gesamt: gesamt, imEinsatz: anzImEinsatz, verfuegbar: anzVerfuegbar, abwesend: anzAbwesend });
+        }
+        setTeamLaden(false);
+
       } catch (err) {
         setImEinsatzFehler(true);
         setImEinsatzLaden(false);
@@ -133,6 +165,8 @@ export default function TechnikerPage() {
         setVerfuegbarLaden(false);
         setAbwesendFehler(true);
         setAbwesendLaden(false);
+        setTeamFehler(true);
+        setTeamLaden(false);
       }
     }
     laden();
@@ -146,6 +180,9 @@ export default function TechnikerPage() {
 
   var abwesendZahl = abwesendLaden ? '...' : String(abwesend.length);
   var abwesendVariant = abwesendLaden ? 'default' : (abwesend.length > 0 ? 'warning' : 'default');
+
+  var teamZahl = teamLaden ? '...' : String(team.gesamt);
+  var teamVariant = teamLaden ? 'default' : (team.gesamt > 0 ? 'info' : 'default');
 
   return (
     <Page>
@@ -271,11 +308,34 @@ export default function TechnikerPage() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <Card.Title>Teamuebersicht</Card.Title>
-                <Badge variant="default">0</Badge>
+                <Badge variant={teamVariant}>{teamZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Kennzahlen werden hier angezeigt.</p>
+              {teamLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : teamFehler ? (
+                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-2xl font-bold text-gray-900">{String(team.gesamt)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Gesamt</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-2xl font-bold text-blue-600">{String(team.imEinsatz)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Im Einsatz</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-2xl font-bold text-green-600">{String(team.verfuegbar)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Verfuegbar</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-100 p-3">
+                    <p className="text-2xl font-bold text-yellow-600">{String(team.abwesend)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Abwesend</p>
+                  </div>
+                </div>
+              )}
             </Card.Content>
           </Card>
 
