@@ -5,15 +5,23 @@ import { usePathname } from 'next/navigation';
 
 var navItems = [
   { label: 'Dashboard', href: '/dashboard-v2' },
+  { label: 'Mein Tag', href: '/dashboard-v2/mein-tag' },
   { label: 'Kunden', href: '/dashboard-v2/kunden' },
-  { label: 'Auftraege', href: '/dashboard-v2/auftraege' },
   { label: 'Angebote', href: '/dashboard-v2/angebote' },
+  { label: 'Auftraege', href: '/dashboard-v2/auftraege' },
+  { label: 'Disposition', href: '/dashboard-v2/disposition' },
+  { label: 'Einsatzplanung', href: '/dashboard-v2/einsatzplanung' },
   { label: 'Rechnungen', href: '/dashboard-v2/rechnungen' },
   { label: 'Finanzen', href: '/dashboard-v2/finanzen' },
-  { label: 'Disposition', href: '/dashboard-v2/disposition' },
+  { label: 'Mahnungen', href: '/dashboard-v2/mahnungen' },
   { label: 'Fahrzeuge', href: '/dashboard-v2/fahrzeuge' },
+  { label: 'Maschinen', href: '/dashboard-v2/maschinen' },
+  { label: 'Material', href: '/dashboard-v2/material' },
   { label: 'Mitarbeiter', href: '/dashboard-v2/mitarbeiter' },
+  { label: 'Techniker', href: '/dashboard-v2/techniker' },
   { label: 'Einstellungen', href: '/dashboard-v2/einstellungen' },
+  { label: 'Billing', href: '/dashboard-v2/billing' },
+  { label: 'Upgrade', href: '/dashboard-v2/upgrade' },
 ];
 
 export default function DashboardV2Layout({ children }) {
