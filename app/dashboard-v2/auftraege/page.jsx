@@ -12,29 +12,31 @@ import Button from '@/components/ui/v2/Button';
 import Input from '@/components/ui/v2/Input';
 
 export default function AuftraegeV2Page() {
-  const [auftraege, setAuftraege] = useState([]);
-  const [laden, setLaden] = useState(true);
-  const [suchbegriff, setSuchbegriff] = useState('');
-  const router = useRouter();
+  var [auftraege, setAuftraege] = useState([]);
+  var [laden, setLaden] = useState(true);
+  var [suchbegriff, setSuchbegriff] = useState('');
+  var router = useRouter();
 
   useEffect(function() { load(); }, []);
 
   async function load() {
-    const { data: { user } } = await supabase.auth.getUser();
+    var session = await supabase.auth.getUser();
+    var user = session.data.user;
     if (!user) { setLaden(false); return; }
-    const { data: member } = await supabase
+    var memberRes = await supabase
       .from('company_members')
       .select('company_id')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .single();
+    var member = memberRes.data;
     if (!member) { setLaden(false); return; }
-    const { data } = await supabase
+    var res = await supabase
       .from('auftraege')
       .select('id, titel, status, datum, kunden(name)')
       .eq('company_id', member.company_id)
       .order('erstellt_am', { ascending: false });
-    setAuftraege(data ?? []);
+    setAuftraege(res.data ?? []);
     setLaden(false);
   }
 
@@ -74,12 +76,12 @@ export default function AuftraegeV2Page() {
                 value={suchbegriff}
                 onChange={function(e) { setSuchbegriff(e.target.value); }}
               />
-              <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Auftrag anlegen</Button>
+              <Button variant="primary" onClick={function() { router.push('/dashboard-v2/auftraege/erstellen'); }}>Auftrag anlegen</Button>
             </div>
             <Table>
               <Table.Head>
                 <Table.Row>
-                  <Table.HeaderCell>Auftragsnummer</Table.HeaderCell>
+                  <Table.HeaderCell>Auftragsart</Table.HeaderCell>
                   <Table.HeaderCell>Kunde</Table.HeaderCell>
                   <Table.HeaderCell>Status</Table.HeaderCell>
                   <Table.HeaderCell>Termin</Table.HeaderCell>
@@ -116,7 +118,7 @@ export default function AuftraegeV2Page() {
                         </Table.Cell>
                         <Table.Cell>{formatDate(a.datum)}</Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/auftraege/' + a.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/auftraege/' + a.id); }}>
                             <Pencil className="w-4 h-4 mr-1" />
                             Bearbeiten
                           </Button>
