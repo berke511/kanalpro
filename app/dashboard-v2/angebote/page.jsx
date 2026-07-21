@@ -75,7 +75,7 @@ export default function AngeboteV2Page() {
                 value={suchbegriff}
                 onChange={function(e) { setSuchbegriff(e.target.value); }}
               />
-              <Button variant="primary" onClick={function() { router.push('/dashboard/angebote/neu'); }}>Angebot erstellen</Button>
+              <Button variant="primary" onClick={function() { router.push('/dashboard-v2/angebote/neu'); }}>Angebot erstellen</Button>
             </div>
             <Table>
               <Table.Head>
@@ -117,7 +117,7 @@ export default function AngeboteV2Page() {
                         </Table.Cell>
                         <Table.Cell>{formatDate(a.gueltig_bis)}</Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/angebote/' + a.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/angebote/' + a.id); }}>
                             <Pencil className="w-4 h-4 mr-1" />
                             Bearbeiten
                           </Button>
