@@ -49,6 +49,13 @@ function fmtUhrzeit(str) {
   return str.substring(0, 5);
 }
 
+function fmtDatum(str) {
+  if (!str) return '';
+  var parts = str.split('-');
+  if (parts.length < 3) return str;
+  return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+
 function kundeName(a) {
   if (!a.kunden) return '';
   return a.kunden.firmenname || a.kunden.name || '';
@@ -71,6 +78,10 @@ export default function MeinTagPage() {
   const [geplantLaden, setGeplantLaden] = useState(true);
   const [geplantFehler, setGeplantFehler] = useState(false);
 
+  const [offeneAufgaben, setOffeneAufgaben] = useState([]);
+  const [offeneAufgabenLaden, setOffeneAufgabenLaden] = useState(true);
+  const [offeneAufgabenFehler, setOffeneAufgabenFehler] = useState(false);
+
   useEffect(function() {
     async function laden() {
       try {
@@ -79,6 +90,7 @@ export default function MeinTagPage() {
         if (!user) {
           setAuftraegeLaden(false);
           setGeplantLaden(false);
+          setOffeneAufgabenLaden(false);
           return;
         }
 
@@ -92,6 +104,7 @@ export default function MeinTagPage() {
         if (!companyId) {
           setAuftraegeLaden(false);
           setGeplantLaden(false);
+          setOffeneAufgabenLaden(false);
           return;
         }
 
@@ -127,11 +140,28 @@ export default function MeinTagPage() {
         }
         setGeplantLaden(false);
 
+        var result3 = await supabase
+          .from('auftraege')
+          .select('id, titel, datum, status, kunden(name, firmenname)')
+          .eq('company_id', companyId)
+          .eq('user_id', user.id)
+          .not('status', 'in', '(abgeschlossen,dokumentiert,storniert)')
+          .order('datum', { ascending: true, nullsFirst: false });
+
+        if (result3.error) {
+          setOffeneAufgabenFehler(true);
+        } else {
+          setOffeneAufgaben(result3.data ?? []);
+        }
+        setOffeneAufgabenLaden(false);
+
       } catch (err) {
         setAuftraegeFehler(true);
         setAuftraegeLaden(false);
         setGeplantFehler(true);
         setGeplantLaden(false);
+        setOffeneAufgabenFehler(true);
+        setOffeneAufgabenLaden(false);
       }
     }
     laden();
@@ -142,6 +172,9 @@ export default function MeinTagPage() {
 
   var geplantZahl = geplantLaden ? '...' : String(geplant.length);
   var geplantVariant = geplantLaden ? 'default' : 'info';
+
+  var offeneZahl = offeneAufgabenLaden ? '...' : String(offeneAufgaben.length);
+  var offeneVariant = offeneAufgabenLaden ? 'default' : (offeneAufgaben.length > 0 ? 'warning' : 'default');
 
   return (
     <Page>
@@ -236,11 +269,36 @@ export default function MeinTagPage() {
             <Card.Header>
               <div className="flex items-center justify-between">
                 <Card.Title>Offene Aufgaben</Card.Title>
-                <Badge variant="warning">0</Badge>
+                <Badge variant={offeneVariant}>{offeneZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
-              <p className="text-sm text-gray-500">Keine offenen Aufgaben.</p>
+              {offeneAufgabenLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : offeneAufgabenFehler ? (
+                <p className="text-sm text-red-500">Aufgaben konnten nicht geladen werden.</p>
+              ) : offeneAufgaben.length === 0 ? (
+                <p className="text-sm text-gray-500">Zurzeit sind keine offenen Aufgaben vorhanden.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {offeneAufgaben.map(function(a) {
+                    var kn = kundeName(a);
+                    var dt = fmtDatum(a.datum);
+                    return (
+                      <li key={a.id} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
+                            {STATUS_LABEL[a.status] || a.status || '—'}
+                          </Badge>
+                        </div>
+                        {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
+                        {dt ? <p className="text-xs text-gray-400 mt-1">{dt}</p> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card.Content>
           </Card>
 
