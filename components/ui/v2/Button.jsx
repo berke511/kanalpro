@@ -8,14 +8,14 @@ var variants = {
 };
 
 var sizes = {
-  sm: 'px-3 py-1.5 text-xs',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  sm: 'px-3 py-1.5 text-xs min-h-[44px]',
+  md: 'px-4 py-2 text-sm min-h-[44px]',
+  lg: 'px-5 py-2.5 text-base min-h-[44px]',
 };
 
 export default function Button({ children, variant = 'secondary', size = 'md', disabled = false, className = '', ...props }) {
   var v = variants[variant] || variants.secondary;
-  var s = sizes[size] || sizes.sm;
+  var s = sizes[size] || sizes.md;
   var d = disabled ? ' opacity-50 cursor-not-allowed' : '';
   return (
     <button
