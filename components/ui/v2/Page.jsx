@@ -1,7 +1,7 @@
 'use client';
 
 function Page({ children, className, ...props }) {
-  const cn = 'min-h-screen p-6' + (className ? ' ' + className : '');
+  const cn = 'min-h-screen p-4 sm:p-6' + (className ? ' ' + className : '');
   return (
     <div className={cn} {...props}>
       {children}
