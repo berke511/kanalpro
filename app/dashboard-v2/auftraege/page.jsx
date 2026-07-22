@@ -69,7 +69,7 @@ export default function AuftraegeV2Page() {
       <Page.Content>
         <Card>
           <Card.Content>
-            <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <Input
                 placeholder="Auftraege durchsuchen..."
                 className="max-w-xs"
