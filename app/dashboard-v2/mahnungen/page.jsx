@@ -71,7 +71,7 @@ export default function Mahnungen() {
         <Page.Title>Mahnungen</Page.Title>
       </Page.Header>
       <Page.Content>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <Input
             placeholder="Mahnungen durchsuchen..."
             className="max-w-xs"
@@ -89,7 +89,7 @@ export default function Mahnungen() {
                 <Table.Row>
                   <Table.HeaderCell>Rechnung</Table.HeaderCell>
                   <Table.HeaderCell>Kunde</Table.HeaderCell>
-                  <Table.HeaderCell>Mahnstufe</Table.HeaderCell>
+                  <Table.HeaderCell>Typ</Table.HeaderCell>
                   <Table.HeaderCell>Fällig seit</Table.HeaderCell>
                   <Table.HeaderCell>Status</Table.HeaderCell>
                   <Table.HeaderCell>Aktionen</Table.HeaderCell>
