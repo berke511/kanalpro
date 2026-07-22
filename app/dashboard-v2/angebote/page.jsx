@@ -51,6 +51,14 @@ export default function AngeboteV2Page() {
     return 'default';
   }
 
+  var ANGEBOT_STATUS_LABEL = {
+    entwurf: 'Entwurf',
+    gesendet: 'Gesendet',
+    angenommen: 'Angenommen',
+    abgelehnt: 'Abgelehnt',
+    in_auftrag: 'In Auftrag',
+  };
+
   var q = suchbegriff.toLowerCase();
   var gefilterteAngebote = angebote.filter(function(a) {
     var nr = (a.angebotsnummer ?? '').toLowerCase();
@@ -113,7 +121,7 @@ export default function AngeboteV2Page() {
                         <Table.Cell>{a.angebotsnummer ?? '-'}</Table.Cell>
                         <Table.Cell>{a.kunden && a.kunden.name ? a.kunden.name : '-'}</Table.Cell>
                         <Table.Cell>
-                          <Badge variant={statusVariant(a.status)}>{a.status ?? '-'}</Badge>
+                          <Badge variant={statusVariant(a.status)}>{ANGEBOT_STATUS_LABEL[a.status] ?? a.status ?? '-'}</Badge>
                         </Table.Cell>
                         <Table.Cell>{formatDate(a.gueltig_bis)}</Table.Cell>
                         <Table.Cell>
