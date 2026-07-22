@@ -78,7 +78,7 @@ export default function Mahnungen() {
             value={suchbegriff}
             onChange={function (e) { setSuchbegriff(e.target.value); }}
           />
-          <Button variant="primary" onClick={function () { router.push('/dashboard/rechnungen'); }}>
+          <Button variant="primary" onClick={function () { router.push('/dashboard-v2/rechnungen'); }}>
             Mahnung erstellen
           </Button>
         </div>
@@ -120,7 +120,7 @@ export default function Mahnungen() {
                           <Badge variant={BADGE_VARIANT[m.status] || 'default'}>{m.status || '—'}</Badge>
                         </Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard/rechnungen/' + m.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function () { router.push('/dashboard-v2/rechnungen/' + m.id); }}>
                             <Pencil className="w-4 h-4 mr-1" />
                             Bearbeiten
                           </Button>
