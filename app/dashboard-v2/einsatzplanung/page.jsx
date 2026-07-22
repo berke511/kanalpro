@@ -124,7 +124,7 @@ export default function Einsatzplanung() {
             value={suche}
             onChange={function(ev) { setSuche(ev.target.value); }}
           />
-          <Button variant="primary" onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}>Einsatz planen</Button>
+          <Button variant="primary" onClick={function() { router.push('/dashboard-v2/auftraege/erstellen'); }}>Einsatz planen</Button>
         </div>
         <Card>
           <Card.Content>
@@ -172,7 +172,7 @@ export default function Einsatzplanung() {
                           <Badge variant={statusVariant(e.status)}>{e.status || '—'}</Badge>
                         </Table.Cell>
                         <Table.Cell>
-                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard/auftraege/' + e.id); }}>
+                          <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/auftraege/' + e.id); }}>
                             <Pencil size={14} className="mr-1" />
                             Bearbeiten
                           </Button>
