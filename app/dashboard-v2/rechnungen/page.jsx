@@ -67,7 +67,7 @@ export default function RechnungenV2Page() {
       <Page.Content>
         <Card>
           <Card.Content>
-            <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <Input
                 placeholder="Rechnungen durchsuchen..."
                 className="max-w-xs"
@@ -117,7 +117,7 @@ export default function RechnungenV2Page() {
                         <Table.Cell>{formatDate(r.faellig_am)}</Table.Cell>
                         <Table.Cell>
                           <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/rechnungen/' + r.id); }}>
-                            <Pencil className="w-4 h-4 mr-1" />
+                            <Pencil className="w4 h-4 mr-1" />
                             Bearbeiten
                           </Button>
                         </Table.Cell>
