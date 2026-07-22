@@ -66,7 +66,7 @@ export default function Fahrzeuge() {
     var marke = f.marke ?? '';
     var modell = f.modell ?? '';
     var name = (marke + ' ' + modell).trim();
-    return name || '—';
+    return name || '-—';
   }
 
   var q = suchbegriff.toLowerCase();
@@ -86,7 +86,7 @@ export default function Fahrzeuge() {
         <Page.Title>Fahrzeuge</Page.Title>
       </Page.Header>
       <Page.Content>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <Input
             placeholder="Fahrzeuge durchsuchen..."
             className="max-w-xs"
