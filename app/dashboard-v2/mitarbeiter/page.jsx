@@ -92,7 +92,7 @@ export default function Mitarbeiter() {
         <Page.Title>Mitarbeiter</Page.Title>
       </Page.Header>
       <Page.Content>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <Input
             placeholder="Mitarbeiter durchsuchen..."
             className="max-w-xs"
