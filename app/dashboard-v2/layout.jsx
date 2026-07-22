@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
+import supabase from '@/lib/supabase';
 
 var navItems = [
   { label: 'Dashboard', href: '/dashboard-v2' },
@@ -27,7 +29,13 @@ var navItems = [
 
 export default function DashboardV2Layout({ children }) {
   var pathname = usePathname();
+  var router = useRouter();
   var [sidebarOffen, setSidebarOffen] = useState(false);
+
+  async function handleAbmelden() {
+    await supabase.auth.signOut();
+    router.replace('/login');
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -47,7 +55,7 @@ export default function DashboardV2Layout({ children }) {
           <button
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 md:hidden"
             onClick={function() { setSidebarOffen(false); }}
-            aria-label="Sidebar schließen"
+            aria-label="Sidebar schliessen"
           >
             <X className="h-5 w-5" />
           </button>
@@ -67,6 +75,15 @@ export default function DashboardV2Layout({ children }) {
             );
           })}
         </nav>
+        <div className="border-t border-gray-200 p-2">
+          <button
+            onClick={handleAbmelden}
+            className="flex w-full min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <LogOut className="h-4 w-4 flex-shrink-0" />
+            Abmelden
+          </button>
+        </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
@@ -74,7 +91,7 @@ export default function DashboardV2Layout({ children }) {
             <button
               className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 md:hidden"
               onClick={function() { setSidebarOffen(true); }}
-              aria-label="Menø öffnen"
+              aria-label="Menu oeffnen"
             >
               <Menu className="h-5 w-5" />
             </button>
