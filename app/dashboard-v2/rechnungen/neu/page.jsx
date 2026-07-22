@@ -168,15 +168,14 @@ export default function RechnungNeuV2Page() {
       setApiErr('Mindestens eine Position ist erforderlich.');
       return;
     }
-    setSpeichern(false);
+    setSpeichern(true);
     setApiErr('');
     try {
       var payload = {
         user_id: userId,
         company_id: companyId,
         kunde_id: form.kundeId || null,
-        rechnungsn
-nummer: rechnungsNr,
+        rechnungsnummer: rechnungsNr,
         datum: form.datum,
         faellig_am: form.faelligAm || null,
         leistungsdatum: form.leistungsdatum || null,
