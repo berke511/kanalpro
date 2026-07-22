@@ -15,7 +15,7 @@ var MA_STATUS_BADGE = {
 
 var MA_STATUS_LABEL = {
   im_einsatz: 'Im Einsatz',
-  verfuegbar:  'Verfügbar',
+  verfuegbar:  'VerfÃ¼gbar',
   urlaub:      'Urlaub',
   krank:       'Krank',
 };
@@ -81,16 +81,16 @@ export default function TechnikerPage() {
             var ids = techList.map(function(t) { return t.id; });
             var aufResult = await supabase
               .from('auftraege')
-              .select('id, titel, adresse, uhrzeit, mitarbeiter_id')
+              .select('id, titel, adresse, uhrzeit, verantw_mitarbeiter_id')
               .eq('company_id', companyId)
-              .in('mitarbeiter_id', ids)
+              .in('verantw_mitarbeiter_id', ids)
               .not('status', 'in', '(abgeschlossen,dokumentiert,storniert)');
 
             var aufMap = {};
             if (!aufResult.error) {
               (aufResult.data ?? []).forEach(function(a) {
-                if (!aufMap[a.mitarbeiter_id]) {
-                  aufMap[a.mitarbeiter_id] = a;
+                if (!aufMap[a.verantw_mitarbeiter_id]) {
+                  aufMap[a.verantw_mitarbeiter_id] = a;
                 }
               });
             }
@@ -214,15 +214,15 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
                         {t.auftrag ? (
                           <div className="mt-1">
-                            <p className="text-xs text-gray-600 font-medium">{t.auftrag.titel || '—'}</p>
+                            <p className="text-xs text-gray-600 font-medium">{t.auftrag.titel || 'â'}</p>
                             {t.auftrag.adresse ? <p className="text-xs text-gray-400">{t.auftrag.adresse}</p> : null}
                           </div>
                         ) : null}
@@ -255,9 +255,9 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
@@ -290,9 +290,9 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
