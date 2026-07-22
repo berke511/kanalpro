@@ -12,7 +12,7 @@ var STATUS_VARIANT = {
   in_bearbeitung:  'info',
   neu:             'info',
   geplant:         'warning',
-  zugwiesen:       'info',
+  zugewiesen:      'info',
   unterwegs:       'warning',
   vor_ort:         'info',
   in_arbeit:       'warning',
@@ -27,7 +27,7 @@ var STATUS_LABEL = {
   in_bearbeitung:  'In Bearbeitung',
   neu:             'Neu',
   geplant:         'Geplant',
-  zugwiesen:       'Zugwiesen',
+  zugewiesen:      'Zugewiesen',
   unterwegs:       'Unterwegs',
   vor_ort:         'Vor Ort',
   in_arbeit:       'In Arbeit',
@@ -242,9 +242,9 @@ export default function MeinTagPage() {
                     return (
                       <li key={a.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{a.titel || 'â'}</p>
                           <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
-                            {STATUS_LABEL[a.status] || a.status || '—'}
+                            {STATUS_LABEL[a.status] || a.status || 'â'}
                           </Badge>
                         </div>
                         {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
@@ -282,9 +282,9 @@ export default function MeinTagPage() {
                     return (
                       <li key={a.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{a.titel || 'â'}</p>
                           <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
-                            {STATUS_LABEL[a.status] || a.status || '—'}
+                            {STATUS_LABEL[a.status] || a.status || 'â'}
                           </Badge>
                         </div>
                         {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
@@ -322,9 +322,9 @@ export default function MeinTagPage() {
                     return (
                       <li key={a.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{a.titel || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{a.titel || 'â'}</p>
                           <Badge variant={STATUS_VARIANT[a.status] || 'default'}>
-                            {STATUS_LABEL[a.status] || a.status || '—'}
+                            {STATUS_LABEL[a.status] || a.status || 'â'}
                           </Badge>
                         </div>
                         {kn ? <p className="text-xs text-gray-500 mt-1">{kn}</p> : null}
@@ -358,9 +358,9 @@ export default function MeinTagPage() {
                     return (
                       <li key={h.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{h.title || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{h.title || 'â'}</p>
                           <Badge variant={PRIO_BADGE[h.priority] || 'default'}>
-                            {PRIO_LABEL[h.priority] || h.priority || '—'}
+                            {PRIO_LABEL[h.priority] || h.priority || 'â'}
                           </Badge>
                         </div>
                         {h.message ? <p className="text-xs text-gray-500 mt-1">{h.message}</p> : null}
