@@ -78,7 +78,7 @@ export default function EinladungPage() {
     }
 
     setStatus('angenommen');
-    setTimeout(() => router.push('/dashboard'), 2500);
+    setTimeout(() => router.push('/dashboard-v2'), 2500);
   }
 
   // ─── Ladescreen ──────────────────────────────────────────────────────────────
