@@ -117,7 +117,7 @@ export default function Einsatzplanung() {
         <Page.Title>Einsatzplanung</Page.Title>
       </Page.Header>
       <Page.Content>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
           <Input
             placeholder="Einsätze durchsuchen..."
             className="max-w-xs"
