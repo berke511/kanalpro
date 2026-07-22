@@ -168,14 +168,15 @@ export default function RechnungNeuV2Page() {
       setApiErr('Mindestens eine Position ist erforderlich.');
       return;
     }
-    setSpeichern(true);
+    setSpeichern(false);
     setApiErr('');
     try {
       var payload = {
         user_id: userId,
         company_id: companyId,
         kunde_id: form.kundeId || null,
-        rechnungsnummer: rechnungsNr,
+        rechnungsn
+nummer: rechnungsNr,
         datum: form.datum,
         faellig_am: form.faelligAm || null,
         leistungsdatum: form.leistungsdatum || null,
@@ -333,7 +334,7 @@ export default function RechnungNeuV2Page() {
                           </div>
                         )}
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className={LABEL}>Menge</label>
                           <input type="number" min="0" step="0.5" value={pos.menge}
