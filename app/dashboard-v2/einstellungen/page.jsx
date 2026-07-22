@@ -4,78 +4,52 @@ import { useState, useEffect } from 'react';
 import { Building2, Users, Bell, Plug, Save, ChevronRight } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { ROLE_LABELS } from '@/lib/roles';
+import Page from '@/components/ui/v2/Page';
+import Card from '@/components/ui/v2/Card';
+import Button from '@/components/ui/v2/Button';
 
-// V2 Card-Komponente
-function SettingsCard({ icon: Icon, title, description, children }) {
-  return (
-    <div className="bg-[#1a1a2e] border border-[#2a2a4a] rounded-xl p-6 space-y-4">
-      <div className="flex items-center gap-3 pb-4 border-b border-[#2a2a4a]">
-        <div className="p-2 bg-[#6366f1]/10 rounded-lg">
-          <Icon className="w-5 h-5 text-[#6366f1]" />
-        </div>
-        <div>
-          <h2 className="text-white font-semibold text-lg">{title}</h2>
-          <p className="text-[#8b8ba7] text-sm">{description}</p>
-        </div>
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-// Read-Only Info-Zeile (Unternehmen + Benutzer)
 function InfoRow({ label, value }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs text-[#8b8ba7] font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-white">{value || '—'}</p>
+      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-sm text-gray-900">{value || 'â'}</p>
     </div>
   );
 }
 
-// V2 Toggle-Komponente
 function SettingsToggle({ label, description, checked, onChange }) {
   return (
     <div className="flex items-center justify-between py-2">
       <div>
-        <p className="text-sm font-medium text-[#c4c4d4]">{label}</p>
-        {description && <p className="text-xs text-[#8b8ba7] mt-0.5">{description}</p>}
+        <p className="text-sm font-medium text-gray-700">{label}</p>
+        {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
       </div>
       <button
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          checked ? 'bg-[#6366f1]' : 'bg-[#2a2a4a]'
-        }`}
+        onClick={function() { onChange(!checked); }}
+        className={'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ' + (checked ? 'bg-blue-600' : 'bg-gray-200')}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-6' : 'translate-x-1'
-          }`}
+          className={'inline-block h-4 w-4 transform rounded-full bg-white transition-transform ' + (checked ? 'translate-x-6' : 'translate-x-1')}
         />
       </button>
     </div>
   );
 }
 
-// V2 Integration-Item
 function IntegrationItem({ name, description, connected, onToggle }) {
   return (
-    <div className="flex items-center justify-between p-4 bg-[#0f0f23] rounded-lg border border-[#2a2a4a]">
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
       <div>
-        <p className="text-sm font-medium text-white">{name}</p>
-        <p className="text-xs text-[#8b8ba7] mt-0.5">{description}</p>
+        <p className="text-sm font-medium text-gray-900">{name}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
       <div className="flex items-center gap-3">
-        <span className={`text-xs px-2 py-0.5 rounded-full ${
-          connected
-            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-            : 'bg-[#2a2a4a] text-[#8b8ba7]'
-        }`}>
+        <span className={'text-xs px-2 py-0.5 rounded-full border ' + (connected ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200')}>
           {connected ? 'Verbunden' : 'Nicht verbunden'}
         </span>
         <button
           onClick={onToggle}
-          className="text-xs text-[#6366f1] hover:text-[#818cf8] flex items-center gap-1 transition-colors"
+          className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
         >
           {connected ? 'Trennen' : 'Verbinden'}
           <ChevronRight className="w-3 h-3" />
@@ -86,83 +60,80 @@ function IntegrationItem({ name, description, connected, onToggle }) {
 }
 
 export default function EinstellungenPage() {
-  // --- Unternehmen - Supabase-Daten ---
-  const [firmaLaden, setFirmaLaden] = useState(true);
-  const [firmaFehler, setFirmaFehler] = useState(false);
-  const [firma, setFirma] = useState(null);
+  var [firmaLaden, setFirmaLaden] = useState(true);
+  var [firmaFehler, setFirmaFehler] = useState(false);
+  var [firma, setFirma] = useState(null);
 
-  useEffect(() => {
+  useEffect(function() {
     async function ladeFirma() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        var authResult = await supabase.auth.getUser();
+        var user = authResult.data && authResult.data.user;
         if (!user) { setFirmaFehler(true); setFirmaLaden(false); return; }
 
-        const { data: member } = await supabase
+        var memberResult = await supabase
           .from('company_members')
           .select('company_id')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .single();
 
-        if (!member) { setFirmaFehler(true); setFirmaLaden(false); return; }
+        if (!memberResult.data) { setFirmaFehler(true); setFirmaLaden(false); return; }
 
-        const { data: companyData, error } = await supabase
+        var companyResult = await supabase
           .from('companies')
           .select('name, email, website, adresse, plz, ort, telefon')
-          .eq('id', member.company_id)
+          .eq('id', memberResult.data.company_id)
           .single();
 
-        if (error || !companyData) { setFirmaFehler(true); setFirmaLaden(false); return; }
+        if (companyResult.error || !companyResult.data) { setFirmaFehler(true); setFirmaLaden(false); return; }
 
-        setFirma(companyData);
-      } catch {
+        setFirma(companyResult.data);
+      } catch (err) {
         setFirmaFehler(true);
-      } finally {
-        setFirmaLaden(false);
       }
+      setFirmaLaden(false);
     }
     ladeFirma();
   }, []);
 
-  const formatAdresse = (f) => {
-    if (!f) return '—';
-    const ort = [f.plz, f.ort].filter(Boolean).join(' ');
-    const teile = [f.adresse, ort].filter(Boolean);
-    return teile.length > 0 ? teile.join(', ') : '—';
-  };
+  function formatAdresse(f) {
+    if (!f) return 'â';
+    var ort = [f.plz, f.ort].filter(Boolean).join(' ');
+    var teile = [f.adresse, ort].filter(Boolean);
+    return teile.length > 0 ? teile.join(', ') : 'â';
+  }
 
-  // --- Benutzer - Supabase-Daten (read-only) ---
-  const [benutzerLaden, setBenutzerLaden] = useState(true);
-  const [benutzerFehler, setBenutzerFehler] = useState(false);
-  const [benutzerDaten, setBenutzerDaten] = useState(null);
+  var [benutzerLaden, setBenutzerLaden] = useState(true);
+  var [benutzerFehler, setBenutzerFehler] = useState(false);
+  var [benutzerDaten, setBenutzerDaten] = useState(null);
 
-  useEffect(() => {
+  useEffect(function() {
     async function ladeBenutzer() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        var authResult = await supabase.auth.getUser();
+        var user = authResult.data && authResult.data.user;
         if (!user) { setBenutzerFehler(true); setBenutzerLaden(false); return; }
 
-        const { data: mitglied, error } = await supabase
+        var mitgliedResult = await supabase
           .from('company_members')
           .select('vorname, nachname, email, role')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .single();
 
-        if (error || !mitglied) { setBenutzerFehler(true); setBenutzerLaden(false); return; }
+        if (mitgliedResult.error || !mitgliedResult.data) { setBenutzerFehler(true); setBenutzerLaden(false); return; }
 
-        setBenutzerDaten(mitglied);
-      } catch {
+        setBenutzerDaten(mitgliedResult.data);
+      } catch (err) {
         setBenutzerFehler(true);
-      } finally {
-        setBenutzerLaden(false);
       }
+      setBenutzerLaden(false);
     }
     ladeBenutzer();
   }, []);
 
-  // --- Benachrichtigungen State (statisch - unveraendert) ---
-  const [notifications, setNotifications] = useState({
+  var [notifications, setNotifications] = useState({
     emailBenachrichtigungen: true,
     auftragsUpdates: true,
     systemWarnungen: true,
@@ -171,132 +142,151 @@ export default function EinstellungenPage() {
     teamNachrichten: false,
   });
 
-  // --- Integrationen State (statisch - unveraendert) ---
-  const [integrations, setIntegrations] = useState({
+  var [integrations, setIntegrations] = useState({
     slack: true,
     googleCalendar: false,
     outlook: true,
     zapier: false,
   });
 
-  const [saved, setSaved] = useState(false);
+  var [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  function handleSave() {
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+    setTimeout(function() { setSaved(false); }, 2000);
+  }
 
-  const toggleIntegration = (key) => {
-    setIntegrations((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  function toggleIntegration(key) {
+    setIntegrations(function(prev) { return Object.assign({}, prev, { [key]: !prev[key] }); });
+  }
+
+  function setNotif(key, v) {
+    setNotifications(function(n) { return Object.assign({}, n, { [key]: v }); });
+  }
 
   return (
-    <div className="min-h-screen bg-[#0f0f23] p-6 lg:p-8">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Einstellungen</h1>
-          <p className="text-[#8b8ba7] text-sm mt-1">Verwalte deine Konto- und Systemeinstellungen</p>
+    <Page>
+      <Page.Header>
+        <div className="flex items-center justify-between">
+          <div>
+            <Page.Title>Einstellungen</Page.Title>
+            <Page.Description>Verwalte deine Konto- und Systemeinstellungen</Page.Description>
+          </div>
+          <Button variant={saved ? 'secondary' : 'primary'} onClick={handleSave}>
+            <Save className="w-4 h-4 mr-2" />
+            {saved ? 'Gespeichert!' : 'Aenderungen speichern'}
+          </Button>
         </div>
-        <button
-          onClick={handleSave}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
-            saved ? 'bg-emerald-500 text-white' : 'bg-[#6366f1] hover:bg-[#818cf8] text-white'
-          }`}
-        >
-          <Save className="w-4 h-4" />
-          {saved ? 'Gespeichert!' : 'Änderungen speichern'}
-        </button>
-      </div>
+      </Page.Header>
+      <Page.Content>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      {/* Grid mit 4 Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <Card.Header>
+              <div className="flex items-center gap-3">
+                <Building2 className="w-5 h-5 text-gray-400" />
+                <div>
+                  <Card.Title>Unternehmen</Card.Title>
+                  <Card.Description>Firmeninformationen und Stammdaten</Card.Description>
+                </div>
+              </div>
+            </Card.Header>
+            <Card.Content>
+              {firmaLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : firmaFehler ? (
+                <p className="text-sm text-red-500">Unternehmensdaten konnten nicht geladen werden.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  <InfoRow label="Unternehmensname" value={firma && firma.name} />
+                  <InfoRow label="E-Mail-Adresse" value={firma && firma.email} />
+                  <InfoRow label="Website" value={firma && firma.website} />
+                  <InfoRow label="Telefon" value={firma && firma.telefon} />
+                  <InfoRow label="Adresse" value={formatAdresse(firma)} />
+                </div>
+              )}
+            </Card.Content>
+          </Card>
 
-        {/* Card 1: Unternehmen - Supabase-Daten (read-only) */}
-        <SettingsCard
-          icon={Building2}
-          title="Unternehmen"
-          description="Firmeninformationen und Stammdaten"
-        >
-          {firmaLaden ? (
-            <div className="flex items-center gap-3 py-4">
-              <div className="w-5 h-5 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#8b8ba7]">Lädt Unternehmensdaten…</span>
-            </div>
-          ) : firmaFehler ? (
-            <div className="py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-sm text-red-400">Unternehmensdaten konnten nicht geladen werden.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              <InfoRow label="Unternehmensname" value={firma?.name} />
-              <InfoRow label="E-Mail-Adresse" value={firma?.email} />
-              <InfoRow label="Website" value={firma?.website} />
-              <InfoRow label="Telefon" value={firma?.telefon} />
-              <InfoRow label="Adresse" value={formatAdresse(firma)} />
-            </div>
-          )}
-        </SettingsCard>
+          <Card>
+            <Card.Header>
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-gray-400" />
+                <div>
+                  <Card.Title>Benutzer</Card.Title>
+                  <Card.Description>Dein Konto im Unternehmen</Card.Description>
+                </div>
+              </div>
+            </Card.Header>
+            <Card.Content>
+              {benutzerLaden ? (
+                <p className="text-sm text-gray-400">Laedt...</p>
+              ) : benutzerFehler ? (
+                <p className="text-sm text-red-500">Benutzerdaten konnten nicht geladen werden.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  <InfoRow label="Vorname" value={benutzerDaten && benutzerDaten.vorname} />
+                  <InfoRow label="Nachname" value={benutzerDaten && benutzerDaten.nachname} />
+                  <InfoRow label="E-Mail" value={benutzerDaten && benutzerDaten.email} />
+                  <InfoRow label="Rolle" value={ROLE_LABELS[benutzerDaten && benutzerDaten.role] || (benutzerDaten && benutzerDaten.role)} />
+                </div>
+              )}
+            </Card.Content>
+          </Card>
 
-        {/* Card 2: Benutzer - Supabase-Daten (read-only) */}
-        <SettingsCard
-          icon={Users}
-          title="Benutzer"
-          description="Dein Konto im Unternehmen"
-        >
-          {benutzerLaden ? (
-            <div className="flex items-center gap-3 py-4">
-              <div className="w-5 h-5 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#8b8ba7]">Lädt Benutzerdaten…</span>
-            </div>
-          ) : benutzerFehler ? (
-            <div className="py-3 px-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-sm text-red-400">Benutzerdaten konnten nicht geladen werden.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              <InfoRow label="Vorname" value={benutzerDaten?.vorname} />
-              <InfoRow label="Nachname" value={benutzerDaten?.nachname} />
-              <InfoRow label="E-Mail" value={benutzerDaten?.email} />
-              <InfoRow label="Rolle" value={ROLE_LABELS[benutzerDaten?.role] || benutzerDaten?.role} />
-            </div>
-          )}
-        </SettingsCard>
+          <Card>
+            <Card.Header>
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-gray-400" />
+                <div>
+                  <Card.Title>Benachrichtigungen</Card.Title>
+                  <Card.Description>Steuere, welche Benachrichtigungen du erhaeltst</Card.Description>
+                </div>
+              </div>
+            </Card.Header>
+            <Card.Content>
+              <SettingsToggle label="E-Mail-Benachrichtigungen" description="Erhalte Benachrichtigungen per E-Mail" checked={notifications.emailBenachrichtigungen} onChange={function(v) { setNotif('emailBenachrichtigungen', v); }} />
+              <SettingsToggle label="Auftrags-Updates" description="Statusaenderungen bei Auftraegen" checked={notifications.auftragsUpdates} onChange={function(v) { setNotif('auftragsUpdates', v); }} />
+              <SettingsToggle label="System-Warnungen" description="Kritische Systembenachrichtigungen" checked={notifications.systemWarnungen} onChange={function(v) { setNotif('systemWarnungen', v); }} />
+              <SettingsToggle label="Wochenbericht" description="Woechentliche Zusammenfassung" checked={notifications.wochenbericht} onChange={function(v) { setNotif('wochenbericht', v); }} />
+              <SettingsToggle label="Neue Kommentare" description="Bei neuen Kommentaren benachrichtigen" checked={notifications.neueKommentare} onChange={function(v) { setNotif('neueKommentare', v); }} />
+              <SettingsToggle label="Team-Nachrichten" description="Interne Team-Kommunikation" checked={notifications.teamNachrichten} onChange={function(v) { setNotif('teamNachrichten', v); }} />
+            </Card.Content>
+          </Card>
 
-        {/* Card 3: Benachrichtigungen (statisch - unveraendert) */}
-        <SettingsCard
-          icon={Bell}
-          title="Benachrichtigungen"
-          description="Steuere, welche Benachrichtigungen du erhältst"
-        >
-          <SettingsToggle label="E-Mail-Benachrichtigungen" description="Erhalte Benachrichtigungen per E-Mail" checked={notifications.emailBenachrichtigungen} onChange={(v) => setNotifications({ ...notifications, emailBenachrichtigungen: v })} />
-          <SettingsToggle label="Auftrags-Updates" description="Statusänderungen bei Aufträgen" checked={notifications.auftragsUpdates} onChange={(v) => setNotifications({ ...notifications, auftragsUpdates: v })} />
-          <SettingsToggle label="System-Warnungen" description="Kritische Systembenachrichtigungen" checked={notifications.systemWarnungen} onChange={(v) => setNotifications({ ...notifications, systemWarnungen: v })} />
-          <SettingsToggle label="Woèenbericht" description="Wöchentliche Zusammenfassung" checked={notifications.wochenbericht} onChange={(v) => setNotifications({ ...notifications, wochenbericht: v })} />
-          <SettingsToggle label="Neue Kommentare" description="Bei neuen Kommentaren benachrichtigen" checked={notifications.neueKommentare} onChange={(v) => setNotifications({ ...notifications, neueKommentare: v })} />
-          <SettingsToggle label="Team-Nachrichten" description="Interne Team-Kommunikation" checked={notifications.teamNachrichten} onChange={(v) => setNotifications({ ...notifications, teamNachrichten: v })} />
-        </SettingsCard>
+          <Card>
+            <Card.Header>
+              <div className="flex items-center gap-3">
+                <Plug className="w-5 h-5 text-gray-400" />
+                <div>
+                  <Card.Title>Integrationen</Card.Title>
+                  <Card.Description>Externe Dienste und Apps verbinden</Card.Description>
+                </div>
+              </div>
+            </Card.Header>
+            <Card.Content>
+              <div className="space-y-3">
+                <IntegrationItem name="Slack" description="Team-Kommunikation und Benachrichtigungen" connected={integrations.slack} onToggle={function() { toggleIntegration('slack'); }} />
+                <IntegrationItem name="Google Calendar" description="Termine und Einsatzplanung synchronisieren" connected={integrations.googleCalendar} onToggle={function() { toggleIntegration('googleCalendar'); }} />
+                <IntegrationItem name="Microsoft Outlook" description="E-Mail und Kalender-Integration" connected={integrations.outlook} onToggle={function() { toggleIntegration('outlook'); }} />
+                <IntegrationItem name="Zapier" description="Workflows mit 5000+ Apps automatisieren" connected={integrations.zapier} onToggle={function() { toggleIntegration('zapier'); }} />
+              </div>
+            </Card.Content>
+          </Card>
 
-        {/* Card 4: Integrationen (statisch - unveraendert) */}
-        <SettingsCard
-          icon={Plug}
-          title="Integrationen"
-          description="Externe Dienste und Apps verbinden"
-        >
-          <IntegrationItem name="Slack" description="Team-Kommunikation und Benachrichtigungen" connected={integrations.slack} onToggle={() => toggleIntegration('slack')} />
-          <IntegrationItem name="Google Calendar" description="Termine und Einsatzplanung synchronisieren" connected={integrations.googleCalendar} onToggle={() => toggleIntegration('googleCalendar')} />
-          <IntegrationItem name="Microsoft Outlook" description="E-Mail und Kalender-Integration" connected={integrations.outlook} onToggle={() => toggleIntegration('outlook')} />
-          <IntegrationItem name="Zapier" description="Workflows mit 5000+ Apps automatisieren" connected={integrations.zapier} onToggle={() => toggleIntegration('zapier')} />
-        </SettingsCard>
+        </div>
 
-      </div>
+        <Card className="border-red-200">
+          <Card.Header>
+            <Card.Title className="text-red-600">Gefahrenzone</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <p className="text-sm text-gray-500 mb-4">Diese Aktionen sind nicht umkehrbar. Bitte gehe vorsichtig vor.</p>
+            <button className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">Konto loeschen</button>
+          </Card.Content>
+        </Card>
 
-      {/* Gefahrenzone */}
-      <div className="mt-6 bg-[#1a1a2e] border border-red-500/20 rounded-xl p-6">
-        <h3 className="text-red-400 font-semibold mb-2">Gefahrenzone</h3>
-        <p className="text-[#8b8ba7] text-sm mb-4">Diese Aktionen sind nicht umkehrbar. Bitte gehe vorsichtig vor.</p>
-        <button className="px-4 py-2 text-sm font-medium text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">Konto löschen</button>
-      </div>
-    </div>
+      </Page.Content>
+    </Page>
   );
 }
