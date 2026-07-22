@@ -60,7 +60,7 @@ export default function OnboardingPage() {
       setUser(u);
       // Onboarding bereits abgeschlossen?
       if (u.user_metadata?.onboarding_completed) {
-        router.push('/dashboard');
+        router.push('/dashboard-v2');
       }
       // Firmendaten aus Registrierung vorausfüllen
       if (u.user_metadata?.firmenname) {
@@ -77,7 +77,7 @@ export default function OnboardingPage() {
       });
     } catch (_) {}
     setLaden(false);
-    router.push('/dashboard');
+    router.push('/dashboard-v2');
   }
 
   // ─── Schritt 1: Firmendaten ───────────────────────────────────────────────
