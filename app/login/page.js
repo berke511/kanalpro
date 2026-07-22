@@ -29,7 +29,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/dashboard');
+      if (session) router.replace('/dashboard-v2');
     });
   }, [router]);
 
@@ -53,7 +53,7 @@ export default function LoginPage() {
       if (!angemeldetBleiben) {
         localStorage.removeItem('sb-ighqrqzespmvafkkqxeu-auth-token');
       }
-      router.push('/dashboard');
+      router.push('/dashboard-v2');
     }
     setLaden(false);
   }
