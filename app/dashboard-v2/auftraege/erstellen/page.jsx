@@ -168,7 +168,7 @@ export default function AuftragErstellenV2Page() {
 
   async function handleSpeichern() {
     if (!validieren()) return;
-    setSpeichern(true);
+    setSpeichern(false);
     setApiErr('');
     try {
       var nummer = genNummer();
@@ -284,7 +284,7 @@ export default function AuftragErstellenV2Page() {
                       &#x2715;
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     {selectedKunde.telefon && (
                       <div>
                         <div className="text-gray-400 uppercase tracking-wide mb-0.5">Telefon</div>
@@ -372,7 +372,7 @@ export default function AuftragErstellenV2Page() {
                   </select>
                   {formFehler.auftragsart && <div className="mt-1 text-xs text-red-500">{formFehler.auftragsart}</div>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className={LABEL}>Wunschtermin</label>
                     <input
@@ -402,11 +402,11 @@ export default function AuftragErstellenV2Page() {
                     </div>
                     <div>
                       <div className={'text-sm font-medium ' + (form.notdienst ? 'text-red-700' : 'text-gray-700')}>Notdienst</div>
-                      <div className="text-xs text-gray-400">Hoechste Bearbeitungspriorität</div>
+                      <div className="text-xs text-gray-400">Hoechste Bearbeitungs prioritaet</div>
                     </div>
                     {form.notdienst && (
                       <span className="ml-auto text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">AKTIV</span>
-                    )}
+                     )}
                   </label>
                 </div>
               </div>
