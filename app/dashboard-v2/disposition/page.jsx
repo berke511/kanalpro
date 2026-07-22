@@ -126,7 +126,7 @@ export default function Disposition() {
           />
           <Button
             variant="primary"
-            onClick={function() { router.push('/dashboard/auftraege/erstellen'); }}
+            onClick={function() { router.push('/dashboard-v2/auftraege/erstellen'); }}
           >
             Einsatz planen
           </Button>
@@ -180,7 +180,7 @@ export default function Disposition() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={function() { router.push('/dashboard/auftraege/' + e.id); }}
+                            onClick={function() { router.push('/dashboard-v2/auftraege/' + e.id); }}
                           >
                             <Pencil size={14} />
                             Bearbeiten
