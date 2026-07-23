@@ -15,7 +15,7 @@ var MA_STATUS_BADGE = {
 
 var MA_STATUS_LABEL = {
   im_einsatz: 'Im Einsatz',
-  verfuegbar:  'Verfügbar',
+  verfuegbar:  'VerfÃ¼gbar',
   urlaub:      'Urlaub',
   krank:       'Krank',
 };
@@ -188,7 +188,7 @@ export default function TechnikerPage() {
     <Page>
       <Page.Header>
         <Page.Title>Techniker</Page.Title>
-        <Page.Description>Übersicht über alle Techniker und ihren aktuellen Einsatzstatus.</Page.Description>
+        <Page.Description>Ãbersicht Ã¼ber alle Techniker und ihren aktuellen Einsatzstatus.</Page.Description>
       </Page.Header>
       <Page.Content>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,7 +202,7 @@ export default function TechnikerPage() {
             </Card.Header>
             <Card.Content>
               {imEinsatzLaden ? (
-                <p className="text-sm text-gray-400">Lädt...</p>
+                <p className="text-sm text-gray-400">LÃ¤dt...</p>
               ) : imEinsatzFehler ? (
                 <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
               ) : imEinsatz.length === 0 ? (
@@ -214,15 +214,15 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
                         {t.auftrag ? (
                           <div className="mt-1">
-                            <p className="text-xs text-gray-600 font-medium">{t.auftrag.titel || '—'}</p>
+                            <p className="text-xs text-gray-600 font-medium">{t.auftrag.titel || 'â'}</p>
                             {t.auftrag.adresse ? <p className="text-xs text-gray-400">{t.auftrag.adresse}</p> : null}
                           </div>
                         ) : null}
@@ -237,17 +237,17 @@ export default function TechnikerPage() {
           <Card>
             <Card.Header>
               <div className="flex items-center justify-between">
-                <Card.Title>Heute verfügbar</Card.Title>
+                <Card.Title>Heute verfÃ¼gbar</Card.Title>
                 <Badge variant={verfuegbarVariant}>{verfuegbarZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
               {verfuegbarLaden ? (
-                <p className="text-sm text-gray-400">Lädt...</p>
+                <p className="text-sm text-gray-400">LÃ¤dt...</p>
               ) : verfuegbarFehler ? (
                 <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
               ) : verfuegbar.length === 0 ? (
-                <p className="text-sm text-gray-500">Heute sind keine Techniker verfügbar.</p>
+                <p className="text-sm text-gray-500">Heute sind keine Techniker verfÃ¼gbar.</p>
               ) : (
                 <ul className="space-y-3">
                   {verfuegbar.map(function(t) {
@@ -255,9 +255,9 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
@@ -278,7 +278,7 @@ export default function TechnikerPage() {
             </Card.Header>
             <Card.Content>
               {abwesendLaden ? (
-                <p className="text-sm text-gray-400">Lädt...</p>
+                <p className="text-sm text-gray-400">LÃ¤dt...</p>
               ) : abwesendFehler ? (
                 <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
               ) : abwesend.length === 0 ? (
@@ -290,9 +290,9 @@ export default function TechnikerPage() {
                     return (
                       <li key={t.id} className="border border-gray-100 rounded-lg p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || '—'}</p>
+                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
                           <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || '—'}
+                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
                           </Badge>
                         </div>
                         {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
@@ -307,13 +307,13 @@ export default function TechnikerPage() {
           <Card>
             <Card.Header>
               <div className="flex items-center justify-between">
-                <Card.Title>Teamübersicht</Card.Title>
+                <Card.Title>TeamÃ¼bersicht</Card.Title>
                 <Badge variant={teamVariant}>{teamZahl}</Badge>
               </div>
             </Card.Header>
             <Card.Content>
               {teamLaden ? (
-                <p className="text-sm text-gray-400">Lädt...</p>
+                <p className="text-sm text-gray-400">LÃ¤dt...</p>
               ) : teamFehler ? (
                 <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
               ) : (
@@ -323,12 +323,12 @@ export default function TechnikerPage() {
                     <p className="text-xs text-gray-500 mt-1">Gesamt</p>
                   </div>
                   <div className="rounded-lg border border-gray-100 p-3">
-                    <p className="text-2xl font-bold text-blue-600">{String(team.imEinsatz)}</p>
+                    <p className="text-2xl font-bold text-primary-600">{String(team.imEinsatz)}</p>
                     <p className="text-xs text-gray-500 mt-1">Im Einsatz</p>
                   </div>
                   <div className="rounded-lg border border-gray-100 p-3">
                     <p className="text-2xl font-bold text-green-600">{String(team.verfuegbar)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Verfügbar</p>
+                    <p className="text-xs text-gray-500 mt-1">VerfÃ¼gbar</p>
                   </div>
                   <div className="rounded-lg border border-gray-100 p-3">
                     <p className="text-2xl font-bold text-yellow-600">{String(team.abwesend)}</p>
