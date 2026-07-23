@@ -13,11 +13,11 @@ import Button from '@/components/ui/v2/Button';
 var EMPFOHLENER_PLAN = 'pro';
 
 var FAQ_ITEMS = [
-  { frage: 'Kann ich jederzeit kündigen?', antwort: 'Ja — du kannst monatlich kündigen, ohne Mindestlaufzeit.' },
-  { frage: 'Was passiert nach der Testphase?', antwort: 'Du wählst einen Plan. Ohne Abo werden die Daten für 30 Tage gespeichert.' },
-  { frage: 'Wie läuft die Zahlung ab?', antwort: 'Sicher über Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.' },
-  { frage: 'Sind meine Daten DSGVO-konform?', antwort: 'Ja — alle Daten liegen auf EU-Servern in Frankfurt.' },
-  { frage: 'Kann ich den Plan jederzeit wechseln?', antwort: 'Ja — Upgrades werden sofort wirksam, Downgrades zum Ende des Abrechnungszeitraums.' },
+  { frage: 'Kann ich jederzeit kÃ¼ndigen?', antwort: 'Ja â du kannst monatlich kÃ¼ndigen, ohne Mindestlaufzeit.' },
+  { frage: 'Was passiert nach der Testphase?', antwort: 'Du wÃ¤hlst einen Plan. Ohne Abo werden die Daten fÃ¼r 30 Tage gespeichert.' },
+  { frage: 'Wie lÃ¤uft die Zahlung ab?', antwort: 'Sicher Ã¼ber Stripe â Kreditkarte, SEPA-Lastschrift oder PayPal.' },
+  { frage: 'Sind meine Daten DSGVO-konform?', antwort: 'Ja â alle Daten liegen auf EU-Servern in Frankfurt.' },
+  { frage: 'Kann ich den Plan jederzeit wechseln?', antwort: 'Ja â Upgrades werden sofort wirksam, Downgrades zum Ende des Abrechnungszeitraums.' },
 ];
 
 export default function UpgradePage() {
@@ -58,8 +58,8 @@ export default function UpgradePage() {
     return (
       <Page>
         <Page.Header>
-          <Page.Title>Plan wählen</Page.Title>
-          <Page.Description>Alle verfügbaren KanalPro-Pläne im Überblick.</Page.Description>
+          <Page.Title>Plan wÃ¤hlen</Page.Title>
+          <Page.Description>Alle verfÃ¼gbaren KanalPro-PlÃ¤ne im Ãberblick.</Page.Description>
         </Page.Header>
         <Page.Content>
           <p className="text-sm text-gray-400">Wird geladen...</p>
@@ -72,8 +72,8 @@ export default function UpgradePage() {
     return (
       <Page>
         <Page.Header>
-          <Page.Title>Plan wählen</Page.Title>
-          <Page.Description>Alle verfügbaren KanalPro-Pläne im Überblick.</Page.Description>
+          <Page.Title>Plan wÃ¤hlen</Page.Title>
+          <Page.Description>Alle verfÃ¼gbaren KanalPro-PlÃ¤ne im Ãberblick.</Page.Description>
         </Page.Header>
         <Page.Content>
           <Card>
@@ -92,23 +92,23 @@ export default function UpgradePage() {
   return (
     <Page>
       <Page.Header>
-        <Page.Title>Plan wählen</Page.Title>
+        <Page.Title>Plan wÃ¤hlen</Page.Title>
         <Page.Description>
           {sub.isPaid
             ? 'Wechsle deinen Plan oder behalte deinen aktuellen.'
-            : '14 Tage kostenlos testen — danach ohne Risiko kündbar.'}
+            : '14 Tage kostenlos testen â danach ohne Risiko kÃ¼ndbar.'}
         </Page.Description>
       </Page.Header>
       <Page.Content>
 
         {/* Status-Banner */}
         {sub.isTrialActive && (
-          <div className={'px-6 py-4 rounded-xl text-center border ' + (sub.daysLeft <= 7 ? 'bg-orange-50 border-orange-100' : 'bg-blue-50 border-blue-100')}>
-            <p className={'font-semibold ' + (sub.daysLeft <= 7 ? 'text-orange-700' : 'text-blue-700')}>
+          <div className={'px-6 py-4 rounded-xl text-center border ' + (sub.daysLeft <= 7 ? 'bg-orange-50 border-orange-100' : 'bg-primary-50 border-primary-100')}>
+            <p className={'font-semibold ' + (sub.daysLeft <= 7 ? 'text-orange-700' : 'text-primary-700')}>
               {'Noch ' + String(sub.daysLeft) + (sub.daysLeft === 1 ? ' Tag' : ' Tage') + ' kostenlose Testphase'}
             </p>
-            <p className={'text-sm mt-1 ' + (sub.daysLeft <= 7 ? 'text-orange-500' : 'text-blue-500')}>
-              Wähle einen Plan um nach der Testphase nahtlos weiterzumachen.
+            <p className={'text-sm mt-1 ' + (sub.daysLeft <= 7 ? 'text-orange-500' : 'text-primary-500')}>
+              WÃ¤hle einen Plan um nach der Testphase nahtlos weiterzumachen.
             </p>
           </div>
         )}
@@ -116,7 +116,7 @@ export default function UpgradePage() {
         {sub.isExpired && (
           <div className="px-6 py-4 rounded-xl text-center bg-red-50 border border-red-100">
             <p className="font-semibold text-red-700">Deine Testphase ist abgelaufen</p>
-            <p className="text-sm text-red-500 mt-1">Wähle einen Plan um KanalPro weiterzunutzen.</p>
+            <p className="text-sm text-red-500 mt-1">WÃ¤hle einen Plan um KanalPro weiterzunutzen.</p>
           </div>
         )}
 
@@ -134,7 +134,7 @@ export default function UpgradePage() {
             var istAktuell = planId === sub.plan;
             var istEmpfohlen = planId === EMPFOHLENER_PLAN;
             var istEnterprise = planId === 'enterprise';
-            var ringClass = istEmpfohlen ? ' ring-2 ring-blue-500' : (istAktuell ? ' ring-2 ring-green-500' : '');
+            var ringClass = istEmpfohlen ? ' ring-2 ring-primary-500' : (istAktuell ? ' ring-2 ring-green-500' : '');
             return (
               <Card key={planId} className={ringClass}>
                 <Card.Header>
@@ -159,7 +159,7 @@ export default function UpgradePage() {
                         ? <p className="text-xl font-bold text-gray-900">Kostenlos</p>
                         : (
                           <div>
-                            <span className="text-xl font-bold text-gray-900">{String(plan.preis) + ' €'}</span>
+                            <span className="text-xl font-bold text-gray-900">{String(plan.preis) + ' â¬'}</span>
                             <span className="text-gray-400 text-sm ml-1">/Monat</span>
                           </div>
                         )
@@ -169,7 +169,7 @@ export default function UpgradePage() {
                     {plan.featureListe.slice(0, 5).map(function(f) {
                       return (
                         <li key={f} className="flex items-start gap-2 text-xs text-gray-600">
-                          <span className="text-green-500 mt-0.5 shrink-0">✓</span>
+                          <span className="text-green-500 mt-0.5 shrink-0">â</span>
                           {f}
                         </li>
                       );
@@ -195,7 +195,7 @@ export default function UpgradePage() {
                       className="w-full"
                       onClick={function() { router.push('/dashboard-v2/billing'); }}
                     >
-                      {sub.isPaid ? ('Zu ' + plan.name + ' wechseln') : (plan.name + ' wählen')}
+                      {sub.isPaid ? ('Zu ' + plan.name + ' wechseln') : (plan.name + ' wÃ¤hlen')}
                     </Button>
                   )}
                 </Card.Content>
@@ -206,7 +206,7 @@ export default function UpgradePage() {
 
         {/* FAQ */}
         <Card>
-          <Card.Header><Card.Title>Häufige Fragen</Card.Title></Card.Header>
+          <Card.Header><Card.Title>HÃ¤ufige Fragen</Card.Title></Card.Header>
           <Card.Content>
             <div className="grid sm:grid-cols-2 gap-5">
               {FAQ_ITEMS.map(function(item) {
@@ -222,7 +222,7 @@ export default function UpgradePage() {
         </Card>
 
         <p className="text-center text-gray-400 text-xs">
-          Sichere Zahlung · Jederzeit kündbar · DSGVO-konform · Made in Germany
+          Sichere Zahlung Â· Jederzeit kÃ¼ndbar Â· DSGVO-konform Â· Made in Germany
         </p>
 
       </Page.Content>
