@@ -3,7 +3,7 @@
 // ─── Table ────────────────────────────────────────────────────────────────────
 function Table({ children, className = '', striped = false, ...props }) {
   return (
-    <div className={"w-full overflow-x-auto rounded-xl border border-gray-200 scrollbar-thin ' + className}>
+    <div className={'w-full overflow-x-auto rounded-xl border border-gray-200 scrollbar-thin ' + className}>
       <table
         className={'w-full border-collapse text-sm' + (striped ? ' table-striped' : '')}
         {...props}
