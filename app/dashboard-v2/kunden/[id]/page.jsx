@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   User, Phone, Mail, Globe, MapPin, Calendar,
   FileText, Briefcase, Receipt, FolderOpen, MessageSquare,
-  Users, Edit, ArrowLeft, AlertCircle, Building2,
+  Users, Edit, ArrowLeft, AlertCircle, Building2, Plus,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Badge from '@/components/ui/v2/Badge';
@@ -168,12 +168,18 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
 }
 
 // ─── Tab: Angebote ────────────────────────────────────────────────────────────
-function AngeboteTab({ angebote, detailLoading }) {
+function AngeboteTab({ angebote, detailLoading, kundeId }) {
   if (detailLoading) return <div className="skeleton h-40 w-full rounded-xl" />;
   if (!angebote || angebote.length === 0) {
-    return <EmptyState icon={FileText} title="Keine Angebote" description="Fur diesen Kunden wurden noch keine Angebote erstellt." />;
+    return <EmptyState icon={FileText} title="Keine Angebote" description="Fur diesen Kunden wurden noch keine Angebote erstellt." action={function() { window.location.assign('/dashboard-v2/angebote/neu?kunden_id=' + kundeId); }} actionLabel="Angebot erstellen" />;
   }
   return (
+    <div>
+      <div className="flex justify-end mb-4">
+        <Link href={'/dashboard-v2/angebote/neu?kunden_id=' + kundeId}>
+          <Button variant="primary" size="sm">Angebot erstellen</Button>
+        </Link>
+      </div>
     <Table>
       <Table.Head>
         <tr>
@@ -198,6 +204,7 @@ function AngeboteTab({ angebote, detailLoading }) {
         })}
       </Table.Body>
     </Table>
+    </div>
   );
 }
 
@@ -414,7 +421,7 @@ export default function KundeDetailPage() {
             <EmptyState icon={MapPin} title="Objekte und Standorte" description="Objekte und Standorte folgen in Kurze." />
           )}
           {activeTab === 'angebote' && (
-            <AngeboteTab angebote={angebote} detailLoading={detailLoading} />
+            <AngeboteTab angebote={angebote} detailLoading={detailLoading} kundeId={kundeId} />
           )}
           {activeTab === 'auftraege' && (
             <AuftraegeTab auftraege={auftraege} detailLoading={detailLoading} />
