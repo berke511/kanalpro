@@ -1,213 +1,152 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, ClipboardList } from 'lucide-react';
 import supabase from '@/lib/supabase';
-import Page from '@/components/ui/v2/Page';
-import Card from '@/components/ui/v2/Card';
 import Button from '@/components/ui/v2/Button';
+import Card from '@/components/ui/v2/Card';
+import Input from '@/components/ui/v2/Input';
+import Page from '@/components/ui/v2/Page';
 
-var INPUT = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
-var LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide';
-
-var AUFTRAGSARTEN = [
-  'Rohrreinigung',
-  'TV-Inspektion',
-  'Dichtheitsprüfung',
-  'Notdienst',
-  'Wartung',
-  'Sanierung',
-  'Sonstiges',
+var STATUS_OPTIONS = [
+  { value: 'offen', label: 'Offen' },
+  { value: 'in_bearbeitung', label: 'In Bearbeitung' },
+  { value: 'abgeschlossen', label: 'Abgeschlossen' },
+  { value: 'storniert', label: 'Storniert' },
+];
+var PRIO_OPTIONS = [
+  { value: 'niedrig', label: 'Niedrig' },
+  { value: 'mittel', label: 'Mittel' },
+  { value: 'hoch', label: 'Hoch' },
+  { value: 'kritisch', label: 'Kritisch' },
 ];
 
-function genNummer() {
+function genAuftragsnummer() {
   var year = new Date().getFullYear();
-  var rand = String(Math.floor(10000 + Math.random() * 90000));
+  var rand = Math.floor(1000 + Math.random() * 9000);
   return 'AUF-' + year + '-' + rand;
 }
 
-function kundeAnzeigeName(k) {
-  if (!k) return '';
-  if (k.kundentyp === 'firma') return k.firmenname || k.firma || k.name;
-  return k.name || '';
-}
-
-export default function AuftragErstellenV2Page() {
+export default function AuftragErstellenPage() {
   var router = useRouter();
-  var dropRef = useRef(null);
+  var searchParams = useSearchParams();
+  var angebotId = searchParams.get('angebot_id');
 
   var [companyId, setCompanyId] = useState(null);
-  var [userId, setUserId] = useState(null);
-  var [laden, setLaden] = useState(true);
-  var [speichern, setSpeichern] = useState(false);
-  var [apiErr, setApiErr] = useState('');
-
-  var [suchText, setSuchText] = useState('');
-  var [kundenliste, setKundenliste] = useState([]);
-  var [showDrop, setShowDrop] = useState(false);
-  var [suchLaden, setSuchLaden] = useState(false);
-  var [selectedKunde, setSelectedKunde] = useState(null);
-
-  var [objekte, setObjekte] = useState([]);
-  var [objektLaden, setObjektLaden] = useState(false);
-  var [selectedObjekt, setSelectedObjekt] = useState(null);
-  var [manuelleAdr, setManuelleAdr] = useState('');
+  var [kunden, setKunden] = useState([]);
+  var [loading, setLoading] = useState(true);
+  var [saving, setSaving] = useState(false);
+  var [error, setError] = useState(null);
+  var [prefillLoaded, setPrefillLoaded] = useState(false);
 
   var [form, setForm] = useState({
-    auftragsart: '',
+    auftragsnummer: genAuftragsnummer(),
+    kunden_id: '',
+    ansprechpartner: '',
+    objekt: '',
+    status: 'offen',
+    prioritaet: 'mittel',
     termin: '',
-    uhrzeit: '',
+    verantwortlicher: '',
     beschreibung: '',
-    intNotiz: '',
-    notdienst: false,
+    angebot_id: angebotId || '',
   });
 
-  var [formFehler, setFormFehler] = useState({});
-
   useEffect(function() {
-    async function init() {
+    var alive = true;
+    async function load() {
       try {
-        var session = await supabase.auth.getUser();
-        var user = session.data.user;
+        var { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push('/login'); return; }
-        setUserId(user.id);
-        var memberRes = await supabase
+        var { data: member } = await supabase
           .from('company_members')
           .select('company_id')
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .maybeSingle();
-        if (!memberRes.data) { setLaden(false); return; }
-        setCompanyId(memberRes.data.company_id);
-        setLaden(false);
+          .single();
+        if (!member || !alive) return;
+        var cid = member.company_id;
+        setCompanyId(cid);
+
+        var { data: kundenData } = await supabase
+          .from('kunden')
+          .select('id, name')
+          .eq('company_id', cid)
+          .order('name');
+        if (alive) setKunden(kundenData || []);
+
+        if (angebotId) {
+          var { data: angebot } = await supabase
+            .from('angebote')
+            .select('kunden_id, kunden(name, ansprechpartner), angebotsnummer')
+            .eq('id', angebotId)
+            .eq('company_id', cid)
+            .single();
+          if (alive && angebot) {
+            setForm(function(prev) {
+              return Object.assign({}, prev, {
+                kunden_id: angebot.kunden_id || '',
+                ansprechpartner: (angebot.kunden && angebot.kunden.ansprechpartner) || '',
+              });
+            });
+            setPrefillLoaded(true);
+          }
+        }
       } catch (e) {
-        setLaden(false);
+        if (alive) setError(e.message);
+      } finally {
+        if (alive) setLoading(false);
       }
     }
-    init();
-  }, [router]);
+    load();
+    return function() { alive = false; };
+  }, [angebotId, router]);
 
-  useEffect(function() {
-    if (!companyId || suchText.trim().length < 1) {
-      setKundenliste([]);
-      setShowDrop(false);
-      return;
-    }
-    var timer = setTimeout(async function() {
-      setSuchLaden(true);
-      var qt = '%' + suchText.trim() + '%';
-      var orFilter = 'name.ilike.' + qt + ',firmenname.ilike.' + qt + ',firma.ilike.' + qt;
-      var res = await supabase
-        .from('kunden')
-        .select('id, name, firmenname, firma, kundentyp, telefon, email, adresse')
-        .eq('company_id', companyId)
-        .or(orFilter)
-        .limit(10);
-      setKundenliste(res.data ?? []);
-      setShowDrop(true);
-      setSuchLaden(false);
-    }, 300);
-    return function() { clearTimeout(timer); };
-  }, [suchText, companyId]);
-
-  useEffect(function() {
-    function handler(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) {
-        setShowDrop(false);
-      }
-    }
-    document.addEventListener('mousedown', handler);
-    return function() { document.removeEventListener('mousedown', handler); };
-  }, []);
-
-  async function onKundeWaehlen(k) {
-    setSelectedKunde(k);
-    setSuchText(kundeAnzeigeName(k));
-    setShowDrop(false);
-    setFormFehler(function(prev) { return Object.assign({}, prev, { kunde: '', einsatzort: '' }); });
-    setSelectedObjekt(null);
-    setManuelleAdr('');
-    setObjektLaden(true);
-    var res = await supabase
-      .from('objekte')
-      .select('id, bezeichnung, adresse')
-      .eq('kunde_id', k.id)
-      .eq('company_id', companyId)
-      .order('bezeichnung');
-    var liste = res.data ?? [];
-    setObjekte(liste);
-    setObjektLaden(false);
-    if (liste.length === 1) {
-      setSelectedObjekt(liste[0]);
-      setManuelleAdr(liste[0].adresse ?? '');
-    }
+  function handleChange(field, val) {
+    setForm(function(prev) { return Object.assign({}, prev, { [field]: val }); });
   }
 
-  function kundeZuruecksetzen() {
-    setSelectedKunde(null);
-    setSuchText('');
-    setKundenliste([]);
-    setObjekte([]);
-    setSelectedObjekt(null);
-    setManuelleAdr('');
-  }
-
-  function setField(key, val) {
-    setForm(function(f) { return Object.assign({}, f, { [key]: val }); });
-    setFormFehler(function(prev) { return Object.assign({}, prev, { [key]: '' }); });
-  }
-
-  function validieren() {
-    var e = {};
-    if (!selectedKunde) e.kunde = 'Bitte einen Kunden auswaehlen.';
-    if (!form.auftragsart) e.auftragsart = 'Auftragsart ist erforderlich.';
-    if (!form.beschreibung.trim()) e.beschreibung = 'Bitte eine Beschreibung eingeben.';
-    if (!selectedObjekt && !manuelleAdr.trim()) e.einsatzort = 'Bitte einen Einsatzort angeben.';
-    setFormFehler(e);
-    return Object.keys(e).length === 0;
-  }
-
-  async function handleSpeichern() {
-    if (!validieren()) return;
-    setSpeichern(false);
-    setApiErr('');
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!companyId) return;
+    setSaving(true);
+    setError(null);
     try {
-      var nummer = genNummer();
-      var einsatzAdr = selectedObjekt
-        ? (selectedObjekt.bezeichnung + (selectedObjekt.adresse ? ' - ' + selectedObjekt.adresse : ''))
-        : manuelleAdr.trim();
-      var metaDaten = {
-        nummer: nummer,
-        uhrzeit: form.uhrzeit || null,
-        notdienst: form.notdienst,
-        interne_notiz: form.intNotiz.trim() || null,
-      };
       var payload = {
+        auftragsnummer: form.auftragsnummer,
         company_id: companyId,
-        user_id: userId,
-        kunde_id: selectedKunde.id,
-        objekt_id: selectedObjekt ? selectedObjekt.id : null,
-        titel: form.auftragsart,
-        beschreibung: form.beschreibung.trim(),
-        status: 'offen',
-        datum: form.termin || null,
-        adresse: einsatzAdr || null,
-        notizen: JSON.stringify(metaDaten),
+        kunden_id: form.kunden_id || null,
+        ansprechpartner: form.ansprechpartner || null,
+        objekt: form.objekt || null,
+        status: form.status,
+        prioritaet: form.prioritaet,
+        termin: form.termin || null,
+        verantwortlicher: form.verantwortlicher || null,
+        beschreibung: form.beschreibung || null,
+        angebot_id: form.angebot_id || null,
       };
-      var res = await supabase.from('auftraege').insert(payload).select('id').single();
-      if (res.error) throw res.error;
-      router.push('/dashboard-v2/auftraege');
-    } catch (err) {
-      setApiErr(err.message ?? 'Fehler beim Speichern.');
-      setSpeichern(false);
+      var { data: newAuftrag, error: err } = await supabase
+        .from('auftraege')
+        .insert(payload)
+        .select('id')
+        .single();
+      if (err) { setError(err.message); setSaving(false); return; }
+      router.push('/dashboard-v2/auftraege/' + newAuftrag.id);
+    } catch (e) {
+      setError(e.message);
+      setSaving(false);
     }
   }
 
-  if (laden) {
+  if (loading) {
     return (
       <Page>
-        <Page.Header><Page.Title>Neuer Auftrag</Page.Title></Page.Header>
         <Page.Content>
-          <div className="text-sm text-gray-400 py-8 text-center">Laedt...</div>
+          <div className="space-y-4">
+            <div className="skeleton h-8 w-48 rounded-lg" />
+            <div className="skeleton h-64 w-full rounded-xl" />
+          </div>
         </Page.Content>
       </Page>
     );
@@ -216,243 +155,132 @@ export default function AuftragErstellenV2Page() {
   return (
     <Page>
       <Page.Header>
-        <Page.Title>Neuer Auftrag</Page.Title>
-        <Page.Description>Auftrag erstellen und fuer die Einsatzplanung vorbereiten</Page.Description>
+        <div className="flex items-center gap-3">
+          <button onClick={function() { router.push('/dashboard-v2/auftraege'); }} className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <Page.Title>Neuer Auftrag</Page.Title>
+            <Page.Description>
+              {angebotId && prefillLoaded ? 'Daten aus Angebot vorausgefuellt.' : 'Auftragsdaten eingeben und speichern.'}
+            </Page.Description>
+          </div>
+        </div>
       </Page.Header>
       <Page.Content>
-        <div className="space-y-5 max-w-2xl">
-
-          {apiErr && (
-            <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-sm text-red-700">
-              {apiErr}
-            </div>
-          )}
-
-          {/* Kunde */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Kunde *</div>
-              {!selectedKunde ? (
-                <div ref={dropRef} className="relative">
-                  <input
-                    type="text"
-                    value={suchText}
-                    onChange={function(e) { setSuchText(e.target.value); }}
-                    placeholder="Kundenname oder Firma eingeben..."
-                    autoComplete="off"
-                    className={INPUT + (formFehler.kunde ? ' border-red-300' : '')}
-                  />
-                  {showDrop && (
-                    <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg overflow-hidden">
-                      {suchLaden ? (
-                        <div className="px-4 py-3 text-sm text-gray-400">Suche...</div>
-                      ) : kundenliste.length === 0 ? (
-                        <div className="px-4 py-3 text-sm text-gray-400">Kein Kunde gefunden.</div>
-                      ) : (
-                        <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
-                          {kundenliste.map(function(k) {
-                            return (
-                              <button
-                                key={k.id}
-                                type="button"
-                                onClick={function() { onKundeWaehlen(k); }}
-                                className="w-full text-left px-4 py-3 hover:bg-blue-50 transition text-sm"
-                              >
-                                <div className="font-medium text-gray-900">{kundeAnzeigeName(k)}</div>
-                                {k.adresse && <div className="text-xs text-gray-400 mt-0.5">{k.adresse}</div>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {formFehler.kunde && <div className="mt-1 text-xs text-red-500">{formFehler.kunde}</div>}
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-md mb-4">
-                    <div>
-                      <div className="text-sm font-semibold text-gray-900">{kundeAnzeigeName(selectedKunde)}</div>
-                      {selectedKunde.adresse && <div className="text-xs text-gray-500 mt-0.5">{selectedKunde.adresse}</div>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={kundeZuruecksetzen}
-                      className="text-xs text-gray-400 hover:text-gray-600 ml-4"
-                    >
-                      &#x2715;
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    {selectedKunde.telefon && (
-                      <div>
-                        <div className="text-gray-400 uppercase tracking-wide mb-0.5">Telefon</div>
-                        <div className="text-gray-700">{selectedKunde.telefon}</div>
-                      </div>
-                    )}
-                    {selectedKunde.email && (
-                      <div>
-                        <div className="text-gray-400 uppercase tracking-wide mb-0.5">E-Mail</div>
-                        <div className="text-gray-700 truncate">{selectedKunde.email}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </Card.Content>
-          </Card>
-
-          {/* Einsatzort */}
-          {selectedKunde && (
-            <Card>
-              <Card.Content>
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Einsatzort *</div>
-                {objektLaden ? (
-                  <div className="text-sm text-gray-400">Objekte werden geladen...</div>
-                ) : objekte.length > 0 ? (
-                  <div>
-                    <label className={LABEL}>Objekt auswaehlen</label>
-                    <select
-                      value={selectedObjekt ? selectedObjekt.id : ''}
-                      onChange={function(e) {
-                        var obj = objekte.find(function(o) { return o.id === e.target.value; }) ?? null;
-                        setSelectedObjekt(obj);
-                        setManuelleAdr(obj ? (obj.adresse ?? '') : '');
-                        setFormFehler(function(prev) { return Object.assign({}, prev, { einsatzort: '' }); });
-                      }}
-                      className={INPUT + (formFehler.einsatzort ? ' border-red-300' : '')}
-                    >
-                      {objekte.length > 1 && <option value="">-- Objekt auswaehlen --</option>}
-                      {objekte.map(function(o) {
-                        return (
-                          <option key={o.id} value={o.id}>
-                            {o.bezeichnung}{o.adresse ? ' - ' + o.adresse : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                ) : (
-                  <div>
-                    <label className={LABEL}>Adresse</label>
-                    <input
-                      type="text"
-                      value={manuelleAdr}
-                      onChange={function(e) {
-                        setManuelleAdr(e.target.value);
-                        setFormFehler(function(prev) { return Object.assign({}, prev, { einsatzort: '' }); });
-                      }}
-                      placeholder="z. B. Musterstrasse 12, 12345 Berlin"
-                      className={INPUT + (formFehler.einsatzort ? ' border-red-300' : '')}
-                    />
-                  </div>
-                )}
-                {formFehler.einsatzort && <div className="mt-1 text-xs text-red-500">{formFehler.einsatzort}</div>}
-              </Card.Content>
-            </Card>
-          )}
-
-          {/* Auftragsart + Termin */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Auftragsinformationen</div>
-              <div className="space-y-4">
-                <div>
-                  <label className={LABEL}>Auftragsart *</label>
-                  <select
-                    value={form.auftragsart}
-                    onChange={function(e) { setField('auftragsart', e.target.value); }}
-                    className={INPUT + (formFehler.auftragsart ? ' border-red-300' : '')}
-                  >
-                    <option value="">-- Bitte auswaehlen --</option>
-                    {AUFTRAGSARTEN.map(function(a) {
-                      return <option key={a} value={a}>{a}</option>;
-                    })}
-                  </select>
-                  {formFehler.auftragsart && <div className="mt-1 text-xs text-red-500">{formFehler.auftragsart}</div>}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={LABEL}>Wunschtermin</label>
-                    <input
-                      type="date"
-                      value={form.termin}
-                      onChange={function(e) { setField('termin', e.target.value); }}
-                      className={INPUT}
-                    />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Uhrzeit</label>
-                    <input
-                      type="time"
-                      value={form.uhrzeit}
-                      onChange={function(e) { setField('uhrzeit', e.target.value); }}
-                      className={INPUT}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <div
-                      className={'w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition ' + (form.notdienst ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white')}
-                      onClick={function() { setField('notdienst', !form.notdienst); }}
-                    >
-                      {form.notdienst && <span className="text-white text-xs font-bold">&#10003;</span>}
-                    </div>
-                    <div>
-                      <div className={'text-sm font-medium ' + (form.notdienst ? 'text-red-700' : 'text-gray-700')}>Notdienst</div>
-                      <div className="text-xs text-gray-400">Hoechste Bearbeitungs prioritaet</div>
-                    </div>
-                    {form.notdienst && (
-                      <span className="ml-auto text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">AKTIV</span>
-                     )}
-                  </label>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Beschreibung */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Problembeschreibung *</div>
-              <textarea
-                rows={5}
-                value={form.beschreibung}
-                onChange={function(e) { setField('beschreibung', e.target.value); }}
-                placeholder="Beschreibung des Problems oder Auftrags..."
-                className={INPUT + ' resize-none ' + (formFehler.beschreibung ? 'border-red-300' : '')}
-              />
-              {formFehler.beschreibung && <div className="mt-1 text-xs text-red-500">{formFehler.beschreibung}</div>}
-            </Card.Content>
-          </Card>
-
-          {/* Interne Notiz */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Interne Notiz</div>
-              <textarea
-                rows={3}
-                value={form.intNotiz}
-                onChange={function(e) { setField('intNotiz', e.target.value); }}
-                placeholder="Nur intern sichtbar – Hinweise fuer den Techniker..."
-                className={INPUT + ' resize-none'}
-              />
-            </Card.Content>
-          </Card>
-
-          {/* Aktionsleiste */}
-          <div className="flex items-center justify-between pt-2">
-            <Button variant="secondary" onClick={function() { router.push('/dashboard-v2/auftraege'); }} disabled={speichern}>
-              Abbrechen
-            </Button>
-            <Button variant="primary" onClick={handleSpeichern} disabled={speichern}>
-              {speichern ? 'Speichern...' : 'Auftrag speichern'}
-            </Button>
+        {angebotId && prefillLoaded && (
+          <div className="flex items-center gap-2 px-4 py-3 bg-primary-50 border border-primary-200 rounded-lg mb-4">
+            <ClipboardList className="w-4 h-4 text-primary-600 shrink-0" />
+            <p className="text-sm text-primary-700">Angebotsdaten wurden vorausgefuellt. Bitte pruefen und anpassen.</p>
           </div>
+        )}
 
-        </div>
+        {error && (
+          <div className="px-4 py-3 bg-danger-50 border border-danger-200 rounded-lg mb-4">
+            <p className="text-sm text-danger-700">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              <Card>
+                <Card.Header>
+                  <Card.Title>Auftragsdaten</Card.Title>
+                </Card.Header>
+                <Card.Content>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Auftragsnummer</label>
+                      <Input value={form.auftragsnummer} onChange={function(e) { handleChange('auftragsnummer', e.target.value); }} placeholder="AUF-2026-0001" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Termin</label>
+                      <Input type="datetime-local" value={form.termin} onChange={function(e) { handleChange('termin', e.target.value); }} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select value={form.status} onChange={function(e) { handleChange('status', e.target.value); }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        {STATUS_OPTIONS.map(function(o) { return <option key={o.value} value={o.value}>{o.label}</option>; })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Prioritaet</label>
+                      <select value={form.prioritaet} onChange={function(e) { handleChange('prioritaet', e.target.value); }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        {PRIO_OPTIONS.map(function(o) { return <option key={o.value} value={o.value}>{o.label}</option>; })}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Verantwortlicher</label>
+                      <Input value={form.verantwortlicher} onChange={function(e) { handleChange('verantwortlicher', e.target.value); }} placeholder="Name des Verantwortlichen" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                      <textarea value={form.beschreibung} onChange={function(e) { handleChange('beschreibung', e.target.value); }} rows={3} placeholder="Auftragsbeschreibung..." className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
+                    </div>
+                  </div>
+                </Card.Content>
+              </Card>
+
+              <Card>
+                <Card.Header>
+                  <Card.Title>Einsatzort</Card.Title>
+                </Card.Header>
+                <Card.Content>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Objekt / Einsatzort</label>
+                    <Input value={form.objekt} onChange={function(e) { handleChange('objekt', e.target.value); }} placeholder="Adresse oder Objektbezeichnung" />
+                  </div>
+                </Card.Content>
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-6">
+              <Card>
+                <Card.Header>
+                  <Card.Title>Kunde</Card.Title>
+                </Card.Header>
+                <Card.Content>
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kunde</label>
+                      <select value={form.kunden_id} onChange={function(e) { handleChange('kunden_id', e.target.value); }} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="">-- Kein Kunde --</option>
+                        {kunden.map(function(k) { return <option key={k.id} value={k.id}>{k.name}</option>; })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ansprechpartner</label>
+                      <Input value={form.ansprechpartner} onChange={function(e) { handleChange('ansprechpartner', e.target.value); }} placeholder="Name des Ansprechpartners" />
+                    </div>
+                  </div>
+                </Card.Content>
+              </Card>
+
+              {angebotId && (
+                <Card>
+                  <Card.Header>
+                    <Card.Title>Verknuepftes Angebot</Card.Title>
+                  </Card.Header>
+                  <Card.Content>
+                    <Link href={'/dashboard-v2/angebote/' + angebotId} className="text-sm text-primary-600 hover:underline">
+                      Angebot ansehen
+                    </Link>
+                  </Card.Content>
+                </Card>
+              )}
+
+              <div className="flex flex-col gap-3">
+                <Button type="submit" variant="primary" disabled={saving} className="w-full">
+                  {saving ? 'Wird gespeichert...' : 'Auftrag erstellen'}
+                </Button>
+                <Button type="button" variant="ghost" onClick={function() { router.push('/dashboard-v2/auftraege'); }} className="w-full">
+                  Abbrechen
+                </Button>
+              </div>
+            </div>
+          </div>
+        </form>
       </Page.Content>
     </Page>
   );
