@@ -6,7 +6,7 @@ import {
   TrendingUp, Users, Truck, Wrench, FileText, AlertTriangle,
   Plus, Clock, CheckCircle, Bell, Activity, Calendar,
   CreditCard, FileCheck, User, ClipboardList, ChevronRight,
-  Euro, BarChart3, Package,
+  Euro, Package,
 } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import { getNotifications } from '@/lib/notificationEngine';
@@ -88,7 +88,10 @@ function zeitAgo(iso) {
 }
 
 function heuteStr() {
-  return new Date().toISOString().slice(0, 10);
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
 
 function startMonatStr() {
@@ -128,11 +131,12 @@ function AktivitaetsIcon({ name, color }) {
 // ─── Haupt-Komponente ─────────────────────────────────────────────────────
 export default function Dashboard() {
   var router = useRouter();
-  var [laden, setLaden]   = useState(true);
-  var [fehler, setFehler] = useState(null);
+  var [laden, setLaden]     = useState(true);
+  var [fehler, setFehler]   = useState(null);
   var [uhrzeit, setUhrzeit] = useState('');
   var [vorname, setVorname] = useState('');
-  var [daten, setDaten]   = useState(null);
+  var [daten, setDaten]     = useState(null);
+  var [retryKey, setRetryKey] = useState(0);
 
   // Live-Uhr
   useEffect(function() {
@@ -222,13 +226,11 @@ export default function Dashboard() {
             .select('id, zustand')
             .eq('company_id', companyId),
 
-          // 7 — Offene Rechnungen
+          // 7 — Offene Rechnungen (kein limit — vollstaendige Summe + korrekter Count)
           supabase.from('rechnungen')
-            .select('id, rechnungsnummer, gesamtbetrag, betrag, faelligkeitsdatum, kunden(name)')
+            .select('id, gesamtbetrag, betrag')
             .eq('company_id', companyId)
-            .in('status', ['offen', 'gesendet'])
-            .order('faelligkeitsdatum', { ascending: true })
-            .limit(5),
+            .in('status', ['offen', 'gesendet']),
 
           // 8 — Monatsumsatz (bezahlt)
           supabase.from('rechnungen')
@@ -237,13 +239,11 @@ export default function Dashboard() {
             .eq('status', 'bezahlt')
             .gte('bezahlt_am', monatsStart),
 
-          // 9 — Offene Angebote
+          // 9 — Offene Angebote (kein limit — vollstaendige Summe + korrekter Count)
           supabase.from('angebote')
-            .select('id, angebotsnummer, gesamtbetrag, gueltig_bis, kunden(name)')
+            .select('id, gesamtbetrag')
             .eq('company_id', companyId)
-            .in('status', ['offen', 'gesendet'])
-            .order('gueltig_bis', { ascending: true })
-            .limit(5),
+            .in('status', ['offen', 'gesendet']),
 
           // 10 — Benachrichtigungen
           getNotifications(supabase, companyId, { limit: 20 }),
@@ -278,7 +278,7 @@ export default function Dashboard() {
     }
     lade();
     return function() { aktiv = false; };
-  }, [router]);
+  }, [router, retryKey]);
 
   // ─── Fehler-Zustand ───────────────────────────────────────────────────
   if (fehler) {
@@ -288,7 +288,7 @@ export default function Dashboard() {
           <ErrorState
             title="Verbindungsfehler"
             message={fehler}
-            onRetry={function() { setFehler(null); setLaden(true); }}
+            onRetry={function() { setFehler(null); setLaden(true); setRetryKey(function(k) { return k + 1; }); }}
             retryLabel="Neu laden"
           />
         </Page.Content>
@@ -564,7 +564,7 @@ export default function Dashboard() {
                         return (
                           <li
                             key={a.id}
-                            className="cursor-pointer"
+                            className="cursor-pointer relative"
                             onClick={function() { router.push('/dashboard-v2/auftraege/' + a.id); }}
                           >
                             <div className="absolute -left-1.5 h-3 w-3 rounded-full border-2 border-white bg-primary-500" />
