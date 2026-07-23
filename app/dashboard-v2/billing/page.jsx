@@ -28,28 +28,28 @@ var STATUS_LABEL = {
 
 var FAQ_ITEMS = [
   {
-    frage: 'Kann ich jederzeit kündigen?',
-    antwort: 'Ja — du kannst monatlich kündigen, ohne Mindestlaufzeit.',
+    frage: 'Kann ich jederzeit kÃ¼ndigen?',
+    antwort: 'Ja â du kannst monatlich kÃ¼ndigen, ohne Mindestlaufzeit.',
   },
   {
     frage: 'Was passiert nach der Testphase?',
-    antwort: 'Du wählst einen Plan. Ohne Abo wird der Account auf Starter herabgestuft.',
+    antwort: 'Du wÃ¤hlst einen Plan. Ohne Abo wird der Account auf Starter herabgestuft.',
   },
   {
-    frage: 'Wie läuft die Zahlung ab?',
-    antwort: 'Sicher über Stripe — Kreditkarte, SEPA-Lastschrift oder PayPal.',
+    frage: 'Wie lÃ¤uft die Zahlung ab?',
+    antwort: 'Sicher Ã¼ber Stripe â Kreditkarte, SEPA-Lastschrift oder PayPal.',
   },
   {
     frage: 'Sind meine Daten DSGVO-konform?',
-    antwort: 'Ja — alle Daten liegen auf EU-Servern in Frankfurt.',
+    antwort: 'Ja â alle Daten liegen auf EU-Servern in Frankfurt.',
   },
   {
     frage: 'Was ist im Enterprise-Plan ethalten?',
-    antwort: 'Unbegrenzte Nutzer, API-Zugang, dedizierter Support und SLA. Schreib uns für ein individuelles Angebot.',
+    antwort: 'Unbegrenzte Nutzer, API-Zugang, dedizierter Support und SLA. Schreib uns fÃ¼r ein individuelles Angebot.',
   },
   {
     frage: 'Kann ich den Plan jederzeit wechseln?',
-    antwort: 'Ja — Upgrades werden sofort wirksam, Downgrades zum Ende des Abrechnungszeitraums.',
+    antwort: 'Ja â Upgrades werden sofort wirksam, Downgrades zum Ende des Abrechnungszeitraums.',
   },
 ];
 
@@ -139,7 +139,7 @@ export default function BillingPage() {
     <Page>
       <Page.Header>
         <Page.Title>Abonnement & Billing</Page.Title>
-        <Page.Description>Verwalte deinen Plan und sieh dir alle verfügbaren Optionen an.</Page.Description>
+        <Page.Description>Verwalte deinen Plan und sieh dir alle verfÃ¼gbaren Optionen an.</Page.Description>
       </Page.Header>
       <Page.Content>
 
@@ -157,13 +157,13 @@ export default function BillingPage() {
                 <p className="text-2xl font-bold text-gray-900">{aktiverPlan.name}</p>
                 <p className="text-sm text-gray-500 mt-1">{aktiverPlan.beschreibung}</p>
                 {sub.isTrialActive && (
-                  <p className={'text-sm mt-2 font-medium ' + (sub.daysLeft <= 7 ? 'text-orange-600' : 'text-blue-600')}>
+                  <p className={'text-sm mt-2 font-medium ' + (sub.daysLeft <= 7 ? 'text-orange-600' : 'text-primary-600')}>
                     {String(sub.daysLeft) + (sub.daysLeft === 1 ? ' Tag' : ' Tage') + ' Testphase verbleibend'}
                   </p>
                 )}
                 {sub.isExpired && (
                   <p className="text-sm mt-2 text-red-600 font-medium">
-                    Testphase abgelaufen — bitte wähle einen Plan
+                    Testphase abgelaufen â bitte wÃ¤hle einen Plan
                   </p>
                 )}
                 {sub.isPaid && (
@@ -179,17 +179,17 @@ export default function BillingPage() {
           </Card.Content>
         </Card>
 
-        {/* Plan-Übersicht */}
+        {/* Plan-Ãbersicht */}
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-4">
-            {sub.isPaid ? 'Plan wechseln' : 'Plan auswählen'}
+            {sub.isPaid ? 'Plan wechseln' : 'Plan auswÃ¤hlen'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {PLAN_ORDER.map(function(planId) {
               var plan = PLANS[planId];
               var istAktuell = planId === sub.plan;
               var istEnterprise = planId === 'enterprise';
-              var ringClass = istAktuell ? ' ring-2 ring-blue-500' : '';
+              var ringClass = istAktuell ? ' ring-2 ring-primary-500' : '';
               return (
                 <Card key={planId} className={ringClass}>
                   <Card.Header>
@@ -211,7 +211,7 @@ export default function BillingPage() {
                         <p className="text-xl font-bold text-gray-900">Kostenlos</p>
                       ) : (
                         <div>
-                          <span className="text-xl font-bold text-gray-900">{String(plan.preis) + ' €'}</span>
+                          <span className="text-xl font-bold text-gray-900">{String(plan.preis) + ' â¬'}</span>
                           <span className="text-gray-400 text-sm ml-1">/Monat</span>
                         </div>
                       )}
@@ -220,14 +220,14 @@ export default function BillingPage() {
                       {plan.featureListe.slice(0, 5).map(function(f) {
                         return (
                           <li key={f} className="flex items-start gap-2 text-xs text-gray-600">
-                            <span className="text-green-500 mt-0.5 shrink-0">✓</span>
+                            <span className="text-green-500 mt-0.5 shrink-0">â</span>
                             {f}
                           </li>
                         );
                       })}
                     </ul>
                     {istAktuell ? (
-                      <div className="w-full py-2 rounded-lg text-center text-xs font-semibold bg-blue-50 text-blue-700">
+                      <div className="w-full py-2 rounded-lg text-center text-xs font-semibold bg-primary-50 text-primary-700">
                         {sub.isTrialActive ? 'Kostenlose Testphase' : 'Aktiver Plan'}
                       </div>
                     ) : istEnterprise ? (
@@ -246,7 +246,7 @@ export default function BillingPage() {
                         className="w-full"
                         onClick={function() { router.push('/dashboard-v2/upgrade'); }}
                       >
-                        {plan.name + ' wählen'}
+                        {plan.name + ' wÃ¤hlen'}
                       </Button>
                     )}
                   </Card.Content>
@@ -259,7 +259,7 @@ export default function BillingPage() {
         {/* FAQ */}
         <Card>
           <Card.Header>
-            <Card.Title>Häufige Fragen</Card.Title>
+            <Card.Title>HÃ¤ufige Fragen</Card.Title>
           </Card.Header>
           <Card.Content>
             <div className="grid sm:grid-cols-2 gap-5">
@@ -276,7 +276,7 @@ export default function BillingPage() {
         </Card>
 
         <p className="text-center text-gray-400 text-xs">
-          Sichere Zahlung · Jederzeit kündbar · DSGVO-konform · Made in Germany
+          Sichere Zahlung Â· Jederzeit kÃ¼ndbar Â· DSGVO-konform Â· Made in Germany
         </p>
 
       </Page.Content>
