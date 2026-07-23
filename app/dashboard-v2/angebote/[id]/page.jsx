@@ -1,437 +1,342 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  FileText, Package, FolderOpen, History, MessageSquare,
+  ArrowLeft, Edit, Briefcase, AlertCircle,
+} from 'lucide-react';
 import supabase from '@/lib/supabase';
-import Page from '@/components/ui/v2/Page';
-import Card from '@/components/ui/v2/Card';
+import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
-import Dialog from '@/components/ui/v2/Dialog';
+import Card from '@/components/ui/v2/Card';
+import Table from '@/components/ui/v2/Table';
+import Page from '@/components/ui/v2/Page';
+import EmptyState from '@/components/ui/v2/EmptyState';
 
-var INPUT = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
-var LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide';
-
-var LEISTUNGEN = [
-  'Rohrreinigung','Kanalreinigung','Grundleitungsreinigung','Fallstrangreinigung',
-  'Fallleitungsreinigung','Sammelleitungsreinigung','Hausanschlussreinigung','Hauptkanalreinigung',
-  'Schmutzwasserleitungsreinigung','Regenwasserleitungsreinigung','Mischwasserkanalreinigung',
-  'Drainagereinigung','Dachentwässerungsreinigung','Hofablaufreinigung','Sinkkastenreinigung',
-  'Straßenablaufreinigung','Schachtreinigung','Pumpenschachtreinigung','Hebeanlagenreinigung',
-  'Pumpwerksreinigung','Fettabscheiderreinigung','Ölabscheiderreinigung','Benzinabscheiderreinigung',
-  'Schlammfangreinigung','Sandfangreinigung','Regenrückhaltebeckenreinigung',
-  'Regenüberlaufbeckenreinigung','Zisternenreinigung','Behälterreinigung','Tankreinigung',
-  'Rohrnetzspülung','Kanalnetzspülung','Hochdruckspülung','Kombinierte Saug- und Spülarbeiten',
-  'Absaugarbeiten','Schlammentsorgung','Sandabsaugung','Fettabsaugung','Ölabsaugung',
-  'Verstopfungsbeseitigung','Wurzelentfernung','Betonentfernung','Mörtelentfernung',
-  'Kalkentfernung','Ablagerungsentfernung','Fremdkörperentfernung','Wurzelfräsen',
-  'Kettenfräsen','Roboterschneiden','Roboterfräsarbeiten','Öffnen von Zuläufen',
-  'Öffnen von Anschlüssen','Beseitigung einragender Stutzen','Entfernung von Hindernissen',
-  'Sanierungsroboter-Einsatz','Roboterspachtelarbeiten','Roboterverpressarbeiten',
-  'TV-Inspektion','Kamerainspektion','Rohrkamerauntersuchung','Kanal-TV-Untersuchung',
-  'Hausanschlussinspektion','Schachtinspektion','Großprofilinspektion','Vorinspektion',
-  'Nachinspektion','Abnahmeinspektion','Gewährleistungsinspektion','Schadensaufnahme',
-  'Schadensdokumentation','Videodokumentation','Fotodokumentation','Zustandsbewertung',
-  'Kanalzustandserfassung','Bestandsaufnahme','Bestandsdokumentation','Kanalkatastererstellung',
-  'Digitale Dokumentation','GIS-Erfassung','Leitungsortung','Kanalortung','Schachtortung',
-  'Rohrverlaufsermittlung','Schadensortung','Leckageortung','Rohrbruchortung',
-  'Fremdwasserortung','Ortung verdeckter Schächte','GPS-Vermessung','Kanalvermessung',
-  'Schachtvermessung','Höhenvermessung','Lagevermessung','3D-Vermessung',
-  'Dichtheitsprüfung Luft','Dichtheitsprüfung Wasser','Kanaldichtheitsprüfung',
-  'Rohrdichtheitsprüfung','Schachtdichtheitsprüfung','Hausanschlussprüfung','Druckprüfung',
-  'Funktionsprüfung','Abnahmeprüfung','Gewährleistungsprüfung','Inspektionsprüfung',
-  'Rückstausicherungsprüfung','Hebeanlagenprüfung','Pumpenprüfung','Kanalwartung',
-  'Rohrleitungswartung','Entwässerungsanlagenwartung','Hebeanlagenwartung','Pumpenwartung',
-  'Pumpwerkswartung','Rückstausicherungswartung','Rückstauklappenwartung',
-  'Fettabscheiderwartung','Ölabscheiderwartung','Schachtwartung','Regelinspektion',
-  'Wartungsvertrag','Jahreswartung','Rohrreparatur','Kanalreparatur','Hausanschlussreparatur',
-  'Schadstellenreparatur','Punktuelle Sanierung','Rissabdichtung','Fugenabdichtung',
-  'Injektionsarbeiten','Verpressarbeiten','Leckstellenabdichtung','Kurzlinersanierung',
-  'Partlinersanierung','Hutprofilsanierung','Stutzensanierung','Anschlusssanierung',
-  'Manschettensanierung','Edelstahlmanschettensanierung','Innenmanschettenmontage',
-  'Roboter-Sanierung','Verpresssanierung','Schlauchlinersanierung','Inlinersanierung',
-  'UV-Liner-Sanierung','Warmwasserliner-Sanierung','Dampfliner-Sanierung',
-  'Hausanschlussliner-Sanierung','Relining','Rohr-in-Rohr-Verfahren','Wickelrohrverfahren',
-  'Close-Fit-Lining','Tight-Fit-Lining','Sprühliner','Beschichtung','Innenbeschichtung',
-  'Mineralauskleidung','Korrosionsschutzbeschichtung','Schachtabdichtung','Schachtbeschichtung',
-  'Schachtinstandsetzung','Schachtauskleidung','Schachtkopfsanierung','Schachtrahmensanierung',
-  'Schachtdeckelsanierung','Gerinnesanierung','Bermensanierung','Steigeisensanierung',
-  'Fugensanierung','Schachtregulierung','Kanalerneuerung','Rohrerneuerung',
-  'Hausanschlusserneuerung','Leitungsneubau','Kanalneubau','Schachtneubau',
-  'Austausch von Rohrleitungen','Austausch von Schächten','Berstlining','Pipe Bursting',
-  'Pipe Eating','Rohrvortrieb','Mikrotunneling','Horizontalspülbohrung','HDD-Bohrung',
-  'Vortriebsarbeiten','Rohrgrabenherstellung','Rohrgrabenverfüllung','Ausschachtungsarbeiten',
-  'Erdarbeiten','Baggerarbeiten','Freilegungsarbeiten','Aufbrucharbeiten','Asphaltaufbruch',
-  'Pflasteraufbruch','Betonaufbruch','Oberflächenwiederherstellung','Asphaltarbeiten',
-  'Pflasterarbeiten','Betonarbeiten','Einbau Rückstauklappe','Einbau Rückstausicherung',
-  'Einbau Hebeanlage','Einbau Pumpanlage','Einbau Kontrollschacht','Einbau Revisionsschacht',
-  'Einbau Hausanschluss','Rohrverlegung','Kanalverlegung','Schachtmontage',
-  'Fäkalschlammentsorgung','Fettentsorgung','Ölentsorgung','Sonderabfallentsorgung',
-  'Kanalrückstandsentsorgung','Industrielle Abwasserentsorgung','Behälterentleerung',
-  'Abscheiderentleerung','Kanalzustandsbewertung','Sanierungskonzept','Sanierungsplanung',
-  'Kanalnetzplanung','Entwässerungsplanung','Ausschreibungserstellung','Bauleitung',
-  'Bauüberwachung','Projektsteuerung','Wirtschaftlichkeitsberechnung','Werterhaltungskonzept',
-  'Anfahrtspauschale','Fahrzeugpauschale','Spülfahrzeugpauschale','Kamerafahrzeugpauschale',
-  'Geräteeinsatz','Baustelleneinrichtung','Verkehrssicherung','Absperrmaßnahmen',
-  'Dokumentationspauschale','Arbeitszeit Helfer','Arbeitszeit Facharbeiter',
-  'Arbeitszeit Kanaltechniker','Arbeitszeit Sanierungstechniker','Nachtzuschlag',
-  'Wochenendzuschlag','Feiertagszuschlag','Notdienstzuschlag','Havarieeinsatz',
-  'Soforteinsatz','Bereitschaftsdienst','24-Stunden-Notdienst','Notdienst Rohrreinigung',
-  'Notdienst Kanalreinigung','Rückstauschutz','Einbau Rückstauverschluss',
-  'Rückstauverschlusswartung','Hebeanlageneinbau','Hebeanlagenreparatur','Pumpenreparatur',
-  'Pumpenaustausch','Schachtabdeckung erneuern','Schachtdeckel austauschen',
-  'Geruchsverschlussreinigung','Rohrsanierung','Kanalsanierung','Hausanschlusssanierung',
-  'Grundstücksentwässerung','Entwässerungsberatung','Kanalmanagement','Kanalkatasterpflege',
-  'Digitale Schadensbewertung','CAD-Bestandspläne','3D-Kanalmodellierung',
-  'Asset-Management Kanalnetz','Regenwassermanagement','Versickerungsanlagenbau','Drainagebau',
-  'Drainagesanierung','Regenwasserschachtbau','Pumpenschachtbau','Sonderbauwerksreinigung',
-  'Kläranlagenservice','Industriekanalservice','Chemieanlagenreinigung','Tunnelentwässerung',
-  'Flughafenentwässerung','Bahnentwässerung','Hochwasserschutzanlagen-Service',
-  'Regenüberlaufbecken-Service','Regenrückhaltebecken-Service','Großprofilkanalreinigung',
-  'Großprofilkanalsanierung','Rohrstatikprüfung','Kanalstatikprüfung',
-  'Zustandsklassifizierung nach DWA','Sanierungsberatung','Versicherungsdokumentation',
-  'Gutachtenerstellung','Technische Bestandsanalyse','Vor-Ort-Beratung','Baustellenbesichtigung',
-  'Erstellung Fotobericht','Erstellung Videobericht','Erstellung Sanierungsangebot',
-  'Erstellung Maßnahmenplan','Sofortmaßnahmen bei Wasserschaden','Notabdichtung',
-  'Havariesanierung','Rohrbruchbeseitigung','Wasserschadenservice','Freispülen von Leitungen',
-  'Reinigung von Lüftungsleitungen in Entwässerungssystemen','Hausanschlussortung',
-  'Hausanschlussneubau','Revisionsöffnung herstellen','Revisionsöffnung erneuern',
-  'Rohröffnung herstellen','Kanalanschluss herstellen','Kanalanschluss sanieren',
-  'Anschlussleitung erneuern','Anschlussleitung reinigen','Anschlussleitung inspizieren',
-  'Anschlussleitung sanieren',
+var TABS = [
+  { key: 'uebersicht', label: 'Uebersicht', icon: FileText },
+  { key: 'positionen', label: 'Positionen', icon: Package },
+  { key: 'dokumente', label: 'Dokumente', icon: FolderOpen },
+  { key: 'historie', label: 'Historie', icon: History },
+  { key: 'notizen', label: 'Notizen', icon: MessageSquare },
 ];
 
-var STATUS_OPTS = [
-  { value: 'entwurf', label: 'Entwurf' },
-  { value: 'gesendet', label: 'Gesendet' },
-  { value: 'angenommen', label: 'Angenommen' },
-  { value: 'abgelehnt', label: 'Abgelehnt' },
-];
+var STATUS_VARIANT = {
+  entwurf: 'default',
+  versendet: 'primary',
+  angenommen: 'success',
+  abgelehnt: 'danger',
+};
+var STATUS_LABEL = {
+  entwurf: 'Entwurf',
+  versendet: 'Versendet',
+  angenommen: 'Angenommen',
+  abgelehnt: 'Abgelehnt',
+};
 
-export default function AngebotEditV2Page() {
+function formatDate(d) {
+  if (!d) return '--';
+  return new Date(d).toLocaleDateString('de-DE');
+}
+
+function formatEuro(n) {
+  if (!n && n !== 0) return '--';
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+}
+
+function calcBrutto(pos) {
+  return (pos || []).reduce(function(sum, p) {
+    return sum + (p.menge || 1) * (p.einzelpreis || p.preis || 0) * (1 + (p.mwst || 19) / 100);
+  }, 0);
+}
+
+function UebersichtTab({ angebot }) {
+  var pos = angebot.positionen || [];
+  var brutto = calcBrutto(pos);
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card>
+        <Card.Header>
+          <Card.Title>Angebotsdaten</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <dl className="space-y-3">
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-500">Angebotsnummer</dt>
+              <dd className="text-sm font-mono font-semibold text-gray-900">{angebot.angebotsnummer || '--'}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-500">Status</dt>
+              <dd>
+                <Badge variant={STATUS_VARIANT[angebot.status] || 'default'} size="sm">
+                  {STATUS_LABEL[angebot.status] || angebot.status || '--'}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-500">Angebotssumme</dt>
+              <dd className="text-sm font-semibold text-gray-900">{formatEuro(brutto)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-500">Erstellungsdatum</dt>
+              <dd className="text-sm text-gray-700">{formatDate(angebot.datum || angebot.created_at)}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-gray-500">Gueltigkeitsdatum</dt>
+              <dd className="text-sm text-gray-700">{formatDate(angebot.gueltig_bis)}</dd>
+            </div>
+            {angebot.bearbeiter && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-gray-500">Bearbeiter</dt>
+                <dd className="text-sm text-gray-700">{angebot.bearbeiter}</dd>
+              </div>
+            )}
+          </dl>
+        </Card.Content>
+      </Card>
+      <Card>
+        <Card.Header>
+          <Card.Title>Kunde</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          {angebot.kunden ? (
+            <dl className="space-y-3">
+              <div className="flex justify-between">
+                <dt className="text-sm text-gray-500">Name</dt>
+                <dd>
+                  <Link href={'/dashboard-v2/kunden/' + angebot.kunden_id} className="text-sm font-medium text-primary-600 hover:underline">
+                    {angebot.kunden.name || '--'}
+                  </Link>
+                </dd>
+              </div>
+              {angebot.kunden.ansprechpartner && (
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-500">Ansprechpartner</dt>
+                  <dd className="text-sm text-gray-700">{angebot.kunden.ansprechpartner}</dd>
+                </div>
+              )}
+              {angebot.kunden.email && (
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-500">E-Mail</dt>
+                  <dd className="text-sm text-gray-700">{angebot.kunden.email}</dd>
+                </div>
+              )}
+              {angebot.kunden.telefon && (
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-500">Telefon</dt>
+                  <dd className="text-sm text-gray-700">{angebot.kunden.telefon}</dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className="text-sm text-gray-400">Kein Kunde zugeordnet.</p>
+          )}
+        </Card.Content>
+      </Card>
+    </div>
+  );
+}
+
+function PositionenTab({ angebot }) {
+  var pos = angebot.positionen || [];
+  if (pos.length === 0) {
+    return <EmptyState icon={Package} title="Keine Positionen" description="Diesem Angebot wurden noch keine Positionen hinzugefuegt." />;
+  }
+  var netto = pos.reduce(function(s, p) { return s + (p.menge || 1) * (p.einzelpreis || p.preis || 0); }, 0);
+  var brutto = calcBrutto(pos);
+  return (
+    <div>
+      <Table>
+        <Table.Head>
+          <tr>
+            <Table.HeaderCell>Pos.</Table.HeaderCell>
+            <Table.HeaderCell>Beschreibung</Table.HeaderCell>
+            <Table.HeaderCell>Menge</Table.HeaderCell>
+            <Table.HeaderCell>Einzelpreis</Table.HeaderCell>
+            <Table.HeaderCell>MwSt.</Table.HeaderCell>
+            <Table.HeaderCell>Gesamt</Table.HeaderCell>
+          </tr>
+        </Table.Head>
+        <Table.Body>
+          {pos.map(function(p, i) {
+            var ep = p.einzelpreis || p.preis || 0;
+            var menge = p.menge || 1;
+            var mwst = p.mwst || 19;
+            var bruttop = menge * ep * (1 + mwst / 100);
+            return (
+              <Table.Row key={i}>
+                <Table.Cell><span className="text-sm text-gray-500">{i + 1}</span></Table.Cell>
+                <Table.Cell><span className="text-sm text-gray-900">{p.beschreibung || p.leistung || '--'}</span></Table.Cell>
+                <Table.Cell><span className="text-sm text-gray-700">{menge} {p.einheit || 'Stk.'}</span></Table.Cell>
+                <Table.Cell><span className="text-sm text-gray-700">{formatEuro(ep)}</span></Table.Cell>
+                <Table.Cell><span className="text-sm text-gray-500">{mwst} %</span></Table.Cell>
+                <Table.Cell><span className="text-sm font-medium text-gray-900">{formatEuro(bruttop)}</span></Table.Cell>
+              </Table.Row>
+            );
+          })}
+        </Table.Body>
+      </Table>
+      <div className="mt-4 flex justify-end">
+        <div className="bg-gray-50 rounded-xl p-4 min-w-64">
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-500">Nettobetrag</span>
+            <span className="text-gray-900">{formatEuro(netto)}</span>
+          </div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-gray-500">MwSt.</span>
+            <span className="text-gray-900">{formatEuro(brutto - netto)}</span>
+          </div>
+          <div className="flex justify-between font-semibold border-t pt-2">
+            <span className="text-gray-900">Gesamtbetrag</span>
+            <span className="text-primary-600">{formatEuro(brutto)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AngebotDetailPage() {
+  var params = useParams();
   var router = useRouter();
-  var { id } = useParams();
-  var dropRef = useRef(null);
-  var [kunden, setKunden] = useState([]);
-  var [companyId, setCompanyId] = useState(null);
-  var [form, setForm] = useState({
-    kunden_id: '',
-    datum: new Date().toISOString().split('T')[0],
-    gueltig_bis: '',
-    steuersatz: 19,
-    status: 'entwurf',
-    notizen: '',
-  });
-  var [positionen, setPositionen] = useState([
-    { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 },
-  ]);
-  var [laden, setLaden] = useState(true);
-  var [speichern, setSpeichern] = useState(false);
-  var [loeschen, setLoeschen] = useState(false);
-  var [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
-  var [fehler, setFehler] = useState('');
-  var [openDrop, setOpenDrop] = useState(null);
+  var angebotId = params.id;
 
-  useEffect(function() { ladeDaten(); }, [id]);
+  var [activeTab, setActiveTab] = useState('uebersicht');
+  var [loading, setLoading] = useState(true);
+  var [error, setError] = useState(null);
+  var [angebot, setAngebot] = useState(null);
 
   useEffect(function() {
-    function onDown(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
+    var alive = true;
+    async function load() {
+      try {
+        var { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        var { data: member } = await supabase
+          .from('company_members')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        if (!member || !alive) return;
+        var { data, error: err } = await supabase
+          .from('angebote')
+          .select('*, kunden(name, email, telefon, ansprechpartner)')
+          .eq('id', angebotId)
+          .eq('company_id', member.company_id)
+          .single();
+        if (!alive) return;
+        if (err) { setError(err.message); return; }
+        setAngebot(data);
+      } catch (e) {
+        if (alive) setError(e.message);
+      } finally {
+        if (alive) setLoading(false);
+      }
     }
-    document.addEventListener('mousedown', onDown);
-    return function() { document.removeEventListener('mousedown', onDown); };
-  }, []);
+    load();
+    return function() { alive = false; };
+  }, [angebotId]);
 
-  async function ladeDaten() {
-    try {
-      var r = await supabase.auth.getUser();
-      var user = r.data.user;
-      if (!user) { setLaden(false); return; }
-      var mr = await supabase.from('company_members').select('company_id').eq('user_id', user.id).eq('is_active', true).single();
-      if (!mr.data) { setLaden(false); return; }
-      var cid = mr.data.company_id;
-      setCompanyId(cid);
-      var results = await Promise.all([
-        supabase.from('kunden').select('id, name').eq('company_id', cid).order('name'),
-        supabase.from('angebote').select('*').eq('id', id).eq('company_id', cid).single(),
-      ]);
-      var kd = results[0].data;
-      var ang = results[1].data;
-      setKunden(kd ?? []);
-      if (!ang) { setFehler('Angebot nicht gefunden oder kein Zugriff.'); setLaden(false); return; }
-      setForm({
-        kunden_id: ang.kunden_id ?? '',
-        datum: ang.datum ?? new Date().toISOString().split('T')[0],
-        gueltig_bis: ang.gueltig_bis ?? '',
-        steuersatz: ang.steuersatz ?? 19,
-        status: ang.status ?? 'entwurf',
-        notizen: ang.notizen ?? '',
-      });
-      setPositionen(
-        (ang.positionen ?? []).length > 0
-          ? ang.positionen
-          : [{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]
-      );
-      setLaden(false);
-    } catch (err) {
-      setFehler('Fehler beim Laden: ' + (err.message ?? ''));
-      setLaden(false);
-    }
+  if (loading) {
+    return (
+      <Page>
+        <Page.Content>
+          <div className="space-y-4">
+            <div className="skeleton h-8 w-64 rounded-lg" />
+            <div className="skeleton h-48 w-full rounded-xl" />
+          </div>
+        </Page.Content>
+      </Page>
+    );
   }
 
-  function setField(key, val) {
-    setForm(function(f) { return Object.assign({}, f, { [key]: val }); });
+  if (error || !angebot) {
+    return (
+      <Page>
+        <Page.Content>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <AlertCircle className="w-12 h-12 text-danger-400 mb-4" />
+            <p className="text-gray-500">{error || 'Angebot nicht gefunden.'}</p>
+            <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/angebote'); }} className="mt-4">
+              Zur Angebotsliste
+            </Button>
+          </div>
+        </Page.Content>
+      </Page>
+    );
   }
-
-  function posChange(i, field, val) {
-    setPositionen(function(ps) {
-      return ps.map(function(p, j) {
-        if (j !== i) return p;
-        var n = Object.assign({}, p);
-        n[field] = (field === 'menge' || field === 'preis') ? (parseFloat(val) || 0) : val;
-        return n;
-      });
-    });
-  }
-
-  function addPos() {
-    setPositionen(function(ps) {
-      return ps.concat([{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]);
-    });
-  }
-
-  function removePos(i) {
-    if (positionen.length <= 1) return;
-    setPositionen(function(ps) { return ps.filter(function(_, j) { return j !== i; }); });
-  }
-
-  var netto = positionen.reduce(function(s, p) { return s + (p.menge || 0) * (p.preis || 0); }, 0);
-  var mwst = netto * Number(form.steuersatz) / 100;
-  var brutto = netto + mwst;
-  function fmt(v) { return v.toFixed(2).replace('.', ',') + ' €'; }
-
-  async function handleSpeichern(e) {
-    e.preventDefault();
-    if (!companyId) { setFehler('Nicht eingeloggt.'); return; }
-    setSpeichern(true);
-    setFehler('');
-    var upd = await supabase.from('angebote').update({
-      kunden_id: form.kunden_id || null,
-      datum: form.datum,
-      gueltig_bis: form.gueltig_bis || null,
-      steuersatz: Number(form.steuersatz),
-      status: form.status,
-      positionen: positionen,
-      notizen: form.notizen || null,
-    }).eq('id', id).eq('company_id', companyId);
-    setSpeichern(false);
-    if (upd.error) { setFehler('Fehler: ' + upd.error.message); return; }
-    router.push('/dashboard-v2/angebote');
-  }
-
-  async function handleLoeschen() {
-    setLoeschen(true);
-    await supabase.from('angebote').delete().eq('id', id).eq('company_id', companyId);
-    router.push('/dashboard-v2/angebote');
-  }
-
-  if (laden) return (
-    <Page>
-      <Page.Header><Page.Title>Angebot bearbeiten</Page.Title></Page.Header>
-      <Page.Content><p className="text-sm text-gray-400">Laedt...</p></Page.Content>
-    </Page>
-  );
-
-  if (!companyId && fehler) return (
-    <Page>
-      <Page.Header><Page.Title>Angebot bearbeiten</Page.Title></Page.Header>
-      <Page.Content>
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>
-      </Page.Content>
-    </Page>
-  );
 
   return (
     <Page>
       <Page.Header>
-        <div className="flex items-center justify-between">
-          <div>
-            <Page.Title>Angebot bearbeiten</Page.Title>
-            <Page.Description>Angebotsdaten und Positionen aktualisieren</Page.Description>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={function() { router.push('/dashboard-v2/angebote'); }} className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <Page.Title>{angebot.angebotsnummer || 'Angebot'}</Page.Title>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant={STATUS_VARIANT[angebot.status] || 'default'} size="sm">
+                  {STATUS_LABEL[angebot.status] || angebot.status || '--'}
+                </Badge>
+                {angebot.kunden && (
+                  <Link href={'/dashboard-v2/kunden/' + angebot.kunden_id} className="text-sm text-gray-500 hover:text-primary-600">
+                    {angebot.kunden.name}
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
-          <Button variant="danger" size="sm" onClick={function() { setLoeschenBestaetigen(true); }}>
-            Angebot loeschen
-          </Button>
+          <div className="flex gap-2">
+            <Link href={'/dashboard-v2/angebote/' + angebotId + '/bearbeiten'}>
+              <Button variant="secondary" size="sm">
+                <Edit className="w-4 h-4 mr-1 inline" />Bearbeiten
+              </Button>
+            </Link>
+            {angebot.status === 'angenommen' && (
+              <Link href={'/dashboard-v2/auftraege/erstellen?angebot_id=' + angebotId}>
+                <Button variant="primary" size="sm">
+                  <Briefcase className="w-4 h-4 mr-1 inline" />Auftrag erstellen
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </Page.Header>
       <Page.Content>
-        <form onSubmit={handleSpeichern} className="space-y-4 max-w-3xl">
-          {fehler && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">{fehler}</div>
-          )}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex gap-0">
+            {TABS.map(function(tab) {
+              var Icon = tab.icon;
+              var active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={function() { setActiveTab(tab.key); }}
+                  className={'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ' + (active ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700')}
+                >
+                  <Icon className="w-4 h-4" />{tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-          <Card>
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 rounded-t-xl">
-              <h2 className="text-sm font-semibold text-gray-700">Angebotsdaten</h2>
-            </div>
-            <Card.Content>
-              <div className="space-y-4">
-                <div>
-                  <label className={LABEL}>Kunde</label>
-                  <select value={form.kunden_id} onChange={function(e) { setField('kunden_id', e.target.value); }} className={INPUT}>
-                    <option value="">-- Kein Kunde --</option>
-                    {kunden.map(function(k) { return <option key={k.id} value={k.id}>{k.name}</option>; })}
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={LABEL}>Angebotsdatum</label>
-                    <input type="date" value={form.datum} onChange={function(e) { setField('datum', e.target.value); }} className={INPUT} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Gueltig bis</label>
-                    <input type="date" value={form.gueltig_bis} onChange={function(e) { setField('gueltig_bis', e.target.value); }} className={INPUT} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={LABEL}>Steuersatz</label>
-                    <select value={String(form.steuersatz)} onChange={function(e) { setField('steuersatz', e.target.value); }} className={INPUT}>
-                      <option value="19">19 % - Regelsteuersatz</option>
-                      <option value="7">7 % - ermaessigter Steuersatz</option>
-                      <option value="0">0 % - steuerfrei / Kleinunternehmer</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={LABEL}>Status</label>
-                    <select value={form.status} onChange={function(e) { setField('status', e.target.value); }} className={INPUT}>
-                      {STATUS_OPTS.map(function(o) { return <option key={o.value} value={o.value}>{o.label}</option>; })}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          <Card>
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 rounded-t-xl">
-              <h2 className="text-sm font-semibold text-gray-700">Positionen</h2>
-            </div>
-            <Card.Content className="pb-0">
-              <div ref={dropRef} className="overflow-x-auto space-y-2">
-                <div className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 px-1 mb-1 min-w-[640px]">
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Beschreibung</span>
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Menge</span>
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Einheit</span>
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Preis</span>
-                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wide text-right">Gesamt</span>
-                  <span></span>
-                </div>
-                {positionen.map(function(p, i) {
-                  var filtered = LEISTUNGEN.filter(function(l) {
-                    return l.toLowerCase().includes((p.beschreibung || '').toLowerCase());
-                  });
-                  var showDrop = openDrop === i && filtered.length > 0;
-                  return (
-                    <div key={i} className="grid grid-cols-[1fr_80px_100px_100px_90px_32px] gap-2 items-center min-w-[640px]">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={p.beschreibung}
-                          onChange={function(e) { posChange(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
-                          onFocus={function() { setOpenDrop(i); }}
-                          placeholder="Leistung eingeben..."
-                          autoComplete="off"
-                          className={INPUT}
-                        />
-                        {showDrop && (
-                          <ul className="absolute z-50 bottom-full mb-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto text-sm">
-                            {filtered.map(function(l) {
-                              return (
-                                <li
-                                  key={l}
-                                  onMouseDown={function(e) { e.preventDefault(); posChange(i, 'beschreibung', l); setOpenDrop(null); }}
-                                  className="px-3 py-2 cursor-pointer hover:bg-blue-50 hover:text-blue-700 truncate border-b border-gray-50 last:border-0"
-                                >{l}</li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                      <input type="number" min="0" step="0.5" value={p.menge} onChange={function(e) { posChange(i, 'menge', e.target.value); }} className={INPUT} />
-                      <select value={p.einheit} onChange={function(e) { posChange(i, 'einheit', e.target.value); }} className={INPUT}>
-                        <option>Pauschal</option>
-                        <option>Stück</option>
-                        <option>Std.</option>
-                        <option>m</option>
-                        <option>m²</option>
-                        <option>m³</option>
-                        <option>kg</option>
-                        <option>t</option>
-                      </select>
-                      <input type="number" min="0" step="0.01" value={p.preis} onChange={function(e) { posChange(i, 'preis', e.target.value); }} placeholder="0,00" className={INPUT} />
-                      <span className="text-right text-sm font-medium text-gray-700 tabular-nums pr-1">{fmt(p.menge * p.preis)}</span>
-                      <button type="button" onClick={function() { removePos(i); }} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition">&times;</button>
-                    </div>
-                  );
-                })}
-                <button type="button" onClick={addPos} className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">+ Position hinzufuegen</button>
-              </div>
-            </Card.Content>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex justify-end">
-              <div className="min-w-[220px] space-y-1.5 text-sm">
-                <div className="flex justify-between text-gray-500">
-                  <span>Netto</span>
-                  <span className="tabular-nums">{fmt(netto)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>{'MwSt. ' + form.steuersatz + ' %'}</span>
-                  <span className="tabular-nums">{fmt(mwst)}</span>
-                </div>
-                <div className="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-1.5">
-                  <span>Gesamtbetrag</span>
-                  <span className="text-blue-600 tabular-nums">{fmt(brutto)}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 rounded-t-xl">
-              <h2 className="text-sm font-semibold text-gray-700">Notizen / Hinweise</h2>
-            </div>
-            <Card.Content>
-              <textarea
-                value={form.notizen}
-                onChange={function(e) { setField('notizen', e.target.value); }}
-                rows={3}
-                placeholder="z. B. Dieses Angebot ist 30 Tage gueltig."
-                className={INPUT + ' resize-none'}
-              />
-            </Card.Content>
-          </Card>
-
-          <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" variant="primary" disabled={speichern}>
-              {speichern ? 'Wird gespeichert...' : 'Aenderungen speichern'}
-            </Button>
-            <Button type="button" variant="secondary" onClick={function() { router.push('/dashboard-v2/angebote'); }}>
-              Abbrechen
-            </Button>
-          </div>
-        </form>
+        {activeTab === 'uebersicht' && <UebersichtTab angebot={angebot} />}
+        {activeTab === 'positionen' && <PositionenTab angebot={angebot} />}
+        {activeTab === 'dokumente' && (
+          <EmptyState icon={FolderOpen} title="Keine Dokumente" description="Noch keine Dokumente vorhanden." />
+        )}
+        {activeTab === 'historie' && (
+          <EmptyState icon={History} title="Keine Historie" description="Noch keine Aktivitaeten aufgezeichnet." />
+        )}
+        {activeTab === 'notizen' && (
+          <EmptyState icon={MessageSquare} title="Keine Notizen" description="Noch keine Notizen vorhanden." />
+        )}
       </Page.Content>
-
-      <Dialog open={loeschenBestaetigen} onClose={function() { setLoeschenBestaetigen(false); }}>
-        <Dialog.Header>
-          <Dialog.Title>Angebot loeschen?</Dialog.Title>
-          <Dialog.Description>Diese Aktion kann nicht rueckgaengig gemacht werden.</Dialog.Description>
-        </Dialog.Header>
-        <Dialog.Footer>
-          <Button variant="secondary" onClick={function() { setLoeschenBestaetigen(false); }}>Abbrechen</Button>
-          <Button variant="danger" disabled={loeschen} onClick={handleLoeschen}>
-            {loeschen ? 'Wird geloescht...' : 'Ja, loeschen'}
-          </Button>
-        </Dialog.Footer>
-      </Dialog>
     </Page>
   );
 }
