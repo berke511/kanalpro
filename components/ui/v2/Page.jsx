@@ -1,53 +1,56 @@
 'use client';
 
-function Page({ children, className, ...props }) {
-  const cn = 'min-h-screen p-4 sm:p-6' + (className ? ' ' + className : '');
+// ─── Page wrapper ─────────────────────────────────────────────────────────────
+function Page({ children, className = '', ...props }) {
   return (
-    <div className={cn} {...props}>
+    <div className={'min-h-screen ' + className} {...props}>
       {children}
     </div>
   );
 }
 
-function PageHeader({ children, className, ...props }) {
-  const cn = 'mb-6' + (className ? ' ' + className : '');
+// ─── Page.Header ─────────────────────────────────────────────────────────────
+function PageHeader({ children, className = '', ...props }) {
   return (
-    <div className={cn} {...props}>
+    <div className={'mb-6 ' + className} {...props}>
       {children}
     </div>
   );
 }
 
-function PageTitle({ children, className, ...props }) {
-  const cn = 'text-2xl font-semibold tracking-tight' + (className ? ' ' + className : '');
+// ─── Page.Title ──────────────────────────────────────────────────────────────
+function PageTitle({ children, className = '', ...props }) {
   return (
-    <h1 className={cn} {...props}>
+    <h1
+      className={'text-2xl font-semibold tracking-tight text-gray-900 ' + className}
+      {...props}
+    >
       {children}
     </h1>
   );
 }
 
-function PageDescription({ children, className, ...props }) {
-  const cn = 'mt-1 text-sm text-gray-500' + (className ? ' ' + className : '');
+// ─── Page.Description ────────────────────────────────────────────────────────
+function PageDescription({ children, className = '', ...props }) {
   return (
-    <p className={cn} {...props}>
+    <p className={'mt-1 text-sm text-gray-500 leading-relaxed ' + className} {...props}>
       {children}
     </p>
   );
 }
 
-function PageContent({ children, className, ...props }) {
-  const cn = 'space-y-4' + (className ? ' ' + className : '');
+// ─── Page.Content ────────────────────────────────────────────────────────────
+function PageContent({ children, className = '', ...props }) {
   return (
-    <div className={cn} {...props}>
+    <div className={'space-y-5 ' + className} {...props}>
       {children}
     </div>
   );
 }
 
-Page.Header = PageHeader;
-Page.Title = PageTitle;
+Page.Header      = PageHeader;
+Page.Title       = PageTitle;
 Page.Description = PageDescription;
-Page.Content = PageContent;
+Page.Content     = PageContent;
 
 export default Page;
