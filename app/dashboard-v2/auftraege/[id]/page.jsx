@@ -1,373 +1,382 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import {
+  FileText, Calendar, Users, Truck, Wrench, Package,
+  FolderOpen, History, MessageSquare, ArrowLeft, Edit,
+  MapPin, AlertCircle,
+} from 'lucide-react';
 import supabase from '@/lib/supabase';
-import Page from '@/components/ui/v2/Page';
-import Card from '@/components/ui/v2/Card';
+import Badge from '@/components/ui/v2/Badge';
 import Button from '@/components/ui/v2/Button';
-import Dialog from '@/components/ui/v2/Dialog';
+import Card from '@/components/ui/v2/Card';
+import Page from '@/components/ui/v2/Page';
+import EmptyState from '@/components/ui/v2/EmptyState';
 
-var INPUT = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
-var LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide';
-
-var AUFTRAGSARTEN = [
-  'Rohrreinigung',
-  'TV-Inspektion',
-  'Dichtheitsprüfung',
-  'Notdienst',
-  'Wartung',
-  'Sanierung',
-  'Sonstiges',
+var TABS = [
+  { key: 'uebersicht', label: 'Uebersicht', icon: FileText },
+  { key: 'einsatzplanung', label: 'Einsatzplanung', icon: Calendar },
+  { key: 'mitarbeiter', label: 'Mitarbeiter', icon: Users },
+  { key: 'fahrzeuge', label: 'Fahrzeuge', icon: Truck },
+  { key: 'maschinen', label: 'Maschinen', icon: Wrench },
+  { key: 'leistungen', label: 'Leistungen', icon: Package },
+  { key: 'dokumente', label: 'Dokumente', icon: FolderOpen },
+  { key: 'historie', label: 'Historie', icon: History },
+  { key: 'notizen', label: 'Notizen', icon: MessageSquare },
 ];
 
-var STATUS_OPTS = [
-  { value: 'offen', label: 'Offen' },
-  { value: 'in_bearbeitung', label: 'In Bearbeitung' },
-  { value: 'abgeschlossen', label: 'Abgeschlossen' },
-  { value: 'storniert', label: 'Storniert' },
-];
+var STATUS_VARIANT = {
+  offen: 'primary',
+  in_bearbeitung: 'warning',
+  abgeschlossen: 'success',
+  storniert: 'default',
+};
+var STATUS_LABEL = {
+  offen: 'Offen',
+  in_bearbeitung: 'In Bearbeitung',
+  abgeschlossen: 'Abgeschlossen',
+  storniert: 'Storniert',
+};
+var PRIO_VARIANT = {
+  niedrig: 'default',
+  mittel: 'info',
+  hoch: 'warning',
+  kritisch: 'danger',
+};
+var PRIO_LABEL = {
+  niedrig: 'Niedrig',
+  mittel: 'Mittel',
+  hoch: 'Hoch',
+  kritisch: 'Kritisch',
+};
 
-function kundeAnzeigeName(k) {
-  if (!k) return '';
-  if (k.kundentyp === 'firma') return k.firmenname || k.firma || k.name || '';
-  return k.name || '';
+function formatDate(d) {
+  if (!d) return '--';
+  return new Date(d).toLocaleDateString('de-DE');
 }
 
-export default function AuftragEditV2Page() {
-  var router = useRouter();
+function formatDateTime(d) {
+  if (!d) return '--';
+  return new Date(d).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function DlRow({ label, children }) {
+  return (
+    <div className="flex justify-between py-2 border-b border-gray-50 last:border-0">
+      <dt className="text-sm text-gray-500 shrink-0 mr-4">{label}</dt>
+      <dd className="text-sm text-right text-gray-900">{children}</dd>
+    </div>
+  );
+}
+
+function UebersichtTab({ auftrag, mitarbeiter, fahrzeuge, maschinen }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card>
+        <Card.Header>
+          <Card.Title>Auftragsdaten</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <dl>
+            <DlRow label="Auftragsnummer">
+              <span className="font-mono font-semibold">{auftrag.auftragsnummer || '--'}</span>
+            </DlRow>
+            <DlRow label="Status">
+              <Badge variant={STATUS_VARIANT[auftrag.status] || 'default'} size="sm">
+                {STATUS_LABEL[auftrag.status] || auftrag.status || '--'}
+              </Badge>
+            </DlRow>
+            <DlRow label="Prioritaet">
+              <Badge variant={PRIO_VARIANT[auftrag.prioritaet] || 'default'} size="sm">
+                {PRIO_LABEL[auftrag.prioritaet] || auftrag.prioritaet || '--'}
+              </Badge>
+            </DlRow>
+            <DlRow label="Termin">{formatDateTime(auftrag.termin)}</DlRow>
+            <DlRow label="Verantwortlicher">{auftrag.verantwortlicher || '--'}</DlRow>
+            {auftrag.beschreibung && (
+              <div className="pt-2 mt-1">
+                <p className="text-xs text-gray-500 mb-1">Beschreibung</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{auftrag.beschreibung}</p>
+              </div>
+            )}
+          </dl>
+        </Card.Content>
+      </Card>
+
+      <div className="flex flex-col gap-6">
+        <Card>
+          <Card.Header>
+            <Card.Title>Kunde</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            {auftrag.kunden ? (
+              <dl>
+                <DlRow label="Name">
+                  <Link href={'/dashboard-v2/kunden/' + auftrag.kunden_id} className="text-primary-600 hover:underline font-medium">
+                    {auftrag.kunden.name || '--'}
+                  </Link>
+                </DlRow>
+                {auftrag.ansprechpartner && <DlRow label="Ansprechpartner">{auftrag.ansprechpartner}</DlRow>}
+                {auftrag.kunden.email && <DlRow label="E-Mail">{auftrag.kunden.email}</DlRow>}
+                {auftrag.kunden.telefon && <DlRow label="Telefon">{auftrag.kunden.telefon}</DlRow>}
+              </dl>
+            ) : (
+              <p className="text-sm text-gray-400">Kein Kunde zugeordnet.</p>
+            )}
+          </Card.Content>
+        </Card>
+
+        {auftrag.objekt && (
+          <Card>
+            <Card.Header>
+              <Card.Title>Einsatzort</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <p className="text-sm text-gray-700">{auftrag.objekt}</p>
+              </div>
+            </Card.Content>
+          </Card>
+        )}
+      </div>
+
+      <Card className="md:col-span-2">
+        <Card.Header>
+          <Card.Title>Ressourcen</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Mitarbeiter</p>
+              {mitarbeiter && mitarbeiter.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {mitarbeiter.map(function(m) {
+                    return (
+                      <Badge key={m.id} variant="default" size="sm">
+                        {(m.mitarbeiter && m.mitarbeiter.name) || m.mitarbeiter_id}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Keine Mitarbeiter zugewiesen</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Fahrzeuge</p>
+              {fahrzeuge && fahrzeuge.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {fahrzeuge.map(function(f) {
+                    var label = (f.fahrzeuge && (f.fahrzeuge.kennzeichen || f.fahrzeuge.marke)) || f.fahrzeug_id;
+                    return <Badge key={f.id} variant="default" size="sm">{label}</Badge>;
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Keine Fahrzeuge zugewiesen</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Maschinen</p>
+              {maschinen && maschinen.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {maschinen.map(function(m) {
+                    var label = (m.maschinen && m.maschinen.bezeichnung) || m.maschinen_id;
+                    return <Badge key={m.id} variant="default" size="sm">{label}</Badge>;
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Keine Maschinen zugewiesen</p>
+              )}
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
+    </div>
+  );
+}
+
+function EmptyTab({ icon, title, description }) {
+  return <EmptyState icon={icon} title={title} description={description} />;
+}
+
+export default function AuftragDetailPage() {
   var params = useParams();
-  var id = params.id;
+  var router = useRouter();
+  var auftragId = params.id;
 
-  var [companyId, setCompanyId] = useState(null);
-  var [laden, setLaden] = useState(true);
-  var [nichtGefunden, setNichtGefunden] = useState(false);
-  var [speichern, setSpeichern] = useState(false);
-  var [loeschen, setLoeschen] = useState(false);
-  var [showDialog, setShowDialog] = useState(false);
-  var [apiErr, setApiErr] = useState('');
-  var [erfolg, setErfolg] = useState('');
-  var [kundeName, setKundeName] = useState('');
-
-  var [form, setForm] = useState({
-    auftragsart: '',
-    beschreibung: '',
-    datum: '',
-    uhrzeit: '',
-    adresse: '',
-    status: 'offen',
-    intNotiz: '',
-    notdienst: false,
-  });
+  var [activeTab, setActiveTab] = useState('uebersicht');
+  var [loading, setLoading] = useState(true);
+  var [error, setError] = useState(null);
+  var [auftrag, setAuftrag] = useState(null);
+  var [mitarbeiter, setMitarbeiter] = useState([]);
+  var [fahrzeuge, setFahrzeuge] = useState([]);
+  var [maschinen, setMaschinen] = useState([]);
 
   useEffect(function() {
-    async function ladeDaten() {
+    var alive = true;
+    async function load() {
       try {
-        var session = await supabase.auth.getUser();
-        var user = session.data.user;
-        if (!user) { router.push('/login'); return; }
-
-        var memberRes = await supabase
+        var { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        var { data: member } = await supabase
           .from('company_members')
           .select('company_id')
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .maybeSingle();
-        if (!memberRes.data) { setLaden(false); return; }
-        var cid = memberRes.data.company_id;
-        setCompanyId(cid);
+          .single();
+        if (!member || !alive) return;
+        var cid = member.company_id;
 
-        var auftragRes = await supabase
+        var { data: a, error: err } = await supabase
           .from('auftraege')
-          .select('*')
-          .eq('id', id)
+          .select('*, kunden(name, email, telefon)')
+          .eq('id', auftragId)
           .eq('company_id', cid)
-          .maybeSingle();
+          .single();
+        if (!alive) return;
+        if (err) { setError(err.message); return; }
+        setAuftrag(a);
 
-        if (!auftragRes.data) {
-          setNichtGefunden(true);
-          setLaden(false);
-          return;
-        }
-
-        var a = auftragRes.data;
-
-        var notizenObj = {};
-        if (a.notizen) {
-          try { notizenObj = JSON.parse(a.notizen); } catch (e) {}
-        }
-
-        setForm({
-          auftragsart: a.titel ?? '',
-          beschreibung: a.beschreibung ?? '',
-          datum: a.datum ? a.datum.split('T')[0] : '',
-          uhrzeit: a.uhrzeit ?? notizenObj.uhrzeit ?? '',
-          adresse: a.adresse ?? a.einsatzort ?? '',
-          status: a.status ?? 'offen',
-          intNotiz: a.interne_notiz ?? notizenObj.interne_notiz ?? '',
-          notdienst: a.notdienst ?? notizenObj.notdienst ?? false,
-        });
-
-        var kundenId = a.kunden_id ?? a.kunde_id ?? null;
-        if (kundenId) {
-          var kundeRes = await supabase
-            .from('kunden')
-            .select('id, name, firmenname, firma, kundentyp')
-            .eq('id', kundenId)
-            .maybeSingle();
-          if (kundeRes.data) {
-            setKundeName(kundeAnzeigeName(kundeRes.data));
-          }
-        }
-
-        setLaden(false);
+        var [mRes, fRes, maRes] = await Promise.all([
+          supabase.from('auftrag_mitarbeiter').select('id, mitarbeiter_id, mitarbeiter(name)').eq('auftrag_id', auftragId),
+          supabase.from('auftrag_fahrzeuge').select('id, fahrzeug_id, fahrzeuge(kennzeichen, marke)').eq('auftrag_id', auftragId),
+          supabase.from('auftrag_maschinen').select('id, maschinen_id, maschinen(bezeichnung)').eq('auftrag_id', auftragId),
+        ]);
+        if (!alive) return;
+        setMitarbeiter(mRes.data || []);
+        setFahrzeuge(fRes.data || []);
+        setMaschinen(maRes.data || []);
       } catch (e) {
-        setLaden(false);
+        if (alive) setError(e.message);
+      } finally {
+        if (alive) setLoading(false);
       }
     }
-    ladeDaten();
-  }, [id, router]);
+    load();
+    return function() { alive = false; };
+  }, [auftragId]);
 
-  function setField(key, val) {
-    setForm(function(f) { return Object.assign({}, f, { [key]: val }); });
-    setApiErr('');
-  }
-
-  async function handleSpeichern() {
-    if (!form.auftragsart) { setApiErr('Auftragsart ist erforderlich.'); return; }
-    if (!form.beschreibung.trim()) { setApiErr('Beschreibung ist erforderlich.'); return; }
-    setSpeichern(true);
-    setApiErr('');
-    try {
-      var payload = {
-        titel: form.auftragsart,
-        beschreibung: form.beschreibung.trim(),
-        datum: form.datum || null,
-        adresse: form.adresse.trim() || null,
-        status: form.status,
-        interne_notiz: form.intNotiz.trim() || null,
-      };
-      var res = await supabase
-        .from('auftraege')
-        .update(payload)
-        .eq('id', id)
-        .eq('company_id', companyId);
-      if (res.error) throw res.error;
-      router.push('/dashboard-v2/auftraege');
-    } catch (err) {
-      setApiErr(err.message ?? 'Fehler beim Speichern.');
-      setSpeichern(false);
-    }
-  }
-
-  async function handleLoeschen() {
-    setLoeschen(true);
-    try {
-      var res = await supabase
-        .from('auftraege')
-        .delete()
-        .eq('id', id)
-        .eq('company_id', companyId);
-      if (res.error) throw res.error;
-      router.push('/dashboard-v2/auftraege');
-    } catch (err) {
-      setApiErr(err.message ?? 'Fehler beim Loeschen.');
-      setLoeschen(false);
-      setShowDialog(false);
-    }
-  }
-
-  if (laden) {
+  if (loading) {
     return (
       <Page>
-        <Page.Header><Page.Title>Auftrag bearbeiten</Page.Title></Page.Header>
         <Page.Content>
-          <div className="text-sm text-gray-400 py-8 text-center">Laedt...</div>
+          <div className="space-y-4">
+            <div className="skeleton h-8 w-64 rounded-lg" />
+            <div className="skeleton h-48 w-full rounded-xl" />
+          </div>
         </Page.Content>
       </Page>
     );
   }
 
-  if (nichtGefunden) {
+  if (error || !auftrag) {
     return (
       <Page>
-        <Page.Header><Page.Title>Auftrag nicht gefunden</Page.Title></Page.Header>
         <Page.Content>
-          <Card>
-            <Card.Content>
-              <div className="py-8 text-center">
-                <div className="text-sm text-gray-500 mb-4">Dieser Auftrag existiert nicht oder gehoert nicht zu Ihrem Unternehmen.</div>
-                <Button variant="secondary" onClick={function() { router.push('/dashboard-v2/auftraege'); }}>
-                  Zurueck zur Uebersicht
-                </Button>
-              </div>
-            </Card.Content>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <AlertCircle className="w-12 h-12 text-danger-400 mb-4" />
+            <p className="text-gray-500">{error || 'Auftrag nicht gefunden.'}</p>
+            <Button variant="ghost" size="sm" onClick={function() { router.push('/dashboard-v2/auftraege'); }} className="mt-4">
+              Zur Auftragsliste
+            </Button>
+          </div>
         </Page.Content>
       </Page>
     );
   }
+
+  var isActive = auftrag.status !== 'abgeschlossen' && auftrag.status !== 'storniert';
 
   return (
     <Page>
       <Page.Header>
-        <Page.Title>Auftrag bearbeiten</Page.Title>
-        <Page.Description>Auftragsdaten aktualisieren oder Auftrag loeschen</Page.Description>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={function() { router.push('/dashboard-v2/auftraege'); }} className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <Page.Title>{auftrag.auftragsnummer || 'Auftrag'}</Page.Title>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <Badge variant={STATUS_VARIANT[auftrag.status] || 'default'} size="sm">
+                  {STATUS_LABEL[auftrag.status] || auftrag.status || '--'}
+                </Badge>
+                <Badge variant={PRIO_VARIANT[auftrag.prioritaet] || 'default'} size="sm">
+                  {PRIO_LABEL[auftrag.prioritaet] || auftrag.prioritaet || '--'}
+                </Badge>
+                {auftrag.kunden && (
+                  <Link href={'/dashboard-v2/kunden/' + auftrag.kunden_id} className="text-sm text-gray-500 hover:text-primary-600">
+                    {auftrag.kunden.name}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Link href={'/dashboard-v2/auftraege/' + auftragId + '/bearbeiten'}>
+              <Button variant="secondary" size="sm">
+                <Edit className="w-4 h-4 mr-1 inline" />Bearbeiten
+              </Button>
+            </Link>
+            {isActive && (
+              <Link href={'/dashboard-v2/disposition?auftrag_id=' + auftragId}>
+                <Button variant="primary" size="sm">
+                  <MapPin className="w-4 h-4 mr-1 inline" />In Disposition
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
       </Page.Header>
       <Page.Content>
-        <div className="space-y-5 max-w-2xl">
-
-          {apiErr && (
-            <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-sm text-red-700">
-              {apiErr}
-            </div>
-          )}
-
-          {/* Kunde (read-only) */}
-          {kundeName && (
-            <Card>
-              <Card.Content>
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Kunde</div>
-                <div className="text-sm font-medium text-gray-900 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                  {kundeName}
-                </div>
-                <div className="mt-1 text-xs text-gray-400">Kunde kann nach Erstellung nicht geaendert werden.</div>
-              </Card.Content>
-            </Card>
-          )}
-
-          {/* Auftragsart + Status */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Auftragsinformationen</div>
-              <div className="space-y-4">
-                <div>
-                  <label className={LABEL}>Auftragsart *</label>
-                  <select
-                    value={form.auftragsart}
-                    onChange={function(e) { setField('auftragsart', e.target.value); }}
-                    className={INPUT}
-                  >
-                    <option value="">-- Bitte auswaehlen --</option>
-                    {AUFTRAGSARTEN.map(function(a) {
-                      return <option key={a} value={a}>{a}</option>;
-                    })}
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL}>Status</label>
-                  <select
-                    value={form.status}
-                    onChange={function(e) { setField('status', e.target.value); }}
-                    className={INPUT}
-                  >
-                    {STATUS_OPTS.map(function(s) {
-                      return <option key={s.value} value={s.value}>{s.label}</option>;
-                    })}
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={LABEL}>Termin</label>
-                    <input
-                      type="date"
-                      value={form.datum}
-                      onChange={function(e) { setField('datum', e.target.value); }}
-                      className={INPUT}
-                    />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Einsatzadresse</label>
-                    <input
-                      type="text"
-                      value={form.adresse}
-                      onChange={function(e) { setField('adresse', e.target.value); }}
-                      placeholder="Adresse"
-                      className={INPUT}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <div
-                      className={'w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition ' + (form.notdienst ? 'bg-red-500 border-red-500' : 'border-gray-300 bg-white')}
-                      onClick={function() { setField('notdienst', !form.notdienst); }}
-                    >
-                      {form.notdienst && <span className="text-white text-xs font-bold">&#10003;</span>}
-                    </div>
-                    <div>
-                      <div className={'text-sm font-medium ' + (form.notdienst ? 'text-red-700' : 'text-gray-700')}>Notdienst</div>
-                    </div>
-                    {form.notdienst && (
-                      <span className="ml-auto text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">AKTIV</span>
-                    )}
-                  </label>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Beschreibung */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Beschreibung *</div>
-              <textarea
-                rows={5}
-                value={form.beschreibung}
-                onChange={function(e) { setField('beschreibung', e.target.value); }}
-                placeholder="Beschreibung des Problems oder Auftrags..."
-                className={INPUT + ' resize-none'}
-              />
-            </Card.Content>
-          </Card>
-
-          {/* Interne Notiz */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Interne Notiz</div>
-              <textarea
-                rows={3}
-                value={form.intNotiz}
-                onChange={function(e) { setField('intNotiz', e.target.value); }}
-                placeholder="Nur intern sichtbar..."
-                className={INPUT + ' resize-none'}
-              />
-            </Card.Content>
-          </Card>
-
-          {/* Aktionen */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" onClick={function() { router.push('/dashboard-v2/auftraege'); }} disabled={speichern || loeschen}>
-                Abbrechen
-              </Button>
-              <Button variant="danger" onClick={function() { setShowDialog(true); }} disabled={speichern || loeschen}>
-                Loeschen
-              </Button>
-            </div>
-            <Button variant="primary" onClick={handleSpeichern} disabled={speichern || loeschen}>
-              {speichern ? 'Speichern...' : 'Aenderungen speichern'}
-            </Button>
-          </div>
-
+        <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+          <nav className="flex gap-0 min-w-max">
+            {TABS.map(function(tab) {
+              var Icon = tab.icon;
+              var active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={function() { setActiveTab(tab.key); }}
+                  className={'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ' + (active ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700')}
+                >
+                  <Icon className="w-4 h-4" />{tab.label}
+                </button>
+              );
+            })}
+          </nav>
         </div>
-      </Page.Content>
 
-      <Dialog open={showDialog} onClose={function() { setShowDialog(false); }}>
-        <Dialog.Title>Auftrag loeschen</Dialog.Title>
-        <Dialog.Content>
-          <p className="text-sm text-gray-600">
-            Bist du sicher, dass du diesen Auftrag loeschen moechtest? Diese Aktion kann nicht rueckgaengig gemacht werden.
-          </p>
-        </Dialog.Content>
-        <Dialog.Footer>
-          <Button variant="secondary" onClick={function() { setShowDialog(false); }} disabled={loeschen}>
-            Abbrechen
-          </Button>
-          <Button variant="danger" onClick={handleLoeschen} disabled={loeschen}>
-            {loeschen ? 'Loeschen...' : 'Ja, loeschen'}
-          </Button>
-        </Dialog.Footer>
-      </Dialog>
+        {activeTab === 'uebersicht' && (
+          <UebersichtTab auftrag={auftrag} mitarbeiter={mitarbeiter} fahrzeuge={fahrzeuge} maschinen={maschinen} />
+        )}
+        {activeTab === 'einsatzplanung' && (
+          <EmptyTab icon={Calendar} title="Einsatzplanung" description="Hier werden Einsatzdetails und Zeitplanung verwaltet. Funktion folgt in Kuerze." />
+        )}
+        {activeTab === 'mitarbeiter' && (
+          <EmptyTab icon={Users} title="Mitarbeiterzuweisung" description="Weisen Sie diesem Auftrag Mitarbeiter zu und verwalten Sie Einsatzzeiten." />
+        )}
+        {activeTab === 'fahrzeuge' && (
+          <EmptyTab icon={Truck} title="Fahrzeuge" description="Fahrzeugzuweisung und -planung fuer diesen Auftrag." />
+        )}
+        {activeTab === 'maschinen' && (
+          <EmptyTab icon={Wrench} title="Maschinen" description="Maschinenplanung und Geraeteliste fuer diesen Auftrag." />
+        )}
+        {activeTab === 'leistungen' && (
+          <EmptyTab icon={Package} title="Leistungen" description="Leistungspositionen und Aufmass werden hier erfasst." />
+        )}
+        {activeTab === 'dokumente' && (
+          <EmptyTab icon={FolderOpen} title="Dokumente" description="Fotos, Berichte und Dokumente zu diesem Auftrag." />
+        )}
+        {activeTab === 'historie' && (
+          <EmptyTab icon={History} title="Historie" description="Aktivitaetsprotokoll und Statusaenderungen dieses Auftrags." />
+        )}
+        {activeTab === 'notizen' && (
+          <EmptyTab icon={MessageSquare} title="Notizen" description="Interne Notizen und Anmerkungen zu diesem Auftrag." />
+        )}
+      </Page.Content>
     </Page>
   );
 }
