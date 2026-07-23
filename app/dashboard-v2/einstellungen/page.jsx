@@ -12,7 +12,7 @@ function InfoRow({ label, value }) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-gray-900">{value || 'â'}</p>
+      <p className="text-sm text-gray-900">{value || 'Ã¢ÂÂ'}</p>
     </div>
   );
 }
@@ -26,7 +26,7 @@ function SettingsToggle({ label, description, checked, onChange }) {
       </div>
       <button
         onClick={function() { onChange(!checked); }}
-        className={'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ' + (checked ? 'bg-blue-600' : 'bg-gray-200')}
+        className={'relative inline-flex h-6 w-11 items-center rounded-full transition-colors ' + (checked ? 'bg-primary-600' : 'bg-gray-200')}
       >
         <span
           className={'inline-block h-4 w-4 transform rounded-full bg-white transition-transform ' + (checked ? 'translate-x-6' : 'translate-x-1')}
@@ -49,7 +49,7 @@ function IntegrationItem({ name, description, connected, onToggle }) {
         </span>
         <button
           onClick={onToggle}
-          className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
+          className="text-xs text-primary-600 hover:text-primary-800 flex items-center gap-1 transition-colors"
         >
           {connected ? 'Trennen' : 'Verbinden'}
           <ChevronRight className="w-3 h-3" />
@@ -98,10 +98,10 @@ export default function EinstellungenPage() {
   }, []);
 
   function formatAdresse(f) {
-    if (!f) return 'â';
+    if (!f) return 'Ã¢ÂÂ';
     var ort = [f.plz, f.ort].filter(Boolean).join(' ');
     var teile = [f.adresse, ort].filter(Boolean);
-    return teile.length > 0 ? teile.join(', ') : 'â';
+    return teile.length > 0 ? teile.join(', ') : 'Ã¢ÂÂ';
   }
 
   var [benutzerLaden, setBenutzerLaden] = useState(true);
