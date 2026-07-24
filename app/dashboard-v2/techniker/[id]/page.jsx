@@ -291,7 +291,7 @@ export default function TechnikerEinsatzDetail() {
 
   async function taetSpeichernFn() {
     if (!taetText.trim()) return;
-    setTaetSpeichern+true);
+    setTaetSpeichern(true);
     await supabase
       .from('auftrag_taetigkeiten')
       .insert({
