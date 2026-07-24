@@ -31,15 +31,15 @@ var AUFTRAG_STATUS  = { geplant: 'default', aktiv: 'primary', abgeschlossen: 'su
 var RECHNUNG_STATUS = { entwurf: 'default', versendet: 'primary', offen: 'warning', bezahlt: 'success', storniert: 'danger' };
 
 function formatDate(d) {
-  if (!d) return '—';
+  if (!d) return 'â';
   return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 function formatEuro(n) {
-  if (n === null || n === undefined) return '—';
+  if (n === null || n === undefined) return 'â';
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
 }
 
-// ─── Tab: Ubersicht ───────────────────────────────────────────────────────────
+// âââ Tab: Ubersicht âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
   var offeneAngebote   = (angebote   || []).filter(function(a) { return a.status !== 'abgelehnt' && a.status !== 'angenommen'; }).length;
   var offeneAuftraege  = (auftraege  || []).filter(function(a) { return a.status === 'aktiv' || a.status === 'geplant'; }).length;
@@ -59,16 +59,16 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
             <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
               <div>
                 <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Firmenname</dt>
-                <dd className="text-sm font-semibold text-gray-900">{kunde.firmenname || '—'}</dd>
+                <dd className="text-sm font-semibold text-gray-900">{kunde.firmenname || 'â'}</dd>
               </div>
               <div>
                 <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Ansprechpartner</dt>
-                <dd className="text-sm text-gray-700">{kunde.ansprechpartner || '—'}</dd>
+                <dd className="text-sm text-gray-700">{kunde.ansprechpartner || 'â'}</dd>
               </div>
               <div>
                 <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Telefon</dt>
                 <dd className="flex items-center gap-1.5 text-sm text-gray-700">
-                  {kunde.telefon ? <><Phone className="h-3.5 w-3.5 text-gray-400" />{kunde.telefon}</> : '—'}
+                  {kunde.telefon ? <><Phone className="h-3.5 w-3.5 text-gray-400" />{kunde.telefon}</> : 'â'}
                 </dd>
               </div>
               <div>
@@ -77,7 +77,7 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
                   {kunde.email ? (
                     <><Mail className="h-3.5 w-3.5 text-gray-400" />
                     <a href={'mailto:' + kunde.email} className="text-primary-600 hover:underline">{kunde.email}</a></>
-                  ) : '—'}
+                  ) : 'â'}
                 </dd>
               </div>
               <div>
@@ -86,7 +86,7 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
                   {kunde.website ? (
                     <><Globe className="h-3.5 w-3.5 text-gray-400" />
                     <a href={kunde.website} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline truncate">{kunde.website}</a></>
-                  ) : '—'}
+                  ) : 'â'}
                 </dd>
               </div>
               <div>
@@ -95,7 +95,7 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
                   {adressParts.length > 0 ? (
                     <><MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
                     <span>{adressParts.join(', ')}</span></>
-                  ) : '—'}
+                  ) : 'â'}
                 </dd>
               </div>
             </dl>
@@ -117,7 +117,7 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
                   </div>
                 </div>
                 <Badge variant={AUFTRAG_STATUS[letzterAuftrag.status] || 'default'} size="sm">
-                  {letzterAuftrag.status || '—'}
+                  {letzterAuftrag.status || 'â'}
                 </Badge>
               </div>
             ) : (
@@ -167,7 +167,7 @@ function UebersichtTab({ kunde, angebote, auftraege, rechnungen }) {
   );
 }
 
-// ─── Tab: Angebote ────────────────────────────────────────────────────────────
+// âââ Tab: Angebote ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function AngeboteTab({ angebote, detailLoading, kundeId }) {
   if (detailLoading) return <div className="skeleton h-40 w-full rounded-xl" />;
   if (!angebote || angebote.length === 0) {
@@ -195,8 +195,8 @@ function AngeboteTab({ angebote, detailLoading, kundeId }) {
           return (
             <Table.Row key={a.id}>
               <Table.Cell className="font-mono text-xs">{(a.angebotsnummer || a.id || '').toString().slice(0, 12)}</Table.Cell>
-              <Table.Cell className="font-medium">{a.betreff || a.titel || '—'}</Table.Cell>
-              <Table.Cell><Badge variant={ANGEBOT_STATUS[a.status] || 'default'} size="sm">{a.status || '—'}</Badge></Table.Cell>
+              <Table.Cell className="font-medium">{a.betreff || a.titel || 'â'}</Table.Cell>
+              <Table.Cell><Badge variant={ANGEBOT_STATUS[a.status] || 'default'} size="sm">{a.status || 'â'}</Badge></Table.Cell>
               <Table.Cell>{formatEuro(a.gesamtbetrag || a.betrag)}</Table.Cell>
               <Table.Cell className="text-gray-400">{formatDate(a.created_at)}</Table.Cell>
             </Table.Row>
@@ -208,14 +208,18 @@ function AngeboteTab({ angebote, detailLoading, kundeId }) {
   );
 }
 
-// ─── Tab: Auftraege ───────────────────────────────────────────────────────────
+// âââ Tab: Auftraege âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function AuftraegeTab({ auftraege, detailLoading }) {
   if (detailLoading) return <div className="skeleton h-40 w-full rounded-xl" />;
   if (!auftraege || auftraege.length === 0) {
     return <EmptyState icon={Briefcase} title="Keine Auftraege" description="Fur diesen Kunden wurden noch keine Auftraege erstellt." />;
   }
   return (
-    <Table>
+    <>
+      <div className="flex justify-end mb-3">
+        <Button variant="primary" onClick={() => router.push('/dashboard-v2/rechnungen/neu?kunde_id=' + kundeId)}>+ Neue Rechnung</Button>
+      </div>
+      <Table>
       <Table.Head>
         <tr>
           <Table.HeaderCell>Titel</Table.HeaderCell>
@@ -227,19 +231,20 @@ function AuftraegeTab({ auftraege, detailLoading }) {
         {auftraege.map(function(a) {
           return (
             <Table.Row key={a.id}>
-              <Table.Cell className="font-medium">{a.titel || '—'}</Table.Cell>
-              <Table.Cell><Badge variant={AUFTRAG_STATUS[a.status] || 'default'} size="sm">{a.status || '—'}</Badge></Table.Cell>
+              <Table.Cell className="font-medium">{a.titel || 'â'}</Table.Cell>
+              <Table.Cell><Badge variant={AUFTRAG_STATUS[a.status] || 'default'} size="sm">{a.status || 'â'}</Badge></Table.Cell>
               <Table.Cell className="text-gray-400">{formatDate(a.created_at)}</Table.Cell>
             </Table.Row>
           );
         })}
       </Table.Body>
     </Table>
+    </>
   );
 }
 
-// ─── Tab: Rechnungen ─────────────────────────────────────────────────────────
-function RechnungenTab({ rechnungen, detailLoading }) {
+// âââ Tab: Rechnungen âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function RechnungenTab({ rechnungen, detailLoading, router, kundeId }) {
   if (detailLoading) return <div className="skeleton h-40 w-full rounded-xl" />;
   if (!rechnungen || rechnungen.length === 0) {
     return <EmptyState icon={Receipt} title="Keine Rechnungen" description="Fur diesen Kunden wurden noch keine Rechnungen erstellt." />;
@@ -257,9 +262,9 @@ function RechnungenTab({ rechnungen, detailLoading }) {
       <Table.Body>
         {rechnungen.map(function(r) {
           return (
-            <Table.Row key={r.id}>
+            <Table.Row key={r.id} className="cursor-pointer" onClick={() => router.push('/dashboard-v2/rechnungen/' + r.id)}>
               <Table.Cell className="font-mono text-xs">{(r.rechnungsnummer || r.id || '').toString().slice(0, 12)}</Table.Cell>
-              <Table.Cell><Badge variant={RECHNUNG_STATUS[r.status] || 'default'} size="sm">{r.status || '—'}</Badge></Table.Cell>
+              <Table.Cell><Badge variant={RECHNUNG_STATUS[r.status] || 'default'} size="sm">{r.status || 'â'}</Badge></Table.Cell>
               <Table.Cell className="font-medium">{formatEuro(r.betrag)}</Table.Cell>
               <Table.Cell className="text-gray-400">{formatDate(r.created_at)}</Table.Cell>
             </Table.Row>
@@ -270,7 +275,7 @@ function RechnungenTab({ rechnungen, detailLoading }) {
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// âââ Main page ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export default function KundeDetailPage() {
   var params      = useParams();
   var router      = useRouter();
@@ -368,7 +373,7 @@ export default function KundeDetailPage() {
               <Page.Title>{kunde.firmenname || 'Kundenakte'}</Page.Title>
               <div className="mt-1 flex items-center gap-2">
                 <Badge variant={kunde.status === 'aktiv' ? 'success' : 'default'} size="xs" dot>
-                  {kunde.status || '—'}
+                  {kunde.status || 'â'}
                 </Badge>
                 {kunde.typ && <span className="text-xs text-gray-400">{kunde.typ}</span>}
               </div>
@@ -427,7 +432,7 @@ export default function KundeDetailPage() {
             <AuftraegeTab auftraege={auftraege} detailLoading={detailLoading} />
           )}
           {activeTab === 'rechnungen' && (
-            <RechnungenTab rechnungen={rechnungen} detailLoading={detailLoading} />
+            <RechnungenTab rechnungen={rechnungen} detailLoading={detailLoading} router={router} kundeId={kundeId} />
           )}
           {activeTab === 'dokumente' && (
             <EmptyState icon={FolderOpen} title="Dokumente" description="Dokumentenverwaltung folgt in Kurze." />
