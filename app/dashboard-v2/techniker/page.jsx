@@ -241,7 +241,7 @@ export default function TechnikerEinsaetze() {
     return function() { alive = false; };
   }, []);
 
-  function auftragKlich(id) {
+  function auftragKlick(id) {
     router.push('/dashboard-v2/techniker/' + id);
   }
 
