@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ClipboardList } from 'lucide-react';
@@ -28,7 +28,7 @@ function genAuftragsnummer() {
   return 'AUF-' + year + '-' + rand;
 }
 
-export default function AuftragErstellenPage() {
+function AuftragErstellenInner() {
   var router = useRouter();
   var searchParams = useSearchParams();
   var angebotId = searchParams.get('angebot_id');
@@ -283,5 +283,13 @@ export default function AuftragErstellenPage() {
         </form>
       </Page.Content>
     </Page>
+  );
+}
+
+export default function AuftragErstellenPage() {
+  return (
+    <Suspense>
+      <AuftragErstellenInner />
+    </Suspense>
   );
 }
