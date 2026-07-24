@@ -144,7 +144,10 @@ function UebersichtTab({ auftrag, mitarbeiter, fahrzeuge, maschinen }) {
 
       <Card className="md:col-span-2">
         <Card.Header>
-          <Card.Title>Ressourcen</Card.Title>
+          <div className="flex items-center justify-between w-full">
+            <Card.Title>Ressourcen</Card.Title>
+            <Button variant="outline" size="sm" onClick={function() { router.push('/dashboard-v2/disposition/' + auftragId); }}>Zuweisen</Button>
+          </div>
         </Card.Header>
         <Card.Content>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -155,7 +158,7 @@ function UebersichtTab({ auftrag, mitarbeiter, fahrzeuge, maschinen }) {
                   {mitarbeiter.map(function(m) {
                     return (
                       <Badge key={m.id} variant="default" size="sm">
-                        {(m.mitarbeiter && m.mitarbeiter.name) || m.mitarbeiter_id}
+                        {(m.mitarbeiter && ((m.mitarbeiter.vorname || '') + ' ' + (m.mitarbeiter.nachname || '')).trim()) || m.mitarbeiter_id}
                       </Badge>
                     );
                   })}
@@ -182,7 +185,7 @@ function UebersichtTab({ auftrag, mitarbeiter, fahrzeuge, maschinen }) {
               {maschinen && maschinen.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {maschinen.map(function(m) {
-                    var label = (m.maschinen && m.maschinen.bezeichnung) || m.maschinen_id;
+                    var label = (m.maschinen && m.maschinen.name) || m.maschinen_id;
                     return <Badge key={m.id} variant="default" size="sm">{label}</Badge>;
                   })}
                 </div>
@@ -240,9 +243,9 @@ export default function AuftragDetailPage() {
         setAuftrag(a);
 
         var [mRes, fRes, maRes] = await Promise.all([
-          supabase.from('auftrag_mitarbeiter').select('id, mitarbeiter_id, mitarbeiter(name)').eq('auftrag_id', auftragId),
+          supabase.from('auftrag_mitarbeiter').select('id, mitarbeiter_id, mitarbeiter(vorname, nachname)').eq('auftrag_id', auftragId),
           supabase.from('auftrag_fahrzeuge').select('id, fahrzeug_id, fahrzeuge(kennzeichen, marke)').eq('auftrag_id', auftragId),
-          supabase.from('auftrag_maschinen').select('id, maschinen_id, maschinen(bezeichnung)').eq('auftrag_id', auftragId),
+          supabase.from('auftrag_maschinen').select('id, maschinen_id, maschinen(name)').eq('auftrag_id', auftragId),
         ]);
         if (!alive) return;
         setMitarbeiter(mRes.data || []);
