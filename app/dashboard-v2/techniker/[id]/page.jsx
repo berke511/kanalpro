@@ -322,7 +322,14 @@ export default function TechnikerEinsatzDetail() {
   if (laden) {
     return (
       <Page>
-        <Page.Header><Page.Title>Einsatz</Page.Title></Page.Header>
+        <Page.Header>
+          <Page.Title>Einsatz</Page.Title>
+          {auftrag && auftrag.status === 'abgeschlossen' && (
+            <Button variant="primary" onClick={() => router.push('/dashboard-v2/rechnungen/neu?auftrag_id=' + auftrag.id)}>
+              Rechnung erstellen
+            </Button>
+          )}
+        </Page.Header>
         <Page.Content>
           <div className="animate-pulse space-y-4">
             <div className="h-32 rounded-xl bg-gray-100" />
@@ -346,10 +353,10 @@ export default function TechnikerEinsatzDetail() {
   }
 
   var kundeAnzeige = auftrag.kunden
-    ? (auftrag.kunden.firmenname || auftrag.kunden.name || '—')
-    : '—';
+    ? (auftrag.kunden.firmenname || auftrag.kunden.name || 'â')
+    : 'â';
   var kundeTelefon = auftrag.kunden ? auftrag.kunden.telefon : null;
-  var statusLabel = STATUS_LABELS[auftrag.status] || auftrag.status || '—';
+  var statusLabel = STATUS_LABELS[auftrag.status] || auftrag.status || 'â';
   var statusVariant = STATUS_VARIANTEN[auftrag.status] || 'default';
   var nextStatus = naechsterStatus(auftrag.status);
   var istAbgeschlossen = auftrag.status === 'abgeschlossen';
@@ -421,7 +428,7 @@ export default function TechnikerEinsatzDetail() {
                 loading={statusLaden}
                 onClick={function() { statusAendern(nextStatus); }}
               >
-                {STATUS_LABELS[nextStatus] + ' →'}
+                {STATUS_LABELS[nextStatus] + ' â'}
               </Button>
             )}
           </div>
@@ -484,7 +491,7 @@ export default function TechnikerEinsatzDetail() {
                             return (
                               <div key={m.id} className="flex items-center gap-2 text-sm text-gray-700">
                                 <User size={13} className="flex-shrink-0 text-gray-400" />
-                                {name || '—'}
+                                {name || 'â'}
                               </div>
                             );
                           })}
@@ -497,12 +504,12 @@ export default function TechnikerEinsatzDetail() {
                         <div className="space-y-1.5">
                           {fahrzeuge.map(function(f) {
                             var name = f.fahrzeuge
-                              ? ((f.fahrzeuge.kennzeichen || '') + (f.fahrzeuge.marke ? ' — ' + f.fahrzeuge.marke : ''))
+                              ? ((f.fahrzeuge.kennzeichen || '') + (f.fahrzeuge.marke ? ' â ' + f.fahrzeuge.marke : ''))
                               : f.fahrzeug_id;
                             return (
                               <div key={f.id} className="flex items-center gap-2 text-sm text-gray-700">
                                 <Truck size={13} className="flex-shrink-0 text-gray-400" />
-                                {name || '—'}
+                                {name || 'â'}
                               </div>
                             );
                           })}
@@ -520,7 +527,7 @@ export default function TechnikerEinsatzDetail() {
                             return (
                               <div key={m.id} className="flex items-center gap-2 text-sm text-gray-700">
                                 <Wrench size={13} className="flex-shrink-0 text-gray-400" />
-                                {name || '—'}
+                                {name || 'â'}
                               </div>
                             );
                           })}
