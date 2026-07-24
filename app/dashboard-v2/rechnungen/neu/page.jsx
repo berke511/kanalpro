@@ -1,452 +1,538 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
+import PlanGate from '@/components/PlanGate';
 import Page from '@/components/ui/v2/Page';
-import Card from '@/components/ui/v2/Card';
 import Button from '@/components/ui/v2/Button';
-
-var INPUT = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
-var LABEL = 'block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wide';
-
-var EINHEITEN = ['Pauschal', 'Stk.', 'Stunden', 'Meter', 'Liter', 'kg', 'm²', 'm³', 'Rollen'];
-
-var LEISTUNGEN = [
-  'Rohrreinigung', 'Kanalreinigung', 'Grundleitungsreinigung', 'Fallstrangreinigung',
-  'Hochdruckspuelung', 'Kombinierte Saug- und Spuelarbeiten', 'Absaugarbeiten',
-  'Schlammentsorgung', 'Verstopfungsbeseitigung', 'Wurzelentfernung', 'Wurzelfraesen',
-  'TV-Inspektion', 'Kamerainspektion', 'Rohrkamerauntersuchung', 'Schadensaufnahme',
-  'Fotodokumentation', 'Zustandsbewertung', 'Dichtheitspruefung Luft', 'Dichtheitspruefung Wasser',
-  'Rohrreparatur', 'Kanalreparatur', 'Leckstellenabdichtung', 'Injektionsarbeiten',
-  'Schachtreinigung', 'Hebeanlagenreinigung', 'Fettabscheiderreinigung', 'Oelabscheiderreinigung',
-  'Kanalwartung', 'Pumpenpreufung', 'Wartungsvertrag', 'Notdienst',
-  'Fahrtkosten', 'Entsorgungsgebuehren', 'Material', 'Sonstige Leistungen',
-];
-
-var ZAHLUNGSSTATUS = [
-  { value: 'offen', label: 'Offen' },
-  { value: 'teilweise_bezahlt', label: 'Teilweise bezahlt' },
-  { value: 'bezahlt', label: 'Bezahlt' },
-  { value: 'storniert', label: 'Storniert' },
-];
-
-function today() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function addDays(dateStr, days) {
-  var d = new Date(dateStr);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
-}
-
-function genRechnungsnummer(count) {
-  var d = new Date();
-  var y = d.getFullYear();
-  var m = String(d.getMonth() + 1).padStart(2, '0');
-  var n = String((count ?? 0) + 1).padStart(4, '0');
-  return 'RE-' + y + m + '-' + n;
-}
-
-function kundeAnzeigeName(k) {
-  if (!k) return '';
-  if (k.kundentyp === 'firma') return k.firmenname || k.firma || k.name || '';
-  return k.name || '';
-}
+import Input from '@/components/ui/v2/Input';
+import Card from '@/components/ui/v2/Card';
 
 function fmtEuro(n) {
-  return Number(n || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n || 0);
 }
 
-export default function RechnungNeuV2Page() {
-  var router = useRouter();
-  var dropRef = useRef(null);
+function calcNetto(positionen) {
+  return (positionen || []).reduce(
+    (s, p) => s + (Number(p.menge) || 0) * (Number(p.preis) || 0),
+    0
+  );
+}
 
-  var [companyId, setCompanyId] = useState(null);
-  var [userId, setUserId] = useState(null);
-  var [isLaden, setIsLaden] = useState(true);
-  var [kunden, setKunden] = useState([]);
-  var [rechnungsNr, setRechnungsNr] = useState('');
-  var [speichern, setSpeichern] = useState(false);
-  var [apiErr, setApiErr] = useState('');
-  var [openDrop, setOpenDrop] = useState(null);
+async function genRechnungsnummer(companyId) {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const { count } = await supabase
+    .from('rechnungen')
+    .select('id', { count: 'exact', head: true })
+    .eq('company_id', companyId);
+  const n = String((count || 0) + 1).padStart(4, '0');
+  return `RE-${yyyy}${mm}-${n}`;
+}
 
-  var [form, setForm] = useState({
-    kundeId: '',
-    rechnungsadresse: '',
-    datum: today(),
-    faelligAm: addDays(today(), 14),
+async function loadJsPdf() {
+  if (window.jspdf) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = res;
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js';
+    s.onload = res;
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+function NeuFormInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const auftragIdParam = searchParams.get('auftrag_id');
+
+  const [laden, setLaden] = useState(true);
+  const [speichern, setSpeichern] = useState(false);
+  const [pdfLaden, setPdfLaden] = useState(false);
+  const [fehler, setFehler] = useState('');
+  const [companyId, setCompanyId] = useState('');
+  const [kunden, setKunden] = useState([]);
+
+  const [form, setForm] = useState({
+    kunde_id: '',
+    auftrag_id: auftragIdParam || '',
+    datum: new Date().toISOString().slice(0, 10),
+    faellig_am: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     leistungsdatum: '',
     steuersatz: 19,
-    skonto: 0,
-    betreff: '',
+    skonto: '',
     notizen: '',
-    zahlungsstatus: 'offen',
+    bemerkungen: '',
+    positionen: [{ beschreibung: '', menge: 1, einheit: 'Stk.', preis: 0 }],
   });
 
-  var [positionen, setPositionen] = useState([
-    { beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 },
-  ]);
+  useEffect(() => { init(); }, []);
 
-  useEffect(function() {
-    async function ladeDaten() {
-      var session = await supabase.auth.getUser();
-      var user = session.data.user;
-      if (!user) { router.push('/login'); return; }
-      setUserId(user.id);
+  async function init() {
+    setLaden(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push('/login'); return; }
 
-      var memberRes = await supabase
-        .from('company_members')
-        .select('company_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
+    const { data: member } = await supabase
+      .from('company_members')
+      .select('company_id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!member?.company_id) { setLaden(false); return; }
+    setCompanyId(member.company_id);
+
+    const { data: kundenData } = await supabase
+      .from('kunden')
+      .select('id, name')
+      .eq('company_id', member.company_id)
+      .order('name');
+    setKunden(kundenData || []);
+
+    // Prefill aus Auftrag
+    if (auftragIdParam) {
+      const { data: auftrag } = await supabase
+        .from('auftraege')
+        .select('*, kunden(id, name)')
+        .eq('id', auftragIdParam)
         .maybeSingle();
-      if (!memberRes.data) { setIsLaden(false); return; }
-      var cid = memberRes.data.company_id;
-      setCompanyId(cid);
-
-      var [kundenRes, countRes, coRes] = await Promise.all([
-        supabase.from('kunden').select('id, name, firmenname, firma, kundentyp, adresse').eq('company_id', cid).order('name'),
-        supabase.from('rechnungen').select('*', { count: 'exact', head: true }).eq('company_id', cid),
-        supabase.from('companies').select('standard_steuersatz').eq('id', cid).maybeSingle(),
-      ]);
-
-      setKunden(kundenRes.data ?? []);
-      setRechnungsNr(genRechnungsnummer(countRes.count));
-      if (coRes.data && coRes.data.standard_steuersatz) {
-        setForm(function(f) { return Object.assign({}, f, { steuersatz: coRes.data.standard_steuersatz }); });
+      if (auftrag) {
+        const positionen = auftrag.positionen?.length
+          ? auftrag.positionen
+          : [{ beschreibung: auftrag.titel || 'Dienstleistung', menge: 1, einheit: 'Stk.', preis: 0 }];
+        setForm(f => ({
+          ...f,
+          kunde_id: auftrag.kunde_id || '',
+          auftrag_id: auftragIdParam,
+          positionen,
+        }));
       }
-      setIsLaden(false);
     }
-    ladeDaten();
-  }, [router]);
 
-  useEffect(function() {
-    function outside(e) {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setOpenDrop(null);
-    }
-    document.addEventListener('mousedown', outside);
-    return function() { document.removeEventListener('mousedown', outside); };
-  }, []);
+    setLaden(false);
+  }
 
   function setField(key, val) {
-    setForm(function(f) { return Object.assign({}, f, { [key]: val }); });
-    setApiErr('');
+    setForm(f => ({ ...f, [key]: val }));
   }
 
-  function posChange(i, field, val) {
-    var n = positionen.slice();
-    var p = Object.assign({}, n[i]);
-    if (field === 'menge' || field === 'preis') { p[field] = parseFloat(val) || 0; }
-    else { p[field] = val; }
-    n[i] = p;
-    setPositionen(n);
-  }
-
-  function addPos() {
-    setPositionen(function(ps) {
-      return ps.concat([{ beschreibung: '', menge: 1, einheit: 'Pauschal', preis: 0 }]);
+  function setPosField(idx, key, val) {
+    setForm(f => {
+      const neu = [...f.positionen];
+      neu[idx] = { ...neu[idx], [key]: val };
+      return { ...f, positionen: neu };
     });
   }
 
-  function removePos(i) {
-    if (positionen.length > 1) {
-      setPositionen(positionen.filter(function(_, j) { return j !== i; }));
-    }
+  function addPos() {
+    setForm(f => ({
+      ...f,
+      positionen: [...f.positionen, { beschreibung: '', menge: 1, einheit: 'Stk.', preis: 0 }],
+    }));
   }
 
-  var kundeObj = kunden.find(function(k) { return k.id === form.kundeId; }) ?? null;
-  var netto = positionen.reduce(function(s, p) { return s + (p.menge || 0) * (p.preis || 0); }, 0);
-  var skontoAmt = form.skonto > 0 ? netto * (form.skonto / 100) : 0;
-  var nettoNachSk = netto - skontoAmt;
-  var mwst = nettoNachSk * (Number(form.steuersatz) / 100);
-  var brutto = nettoNachSk + mwst;
+  function removePos(idx) {
+    setForm(f => ({ ...f, positionen: f.positionen.filter((_, i) => i !== idx) }));
+  }
 
-  async function handleSpeichern() {
-    if (!form.betreff.trim()) { setApiErr('Betreff ist erforderlich.'); return; }
-    if (positionen.every(function(p) { return !p.beschreibung.trim(); })) {
-      setApiErr('Mindestens eine Position ist erforderlich.');
-      return;
-    }
+  const netto = calcNetto(form.positionen);
+  const mwst = netto * (Number(form.steuersatz) || 19) / 100;
+  const brutto = netto + mwst;
+
+  async function handleSpeichern(e) {
+    e.preventDefault();
+    if (!form.kunde_id) { setFehler('Bitte einen Kunden auswählen.'); return; }
+    setFehler('');
     setSpeichern(true);
-    setApiErr('');
     try {
-      var payload = {
-        user_id: userId,
+      const nr = await genRechnungsnummer(companyId);
+      const { data, error } = await supabase.from('rechnungen').insert({
         company_id: companyId,
-        kunde_id: form.kundeId || null,
-        rechnungsnummer: rechnungsNr,
+        kunde_id: form.kunde_id,
+        auftrag_id: form.auftrag_id || null,
+        rechnungsnummer: nr,
         datum: form.datum,
-        faellig_am: form.faelligAm || null,
+        faellig_am: form.faellig_am,
         leistungsdatum: form.leistungsdatum || null,
-        steuersatz: Number(form.steuersatz),
-        skonto: Number(form.skonto) || 0,
+        steuersatz: Number(form.steuersatz) || 19,
+        skonto: form.skonto ? Number(form.skonto) : null,
         notizen: form.notizen || null,
-        positionen: positionen,
+        bemerkungen: form.bemerkungen || null,
+        positionen: form.positionen,
         status: 'entwurf',
-        zahlungsstatus: form.zahlungsstatus,
-      };
-      var res = await supabase.from('rechnungen').insert(payload);
-      if (res.error) throw res.error;
-      router.push('/dashboard-v2/rechnungen');
+      }).select().single();
+      if (error) throw error;
+      router.push('/dashboard-v2/rechnungen/' + data.id);
     } catch (err) {
-      setApiErr(err.message ?? 'Fehler beim Speichern.');
+      setFehler(err.message || 'Fehler beim Speichern.');
       setSpeichern(false);
     }
   }
 
-  if (isLaden) {
+  async function handlePdfVorschau() {
+    if (!form.kunde_id) { setFehler('Bitte einen Kunden auswählen.'); return; }
+    setPdfLaden(true);
+    try {
+      await loadJsPdf();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const kunde = kunden.find(k => k.id === form.kunde_id);
+
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RECHNUNG', 14, 20);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Vorschau (Entwurf)', 14, 28);
+
+      doc.setFontSize(11);
+      doc.text('An:', 14, 44);
+      doc.setFont('helvetica', 'bold');
+      doc.text(kunde?.name || '—', 14, 50);
+      doc.setFont('helvetica', 'normal');
+
+      doc.text('Datum: ' + form.datum, 130, 44);
+      doc.text('Fällig: ' + form.faellig_am, 130, 50);
+
+      const rows = form.positionen.map(p => [
+        p.beschreibung || '',
+        String(p.menge || 0),
+        p.einheit || '',
+        fmtEuro(Number(p.preis) || 0),
+        fmtEuro((Number(p.menge) || 0) * (Number(p.preis) || 0)),
+      ]);
+
+      doc.autoTable({
+        startY: 65,
+        head: [['Beschreibung', 'Menge', 'Einheit', 'Einzelpreis', 'Gesamt']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] },
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.text('Netto: ' + fmtEuro(netto), 130, finalY);
+      doc.text('MwSt. ' + form.steuersatz + '%: ' + fmtEuro(mwst), 130, finalY + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Brutto: ' + fmtEuro(brutto), 130, finalY + 14);
+
+      doc.save('rechnung-vorschau.pdf');
+    } catch (err) {
+      setFehler('PDF-Fehler: ' + err.message);
+    }
+    setPdfLaden(false);
+  }
+
+  if (laden) {
     return (
       <Page>
-        <Page.Header><Page.Title>Rechnung erstellen</Page.Title></Page.Header>
-        <Page.Content><div className="text-sm text-gray-400 py-8 text-center">Laedt...</div></Page.Content>
+        <Page.Header><Page.Title>Neue Rechnung</Page.Title></Page.Header>
+        <Page.Content>
+          <div className="animate-pulse space-y-4">
+            <div className="h-48 rounded-xl bg-gray-100" />
+            <div className="h-64 rounded-xl bg-gray-100" />
+          </div>
+        </Page.Content>
       </Page>
     );
   }
 
   return (
-    <Page>
-      <Page.Header>
-        <Page.Title>Rechnung erstellen</Page.Title>
-        <Page.Description>{rechnungsNr}</Page.Description>
-      </Page.Header>
-      <Page.Content>
-        <div className="space-y-5 max-w-3xl" ref={dropRef}>
-
-          {apiErr && (
-            <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3 text-sm text-red-700">{apiErr}</div>
-          )}
-
-          {/* Rechnungsinformationen */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Rechnungsinformationen</div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className={LABEL}>Rechnungsdatum</label>
-                    <input type="date" value={form.datum}
-                      onChange={function(e) {
-                        setField('datum', e.target.value);
-                        setField('faelligAm', addDays(e.target.value, 14));
-                      }}
-                      className={INPUT} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Zahlungsziel</label>
-                    <input type="date" value={form.faelligAm}
-                      onChange={function(e) { setField('faelligAm', e.target.value); }}
-                      className={INPUT} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Leistungsdatum</label>
-                    <input type="date" value={form.leistungsdatum}
-                      onChange={function(e) { setField('leistungsdatum', e.target.value); }}
-                      className={INPUT} />
-                  </div>
-                </div>
-                <div>
-                  <label className={LABEL}>Betreff *</label>
-                  <input type="text" value={form.betreff}
-                    onChange={function(e) { setField('betreff', e.target.value); }}
-                    placeholder="z. B. Rechnung fuer Kanalreinigung"
-                    className={INPUT} />
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Rechnungsempfaenger */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Rechnungsempfaenger</div>
-              <div className="space-y-3">
-                <div>
-                  <label className={LABEL}>Kunde</label>
-                  <select value={form.kundeId}
-                    onChange={function(e) {
-                      var k = kunden.find(function(k) { return k.id === e.target.value; });
-                      setField('kundeId', e.target.value);
-                      if (k && k.adresse) setField('rechnungsadresse', k.adresse);
-                    }}
-                    className={INPUT}>
-                    <option value="">-- Kunden waehlen --</option>
-                    {kunden.map(function(k) {
-                      return <option key={k.id} value={k.id}>{kundeAnzeigeName(k)}</option>;
-                    })}
-                  </select>
-                </div>
-                {kundeObj && (
-                  <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
-                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Kundendaten</p>
-                    <p className="text-sm font-medium text-blue-800">{kundeAnzeigeName(kundeObj)}</p>
-                    {kundeObj.adresse && <p className="text-xs text-blue-600 mt-0.5">{kundeObj.adresse}</p>}
-                  </div>
-                )}
-                <div>
-                  <label className={LABEL}>Rechnungsadresse</label>
-                  <textarea rows={3} value={form.rechnungsadresse}
-                    onChange={function(e) { setField('rechnungsadresse', e.target.value); }}
-                    placeholder="Strasse, PLZ Ort"
-                    className={INPUT + ' resize-none'} />
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Positionen */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Positionen *</div>
-              <div className="space-y-3">
-                {positionen.map(function(pos, i) {
-                  var filtered = LEISTUNGEN.filter(function(l) {
-                    return l.toLowerCase().includes((pos.beschreibung || '').toLowerCase()) && l !== pos.beschreibung;
-                  });
-                  return (
-                    <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-gray-400 uppercase">Pos. {i + 1}</span>
-                        <button onClick={function() { removePos(i); }}
-                          className="text-xs text-gray-300 hover:text-red-400 transition px-2 py-1 rounded">
-                          Entfernen
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <label className={LABEL}>Beschreibung</label>
-                        <input type="text" value={pos.beschreibung}
-                          onChange={function(e) { posChange(i, 'beschreibung', e.target.value); setOpenDrop(i); }}
-                          onFocus={function() { setOpenDrop(i); }}
-                          placeholder="Leistung oder Freitext..."
-                          className={INPUT} />
-                        {openDrop === i && filtered.length > 0 && (
-                          <div className="absolute left-0 right-0 bottom-full mb-1 z-20 bg-white border border-gray-200 rounded-md shadow-lg max-h-44 overflow-y-auto">
-                            {filtered.slice(0, 10).map(function(l) {
-                              return (
-                                <button key={l} type="button"
-                                  onMouseDown={function() { posChange(i, 'beschreibung', l); setOpenDrop(null); }}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition">
-                                  {l}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className={LABEL}>Menge</label>
-                          <input type="number" min="0" step="0.5" value={pos.menge}
-                            onChange={function(e) { posChange(i, 'menge', e.target.value); }}
-                            className={INPUT} />
-                        </div>
-                        <div>
-                          <label className={LABEL}>Einheit</label>
-                          <select value={pos.einheit}
-                            onChange={function(e) { posChange(i, 'einheit', e.target.value); }}
-                            className={INPUT}>
-                            {EINHEITEN.map(function(eu) { return <option key={eu}>{eu}</option>; })}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={LABEL}>Einzelpreis</label>
-                          <input type="number" min="0" step="0.01" value={pos.preis}
-                            onChange={function(e) { posChange(i, 'preis', e.target.value); }}
-                            className={INPUT} />
-                        </div>
-                      </div>
-                      <div className="text-right text-sm font-semibold text-gray-700">
-                        {'Gesamt: ' + fmtEuro(pos.menge * pos.preis)}
-                      </div>
-                    </div>
-                  );
-                })}
-                <button onClick={addPos}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 transition">
-                  + Position hinzufuegen
-                </button>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Konditionen + Summen */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Konditionen</div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className={LABEL}>Steuersatz (%)</label>
-                  <select value={form.steuersatz}
-                    onChange={function(e) { setField('steuersatz', Number(e.target.value)); }}
-                    className={INPUT}>
-                    <option value={19}>19% (Standard)</option>
-                    <option value={7}>7% (Ermaessigt)</option>
-                    <option value={0}>0% (Steuerfrei)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL}>Skonto (%)</label>
-                  <input type="number" min="0" max="20" step="0.5" value={form.skonto}
-                    onChange={function(e) { setField('skonto', e.target.value); }}
-                    className={INPUT} />
-                </div>
-                <div>
-                  <label className={LABEL}>Zahlungsstatus</label>
-                  <select value={form.zahlungsstatus}
-                    onChange={function(e) { setField('zahlungsstatus', e.target.value); }}
-                    className={INPUT}>
-                    {ZAHLUNGSSTATUS.map(function(z) {
-                      return <option key={z.value} value={z.value}>{z.label}</option>;
-                    })}
-                  </select>
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-lg border border-gray-100 p-4 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Nettobetrag</span>
-                  <span className="font-mono">{fmtEuro(netto)}</span>
-                </div>
-                {skontoAmt > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>{'Skonto (' + form.skonto + '%)'}</span>
-                    <span className="font-mono">{'-' + fmtEuro(skontoAmt)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>{'MwSt. (' + form.steuersatz + '%)'}</span>
-                  <span className="font-mono">{fmtEuro(mwst)}</span>
-                </div>
-                <div className="border-t border-gray-200 pt-2 flex justify-between text-base font-bold text-gray-900">
-                  <span>Gesamtbetrag</span>
-                  <span className="font-mono text-blue-600">{fmtEuro(brutto)}</span>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* Bemerkungen */}
-          <Card>
-            <Card.Content>
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Bemerkungen</div>
-              <textarea rows={3} value={form.notizen}
-                onChange={function(e) { setField('notizen', e.target.value); }}
-                placeholder="z. B. Zahlungshinweise, besondere Konditionen..."
-                className={INPUT + ' resize-none'} />
-            </Card.Content>
-          </Card>
-
-          {/* Aktionen */}
-          <div className="flex items-center justify-between pt-2">
-            <Button variant="secondary" onClick={function() { router.push('/dashboard-v2/rechnungen'); }} disabled={speichern}>
-              Abbrechen
+    <PlanGate feature="rechnungen">
+      <Page>
+        <Page.Header>
+          <Page.Title>Neue Rechnung</Page.Title>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => router.back()}>Abbrechen</Button>
+            <Button variant="secondary" onClick={handlePdfVorschau} loading={pdfLaden}>
+              PDF-Vorschau
             </Button>
-            <Button variant="primary" onClick={handleSpeichern} disabled={speichern}>
-              {speichern ? 'Speichern...' : 'Rechnung speichern'}
+            <Button variant="primary" onClick={handleSpeichern} loading={speichern}>
+              Speichern
             </Button>
           </div>
+        </Page.Header>
+        <Page.Content>
+          {fehler && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+              {fehler}
+            </div>
+          )}
 
-        </div>
-      </Page.Content>
-    </Page>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Linke Spalte — Hauptformular */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Kunde & Auftrag */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Empfänger</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kunde *</label>
+                    <select
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.kunde_id}
+                      onChange={e => setField('kunde_id', e.target.value)}
+                    >
+                      <option value="">— Kunde wählen —</option>
+                      {kunden.map(k => (
+                        <option key={k.id} value={k.id}>{k.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Auftrag-ID (optional)</label>
+                    <input
+                      type="text"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.auftrag_id}
+                      onChange={e => setField('auftrag_id', e.target.value)}
+                      placeholder="z.B. AUF-123"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Positionen */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Positionen</h2>
+                <div className="space-y-3">
+                  {/* Header */}
+                  <div className="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-1">
+                    <div className="col-span-5">Beschreibung</div>
+                    <div className="col-span-2 text-center">Menge</div>
+                    <div className="col-span-2">Einheit</div>
+                    <div className="col-span-2 text-right">Preis</div>
+                    <div className="col-span-1"></div>
+                  </div>
+                  {form.positionen.map((pos, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                      <div className="col-span-12 sm:col-span-5">
+                        <input
+                          type="text"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Beschreibung"
+                          value={pos.beschreibung}
+                          onChange={e => setPosField(idx, 'beschreibung', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-4 sm:col-span-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={pos.menge}
+                          onChange={e => setPosField(idx, 'menge', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-4 sm:col-span-2">
+                        <select
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={pos.einheit}
+                          onChange={e => setPosField(idx, 'einheit', e.target.value)}
+                        >
+                          {['Stk.', 'h', 'm', 'm²', 'm³', 'kg', 'l', 'pauschal'].map(e => (
+                            <option key={e} value={e}>{e}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-span-3 sm:col-span-2">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0,00"
+                          value={pos.preis}
+                          onChange={e => setPosField(idx, 'preis', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-end">
+                        {form.positionen.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePos(idx)}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4h6v2" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      {/* Zeilensumme */}
+                      <div className="col-span-12 sm:hidden text-right text-xs text-gray-500">
+                        {fmtEuro((Number(pos.menge) || 0) * (Number(pos.preis) || 0))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addPos}
+                  className="mt-4 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                  Position hinzufügen
+                </button>
+              </div>
+
+              {/* Notizen */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Notizen & Bemerkungen</h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Interne Notiz</label>
+                    <textarea
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nur intern sichtbar..."
+                      value={form.notizen}
+                      onChange={e => setField('notizen', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkungen (auf PDF)</label>
+                    <textarea
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Erscheint auf der Rechnung..."
+                      value={form.bemerkungen}
+                      onChange={e => setField('bemerkungen', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Rechte Spalte — Einstellungen & Summen */}
+            <div className="space-y-6">
+              {/* Daten */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Daten</h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rechnungsdatum</label>
+                    <input
+                      type="date"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.datum}
+                      onChange={e => setField('datum', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fälligkeitsdatum</label>
+                    <input
+                      type="date"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.faellig_am}
+                      onChange={e => setField('faellig_am', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Leistungsdatum</label>
+                    <input
+                      type="date"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.leistungsdatum}
+                      onChange={e => setField('leistungsdatum', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Steuer */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Steuer & Skonto</h2>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">MwSt. (%)</label>
+                    <select
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={form.steuersatz}
+                      onChange={e => setField('steuersatz', e.target.value)}
+                    >
+                      <option value={19}>19% (Standard)</option>
+                      <option value={7}>7% (Ermäßigt)</option>
+                      <option value={0}>0% (Steuerfrei)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Skonto (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="z.B. 2"
+                      value={form.skonto}
+                      onChange={e => setField('skonto', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Summen */}
+              <div className="bg-gray-50 rounded-xl border border-gray-200 p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Summe</h2>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Netto</span>
+                    <span>{fmtEuro(netto)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>MwSt. {form.steuersatz}%</span>
+                    <span>{fmtEuro(mwst)}</span>
+                  </div>
+                  {form.skonto && Number(form.skonto) > 0 && (
+                    <div className="flex justify-between text-green-600 text-xs">
+                      <span>Skonto {form.skonto}%</span>
+                      <span>- {fmtEuro(netto * Number(form.skonto) / 100)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t border-gray-300">
+                    <span>Brutto</span>
+                    <span>{fmtEuro(brutto)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Page.Content>
+      </Page>
+    </PlanGate>
+  );
+}
+
+export default function NeuRechnungPage() {
+  return (
+    <Suspense fallback={
+      <Page>
+        <Page.Header><Page.Title>Neue Rechnung</Page.Title></Page.Header>
+        <Page.Content>
+          <div className="animate-pulse space-y-4">
+            <div className="h-48 rounded-xl bg-gray-100" />
+            <div className="h-64 rounded-xl bg-gray-100" />
+          </div>
+        </Page.Content>
+      </Page>
+    }>
+      <NeuFormInner />
+    </Suspense>
   );
 }
