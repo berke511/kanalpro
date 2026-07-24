@@ -1,345 +1,398 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Clock, CheckCircle, Search, MapPin, User } from 'lucide-react';
 import supabase from '@/lib/supabase';
 import Page from '@/components/ui/v2/Page';
 import Card from '@/components/ui/v2/Card';
 import Badge from '@/components/ui/v2/Badge';
+import Button from '@/components/ui/v2/Button';
+import Input from '@/components/ui/v2/Input';
+import KpiCard from '@/components/ui/v2/KpiCard';
+import EmptyState from '@/components/ui/v2/EmptyState';
 
-var MA_STATUS_BADGE = {
-  im_einsatz: 'info',
-  verfuegbar:  'success',
-  urlaub:      'warning',
-  krank:       'danger',
+var STATUS_LABELS = {
+  offen: 'Offen',
+  geplant: 'Geplant',
+  unterwegs: 'Unterwegs',
+  vor_ort: 'Vor Ort',
+  in_bearbeitung: 'In Bearbeitung',
+  abgeschlossen: 'Abgeschlossen',
+  abgebrochen: 'Abgebrochen',
 };
 
-var MA_STATUS_LABEL = {
-  im_einsatz: 'Im Einsatz',
-  verfuegbar:  'VerfÃ¼gbar',
-  urlaub:      'Urlaub',
-  krank:       'Krank',
+var STATUS_VARIANTEN = {
+  offen: 'default',
+  geplant: 'info',
+  unterwegs: 'warning',
+  vor_ort: 'warning',
+  in_bearbeitung: 'warning',
+  abgeschlossen: 'success',
+  abgebrochen: 'danger',
 };
 
-export default function TechnikerPage() {
-  var [imEinsatz, setImEinsatz] = useState([]);
-  var [imEinsatzLaden, setImEinsatzLaden] = useState(true);
-  var [imEinsatzFehler, setImEinsatzFehler] = useState(false);
+function heuteStr() {
+  var d = new Date();
+  var y = String(d.getFullYear());
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var t = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + t;
+}
 
-  var [verfuegbar, setVerfuegbar] = useState([]);
-  var [verfuegbarLaden, setVerfuegbarLaden] = useState(true);
-  var [verfuegbarFehler, setVerfuegbarFehler] = useState(false);
+function datumFormatieren(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch (e) {
+    return iso;
+  }
+}
 
-  var [abwesend, setAbwesend] = useState([]);
-  var [abwesendLaden, setAbwesendLaden] = useState(true);
-  var [abwesendFehler, setAbwesendFehler] = useState(false);
+function AuftragKarte(props) {
+  var auftrag = props.auftrag;
+  var onClick = props.onClick;
+  var kundeAnzeige = auftrag.kunden
+    ? (auftrag.kunden.firmenname || auftrag.kunden.name || '—')
+    : '—';
+  var statusLabel = STATUS_LABELS[auftrag.status] || auftrag.status || '—';
+  var statusVariant = STATUS_VARIANTEN[auftrag.status] || 'default';
 
-  var [team, setTeam] = useState({ gesamt: 0, imEinsatz: 0, verfuegbar: 0, abwesend: 0 });
-  var [teamLaden, setTeamLaden] = useState(true);
-  var [teamFehler, setTeamFehler] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-start justify-between rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-gray-300 hover:shadow-sm cursor-pointer active:bg-gray-50"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-gray-900 truncate">{auftrag.titel || '—'}</p>
+        {kundeAnzeige !== '—' && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
+            <User size={11} />
+            {kundeAnzeige}
+          </p>
+        )}
+        {auftrag.adresse && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 truncate">
+            <MapPin size={11} />
+            {auftrag.adresse}
+          </p>
+        )}
+        {auftrag.datum && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-400">
+            <Calendar size={11} />
+            {datumFormatieren(auftrag.datum)}
+          </p>
+        )}
+      </div>
+      <div className="ml-3 flex-shrink-0">
+        <Badge variant={statusVariant}>{statusLabel}</Badge>
+      </div>
+    </div>
+  );
+}
+
+function Sektion(props) {
+  var titel = props.titel;
+  var auftraege = props.auftraege;
+  var IconKomponente = props.icon;
+  var emptyText = props.emptyText;
+  var onKlick = props.onKlick;
+  var laden = props.laden;
+
+  if (laden) {
+    return (
+      <Card className="mb-4">
+        <Card.Header>
+          <Card.Title>{titel}</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div className="animate-pulse space-y-3">
+            <div className="h-16 rounded-lg bg-gray-100" />
+            <div className="h-16 rounded-lg bg-gray-100" />
+          </div>
+        </Card.Content>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="mb-4">
+      <Card.Header>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {IconKomponente && <IconKomponente size={16} className="text-gray-500" />}
+            <Card.Title>{titel}</Card.Title>
+          </div>
+          <Badge variant={auftraege.length > 0 ? 'default' : 'default'}>{auftraege.length}</Badge>
+        </div>
+      </Card.Header>
+      <Card.Content>
+        {auftraege.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-400">{emptyText}</p>
+        ) : (
+          <div className="space-y-2">
+            {auftraege.map(function(a) {
+              return (
+                <AuftragKarte
+                  key={a.id}
+                  auftrag={a}
+                  onClick={function() { onKlick(a.id); }}
+                />
+              );
+            })}
+          </div>
+        )}
+      </Card.Content>
+    </Card>
+  );
+}
+
+export default function TechnikerEinsaetze() {
+  var router = useRouter();
+  var [laden, setLaden] = useState(true);
+  var [fehler, setFehler] = useState(null);
+  var [auftraege, setAuftraege] = useState([]);
+  var [suchbegriff, setSuchbegriff] = useState('');
+  var [suchDebounce, setSuchDebounce] = useState('');
+  var [aktFilter, setAktFilter] = useState('alle');
+  var [ohneProfilHinweis, setOhneProfilHinweis] = useState(false);
 
   useEffect(function() {
+    var timer = setTimeout(function() {
+      setSuchDebounce(suchbegriff);
+    }, 300);
+    return function() { clearTimeout(timer); };
+  }, [suchbegriff]);
+
+  useEffect(function() {
+    var alive = true;
+
     async function laden() {
       try {
-        var authResult = await supabase.auth.getUser();
-        var user = authResult.data && authResult.data.user;
+        var authRes = await supabase.auth.getUser();
+        var user = authRes.data && authRes.data.user;
         if (!user) {
-          setImEinsatzLaden(false);
-          setVerfuegbarLaden(false);
-          setAbwesendLaden(false);
-          setTeamLaden(false);
+          if (alive) { setFehler('Nicht angemeldet.'); setLaden(false); }
           return;
         }
 
-        var memberResult = await supabase
+        var memberRes = await supabase
           .from('company_members')
-          .select('company_id')
+          .select('company_id, email')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .single();
-        var companyId = memberResult.data && memberResult.data.company_id;
-        if (!companyId) {
-          setImEinsatzLaden(false);
-          setVerfuegbarLaden(false);
-          setAbwesendLaden(false);
-          setTeamLaden(false);
+
+        var cId = memberRes.data && memberRes.data.company_id;
+        if (!cId) {
+          if (alive) { setFehler('Keine Firma gefunden.'); setLaden(false); }
           return;
         }
 
-        var techResult = await supabase
+        var userEmail = (memberRes.data && memberRes.data.email) || user.email;
+
+        var maRes = await supabase
           .from('mitarbeiter')
-          .select('id, vorname, nachname, position, status')
-          .eq('company_id', companyId)
-          .eq('status', 'im_einsatz')
-          .order('nachname', { ascending: true });
+          .select('id')
+          .eq('company_id', cId)
+          .eq('email', userEmail)
+          .maybeSingle();
 
-        if (techResult.error) {
-          setImEinsatzFehler(true);
-        } else {
-          var techList = techResult.data ?? [];
+        var auftragIds = null;
 
-          if (techList.length > 0) {
-            var ids = techList.map(function(t) { return t.id; });
-            var aufResult = await supabase
-              .from('auftraege')
-              .select('id, titel, adresse, uhrzeit, verantw_mitarbeiter_id')
-              .eq('company_id', companyId)
-              .in('verantw_mitarbeiter_id', ids)
-              .not('status', 'in', '(abgeschlossen,dokumentiert,storniert)');
+        if (maRes.data) {
+          var amRes = await supabase
+            .from('auftrag_mitarbeiter')
+            .select('auftrag_id')
+            .eq('mitarbeiter_id', maRes.data.id);
 
-            var aufMap = {};
-            if (!aufResult.error) {
-              (aufResult.data ?? []).forEach(function(a) {
-                if (!aufMap[a.verantw_mitarbeiter_id]) {
-                  aufMap[a.verantw_mitarbeiter_id] = a;
-                }
-              });
-            }
-
-            techList = techList.map(function(t) {
-              return Object.assign({}, t, { auftrag: aufMap[t.id] || null });
-            });
+          if (!amRes.error && amRes.data && amRes.data.length > 0) {
+            auftragIds = amRes.data.map(function(r) { return r.auftrag_id; });
+          } else if (!amRes.error) {
+            if (alive) { setAuftraege([]); setLaden(false); }
+            return;
           }
-
-          setImEinsatz(techList);
-        }
-        setImEinsatzLaden(false);
-
-        var verfResult = await supabase
-          .from('mitarbeiter')
-          .select('id, vorname, nachname, position, status')
-          .eq('company_id', companyId)
-          .eq('status', 'verfuegbar')
-          .order('nachname', { ascending: true });
-
-        if (verfResult.error) {
-          setVerfuegbarFehler(true);
         } else {
-          setVerfuegbar(verfResult.data ?? []);
+          if (alive) setOhneProfilHinweis(true);
         }
-        setVerfuegbarLaden(false);
 
-        var abwResult = await supabase
-          .from('mitarbeiter')
-          .select('id, vorname, nachname, position, status')
-          .eq('company_id', companyId)
-          .in('status', ['urlaub', 'krank'])
-          .order('nachname', { ascending: true });
+        var query = supabase
+          .from('auftraege')
+          .select('id, titel, datum, status, adresse, kunden(name, firmenname)')
+          .eq('company_id', cId)
+          .order('datum', { ascending: true });
 
-        if (abwResult.error) {
-          setAbwesendFehler(true);
-        } else {
-          setAbwesend(abwResult.data ?? []);
+        if (auftragIds !== null) {
+          query = query.in('id', auftragIds);
         }
-        setAbwesendLaden(false);
 
-        var allResult = await supabase
-          .from('mitarbeiter')
-          .select('status')
-          .eq('company_id', companyId);
+        var aufRes = await query;
 
-        if (allResult.error) {
-          setTeamFehler(true);
-        } else {
-          var alle = allResult.data ?? [];
-          var gesamt = alle.length;
-          var anzImEinsatz = 0;
-          var anzVerfuegbar = 0;
-          var anzAbwesend = 0;
-          alle.forEach(function(m) {
-            if (m.status === 'im_einsatz') {
-              anzImEinsatz = anzImEinsatz + 1;
-            } else if (m.status === 'verfuegbar') {
-              anzVerfuegbar = anzVerfuegbar + 1;
-            } else if (m.status === 'urlaub' || m.status === 'krank') {
-              anzAbwesend = anzAbwesend + 1;
-            }
-          });
-          setTeam({ gesamt: gesamt, imEinsatz: anzImEinsatz, verfuegbar: anzVerfuegbar, abwesend: anzAbwesend });
+        if (alive) {
+          setAuftraege(aufRes.data || []);
+          setLaden(false);
         }
-        setTeamLaden(false);
-
       } catch (err) {
-        setImEinsatzFehler(true);
-        setImEinsatzLaden(false);
-        setVerfuegbarFehler(true);
-        setVerfuegbarLaden(false);
-        setAbwesendFehler(true);
-        setAbwesendLaden(false);
-        setTeamFehler(true);
-        setTeamLaden(false);
+        if (alive) { setFehler('Fehler beim Laden.'); setLaden(false); }
       }
     }
+
     laden();
+    return function() { alive = false; };
   }, []);
 
-  var einsatzZahl = imEinsatzLaden ? '...' : String(imEinsatz.length);
-  var einsatzVariant = imEinsatzLaden ? 'default' : (imEinsatz.length > 0 ? 'info' : 'default');
+  function auftragKlich(id) {
+    router.push('/dashboard-v2/techniker/' + id);
+  }
 
-  var verfuegbarZahl = verfuegbarLaden ? '...' : String(verfuegbar.length);
-  var verfuegbarVariant = verfuegbarLaden ? 'default' : (verfuegbar.length > 0 ? 'success' : 'default');
+  var heute = heuteStr();
+  var q = suchDebounce.toLowerCase();
 
-  var abwesendZahl = abwesendLaden ? '...' : String(abwesend.length);
-  var abwesendVariant = abwesendLaden ? 'default' : (abwesend.length > 0 ? 'warning' : 'default');
+  function filterListe(list) {
+    if (!q) return list;
+    return list.filter(function(a) {
+      var titel = (a.titel || '').toLowerCase();
+      var kunde = a.kunden
+        ? ((a.kunden.firmenname || a.kunden.name || '').toLowerCase())
+        : '';
+      var adresse = (a.adresse || '').toLowerCase();
+      return titel.includes(q) || kunde.includes(q) || adresse.includes(q);
+    });
+  }
 
-  var teamZahl = teamLaden ? '...' : String(team.gesamt);
-  var teamVariant = teamLaden ? 'default' : (team.gesamt > 0 ? 'info' : 'default');
+  var heuteAuftraege = filterListe(auftraege.filter(function(a) {
+    return a.datum && a.datum.startsWith(heute);
+  }));
+
+  var offeneAuftraege = filterListe(auftraege.filter(function(a) {
+    return a.status === 'geplant' || a.status === 'unterwegs' ||
+      a.status === 'vor_ort' || a.status === 'in_bearbeitung' || a.status === 'offen';
+  }));
+
+  var abgeschlosseneAuftraege = filterListe(auftraege.filter(function(a) {
+    return a.status === 'abgeschlossen';
+  }));
+
+  var FILTER_BUTTONS = [
+    { key: 'alle', label: 'Alle' },
+    { key: 'heute', label: 'Heute' },
+    { key: 'offen', label: 'Offen' },
+    { key: 'abgeschlossen', label: 'Abgeschlossen' },
+  ];
+
+  if (!laden && fehler) {
+    return (
+      <Page>
+        <Page.Header>
+          <Page.Title>Meine Einsaetze</Page.Title>
+        </Page.Header>
+        <Page.Content>
+          <div className="py-20 text-center text-sm text-red-500">{fehler}</div>
+        </Page.Content>
+      </Page>
+    );
+  }
 
   return (
     <Page>
       <Page.Header>
-        <Page.Title>Techniker</Page.Title>
-        <Page.Description>Ãbersicht Ã¼ber alle Techniker und ihren aktuellen Einsatzstatus.</Page.Description>
+        <Page.Title>Meine Einsaetze</Page.Title>
       </Page.Header>
       <Page.Content>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          <Card>
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <Card.Title>Techniker im Einsatz</Card.Title>
-                <Badge variant={einsatzVariant}>{einsatzZahl}</Badge>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {imEinsatzLaden ? (
-                <p className="text-sm text-gray-400">LÃ¤dt...</p>
-              ) : imEinsatzFehler ? (
-                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
-              ) : imEinsatz.length === 0 ? (
-                <p className="text-sm text-gray-500">Aktuell befindet sich kein Techniker im Einsatz.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {imEinsatz.map(function(t) {
-                    var name = (t.vorname || '') + ' ' + (t.nachname || '');
-                    return (
-                      <li key={t.id} className="border border-gray-100 rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
-                          <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
-                          </Badge>
-                        </div>
-                        {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
-                        {t.auftrag ? (
-                          <div className="mt-1">
-                            <p className="text-xs text-gray-600 font-medium">{t.auftrag.titel || 'â'}</p>
-                            {t.auftrag.adresse ? <p className="text-xs text-gray-400">{t.auftrag.adresse}</p> : null}
-                          </div>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card.Content>
-          </Card>
+        {!laden && (
+          <div className="mb-5 grid grid-cols-3 gap-3">
+            <KpiCard
+              title="Heute"
+              value={heuteAuftraege.length}
+              icon={Calendar}
+              iconColor="text-primary-600"
+              iconBg="bg-primary-50"
+              onClick={function() { setAktFilter(aktFilter === 'heute' ? 'alle' : 'heute'); }}
+            />
+            <KpiCard
+              title="Offen"
+              value={offeneAuftraege.length}
+              icon={Clock}
+              iconColor="text-warning-600"
+              iconBg="bg-warning-50"
+              onClick={function() { setAktFilter(aktFilter === 'offen' ? 'alle' : 'offen'); }}
+            />
+            <KpiCard
+              title="Fertig"
+              value={abgeschlosseneAuftraege.length}
+              icon={CheckCircle}
+              iconColor="text-success-600"
+              iconBg="bg-success-50"
+              onClick={function() { setAktFilter(aktFilter === 'abgeschlossen' ? 'alle' : 'abgeschlossen'); }}
+            />
+          </div>
+        )}
 
-          <Card>
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <Card.Title>Heute verfÃ¼gbar</Card.Title>
-                <Badge variant={verfuegbarVariant}>{verfuegbarZahl}</Badge>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {verfuegbarLaden ? (
-                <p className="text-sm text-gray-400">LÃ¤dt...</p>
-              ) : verfuegbarFehler ? (
-                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
-              ) : verfuegbar.length === 0 ? (
-                <p className="text-sm text-gray-500">Heute sind keine Techniker verfÃ¼gbar.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {verfuegbar.map(function(t) {
-                    var name = (t.vorname || '') + ' ' + (t.nachname || '');
-                    return (
-                      <li key={t.id} className="border border-gray-100 rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
-                          <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
-                          </Badge>
-                        </div>
-                        {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card.Content>
-          </Card>
-
-          <Card>
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <Card.Title>Abwesend</Card.Title>
-                <Badge variant={abwesendVariant}>{abwesendZahl}</Badge>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {abwesendLaden ? (
-                <p className="text-sm text-gray-400">LÃ¤dt...</p>
-              ) : abwesendFehler ? (
-                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
-              ) : abwesend.length === 0 ? (
-                <p className="text-sm text-gray-500">Aktuell sind keine Techniker abwesend.</p>
-              ) : (
-                <ul className="space-y-3">
-                  {abwesend.map(function(t) {
-                    var name = (t.vorname || '') + ' ' + (t.nachname || '');
-                    return (
-                      <li key={t.id} className="border border-gray-100 rounded-lg p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-gray-900">{name.trim() || 'â'}</p>
-                          <Badge variant={MA_STATUS_BADGE[t.status] || 'default'}>
-                            {MA_STATUS_LABEL[t.status] || t.status || 'â'}
-                          </Badge>
-                        </div>
-                        {t.position ? <p className="text-xs text-gray-500 mt-1">{t.position}</p> : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </Card.Content>
-          </Card>
-
-          <Card>
-            <Card.Header>
-              <div className="flex items-center justify-between">
-                <Card.Title>TeamÃ¼bersicht</Card.Title>
-                <Badge variant={teamVariant}>{teamZahl}</Badge>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {teamLaden ? (
-                <p className="text-sm text-gray-400">LÃ¤dt...</p>
-              ) : teamFehler ? (
-                <p className="text-sm text-red-500">Daten konnten nicht geladen werden.</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-gray-100 p-3">
-                    <p className="text-2xl font-bold text-gray-900">{String(team.gesamt)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Gesamt</p>
-                  </div>
-                  <div className="rounded-lg border border-gray-100 p-3">
-                    <p className="text-2xl font-bold text-primary-600">{String(team.imEinsatz)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Im Einsatz</p>
-                  </div>
-                  <div className="rounded-lg border border-gray-100 p-3">
-                    <p className="text-2xl font-bold text-green-600">{String(team.verfuegbar)}</p>
-                    <p className="text-xs text-gray-500 mt-1">VerfÃ¼gbar</p>
-                  </div>
-                  <div className="rounded-lg border border-gray-100 p-3">
-                    <p className="text-2xl font-bold text-yellow-600">{String(team.abwesend)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Abwesend</p>
-                  </div>
-                </div>
-              )}
-            </Card.Content>
-          </Card>
-
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <Input
+            placeholder="Einsaetze durchsuchen..."
+            className="pl-9"
+            value={suchbegriff}
+            onChange={function(e) { setSuchbegriff(e.target.value); }}
+          />
         </div>
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          {FILTER_BUTTONS.map(function(f) {
+            return (
+              <Button
+                key={f.key}
+                variant={aktFilter === f.key ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={function() { setAktFilter(f.key); }}
+              >
+                {f.label}
+              </Button>
+            );
+          })}
+        </div>
+
+        {ohneProfilHinweis && (
+          <div className="mb-4 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+            Kein Mitarbeiterprofil gefunden. Es werden alle Firmen-Auftraege angezeigt.
+          </div>
+        )}
+
+        {(aktFilter === 'alle' || aktFilter === 'heute') && (
+          <Sektion
+            titel="Heute"
+            auftraege={heuteAuftraege}
+            icon={Calendar}
+            emptyText="Keine Einsaetze fuer heute geplant."
+            onKlick={auftragKlick}
+            laden={laden}
+          />
+        )}
+
+        {(aktFilter === 'alle' || aktFilter === 'offen') && (
+          <Sektion
+            titel="Offen & In Bearbeitung"
+            auftraege={offeneAuftraege}
+            icon={Clock}
+            emptyText="Keine offenen Einsaetze."
+            onKlick={auftragKlick}
+            laden={laden}
+          />
+        )}
+
+        {(aktFilter === 'alle' || aktFilter === 'abgeschlossen') && (
+          <Sektion
+            titel="Abgeschlossen"
+            auftraege={abgeschlosseneAuftraege}
+            icon={CheckCircle}
+            emptyText="Keine abgeschlossenen Einsaetze."
+            onKlick={auftragKlick}
+            laden={laden}
+          />
+        )}
+
       </Page.Content>
     </Page>
   );
