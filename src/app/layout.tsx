@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "KanalPro – Software für Rohr-, Kanal- und Industrieservice",
   description:
     "KanalPro digitalisiert Kundenverwaltung, Auftragsmanagement, Einsatzplanung und Abrechnung für Unternehmen der Rohr-, Kanal- und Industrieservicebranche.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({

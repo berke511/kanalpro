@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -18,7 +19,9 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-border bg-card p-4 sm:block">
-      <div className="px-2 py-2 text-lg font-semibold tracking-tight">KanalPro</div>
+      <div className="px-2 py-2">
+        <Image src="/logo.png" alt="KanalPro" width={120} height={81} className="h-10 w-auto" priority />
+      </div>
       <nav className="mt-4 flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
