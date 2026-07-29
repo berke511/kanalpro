@@ -124,6 +124,16 @@ export type Database = {
     }
     Functions: {
       current_company_id: { Args: never; Returns: string }
+      bootstrap_company_and_profile: {
+        Args: { p_company_name: string; p_full_name: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string
+        }
+      }
     }
     Enums: {
       [_ in never]: never
