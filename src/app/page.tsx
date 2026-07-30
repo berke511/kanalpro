@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 const MODULES = [
@@ -25,7 +24,7 @@ export default function Home() {
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Image src="/logo.png" alt="KanalPro" width={140} height={94} className="h-9 w-auto" priority />
+          <span className="text-xl font-semibold text-brand">KanalPro</span>
           <nav className="flex items-center gap-3 text-sm font-medium">
             <Link href="/login" className="text-muted hover:text-foreground">
               Anmelden
