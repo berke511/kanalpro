@@ -5,9 +5,20 @@ import { CustomerForm } from "@/components/dashboard/CustomerForm";
 export default async function NeuerKundePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; draft?: string; duplicate?: string; matches?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, draft, duplicate, matches } = await searchParams;
+
+  let defaultValues;
+  if (draft) {
+    try {
+      defaultValues = JSON.parse(draft);
+    } catch {
+      defaultValues = undefined;
+    }
+  }
+
+  const duplicateWarning = duplicate === "1" && matches ? matches.split(";").map((m) => m.trim()) : undefined;
 
   return (
     <div className="mx-auto max-w-2xl p-6">
@@ -21,7 +32,12 @@ export default async function NeuerKundePage({
       )}
 
       <div className="mt-6 rounded-2xl border border-border bg-card p-6">
-        <CustomerForm action={createCustomer} submitLabel="Kunde anlegen" />
+        <CustomerForm
+          action={createCustomer}
+          defaultValues={defaultValues}
+          submitLabel={duplicateWarning ? "Trotzdem anlegen" : "Kunde anlegen"}
+          duplicateWarning={duplicateWarning}
+        />
       </div>
     </div>
   );
