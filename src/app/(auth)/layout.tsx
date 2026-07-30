@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -5,8 +6,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
-          <Link href="/" className="text-xl font-semibold text-brand">
-            KanalPro
+          <Link href="/">
+            <Image src="/logo.svg" alt="KanalPro" width={349} height={214} className="h-16 w-auto" priority />
           </Link>
         </div>
         <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
