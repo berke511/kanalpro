@@ -4,13 +4,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signUp(formData: FormData) {
+  const inviteToken = String(formData.get("invite") ?? "").trim();
   const companyName = String(formData.get("companyName") ?? "").trim();
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!companyName || !fullName || !email || !password) {
-    redirect("/register?error=Bitte+alle+Felder+ausf%C3%BCllen");
+  const inviteParam = inviteToken ? `invite=${encodeURIComponent(inviteToken)}&` : "";
+
+  if ((!inviteToken && !companyName) || !fullName || !email || !password) {
+    redirect(`/register?${inviteParam}error=Bitte+alle+Felder+ausf%C3%BCllen`);
   }
 
   const supabase = await createClient();
@@ -18,12 +21,14 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      data: { company_name: companyName, full_name: fullName },
+      data: inviteToken
+        ? { invite_token: inviteToken, full_name: fullName }
+        : { company_name: companyName, full_name: fullName },
     },
   });
 
   if (error) {
-    redirect(`/register?error=${encodeURIComponent(error.message)}`);
+    redirect(`/register?${inviteParam}error=${encodeURIComponent(error.message)}`);
   }
 
   if (!data.session) {

@@ -28,10 +28,35 @@ export async function getOrCreateProfile(
     return existing as Profile;
   }
 
+  const fullName = (user.user_metadata?.full_name as string | undefined)?.trim() ?? "";
+  const inviteToken = (user.user_metadata?.invite_token as string | undefined)?.trim();
+
+  if (inviteToken) {
+    // Nutzer kam über einen Einladungslink eines bestehenden Unternehmens.
+    // accept_company_invite() ist ebenfalls SECURITY DEFINER (gleicher
+    // Henne-Ei-Grund wie unten bei bootstrap_company_and_profile) und legt
+    // das Profil direkt in der einladenden Firma mit der vorgesehenen Rolle an.
+    const { error: acceptError } = await supabase.rpc("accept_company_invite", {
+      p_token: inviteToken,
+      p_full_name: fullName,
+    });
+
+    if (acceptError) {
+      return null;
+    }
+
+    const { data: invitedProfile } = await supabase
+      .from("profiles")
+      .select("*, companies(*)")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    return (invitedProfile as Profile) ?? null;
+  }
+
   const companyName =
     (user.user_metadata?.company_name as string | undefined)?.trim() ||
     "Mein Unternehmen";
-  const fullName = (user.user_metadata?.full_name as string | undefined)?.trim() ?? "";
 
   // Plain inserts here run into a chicken-and-egg RLS problem: PostgREST
   // re-selects the inserted row to return it, which requires the SELECT

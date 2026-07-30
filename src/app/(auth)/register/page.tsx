@@ -4,15 +4,19 @@ import { signUp } from "@/app/(auth)/actions";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; invite?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, invite } = await searchParams;
 
   return (
     <>
-      <h1 className="text-lg font-semibold">Unternehmen registrieren</h1>
+      <h1 className="text-lg font-semibold">
+        {invite ? "Einladung annehmen" : "Unternehmen registrieren"}
+      </h1>
       <p className="mt-1 text-sm text-muted">
-        Erstellen Sie Ihren eigenen KanalPro-Arbeitsbereich.
+        {invite
+          ? "Erstellen Sie Ihr Konto, um dem Team beizutreten."
+          : "Erstellen Sie Ihren eigenen KanalPro-Arbeitsbereich."}
       </p>
 
       {error && (
@@ -22,18 +26,21 @@ export default async function RegisterPage({
       )}
 
       <form action={signUp} className="mt-6 space-y-4">
-        <div>
-          <label htmlFor="companyName" className="text-sm font-medium">
-            Firmenname
-          </label>
-          <input
-            id="companyName"
-            name="companyName"
-            type="text"
-            required
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-        </div>
+        {invite && <input type="hidden" name="invite" value={invite} />}
+        {!invite && (
+          <div>
+            <label htmlFor="companyName" className="text-sm font-medium">
+              Firmenname
+            </label>
+            <input
+              id="companyName"
+              name="companyName"
+              type="text"
+              required
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </div>
+        )}
         <div>
           <label htmlFor="fullName" className="text-sm font-medium">
             Ihr Name
