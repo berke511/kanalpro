@@ -216,6 +216,53 @@ export type Database = {
           },
         ]
       }
+      materials: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          unit: string
+          quantity: number
+          min_quantity: number | null
+          unit_price: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          unit?: string
+          quantity?: number
+          min_quantity?: number | null
+          unit_price?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          unit?: string
+          quantity?: number
+          min_quantity?: number | null
+          unit_price?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invites: {
         Row: {
           id: string
