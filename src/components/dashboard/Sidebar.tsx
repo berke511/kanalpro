@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/mitarbeiter", label: "Mitarbeiter" },
   { href: "/fahrzeuge", label: "Fahrzeuge" },
   { href: "/material", label: "Material" },
+  { href: "/berichte", label: "Einsatzberichte" },
   { href: "/rechnungen", label: "Angebote & Rechnungen" },
 ];
 

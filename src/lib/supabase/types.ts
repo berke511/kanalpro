@@ -263,6 +263,63 @@ export type Database = {
           },
         ]
       }
+      service_reports: {
+        Row: {
+          id: string
+          company_id: string
+          order_id: string
+          report_date: string
+          work_performed: string
+          hours_worked: number | null
+          materials_notes: string | null
+          customer_signature_name: string | null
+          signed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          order_id: string
+          report_date?: string
+          work_performed: string
+          hours_worked?: number | null
+          materials_notes?: string | null
+          customer_signature_name?: string | null
+          signed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          order_id?: string
+          report_date?: string
+          work_performed?: string
+          hours_worked?: number | null
+          materials_notes?: string | null
+          customer_signature_name?: string | null
+          signed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invites: {
         Row: {
           id: string
