@@ -320,6 +320,110 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          id: string
+          company_id: string
+          customer_id: string | null
+          order_id: string | null
+          kind: string
+          invoice_number: string | null
+          status: string
+          issue_date: string
+          due_date: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          customer_id?: string | null
+          order_id?: string | null
+          kind?: string
+          invoice_number?: string | null
+          status?: string
+          issue_date?: string
+          due_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          customer_id?: string | null
+          order_id?: string | null
+          kind?: string
+          invoice_number?: string | null
+          status?: string
+          issue_date?: string
+          due_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          id: string
+          company_id: string
+          invoice_id: string
+          description: string
+          quantity: number
+          unit_price: number
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          invoice_id: string
+          description: string
+          quantity?: number
+          unit_price?: number
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          invoice_id?: string
+          description?: string
+          quantity?: number
+          unit_price?: number
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invites: {
         Row: {
           id: string
