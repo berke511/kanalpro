@@ -212,7 +212,7 @@ export default async function KundeDetailPage({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <CustomerKindIcon kind={customer.kind} className="h-5 w-5 text-muted" />
-            <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
+            <h1 className="break-words text-2xl font-semibold tracking-tight">{customer.name}</h1>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
             >
@@ -549,14 +549,14 @@ export default async function KundeDetailPage({
                 <div className="mt-3 space-y-2">
                   {auditLog.length === 0 && <p className="text-sm text-muted">Noch keine Einträge.</p>}
                   {auditLog.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm">
-                      <span>
+                    <div key={a.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                      <span className="break-words">
                         <span className="font-medium">
                           {a.action === "created" ? "Angelegt" : a.action === "updated" ? "Aktualisiert" : "Gelöscht"}
                         </span>
                         {a.summary ? ` – ${a.summary}` : ""}
                       </span>
-                      <span className="text-xs text-muted">
+                      <span className="shrink-0 text-xs text-muted">
                         {a.actor_id ? authorNames[a.actor_id] ?? "Unbekannt" : "Unbekannt"} · {formatDateTime(a.created_at)}
                       </span>
                     </div>
