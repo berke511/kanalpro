@@ -10,7 +10,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-border bg-card p-4 sm:block">
-      <div className="px-2 py-2">
+      <div className="flex justify-center py-2">
         <Image src="/logo.svg" alt="KanalPro" width={349} height={214} className="h-11 w-auto" priority />
       </div>
       <nav className="mt-4 flex flex-col gap-1">
