@@ -46,7 +46,7 @@ export function RequiredFieldsProgress({ formId }: { formId: string }) {
   const percent = total === 0 ? 0 : Math.round((filledCount / total) * 100);
 
   return (
-    <div className="rounded-xl border border-border bg-background p-4">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between text-sm font-medium">
         <span>Fortschritt</span>
         <span className="text-muted">

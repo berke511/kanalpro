@@ -24,7 +24,7 @@ export default async function NeuerKundePage({
   const missingFields = missing ? missing.split(",") : undefined;
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-6xl p-6">
       <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Kundenliste
       </Link>
@@ -35,13 +35,13 @@ export default async function NeuerKundePage({
           <p className="mt-1 text-sm text-muted">Lege einen neuen Kunden mit allen Stammdaten an.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/kunden" className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-background">
+          <Link href="/kunden" className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-background">
             ❌ Abbrechen
           </Link>
           <button
             type="submit"
             form={FORM_ID}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
           >
             💾 Speichern
           </button>
@@ -58,6 +58,7 @@ export default async function NeuerKundePage({
           submitLabel={duplicateWarning ? "Trotzdem anlegen" : "Kunde anlegen"}
           duplicateWarning={duplicateWarning}
           missingFields={missingFields}
+          autoFocusFirstField
         />
       </div>
     </div>

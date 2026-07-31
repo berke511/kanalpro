@@ -212,26 +212,32 @@ export default async function KundeDetailPage({
             <button
               type="submit"
               form={saveFormId}
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
             >
               💾 Speichern
             </button>
           )}
           <Link
             href={`/kunden/${id}?tab=${activeTab}`}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background"
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
           >
             ❌ Abbrechen
           </Link>
+          <Link
+            href={`/auftraege/neu?customer_id=${id}`}
+            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
+          >
+            🧰 Auftrag erstellen
+          </Link>
           <form action={duplicateWithId}>
-            <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">
+            <button type="submit" className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background">
               📋 Duplizieren
             </button>
           </form>
           <form action={deleteWithId}>
             <button
               type="submit"
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
             >
               🗑 Löschen
             </button>
@@ -269,6 +275,7 @@ export default async function KundeDetailPage({
               missingFields={missingFields}
               section="allgemein"
               showProgress
+              customerId={id}
             />
           )}
 
@@ -471,7 +478,7 @@ export default async function KundeDetailPage({
         </div>
 
         <aside className="lg:sticky lg:top-6">
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-sm font-semibold">Kundenübersicht</h2>
             <dl className="mt-4 space-y-3 text-sm">
               <div>
@@ -508,7 +515,7 @@ export default async function KundeDetailPage({
             </dl>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+          <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-sm font-semibold">Schnellaktionen</h2>
             <div className="mt-3 flex flex-col gap-2">
               <Link href={`/auftraege/neu?customer_id=${id}`} className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium hover:bg-background">

@@ -435,6 +435,36 @@ export async function addCustomerContact(customerId: string, formData: FormData)
   redirect(`/kunden/${customerId}?tab=kontakte`);
 }
 
+// Wird direkt aus einer Client-Komponente aufgerufen (nicht als <form action>),
+// um während der Eingabe eine unverbindliche Dublettenwarnung anzuzeigen.
+// Next.js ruft Server Actions transparent per RPC auf, dafür ist kein
+// eigener Route Handler nötig.
+export async function checkCustomerDuplicatesLive(input: {
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  vatId?: string;
+  excludeId?: string;
+}) {
+  const { supabase, companyId } = await requireCompanyContext();
+
+  const fields: CustomerFields = {
+    kind: "sonstige",
+    status: "interessent",
+    company_name: emptyToNull(input.companyName ?? null),
+    email: emptyToNull(input.email ?? null),
+    phone: emptyToNull(input.phone ?? null),
+    vat_id: emptyToNull(input.vatId ?? null),
+    country: "Deutschland",
+    billing_same_as_main: true,
+    service_same_as_main: true,
+    tags: [],
+  } as CustomerFields;
+
+  const duplicates = await findDuplicateCustomers(supabase, companyId, fields, input.excludeId);
+  return duplicates.map((d) => ({ id: d.id, label: `${d.customer_number ?? "?"}: ${d.name}` }));
+}
+
 export async function deleteCustomerContact(customerId: string, contactId: string) {
   const { supabase } = await requireCompanyContext();
   await supabase.from("customer_contacts").delete().eq("id", contactId);

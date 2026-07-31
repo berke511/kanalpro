@@ -1,6 +1,16 @@
 import {
+  Banknote,
+  Building2,
+  MapPin,
+  Phone,
+  Receipt,
+  Tags as TagsIcon,
+  UserRound,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import {
   CUSTOMER_KINDS,
-  CUSTOMER_KIND_ICONS,
   CUSTOMER_KIND_LABELS,
   CUSTOMER_STATUSES,
   CUSTOMER_STATUS_DOT_CLASS,
@@ -8,6 +18,8 @@ import {
   isCompanyKind,
 } from "@/lib/customers";
 import { RequiredFieldsProgress } from "@/components/dashboard/RequiredFieldsProgress";
+import { DuplicateCheckLive } from "@/components/dashboard/DuplicateCheckLive";
+import { CustomerKindIcon } from "@/components/dashboard/CustomerKindIcon";
 
 type CustomerFormValues = {
   kind?: string;
@@ -42,41 +54,81 @@ type CustomerFormValues = {
   tags?: string[] | null;
 };
 
-const inputClass =
-  "mt-1.5 w-full rounded-lg border border-border bg-card px-3.5 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10";
-const labelClass = "flex items-center gap-1.5 text-sm font-medium text-foreground";
+const CARD_CLASS = "rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7";
+const inputBaseClass =
+  "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10";
+const errorInputClass = "border-red-300 ring-2 ring-red-100";
+const labelClass = "text-sm font-medium text-foreground";
+const helperClass = "mt-1 text-xs text-muted";
 
-function RequiredBadge() {
+const COUNTRY_OPTIONS = [
+  "Deutschland",
+  "Österreich",
+  "Schweiz",
+  "Niederlande",
+  "Belgien",
+  "Luxemburg",
+  "Frankreich",
+  "Polen",
+  "Dänemark",
+];
+
+const LEGAL_FORM_OPTIONS = ["GmbH", "UG (haftungsbeschränkt)", "AG", "GmbH & Co. KG", "KG", "OHG", "GbR", "e.K.", "Einzelunternehmen"];
+
+function Field({
+  id,
+  label,
+  helper,
+  error,
+  children,
+}: {
+  id: string;
+  label: React.ReactNode;
+  helper?: string;
+  error?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="rounded-full bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
-      Pflicht
-    </span>
+    <div>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      {children}
+      {error ? (
+        <p className="mt-1 text-xs font-medium text-red-600">Pflichtfeld – bitte ausfüllen.</p>
+      ) : (
+        helper && <p className={helperClass}>{helper}</p>
+      )}
+    </div>
   );
 }
 
-function SectionHeading({
-  icon,
+function SectionCard({
+  icon: Icon,
   title,
   description,
-  highlight,
+  span2,
+  children,
 }: {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   description?: string;
-  highlight?: boolean;
+  span2?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${highlight ? "bg-red-50" : "bg-brand-soft"}`}
-      >
-        {icon}
-      </span>
-      <div>
-        <h2 className={`text-base font-semibold ${highlight ? "text-red-700" : "text-foreground"}`}>{title}</h2>
-        {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+    <section className={`${CARD_CLASS} ${span2 ? "xl:col-span-2" : ""}`}>
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand-dark">
+          <Icon className="h-5 w-5" strokeWidth={1.75} />
+        </span>
+        <div>
+          <h2 className="text-base font-semibold leading-tight text-foreground">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+        </div>
       </div>
-    </div>
+      <div className="mt-5 space-y-5">{children}</div>
+    </section>
   );
 }
 
@@ -97,6 +149,8 @@ export function CustomerForm({
   missingFields,
   section = "all",
   showProgress = true,
+  autoFocusFirstField = false,
+  customerId,
 }: {
   formId: string;
   action: (formData: FormData) => void;
@@ -106,6 +160,8 @@ export function CustomerForm({
   missingFields?: string[];
   section?: "all" | "allgemein" | "adressen";
   showProgress?: boolean;
+  autoFocusFirstField?: boolean;
+  customerId?: string;
 }) {
   const kind = defaultValues?.kind ?? "privat";
   const showCompanyFields = isCompanyKind(kind);
@@ -116,346 +172,317 @@ export function CustomerForm({
   const showAdressen = section === "all" || section === "adressen";
 
   const missing = new Set(missingFields ?? []);
+  const nameMissing = missing.has("name");
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
-      <form id={formId} action={action} className="space-y-10 rounded-2xl border border-border bg-card p-8">
+      <form id={formId} action={action} className="space-y-6">
         <input type="hidden" name="active_section" value={section} />
+
         {duplicateWarning && duplicateWarning.length > 0 && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-            <p className="font-semibold">⚠ Möglicherweise bereits vorhanden</p>
-            <p className="mt-1">
+          <div className={`${CARD_CLASS} border-amber-300 bg-amber-50`}>
+            <p className="text-sm font-semibold text-amber-900">⚠ Möglicherweise bereits vorhanden</p>
+            <p className="mt-1 text-sm text-amber-900">
               Es wurden ähnliche Kunden gefunden (gleicher Firmenname, Telefon, E-Mail oder USt-IdNr.):
             </p>
-            <ul className="mt-2 list-inside list-disc">
+            <ul className="mt-2 list-inside list-disc text-sm text-amber-900">
               {duplicateWarning.map((m) => (
                 <li key={m}>{m}</li>
               ))}
             </ul>
-            <p className="mt-2">
-              Bitte prüfen Sie, ob es sich um einen bestehenden Kunden handelt. Sie können den Kunden
-              trotzdem als neuen Datensatz anlegen.
+            <p className="mt-2 text-sm text-amber-900">
+              Bitte prüfen Sie, ob es sich um einen bestehenden Kunden handelt. Sie können den Kunden trotzdem als
+              neuen Datensatz anlegen.
             </p>
             <input type="hidden" name="confirm_duplicate" value="1" />
           </div>
         )}
 
-        {showAllgemein && (
-          <>
-            <section className="space-y-5">
-              <SectionHeading icon="👤" title="Allgemeine Informationen" description="Grundlegende Stammdaten des Kunden." />
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <span className={labelClass}>
-                    Kundenart <RequiredBadge />
-                  </span>
-                  <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                    {CUSTOMER_KINDS.map((k) => (
-                      <label key={k} className="cursor-pointer">
-                        <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
-                        <div className="flex flex-col items-center gap-1 rounded-xl border-2 border-border bg-background px-2 py-3 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
-                          <span className="text-xl">{CUSTOMER_KIND_ICONS[k]}</span>
-                          <span className="text-xs font-medium">{CUSTOMER_KIND_LABELS[k]}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <span className={labelClass}>
-                    Status <RequiredBadge />
-                  </span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {CUSTOMER_STATUSES.map((s) => (
-                      <label key={s} className="cursor-pointer">
-                        <input
-                          type="radio"
-                          name="status"
-                          value={s}
-                          defaultChecked={(defaultValues?.status ?? "interessent") === s}
-                          className="peer sr-only"
-                        />
-                        <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
-                          <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
-                          {CUSTOMER_STATUS_LABELS[s]}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
+        {showAllgemein && <DuplicateCheckLive formId={formId} excludeId={customerId} />}
 
-            {!showCompanyFields && (
-              <section className={`space-y-5 ${missing.has("name") ? "rounded-xl ring-2 ring-red-300" : ""}`}>
-                <SectionHeading icon="🙋" title="Persönliche Daten" description="Name des Privatkunden." highlight={missing.has("name")} />
-                <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
+          {showAllgemein && (
+            <>
+              <SectionCard icon={UserRound} title="Allgemeine Informationen" description="Grundlegende Stammdaten des Kunden." span2>
+                <div className="grid gap-6 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="first_name" className={labelClass}>
-                      Vorname
-                    </label>
-                    <input id="first_name" name="first_name" type="text" defaultValue={defaultValues?.first_name ?? ""} className={inputClass} />
+                    <span className={labelClass}>Kundenart</span>
+                    <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                      {CUSTOMER_KINDS.map((k) => (
+                        <label key={k} className="cursor-pointer">
+                          <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
+                          <div className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-2 py-3 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
+                            <CustomerKindIcon kind={k} className="h-5 w-5 text-muted" />
+                            <span className="text-xs font-medium">{CUSTOMER_KIND_LABELS[k]}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <div>
-                    <label htmlFor="last_name" className={labelClass}>
-                      Nachname <RequiredBadge />
-                    </label>
-                    <input id="last_name" name="last_name" type="text" defaultValue={defaultValues?.last_name ?? ""} className={inputClass} />
+                    <span className={labelClass}>Status</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {CUSTOMER_STATUSES.map((s) => (
+                        <label key={s} className="cursor-pointer">
+                          <input
+                            type="radio"
+                            name="status"
+                            value={s}
+                            defaultChecked={(defaultValues?.status ?? "interessent") === s}
+                            className="peer sr-only"
+                          />
+                          <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
+                            <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
+                            {CUSTOMER_STATUS_LABELS[s]}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </section>
-            )}
+              </SectionCard>
 
-            {showCompanyFields && (
-              <section className={`space-y-5 ${missing.has("name") ? "rounded-xl ring-2 ring-red-300" : ""}`}>
-                <SectionHeading icon="🏢" title="Unternehmen" description="Firmendaten und rechtliche Angaben." highlight={missing.has("name")} />
-                <div className="space-y-5">
-                  <div>
-                    <label htmlFor="company_name" className={labelClass}>
-                      Firmenname <RequiredBadge />
-                    </label>
-                    <input id="company_name" name="company_name" type="text" defaultValue={defaultValues?.company_name ?? ""} className={inputClass} />
+              {!showCompanyFields && (
+                <SectionCard icon={UserRound} title="Persönliche Daten" description="Name des Privatkunden." span2>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field id="first_name" label="Vorname" helper="Optional.">
+                      <input
+                        id="first_name"
+                        name="first_name"
+                        type="text"
+                        placeholder="Max"
+                        defaultValue={defaultValues?.first_name ?? ""}
+                        className={inputBaseClass}
+                      />
+                    </Field>
+                    <Field id="last_name" label="Nachname" error={nameMissing}>
+                      <input
+                        id="last_name"
+                        name="last_name"
+                        type="text"
+                        placeholder="Mustermann"
+                        autoFocus={autoFocusFirstField}
+                        defaultValue={defaultValues?.last_name ?? ""}
+                        className={`${inputBaseClass} ${nameMissing ? errorInputClass : ""}`}
+                      />
+                    </Field>
                   </div>
+                </SectionCard>
+              )}
+
+              {showCompanyFields && (
+                <SectionCard icon={Building2} title="Unternehmen" description="Firmendaten und rechtliche Angaben." span2>
+                  <Field id="company_name" label="Firmenname" error={nameMissing} helper="Erscheint auf Rechnungen und Angeboten.">
+                    <input
+                      id="company_name"
+                      name="company_name"
+                      type="text"
+                      placeholder="z. B. Mustermann GmbH"
+                      autoFocus={autoFocusFirstField}
+                      defaultValue={defaultValues?.company_name ?? ""}
+                      className={`${inputBaseClass} ${nameMissing ? errorInputClass : ""}`}
+                    />
+                  </Field>
                   <div className="grid gap-5 sm:grid-cols-3">
-                    <div>
-                      <label htmlFor="legal_form" className={labelClass}>
-                        Rechtsform
-                      </label>
-                      <input id="legal_form" name="legal_form" type="text" placeholder="z. B. GmbH" defaultValue={defaultValues?.legal_form ?? ""} className={inputClass} />
-                    </div>
-                    <div>
-                      <label htmlFor="register_number" className={labelClass}>
-                        Handelsregister
-                      </label>
-                      <input id="register_number" name="register_number" type="text" defaultValue={defaultValues?.register_number ?? ""} className={inputClass} />
-                    </div>
-                    <div>
-                      <label htmlFor="vat_id" className={labelClass}>
-                        USt-IdNr.
-                      </label>
-                      <input id="vat_id" name="vat_id" type="text" defaultValue={defaultValues?.vat_id ?? ""} className={inputClass} />
-                    </div>
+                    <Field id="legal_form" label="Rechtsform">
+                      <input
+                        id="legal_form"
+                        name="legal_form"
+                        type="text"
+                        list="legal-form-options"
+                        placeholder="z. B. GmbH"
+                        defaultValue={defaultValues?.legal_form ?? ""}
+                        className={inputBaseClass}
+                      />
+                      <datalist id="legal-form-options">
+                        {LEGAL_FORM_OPTIONS.map((o) => (
+                          <option key={o} value={o} />
+                        ))}
+                      </datalist>
+                    </Field>
+                    <Field id="register_number" label="Handelsregister">
+                      <input
+                        id="register_number"
+                        name="register_number"
+                        type="text"
+                        placeholder="HRB 12345"
+                        defaultValue={defaultValues?.register_number ?? ""}
+                        className={inputBaseClass}
+                      />
+                    </Field>
+                    <Field id="vat_id" label="USt-IdNr." helper="Für Rechnungen an Unternehmen.">
+                      <input
+                        id="vat_id"
+                        name="vat_id"
+                        type="text"
+                        placeholder="DE123456789"
+                        defaultValue={defaultValues?.vat_id ?? ""}
+                        className={inputBaseClass}
+                      />
+                    </Field>
                   </div>
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="first_name" className={labelClass}>
-                        Ansprechpartner (Vorname)
-                      </label>
-                      <input id="first_name" name="first_name" type="text" defaultValue={defaultValues?.first_name ?? ""} className={inputClass} />
-                    </div>
-                    <div>
-                      <label htmlFor="last_name" className={labelClass}>
-                        Ansprechpartner (Nachname)
-                      </label>
-                      <input id="last_name" name="last_name" type="text" defaultValue={defaultValues?.last_name ?? ""} className={inputClass} />
-                    </div>
+                    <Field id="first_name" label="Ansprechpartner – Vorname">
+                      <input
+                        id="first_name"
+                        name="first_name"
+                        type="text"
+                        placeholder="Max"
+                        defaultValue={defaultValues?.first_name ?? ""}
+                        className={inputBaseClass}
+                      />
+                    </Field>
+                    <Field id="last_name" label="Ansprechpartner – Nachname">
+                      <input
+                        id="last_name"
+                        name="last_name"
+                        type="text"
+                        placeholder="Mustermann"
+                        defaultValue={defaultValues?.last_name ?? ""}
+                        className={inputBaseClass}
+                      />
+                    </Field>
                   </div>
-                </div>
-              </section>
-            )}
+                </SectionCard>
+              )}
 
-            <section className={`space-y-5 ${missing.has("contact") ? "rounded-xl ring-2 ring-red-300" : ""}`}>
-              <SectionHeading icon="📞" title="Kontakt" description="Wie der Kunde erreichbar ist." highlight={missing.has("contact")} />
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="email" className={labelClass}>
-                    E-Mail
-                  </label>
-                  <input id="email" name="email" type="email" defaultValue={defaultValues?.email ?? ""} className={inputClass} />
+              <SectionCard icon={Phone} title="Kontakt" description="Wie der Kunde erreichbar ist.">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field id="email" label="E-Mail">
+                    <input id="email" name="email" type="email" placeholder="kontakt@firma.de" defaultValue={defaultValues?.email ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="phone" label="Telefon">
+                    <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="mobile" label="Mobil">
+                    <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="fax" label="Fax">
+                    <input id="fax" name="fax" type="text" defaultValue={defaultValues?.fax ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="website" label="Website">
+                    <input id="website" name="website" type="text" placeholder="https://www.firma.de" defaultValue={defaultValues?.website ?? ""} className={inputBaseClass} />
+                  </Field>
                 </div>
-                <div>
-                  <label htmlFor="phone" className={labelClass}>
-                    Telefon
-                  </label>
-                  <input id="phone" name="phone" type="text" defaultValue={defaultValues?.phone ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="mobile" className={labelClass}>
-                    Mobil
-                  </label>
-                  <input id="mobile" name="mobile" type="text" defaultValue={defaultValues?.mobile ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="fax" className={labelClass}>
-                    Fax
-                  </label>
-                  <input id="fax" name="fax" type="text" defaultValue={defaultValues?.fax ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="website" className={labelClass}>
-                    Website
-                  </label>
-                  <input id="website" name="website" type="text" defaultValue={defaultValues?.website ?? ""} className={inputClass} />
-                </div>
-              </div>
-            </section>
+              </SectionCard>
 
-            <section className="space-y-5">
-              <SectionHeading icon="💳" title="Zahlungsinformationen" description="Zahlungsziel, Skonto und Debitorennummer." />
-              <div className="grid gap-5 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="payment_term_days" className={labelClass}>
-                    Zahlungsziel (Tage)
-                  </label>
-                  <input id="payment_term_days" name="payment_term_days" type="number" min="0" defaultValue={defaultValues?.payment_term_days ?? ""} className={inputClass} />
+              <SectionCard icon={Banknote} title="Zahlungsinformationen" description="Zahlungsziel, Skonto und Debitorennummer.">
+                <div className="grid gap-5 sm:grid-cols-3">
+                  <Field id="payment_term_days" label="Zahlungsziel (Tage)" helper="Frist bis zur Fälligkeit.">
+                    <input id="payment_term_days" name="payment_term_days" type="number" min="0" placeholder="14" defaultValue={defaultValues?.payment_term_days ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="discount_percent" label="Skonto (%)">
+                    <input id="discount_percent" name="discount_percent" type="number" step="0.01" min="0" placeholder="2" defaultValue={defaultValues?.discount_percent ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="discount_days" label="Skontofrist (Tage)">
+                    <input id="discount_days" name="discount_days" type="number" min="0" placeholder="7" defaultValue={defaultValues?.discount_days ?? ""} className={inputBaseClass} />
+                  </Field>
                 </div>
-                <div>
-                  <label htmlFor="discount_percent" className={labelClass}>
-                    Skonto (%)
-                  </label>
-                  <input id="discount_percent" name="discount_percent" type="number" step="0.01" min="0" defaultValue={defaultValues?.discount_percent ?? ""} className={inputClass} />
+                <Field id="debitor_number" label="Debitorennummer">
+                  <input id="debitor_number" name="debitor_number" type="text" placeholder="D-10023" defaultValue={defaultValues?.debitor_number ?? ""} className={inputBaseClass} />
+                </Field>
+              </SectionCard>
+
+              <SectionCard icon={TagsIcon} title="Tags" description="Freie Klassifizierung, z. B. für Filter und Auswertungen.">
+                <Field id="tags" label="Tags" helper="Mehrere Tags durch Komma trennen.">
+                  <input
+                    id="tags"
+                    name="tags"
+                    type="text"
+                    placeholder="z. B. Stammkunde, Notdienst, VIP"
+                    defaultValue={(defaultValues?.tags ?? []).join(", ")}
+                    className={inputBaseClass}
+                  />
+                </Field>
+              </SectionCard>
+            </>
+          )}
+
+          {!showAllgemein && (
+            <>
+              {hiddenText("kind", kind)}
+              {hiddenText("status", defaultValues?.status ?? "interessent")}
+              {hiddenText("first_name", defaultValues?.first_name)}
+              {hiddenText("last_name", defaultValues?.last_name)}
+              {hiddenText("company_name", defaultValues?.company_name)}
+              {hiddenText("legal_form", defaultValues?.legal_form)}
+              {hiddenText("register_number", defaultValues?.register_number)}
+              {hiddenText("vat_id", defaultValues?.vat_id)}
+              {hiddenText("email", defaultValues?.email)}
+              {hiddenText("phone", defaultValues?.phone)}
+              {hiddenText("mobile", defaultValues?.mobile)}
+              {hiddenText("fax", defaultValues?.fax)}
+              {hiddenText("website", defaultValues?.website)}
+              {hiddenText("payment_term_days", defaultValues?.payment_term_days)}
+              {hiddenText("discount_percent", defaultValues?.discount_percent)}
+              {hiddenText("discount_days", defaultValues?.discount_days)}
+              {hiddenText("debitor_number", defaultValues?.debitor_number)}
+              {hiddenText("tags", (defaultValues?.tags ?? []).join(", "))}
+            </>
+          )}
+
+          {showAdressen && (
+            <>
+              <SectionCard icon={MapPin} title="Hauptadresse" description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert)." span2>
+                <Field id="street" label="Straße & Hausnummer">
+                  <input id="street" name="street" type="text" placeholder="Musterstraße 12" defaultValue={defaultValues?.street ?? ""} className={inputBaseClass} />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-[140px_1fr_160px]">
+                  <Field id="postal_code" label="PLZ">
+                    <input id="postal_code" name="postal_code" type="text" placeholder="12345" defaultValue={defaultValues?.postal_code ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="city" label="Ort">
+                    <input id="city" name="city" type="text" placeholder="Berlin" defaultValue={defaultValues?.city ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="country" label="Land">
+                    <input id="country" name="country" type="text" list="country-options" defaultValue={defaultValues?.country ?? "Deutschland"} className={inputBaseClass} />
+                    <datalist id="country-options">
+                      {COUNTRY_OPTIONS.map((c) => (
+                        <option key={c} value={c} />
+                      ))}
+                    </datalist>
+                  </Field>
                 </div>
-                <div>
-                  <label htmlFor="discount_days" className={labelClass}>
-                    Skontofrist (Tage)
-                  </label>
-                  <input id="discount_days" name="discount_days" type="number" min="0" defaultValue={defaultValues?.discount_days ?? ""} className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="debitor_number" className={labelClass}>
-                  Debitorennummer
+              </SectionCard>
+
+              <SectionCard icon={Receipt} title="Rechnungsadresse">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="billing_same_as_main" defaultChecked={billingSame} />
+                  Gleich wie Hauptadresse
                 </label>
-                <input id="debitor_number" name="debitor_number" type="text" defaultValue={defaultValues?.debitor_number ?? ""} className={inputClass} />
-              </div>
-            </section>
+                <Field id="billing_street" label="Straße & Hausnummer">
+                  <input id="billing_street" name="billing_street" type="text" defaultValue={defaultValues?.billing_street ?? ""} className={inputBaseClass} />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
+                  <Field id="billing_postal_code" label="PLZ">
+                    <input id="billing_postal_code" name="billing_postal_code" type="text" defaultValue={defaultValues?.billing_postal_code ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="billing_city" label="Ort">
+                    <input id="billing_city" name="billing_city" type="text" defaultValue={defaultValues?.billing_city ?? ""} className={inputBaseClass} />
+                  </Field>
+                </div>
+              </SectionCard>
 
-            <section className="space-y-2">
-              <label htmlFor="tags" className={labelClass}>
-                Tags
-              </label>
-              <input
-                id="tags"
-                name="tags"
-                type="text"
-                placeholder="z. B. Stammkunde, Notdienst, VIP"
-                defaultValue={(defaultValues?.tags ?? []).join(", ")}
-                className={inputClass}
-              />
-              <p className="text-xs text-muted">Mehrere Tags durch Komma trennen.</p>
-            </section>
-          </>
-        )}
-
-        {!showAllgemein && (
-          <>
-            {hiddenText("kind", kind)}
-            {hiddenText("status", defaultValues?.status ?? "interessent")}
-            {hiddenText("first_name", defaultValues?.first_name)}
-            {hiddenText("last_name", defaultValues?.last_name)}
-            {hiddenText("company_name", defaultValues?.company_name)}
-            {hiddenText("legal_form", defaultValues?.legal_form)}
-            {hiddenText("register_number", defaultValues?.register_number)}
-            {hiddenText("vat_id", defaultValues?.vat_id)}
-            {hiddenText("email", defaultValues?.email)}
-            {hiddenText("phone", defaultValues?.phone)}
-            {hiddenText("mobile", defaultValues?.mobile)}
-            {hiddenText("fax", defaultValues?.fax)}
-            {hiddenText("website", defaultValues?.website)}
-            {hiddenText("payment_term_days", defaultValues?.payment_term_days)}
-            {hiddenText("discount_percent", defaultValues?.discount_percent)}
-            {hiddenText("discount_days", defaultValues?.discount_days)}
-            {hiddenText("debitor_number", defaultValues?.debitor_number)}
-            {hiddenText("tags", (defaultValues?.tags ?? []).join(", "))}
-          </>
-        )}
-
-        {showAdressen && (
-          <>
-            <section className={`space-y-5 ${missing.has("street") || missing.has("postal_code") || missing.has("city") ? "rounded-xl ring-2 ring-red-300" : ""}`}>
-              <SectionHeading
-                icon="📍"
-                title="Hauptadresse"
-                description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert)."
-                highlight={missing.has("street") || missing.has("postal_code") || missing.has("city")}
-              />
-              <div className="space-y-5">
-                <div>
-                  <label htmlFor="street" className={labelClass}>
-                    Straße &amp; Hausnummer
-                  </label>
-                  <input id="street" name="street" type="text" defaultValue={defaultValues?.street ?? ""} className={inputClass} />
+              <SectionCard icon={Wrench} title="Einsatzadresse">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="service_same_as_main" defaultChecked={serviceSame} />
+                  Gleich wie Hauptadresse
+                </label>
+                <Field id="service_street" label="Straße & Hausnummer">
+                  <input id="service_street" name="service_street" type="text" defaultValue={defaultValues?.service_street ?? ""} className={inputBaseClass} />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
+                  <Field id="service_postal_code" label="PLZ">
+                    <input id="service_postal_code" name="service_postal_code" type="text" defaultValue={defaultValues?.service_postal_code ?? ""} className={inputBaseClass} />
+                  </Field>
+                  <Field id="service_city" label="Ort">
+                    <input id="service_city" name="service_city" type="text" defaultValue={defaultValues?.service_city ?? ""} className={inputBaseClass} />
+                  </Field>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-[140px_1fr_140px]">
-                  <div>
-                    <label htmlFor="postal_code" className={labelClass}>
-                      PLZ
-                    </label>
-                    <input id="postal_code" name="postal_code" type="text" defaultValue={defaultValues?.postal_code ?? ""} className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="city" className={labelClass}>
-                      Ort
-                    </label>
-                    <input id="city" name="city" type="text" defaultValue={defaultValues?.city ?? ""} className={inputClass} />
-                  </div>
-                  <div>
-                    <label htmlFor="country" className={labelClass}>
-                      Land
-                    </label>
-                    <input id="country" name="country" type="text" defaultValue={defaultValues?.country ?? "Deutschland"} className={inputClass} />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <SectionHeading icon="🧾" title="Rechnungsadresse" />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="billing_same_as_main" defaultChecked={billingSame} />
-                Gleich wie Hauptadresse
-              </label>
-              <div className="grid gap-5 sm:grid-cols-[1fr_140px_1fr]">
-                <div>
-                  <label htmlFor="billing_street" className={labelClass}>
-                    Straße &amp; Hausnummer
-                  </label>
-                  <input id="billing_street" name="billing_street" type="text" defaultValue={defaultValues?.billing_street ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="billing_postal_code" className={labelClass}>
-                    PLZ
-                  </label>
-                  <input id="billing_postal_code" name="billing_postal_code" type="text" defaultValue={defaultValues?.billing_postal_code ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="billing_city" className={labelClass}>
-                    Ort
-                  </label>
-                  <input id="billing_city" name="billing_city" type="text" defaultValue={defaultValues?.billing_city ?? ""} className={inputClass} />
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <SectionHeading icon="🛠️" title="Einsatzadresse" />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="service_same_as_main" defaultChecked={serviceSame} />
-                Gleich wie Hauptadresse
-              </label>
-              <div className="grid gap-5 sm:grid-cols-[1fr_140px_1fr]">
-                <div>
-                  <label htmlFor="service_street" className={labelClass}>
-                    Straße &amp; Hausnummer
-                  </label>
-                  <input id="service_street" name="service_street" type="text" defaultValue={defaultValues?.service_street ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="service_postal_code" className={labelClass}>
-                    PLZ
-                  </label>
-                  <input id="service_postal_code" name="service_postal_code" type="text" defaultValue={defaultValues?.service_postal_code ?? ""} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="service_city" className={labelClass}>
-                    Ort
-                  </label>
-                  <input id="service_city" name="service_city" type="text" defaultValue={defaultValues?.service_city ?? ""} className={inputClass} />
-                </div>
-              </div>
-            </section>
-          </>
-        )}
+              </SectionCard>
+            </>
+          )}
+        </div>
 
         {!showAdressen && (
           <>
