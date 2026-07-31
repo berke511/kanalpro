@@ -1,19 +1,58 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Headset, MapPin, ShieldCheck } from "lucide-react";
+
+const TRUST_ITEMS = [
+  { icon: ShieldCheck, label: "DSGVO-konform" },
+  { icon: MapPin, label: "Serverstandort Deutschland" },
+  { icon: Headset, label: "Persönlicher Support" },
+];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
+    <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-b from-blue-50 via-slate-50 to-white px-4 py-12">
+      <div className="w-full max-w-md animate-auth-fade-up">
+        <div className="mb-10 flex flex-col items-center text-center">
           <Link href="/">
-            <Image src="/logo.svg" alt="KanalPro" width={349} height={214} className="h-16 w-auto" priority />
+            <Image
+              src="/logo.svg"
+              alt="KanalPro"
+              width={349}
+              height={214}
+              className="h-24 w-auto"
+              priority
+            />
           </Link>
+          <p className="mt-4 text-sm font-medium text-muted">
+            Die Software für moderne Rohr- und Kanalbetriebe.
+          </p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+
+        <div className="rounded-3xl border border-white bg-card/95 p-8 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:p-10">
           {children}
         </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 animate-auth-fade-in">
+          {TRUST_ITEMS.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-1.5 text-xs font-medium text-muted">
+              <Icon className="h-3.5 w-3.5 text-brand" />
+              {label}
+            </div>
+          ))}
+        </div>
       </div>
+
+      <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted">
+        <Link href="/impressum" className="transition hover:text-foreground">
+          Impressum
+        </Link>
+        <span className="text-border">·</span>
+        <Link href="/datenschutz" className="transition hover:text-foreground">
+          Datenschutz
+        </Link>
+        <span className="text-border">·</span>
+        <span>© {new Date().getFullYear()} KanalPro</span>
+      </footer>
     </div>
   );
 }

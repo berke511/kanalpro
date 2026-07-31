@@ -3,7 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/types";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabase/config";
 
-const PUBLIC_PATHS = ["/login", "/register", "/"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/passwort-vergessen",
+  "/passwort-zuruecksetzen",
+  "/impressum",
+  "/datenschutz",
+  "/",
+];
 
 // Refreshes the Supabase auth session on every request and redirects
 // unauthenticated users away from the protected dashboard area.

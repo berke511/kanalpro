@@ -30,3 +30,32 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+@keyframes auth-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes auth-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-auth-fade-up {
+  animation: auth-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-auth-fade-in {
+  animation: auth-fade-in 0.6s ease-out both;
+  animation-delay: 0.1s;
+}
