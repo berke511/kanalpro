@@ -26,15 +26,16 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
 
-      <footer className="mt-10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted">
-        <Link href="/impressum" className="transition hover:text-foreground">
-          Impressum
-        </Link>
-        <span className="text-border">·</span>
-        <Link href="/datenschutz" className="transition hover:text-foreground">
-          Datenschutz
-        </Link>
-        <span className="text-border">·</span>
+      <footer className="mt-10 flex flex-col items-center gap-1 text-xs text-muted">
+        <div className="flex items-center gap-4">
+          <Link href="/impressum" className="transition hover:text-foreground">
+            Impressum
+          </Link>
+          <span className="text-border">·</span>
+          <Link href="/datenschutz" className="transition hover:text-foreground">
+            Datenschutz
+          </Link>
+        </div>
         <span>© {new Date().getFullYear()} KanalPro</span>
       </footer>
     </div>
