@@ -53,6 +53,7 @@ type CustomerFormValues = {
   discount_days?: number | null;
   debitor_number?: string | null;
   tags?: string[] | null;
+  assigned_employee_id?: string | null;
 };
 
 const CARD_CLASS = "rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7";
@@ -154,6 +155,7 @@ export function CustomerForm({
   showProgress = true,
   autoFocusFirstField = false,
   customerId,
+  employees = [],
 }: {
   formId: string;
   action: (formData: FormData) => void;
@@ -165,6 +167,7 @@ export function CustomerForm({
   showProgress?: boolean;
   autoFocusFirstField?: boolean;
   customerId?: string;
+  employees?: Array<{ id: string; full_name: string | null }>;
 }) {
   const kind = defaultValues?.kind ?? "privat";
   const showCompanyFields = isCompanyKind(kind);
@@ -246,6 +249,21 @@ export function CustomerForm({
                     </div>
                   </div>
                 </div>
+                <Field id="assigned_employee_id" label="Zuständiger Mitarbeiter" helper="Optional – für interne Zuordnung und Filter.">
+                  <select
+                    id="assigned_employee_id"
+                    name="assigned_employee_id"
+                    defaultValue={defaultValues?.assigned_employee_id ?? ""}
+                    className={inputBaseClass}
+                  >
+                    <option value="">Kein zuständiger Mitarbeiter</option>
+                    {employees.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.full_name ?? "Unbenannt"}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
               </SectionCard>
 
               {!showCompanyFields && (
@@ -424,6 +442,7 @@ export function CustomerForm({
               {hiddenText("discount_days", defaultValues?.discount_days)}
               {hiddenText("debitor_number", defaultValues?.debitor_number)}
               {hiddenText("tags", (defaultValues?.tags ?? []).join(", "))}
+              {hiddenText("assigned_employee_id", defaultValues?.assigned_employee_id)}
             </>
           )}
 

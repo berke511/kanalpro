@@ -13,6 +13,10 @@ export const CUSTOMER_KIND_LABELS: Record<string, string> = {
 // angezeigt und erfasst werden.
 export const COMPANY_KINDS = ["gewerbe", "industrie", "kommune", "sonstige"];
 
+// Konvention: Kunden mit Wartungsvertrag werden über diesen Tag markiert
+// (siehe Tags-Feld im Kundenformular), statt eine eigene Spalte anzulegen.
+export const MAINTENANCE_CONTRACT_TAG = "Wartungsvertrag";
+
 export const CUSTOMER_STATUSES = ["interessent", "aktiv", "inaktiv", "gesperrt"] as const;
 export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
 

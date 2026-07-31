@@ -30,8 +30,306 @@ export type Database = {
         }
         Relationships: []
       }
+      company_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          role: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          customer_label: string | null
+          id: string
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          customer_label?: string | null
+          id?: string
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          customer_label?: string | null
+          id?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_audit_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_contacts: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_id: string
+          email: string | null
+          id: string
+          is_primary: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_id: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          email?: string | null
+          id?: string
+          is_primary?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_documents: {
+        Row: {
+          company_id: string
+          content_type: string | null
+          created_at: string
+          customer_id: string
+          file_name: string
+          id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          content_type?: string | null
+          created_at?: string
+          customer_id: string
+          file_name: string
+          id?: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          content_type?: string | null
+          created_at?: string
+          customer_id?: string
+          file_name?: string
+          id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_documents_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notes: {
+        Row: {
+          author_id: string | null
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          note: string
+        }
+        Insert: {
+          author_id?: string | null
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          note: string
+        }
+        Update: {
+          author_id?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_number_counters: {
+        Row: {
+          company_id: string
+          next_number: number
+        }
+        Insert: {
+          company_id: string
+          next_number?: number
+        }
+        Update: {
+          company_id?: string
+          next_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_number_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
+          assigned_employee_id: string | null
           billing_city: string | null
           billing_postal_code: string | null
           billing_same_as_main: boolean
@@ -76,6 +374,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          assigned_employee_id?: string | null
           billing_city?: string | null
           billing_postal_code?: string | null
           billing_same_as_main?: boolean
@@ -120,6 +419,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          assigned_employee_id?: string | null
           billing_city?: string | null
           billing_postal_code?: string | null
           billing_same_as_main?: boolean
@@ -164,6 +464,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_assigned_employee_id_fkey"
+            columns: ["assigned_employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customers_company_id_fkey"
             columns: ["company_id"]
@@ -171,194 +478,285 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "customers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      customer_number_counters: {
+      fleet_items: {
         Row: {
           company_id: string
-          next_number: number
+          created_at: string
+          id: string
+          kind: string
+          license_plate: string | null
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
         }
         Insert: {
           company_id: string
-          next_number?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          license_plate?: string | null
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
         }
         Update: {
           company_id?: string
-          next_number?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          license_plate?: string | null
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "customer_number_counters_company_id_fkey"
+            foreignKeyName: "fleet_items_company_id_fkey"
             columns: ["company_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
       }
-      customer_contacts: {
+      invoice_items: {
         Row: {
-          id: string
           company_id: string
-          customer_id: string
-          name: string
-          role: string | null
-          phone: string | null
-          email: string | null
-          is_primary: boolean
-          notes: string | null
           created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          position: number
+          quantity: number
+          unit_price: number
           updated_at: string
         }
         Insert: {
-          id?: string
           company_id: string
-          customer_id: string
-          name: string
-          role?: string | null
-          phone?: string | null
-          email?: string | null
-          is_primary?: boolean
-          notes?: string | null
           created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          position?: number
+          quantity?: number
+          unit_price?: number
           updated_at?: string
         }
         Update: {
-          id?: string
           company_id?: string
-          customer_id?: string
-          name?: string
-          role?: string | null
-          phone?: string | null
-          email?: string | null
-          is_primary?: boolean
-          notes?: string | null
           created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          position?: number
+          quantity?: number
+          unit_price?: number
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "customer_contacts_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "invoice_items_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
-            referencedRelation: "customers"
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      customer_documents: {
-        Row: {
-          id: string
-          company_id: string
-          customer_id: string
-          file_name: string
-          storage_path: string
-          content_type: string | null
-          size_bytes: number | null
-          uploaded_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          customer_id: string
-          file_name: string
-          storage_path: string
-          content_type?: string | null
-          size_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          customer_id?: string
-          file_name?: string
-          storage_path?: string
-          content_type?: string | null
-          size_bytes?: number | null
-          uploaded_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "customer_documents_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
             isOneToOne: false
-            referencedRelation: "customers"
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
       }
-      customer_notes: {
+      invoices: {
         Row: {
-          id: string
           company_id: string
-          customer_id: string
-          author_id: string | null
-          note: string
           created_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          customer_id: string
-          author_id?: string | null
-          note: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          customer_id?: string
-          author_id?: string | null
-          note?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_notes_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      customer_audit_log: {
-        Row: {
-          id: string
-          company_id: string
           customer_id: string | null
-          customer_label: string | null
-          actor_id: string | null
-          action: string
-          summary: string | null
-          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          issue_date: string
+          kind: string
+          notes: string | null
+          order_id: string | null
+          status: string
+          updated_at: string
         }
         Insert: {
-          id?: string
           company_id: string
-          customer_id?: string | null
-          customer_label?: string | null
-          actor_id?: string | null
-          action: string
-          summary?: string | null
           created_at?: string
+          customer_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string
+          kind?: string
+          notes?: string | null
+          order_id?: string | null
+          status?: string
+          updated_at?: string
         }
         Update: {
-          id?: string
           company_id?: string
-          customer_id?: string | null
-          customer_label?: string | null
-          actor_id?: string | null
-          action?: string
-          summary?: string | null
           created_at?: string
+          customer_id?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          issue_date?: string
+          kind?: string
+          notes?: string | null
+          order_id?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "customer_audit_log_customer_id_fkey"
+            foreignKeyName: "invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          min_quantity: number | null
+          name: string
+          notes: string | null
+          quantity: number
+          unit: string
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          min_quantity?: number | null
+          name: string
+          notes?: string | null
+          quantity?: number
+          unit?: string
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          min_quantity?: number | null
+          name?: string
+          notes?: string | null
+          quantity?: number
+          unit?: string
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          assigned_to: string | null
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          id: string
+          scheduled_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          scheduled_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          id?: string
+          scheduled_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
@@ -398,190 +796,45 @@ export type Database = {
           },
         ]
       }
-      orders: {
-        Row: {
-          id: string
-          company_id: string
-          customer_id: string | null
-          assigned_to: string | null
-          title: string
-          description: string | null
-          status: string
-          scheduled_date: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          customer_id?: string | null
-          assigned_to?: string | null
-          title: string
-          description?: string | null
-          status?: string
-          scheduled_date?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          customer_id?: string | null
-          assigned_to?: string | null
-          title?: string
-          description?: string | null
-          status?: string
-          scheduled_date?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fleet_items: {
-        Row: {
-          id: string
-          company_id: string
-          kind: string
-          name: string
-          license_plate: string | null
-          status: string
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          kind?: string
-          name: string
-          license_plate?: string | null
-          status?: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          kind?: string
-          name?: string
-          license_plate?: string | null
-          status?: string
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fleet_items_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      materials: {
-        Row: {
-          id: string
-          company_id: string
-          name: string
-          unit: string
-          quantity: number
-          min_quantity: number | null
-          unit_price: number | null
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          name: string
-          unit?: string
-          quantity?: number
-          min_quantity?: number | null
-          unit_price?: number | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          name?: string
-          unit?: string
-          quantity?: number
-          min_quantity?: number | null
-          unit_price?: number | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "materials_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       service_reports: {
         Row: {
-          id: string
           company_id: string
+          created_at: string
+          customer_signature_name: string | null
+          hours_worked: number | null
+          id: string
+          materials_notes: string | null
           order_id: string
           report_date: string
-          work_performed: string
-          hours_worked: number | null
-          materials_notes: string | null
-          customer_signature_name: string | null
           signed_at: string | null
-          created_at: string
           updated_at: string
+          work_performed: string
         }
         Insert: {
-          id?: string
           company_id: string
+          created_at?: string
+          customer_signature_name?: string | null
+          hours_worked?: number | null
+          id?: string
+          materials_notes?: string | null
           order_id: string
           report_date?: string
-          work_performed: string
-          hours_worked?: number | null
-          materials_notes?: string | null
-          customer_signature_name?: string | null
           signed_at?: string | null
-          created_at?: string
           updated_at?: string
+          work_performed: string
         }
         Update: {
-          id?: string
           company_id?: string
+          created_at?: string
+          customer_signature_name?: string | null
+          hours_worked?: number | null
+          id?: string
+          materials_notes?: string | null
           order_id?: string
           report_date?: string
-          work_performed?: string
-          hours_worked?: number | null
-          materials_notes?: string | null
-          customer_signature_name?: string | null
           signed_at?: string | null
-          created_at?: string
           updated_at?: string
+          work_performed?: string
         }
         Relationships: [
           {
@@ -600,157 +853,21 @@ export type Database = {
           },
         ]
       }
-      invoices: {
-        Row: {
-          id: string
-          company_id: string
-          customer_id: string | null
-          order_id: string | null
-          kind: string
-          invoice_number: string | null
-          status: string
-          issue_date: string
-          due_date: string | null
-          notes: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          customer_id?: string | null
-          order_id?: string | null
-          kind?: string
-          invoice_number?: string | null
-          status?: string
-          issue_date?: string
-          due_date?: string | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          customer_id?: string | null
-          order_id?: string | null
-          kind?: string
-          invoice_number?: string | null
-          status?: string
-          issue_date?: string
-          due_date?: string | null
-          notes?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoices_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoices_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invoice_items: {
-        Row: {
-          id: string
-          company_id: string
-          invoice_id: string
-          description: string
-          quantity: number
-          unit_price: number
-          position: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          invoice_id: string
-          description: string
-          quantity?: number
-          unit_price?: number
-          position?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          invoice_id?: string
-          description?: string
-          quantity?: number
-          unit_price?: number
-          position?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoice_items_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "invoices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      company_invites: {
-        Row: {
-          id: string
-          company_id: string
-          token: string
-          role: string
-          created_by: string | null
-          created_at: string
-          accepted_at: string | null
-          accepted_by: string | null
-        }
-        Insert: {
-          id?: string
-          company_id: string
-          token?: string
-          role?: string
-          created_by?: string | null
-          created_at?: string
-          accepted_at?: string | null
-          accepted_by?: string | null
-        }
-        Update: {
-          id?: string
-          company_id?: string
-          token?: string
-          role?: string
-          created_by?: string | null
-          created_at?: string
-          accepted_at?: string | null
-          accepted_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_invites_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      current_company_id: { Args: never; Returns: string }
+      accept_company_invite: {
+        Args: { p_full_name: string; p_token: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string
+        }
+      }
       bootstrap_company_and_profile: {
         Args: { p_company_name: string; p_full_name: string }
         Returns: {
@@ -761,15 +878,9 @@ export type Database = {
           role: string
         }
       }
-      accept_company_invite: {
-        Args: { p_token: string; p_full_name: string }
-        Returns: {
-          company_id: string
-          created_at: string
-          full_name: string | null
-          id: string
-          role: string
-        }
+      current_company_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       next_customer_number: {
         Args: { p_company_id: string }

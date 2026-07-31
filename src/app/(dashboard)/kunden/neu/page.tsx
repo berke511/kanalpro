@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { createCustomer } from "@/app/(dashboard)/kunden/actions";
 import { CustomerForm } from "@/components/dashboard/CustomerForm";
+import { createClient } from "@/lib/supabase/server";
 
 const FORM_ID = "customer-create-form";
 
@@ -11,6 +12,11 @@ export default async function NeuerKundePage({
   searchParams: Promise<{ error?: string; draft?: string; duplicate?: string; matches?: string; missing?: string }>;
 }) {
   const { error, draft, duplicate, matches, missing } = await searchParams;
+  const supabase = await createClient();
+  const { data: employees } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .order("full_name", { ascending: true });
 
   let defaultValues;
   if (draft) {
@@ -66,6 +72,7 @@ export default async function NeuerKundePage({
           duplicateWarning={duplicateWarning}
           missingFields={missingFields}
           autoFocusFirstField
+          employees={employees ?? []}
         />
       </div>
 

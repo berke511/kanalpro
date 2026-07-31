@@ -109,6 +109,7 @@ function readCustomerForm(formData: FormData): CustomerFields {
     discount_days: intOrNull(formData.get("discount_days")),
     debitor_number: emptyToNull(formData.get("debitor_number")),
     tags: parseTags(formData.get("tags")),
+    assigned_employee_id: emptyToNull(formData.get("assigned_employee_id")),
   };
 }
 
@@ -384,6 +385,7 @@ export async function duplicateCustomer(id: string) {
       discount_days: source.discount_days,
       debitor_number: source.debitor_number,
       tags: source.tags,
+      assigned_employee_id: source.assigned_employee_id,
       company_id: companyId,
       customer_number: customerNumber ?? null,
       name: duplicateName,

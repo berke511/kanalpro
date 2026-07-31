@@ -108,13 +108,14 @@ export default async function KundeDetailPage({
   const duplicateWarning = duplicate === "1" && matches ? matches.split(";").map((m) => m.trim()) : undefined;
   const missingFields = missing ? missing.split(",") : undefined;
 
-  const [creator, updater] = await Promise.all([
+  const [creator, updater, { data: employees }] = await Promise.all([
     customer.created_by
       ? supabase.from("profiles").select("full_name").eq("id", customer.created_by).maybeSingle()
       : Promise.resolve({ data: null }),
     customer.updated_by
       ? supabase.from("profiles").select("full_name").eq("id", customer.updated_by).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase.from("profiles").select("id, full_name").order("full_name", { ascending: true }),
   ]);
 
   let contacts: Array<{ id: string; name: string; role: string | null; phone: string | null; email: string | null; is_primary: boolean }> = [];
@@ -348,6 +349,7 @@ export default async function KundeDetailPage({
               section="allgemein"
               showProgress
               customerId={id}
+              employees={employees ?? []}
             />
           )}
 
