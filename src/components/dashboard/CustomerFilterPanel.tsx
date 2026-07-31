@@ -82,22 +82,33 @@ export function CustomerFilterPanel({
         </button>
 
         {open && (
-          <div className="absolute right-0 z-30 mt-2 max-h-[75vh] w-[min(92vw,420px)] overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-xl">
-            <form method="GET" action="/kunden" onSubmit={() => setOpen(false)} className="space-y-5">
-              <input type="hidden" name="q" value={q} />
-              {view !== "list" && <input type="hidden" name="view" value={view} />}
+          <>
+            {/* Auf Mobile abgedunkelter Hintergrund + Bottom-Sheet, damit das
+                umfangreiche Filterformular nicht als winziges Dropdown über
+                den Bildschirmrand hinausragt. Ab sm: wieder normales
+                Dropdown-Panel rechtsbündig unter dem Filter-Button. */}
+            <div
+              className="fixed inset-0 z-30 bg-black/30 sm:hidden"
+              onClick={() => setOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="fixed inset-x-0 bottom-0 z-40 max-h-[85vh] overflow-y-auto rounded-t-2xl border border-border bg-card p-4 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:bottom-auto sm:mt-2 sm:max-h-[75vh] sm:w-[min(92vw,420px)] sm:rounded-2xl">
+              <div className="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" />
+              <form method="GET" action="/kunden" onSubmit={() => setOpen(false)} className="space-y-5">
+                <input type="hidden" name="q" value={q} />
+                {view !== "list" && <input type="hidden" name="view" value={view} />}
 
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Filter</h3>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded p-1 text-muted hover:bg-background hover:text-foreground"
-                  aria-label="Filter schließen"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Filter</h3>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    className="rounded p-1 text-muted hover:bg-background hover:text-foreground"
+                    aria-label="Filter schließen"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Kundenart</p>
@@ -243,7 +254,10 @@ export function CustomerFilterPanel({
                 </div>
               </details>
 
-              <div className="flex items-center justify-between gap-2 pt-1">
+              {/* Sticky, damit die Aktionen auch bei langem, scrollendem
+                  Filterinhalt auf kleinen Bildschirmen immer erreichbar
+                  bleiben, statt am Ende eines langen Sheets zu verschwinden. */}
+              <div className="sticky bottom-0 -mx-4 -mb-4 flex items-center justify-between gap-2 border-t border-border bg-card px-4 py-3">
                 <Link
                   href="/kunden"
                   onClick={() => setOpen(false)}
@@ -258,8 +272,9 @@ export function CustomerFilterPanel({
                   Filter anwenden
                 </button>
               </div>
-            </form>
-          </div>
+              </form>
+            </div>
+          </>
         )}
       </div>
 
