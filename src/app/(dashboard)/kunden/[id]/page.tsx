@@ -1,5 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  ArrowLeft,
+  Copy,
+  Info,
+  MapPin,
+  MoreVertical,
+  NotebookText,
+  Paperclip,
+  Plus,
+  Receipt,
+  Save,
+  Trash2,
+  User,
+  Users,
+  Wrench,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   addCustomerContact,
@@ -15,22 +34,22 @@ import { CustomerForm } from "@/components/dashboard/CustomerForm";
 import { CustomerContactForm } from "@/components/dashboard/CustomerContactForm";
 import { CustomerNoteForm } from "@/components/dashboard/CustomerNoteForm";
 import { CustomerDocumentForm } from "@/components/dashboard/CustomerDocumentForm";
+import { CustomerKindIcon } from "@/components/dashboard/CustomerKindIcon";
 import {
-  CUSTOMER_KIND_ICONS,
   CUSTOMER_KIND_LABELS,
   CUSTOMER_STATUS_BADGE_CLASS,
   CUSTOMER_STATUS_DOT_CLASS,
   CUSTOMER_STATUS_LABELS,
 } from "@/lib/customers";
 
-const TABS = [
-  { key: "allgemein", label: "Allgemein", icon: "👤" },
-  { key: "adressen", label: "Adressen", icon: "📍" },
-  { key: "kontakte", label: "Ansprechpartner", icon: "🧑‍🤝‍🧑" },
-  { key: "auftraege", label: "Aufträge", icon: "🧰" },
-  { key: "rechnungen", label: "Abrechnung", icon: "💶" },
-  { key: "dokumente", label: "Dokumente", icon: "📎" },
-  { key: "notizen", label: "Notizen & Verlauf", icon: "📝" },
+const TABS: Array<{ key: string; label: string; icon: LucideIcon }> = [
+  { key: "allgemein", label: "Allgemein", icon: User },
+  { key: "adressen", label: "Adressen", icon: MapPin },
+  { key: "kontakte", label: "Ansprechpartner", icon: Users },
+  { key: "auftraege", label: "Aufträge", icon: Wrench },
+  { key: "rechnungen", label: "Abrechnung", icon: Receipt },
+  { key: "dokumente", label: "Dokumente", icon: Paperclip },
+  { key: "notizen", label: "Notizen & Verlauf", icon: NotebookText },
 ];
 
 const FORM_ID_ALLGEMEIN = "customer-edit-allgemein";
@@ -39,10 +58,6 @@ const FORM_ID_ADRESSEN = "customer-edit-adressen";
 function formatDateTime(value: string | null | undefined) {
   if (!value) return "—";
   return new Date(value).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
-}
-
-function formatEuro(value: number) {
-  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
 function formatBytes(bytes: number | null) {
@@ -187,14 +202,15 @@ export default async function KundeDetailPage({
 
   return (
     <div className={`mx-auto max-w-6xl p-4 sm:p-6 ${showSaveButton ? "pb-28 lg:pb-6" : ""}`}>
-      <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
-        ← Zurück zur Kundenliste
+      <Link href="/kunden" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" />
+        Zurück zur Kundenliste
       </Link>
 
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xl">{CUSTOMER_KIND_ICONS[customer.kind] ?? "✦"}</span>
+            <CustomerKindIcon kind={customer.kind} className="h-5 w-5 text-muted" />
             <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
@@ -212,35 +228,43 @@ export default async function KundeDetailPage({
             <button
               type="submit"
               form={saveFormId}
-              className="hidden rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-block"
+              className="hidden items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-flex"
             >
-              💾 Speichern
+              <Save className="h-4 w-4" />
+              Speichern
             </button>
           )}
           <Link
             href={`/kunden/${id}?tab=${activeTab}`}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
           >
-            ❌ Abbrechen
+            <X className="h-4 w-4" />
+            Abbrechen
           </Link>
           <Link
             href={`/auftraege/neu?customer_id=${id}`}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
           >
-            🧰 Auftrag erstellen
+            <Wrench className="h-4 w-4" />
+            Auftrag erstellen
           </Link>
           <div className="hidden gap-2 lg:flex">
             <form action={duplicateWithId}>
-              <button type="submit" className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background">
-                📋 Duplizieren
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
+              >
+                <Copy className="h-4 w-4" />
+                Duplizieren
               </button>
             </form>
             <form action={deleteWithId}>
               <button
                 type="submit"
-                className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
               >
-                🗑 Löschen
+                <Trash2 className="h-4 w-4" />
+                Löschen
               </button>
             </form>
           </div>
@@ -248,17 +272,25 @@ export default async function KundeDetailPage({
               damit die Aktionsleiste nicht über mehrere Zeilen umbricht. */}
           <details className="relative lg:hidden">
             <summary className="flex list-none items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background [&::-webkit-details-marker]:hidden">
-              ⋮
+              <MoreVertical className="h-4 w-4" />
             </summary>
             <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg">
               <form action={duplicateWithId}>
-                <button type="submit" className="w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-background">
-                  📋 Duplizieren
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-background"
+                >
+                  <Copy className="h-4 w-4" />
+                  Duplizieren
                 </button>
               </form>
               <form action={deleteWithId}>
-                <button type="submit" className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50">
-                  🗑 Löschen
+                <button
+                  type="submit"
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Löschen
                 </button>
               </form>
             </div>
@@ -270,18 +302,21 @@ export default async function KundeDetailPage({
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex gap-2 overflow-x-auto border-b border-border pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={`/kunden/${id}?tab=${t.key}`}
-            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${
-              activeTab === t.key ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"
-            }`}
-          >
-            <span>{t.icon}</span>
-            {t.label}
-          </Link>
-        ))}
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.key}
+              href={`/kunden/${id}?tab=${t.key}`}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${
+                activeTab === t.key ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
 
       {showSaveButton && (
@@ -292,9 +327,10 @@ export default async function KundeDetailPage({
           <button
             type="submit"
             form={saveFormId}
-            className="w-full rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
           >
-            💾 Speichern
+            <Save className="h-4 w-4" />
+            Speichern
           </button>
         </div>
       )}
@@ -348,7 +384,11 @@ export default async function KundeDetailPage({
                     <p className="mt-1 text-xs text-muted">{[c.phone, c.email].filter(Boolean).join(" · ") || "—"}</p>
                   </div>
                   <form action={deleteCustomerContact.bind(null, id, c.id)}>
-                    <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
+                    <button
+                      type="submit"
+                      className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                       Entfernen
                     </button>
                   </form>
@@ -386,9 +426,10 @@ export default async function KundeDetailPage({
               )}
               <Link
                 href={`/auftraege/neu?customer_id=${id}`}
-                className="inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
               >
-                + Neuer Auftrag
+                <Plus className="h-4 w-4" />
+                Neuer Auftrag
               </Link>
             </div>
           )}
@@ -421,9 +462,10 @@ export default async function KundeDetailPage({
               )}
               <Link
                 href={`/rechnungen/neu?customer_id=${id}`}
-                className="inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
               >
-                + Neues Angebot / Neue Rechnung
+                <Plus className="h-4 w-4" />
+                Neues Angebot / Neue Rechnung
               </Link>
             </div>
           )}
@@ -455,7 +497,11 @@ export default async function KundeDetailPage({
                           </td>
                           <td className="px-4 py-3 text-right">
                             <form action={deleteCustomerDocument.bind(null, id, d.id, d.storage_path)}>
-                              <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
+                              <button
+                                type="submit"
+                                className="ml-auto flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
                                 Löschen
                               </button>
                             </form>
@@ -473,7 +519,10 @@ export default async function KundeDetailPage({
           {activeTab === "notizen" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-sm font-semibold">Interne Notizen</h2>
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                  <NotebookText className="h-4 w-4" />
+                  Interne Notizen
+                </h2>
                 <div className="mt-3">
                   <CustomerNoteForm action={addCustomerNote.bind(null, id)} />
                 </div>
@@ -491,7 +540,10 @@ export default async function KundeDetailPage({
               </div>
 
               <div>
-                <h2 className="text-sm font-semibold">Änderungsverlauf (Audit-Log)</h2>
+                <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                  <Info className="h-4 w-4" />
+                  Änderungsverlauf (Audit-Log)
+                </h2>
                 <div className="mt-3 space-y-2">
                   {auditLog.length === 0 && <p className="text-sm text-muted">Noch keine Einträge.</p>}
                   {auditLog.map((a) => (
@@ -515,7 +567,10 @@ export default async function KundeDetailPage({
 
         <aside className="lg:sticky lg:top-6">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-semibold">Kundenübersicht</h2>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+              <Info className="h-4 w-4" />
+              Kundenübersicht
+            </h2>
             <dl className="mt-4 space-y-3 text-sm">
               <div>
                 <dt className="text-xs uppercase tracking-wide text-muted">Kundennummer</dt>
@@ -552,13 +607,24 @@ export default async function KundeDetailPage({
           </div>
 
           <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-sm font-semibold">Schnellaktionen</h2>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+              <Zap className="h-4 w-4" />
+              Schnellaktionen
+            </h2>
             <div className="mt-3 flex flex-col gap-2">
-              <Link href={`/auftraege/neu?customer_id=${id}`} className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium hover:bg-background">
-                + Auftrag
+              <Link
+                href={`/auftraege/neu?customer_id=${id}`}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-background"
+              >
+                <Plus className="h-4 w-4" />
+                Auftrag
               </Link>
-              <Link href={`/rechnungen/neu?customer_id=${id}`} className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium hover:bg-background">
-                + Angebot/Rechnung
+              <Link
+                href={`/rechnungen/neu?customer_id=${id}`}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-background"
+              >
+                <Plus className="h-4 w-4" />
+                Angebot/Rechnung
               </Link>
             </div>
           </div>

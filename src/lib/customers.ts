@@ -38,14 +38,6 @@ export const CUSTOMER_STATUS_DOT_CLASS: Record<string, string> = {
   gesperrt: "bg-red-500",
 };
 
-export const CUSTOMER_KIND_ICONS: Record<string, string> = {
-  privat: "🏠",
-  gewerbe: "🏢",
-  industrie: "🏭",
-  kommune: "🏛️",
-  sonstige: "✦",
-};
-
 // Slots für die Pflichtfeld-Fortschrittsanzeige im Formular. "hard" wird beim
 // Speichern serverseitig erzwungen (siehe actions.ts), "soft" ist empfohlen,
 // aber nicht blockierend – zählt trotzdem in den Fortschritt.

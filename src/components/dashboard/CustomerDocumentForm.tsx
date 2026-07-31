@@ -1,3 +1,5 @@
+import { Upload } from "lucide-react";
+
 export function CustomerDocumentForm({ action }: { action: (formData: FormData) => void }) {
   return (
     <form action={action} className="flex flex-wrap items-end gap-3 rounded-lg border border-border p-4">
@@ -12,8 +14,9 @@ export function CustomerDocumentForm({ action }: { action: (formData: FormData) 
       </div>
       <button
         type="submit"
-        className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark sm:w-auto"
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark sm:w-auto"
       >
+        <Upload className="h-4 w-4" />
         Hochladen
       </button>
     </form>

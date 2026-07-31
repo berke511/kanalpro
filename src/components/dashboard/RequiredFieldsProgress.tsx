@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { CUSTOMER_REQUIRED_FIELD_SLOTS } from "@/lib/customers";
 
 /**
@@ -70,7 +71,12 @@ export function RequiredFieldsProgress({ formId }: { formId: string }) {
           ))}
         </ul>
       )}
-      {missing.length === 0 && <p className="mt-3 text-xs text-green-700">Alle Felder ausgefüllt ✓</p>}
+      {missing.length === 0 && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-green-700">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Alle Felder ausgefüllt
+        </p>
+      )}
     </div>
   );
 }

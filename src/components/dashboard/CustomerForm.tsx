@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Banknote,
   Building2,
   MapPin,
@@ -183,7 +184,10 @@ export function CustomerForm({
 
         {duplicateWarning && duplicateWarning.length > 0 && (
           <div className={`${CARD_CLASS} border-amber-300 bg-amber-50`}>
-            <p className="text-sm font-semibold text-amber-900">⚠ Möglicherweise bereits vorhanden</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+              <AlertTriangle className="h-4 w-4" />
+              Möglicherweise bereits vorhanden
+            </p>
             <p className="mt-1 text-sm text-amber-900">
               Es wurden ähnliche Kunden gefunden (gleicher Firmenname, Telefon, E-Mail oder USt-IdNr.):
             </p>

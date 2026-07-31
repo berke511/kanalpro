@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, Save, X } from "lucide-react";
 import { createCustomer } from "@/app/(dashboard)/kunden/actions";
 import { CustomerForm } from "@/components/dashboard/CustomerForm";
 
@@ -25,8 +26,9 @@ export default async function NeuerKundePage({
 
   return (
     <div className="mx-auto max-w-6xl p-4 pb-28 sm:p-6 lg:pb-6">
-      <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
-        ← Zurück zur Kundenliste
+      <Link href="/kunden" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" />
+        Zurück zur Kundenliste
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
@@ -35,15 +37,20 @@ export default async function NeuerKundePage({
           <p className="mt-1 text-sm text-muted">Lege einen neuen Kunden mit allen Stammdaten an.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/kunden" className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-background">
-            ❌ Abbrechen
+          <Link
+            href="/kunden"
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-background"
+          >
+            <X className="h-4 w-4" />
+            Abbrechen
           </Link>
           <button
             type="submit"
             form={FORM_ID}
-            className="hidden rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-block"
+            className="hidden items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-flex"
           >
-            💾 Speichern
+            <Save className="h-4 w-4" />
+            Speichern
           </button>
         </div>
       </div>
@@ -69,9 +76,10 @@ export default async function NeuerKundePage({
         <button
           type="submit"
           form={FORM_ID}
-          className="w-full rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
         >
-          💾 Speichern
+          <Save className="h-4 w-4" />
+          Speichern
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Search, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   CUSTOMER_KINDS,
@@ -56,26 +57,31 @@ export default async function KundenPage({
         </div>
         <Link
           href="/kunden/neu"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+          className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
         >
-          + Neuer Kunde
+          <UserPlus className="h-4 w-4" />
+          Neuer Kunde
         </Link>
       </div>
 
       <form className="mt-6 flex max-w-xl flex-wrap gap-3">
         <input type="hidden" name="kind" value={kind ?? ""} />
         <input type="hidden" name="status" value={status ?? ""} />
-        <input
-          type="search"
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Suche nach Name, Firma, E-Mail, Telefon, Kundennummer…"
-          className="min-w-[220px] flex-1 rounded-lg border border-border bg-card px-3 py-2.5 text-base outline-none focus:border-brand sm:text-sm"
-        />
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Suche nach Name, Firma, E-Mail, Telefon, Kundennummer…"
+            className="w-full rounded-lg border border-border bg-card py-2.5 pl-9 pr-3 text-base outline-none focus:border-brand sm:text-sm"
+          />
+        </div>
         <button
           type="submit"
-          className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-background sm:py-2"
+          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-background sm:py-2"
         >
+          <Search className="h-4 w-4" />
           Suchen
         </button>
       </form>
