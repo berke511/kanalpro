@@ -26,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
       </div>
 
-      <footer className="mt-10 flex flex-col items-center gap-1 text-xs text-muted">
+      <footer className="mt-14 flex flex-col items-center gap-3 text-xs text-muted">
         <div className="flex items-center gap-4">
           <Link href="/impressum" className="transition hover:text-foreground">
             Impressum
