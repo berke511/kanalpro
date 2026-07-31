@@ -24,7 +24,7 @@ export default async function NeuerKundePage({
   const missingFields = missing ? missing.split(",") : undefined;
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-6xl p-4 pb-28 sm:p-6 lg:pb-6">
       <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Kundenliste
       </Link>
@@ -41,7 +41,7 @@ export default async function NeuerKundePage({
           <button
             type="submit"
             form={FORM_ID}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+            className="hidden rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-block"
           >
             💾 Speichern
           </button>
@@ -60,6 +60,19 @@ export default async function NeuerKundePage({
           missingFields={missingFields}
           autoFocusFirstField
         />
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 p-3 backdrop-blur lg:hidden"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <button
+          type="submit"
+          form={FORM_ID}
+          className="w-full rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+        >
+          💾 Speichern
+        </button>
       </div>
     </div>
   );

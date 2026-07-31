@@ -1,4 +1,5 @@
 import { signOut } from "@/app/(auth)/actions";
+import { MobileNav } from "@/components/dashboard/MobileNav";
 
 export function Topbar({
   companyName,
@@ -8,10 +9,13 @@ export function Topbar({
   userName: string | null;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
-      <div>
-        <p className="text-sm font-semibold">{companyName}</p>
-        {userName && <p className="text-xs text-muted">{userName}</p>}
+    <header className="flex items-center justify-between border-b border-border bg-card px-4 py-4 sm:px-6">
+      <div className="flex items-center gap-2">
+        <MobileNav />
+        <div>
+          <p className="text-sm font-semibold">{companyName}</p>
+          {userName && <p className="text-xs text-muted">{userName}</p>}
+        </div>
       </div>
       <form action={signOut}>
         <button

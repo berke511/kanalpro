@@ -54,9 +54,11 @@ type CustomerFormValues = {
   tags?: string[] | null;
 };
 
-const CARD_CLASS = "rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7";
+const CARD_CLASS = "rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7";
+// text-base (16px) auf Mobile verhindert, dass iOS Safari beim Fokussieren
+// eines Eingabefelds automatisch hineinzoomt; ab sm: wieder text-sm.
 const inputBaseClass =
-  "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10";
+  "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-base outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10 sm:text-sm";
 const errorInputClass = "border-red-300 ring-2 ring-red-100";
 const labelClass = "text-sm font-medium text-foreground";
 const helperClass = "mt-1 text-xs text-muted";
@@ -211,7 +213,7 @@ export function CustomerForm({
                       {CUSTOMER_KINDS.map((k) => (
                         <label key={k} className="cursor-pointer">
                           <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
-                          <div className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-2 py-3 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
+                          <div className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-2 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
                             <CustomerKindIcon kind={k} className="h-5 w-5 text-muted" />
                             <span className="text-xs font-medium">{CUSTOMER_KIND_LABELS[k]}</span>
                           </div>
@@ -231,7 +233,7 @@ export function CustomerForm({
                             defaultChecked={(defaultValues?.status ?? "interessent") === s}
                             className="peer sr-only"
                           />
-                          <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
+                          <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2.5 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
                             <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
                             {CUSTOMER_STATUS_LABELS[s]}
                           </div>

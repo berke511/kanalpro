@@ -46,7 +46,7 @@ export default async function KundenPage({
   const { data: customers, error } = await query;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kundenverwaltung</h1>
@@ -56,7 +56,7 @@ export default async function KundenPage({
         </div>
         <Link
           href="/kunden/neu"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
         >
           + Neuer Kunde
         </Link>
@@ -70,20 +70,20 @@ export default async function KundenPage({
           name="q"
           defaultValue={q ?? ""}
           placeholder="Suche nach Name, Firma, E-Mail, Telefon, Kundennummer…"
-          className="min-w-[260px] flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-brand"
+          className="min-w-[220px] flex-1 rounded-lg border border-border bg-card px-3 py-2.5 text-base outline-none focus:border-brand sm:text-sm"
         />
         <button
           type="submit"
-          className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-background"
+          className="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-background sm:py-2"
         >
           Suchen
         </button>
       </form>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link
           href={buildHref({ q, status })}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${!kind ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"}`}
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${!kind ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"}`}
         >
           Alle Arten
         </Link>
@@ -91,17 +91,17 @@ export default async function KundenPage({
           <Link
             key={k}
             href={buildHref({ q, status, kind: k })}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${kind === k ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${kind === k ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"}`}
           >
             {CUSTOMER_KIND_LABELS[k]}
           </Link>
         ))}
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link
           href={buildHref({ q, kind })}
-          className={`rounded-full px-3 py-1 text-xs font-medium ${!status ? "bg-brand-soft text-brand-dark" : "bg-card text-muted hover:text-foreground"}`}
+          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${!status ? "bg-brand-soft text-brand-dark" : "bg-card text-muted hover:text-foreground"}`}
         >
           Alle Status
         </Link>
@@ -109,7 +109,7 @@ export default async function KundenPage({
           <Link
             key={s}
             href={buildHref({ q, kind, status: s })}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${status === s ? "bg-brand-soft text-brand-dark" : "bg-card text-muted hover:text-foreground"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${status === s ? "bg-brand-soft text-brand-dark" : "bg-card text-muted hover:text-foreground"}`}
           >
             {CUSTOMER_STATUS_LABELS[s]}
           </Link>

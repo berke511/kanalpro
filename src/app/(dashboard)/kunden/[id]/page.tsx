@@ -186,7 +186,7 @@ export default async function KundeDetailPage({
   const saveFormId = activeTab === "adressen" ? FORM_ID_ADRESSEN : FORM_ID_ALLGEMEIN;
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className={`mx-auto max-w-6xl p-4 sm:p-6 ${showSaveButton ? "pb-28 lg:pb-6" : ""}`}>
       <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Kundenliste
       </Link>
@@ -207,12 +207,12 @@ export default async function KundeDetailPage({
             {customer.customer_number ?? "ohne Nummer"} · {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {showSaveButton && (
             <button
               type="submit"
               form={saveFormId}
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+              className="hidden rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-block"
             >
               💾 Speichern
             </button>
@@ -229,31 +229,52 @@ export default async function KundeDetailPage({
           >
             🧰 Auftrag erstellen
           </Link>
-          <form action={duplicateWithId}>
-            <button type="submit" className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background">
-              📋 Duplizieren
-            </button>
-          </form>
-          <form action={deleteWithId}>
-            <button
-              type="submit"
-              className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-            >
-              🗑 Löschen
-            </button>
-          </form>
+          <div className="hidden gap-2 lg:flex">
+            <form action={duplicateWithId}>
+              <button type="submit" className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background">
+                📋 Duplizieren
+              </button>
+            </form>
+            <form action={deleteWithId}>
+              <button
+                type="submit"
+                className="rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+              >
+                🗑 Löschen
+              </button>
+            </form>
+          </div>
+          {/* Auf Mobile werden die selteneren Aktionen in ein Menü eingeklappt,
+              damit die Aktionsleiste nicht über mehrere Zeilen umbricht. */}
+          <details className="relative lg:hidden">
+            <summary className="flex list-none items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background [&::-webkit-details-marker]:hidden">
+              ⋮
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+              <form action={duplicateWithId}>
+                <button type="submit" className="w-full rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-background">
+                  📋 Duplizieren
+                </button>
+              </form>
+              <form action={deleteWithId}>
+                <button type="submit" className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50">
+                  🗑 Löschen
+                </button>
+              </form>
+            </div>
+          </details>
         </div>
       </div>
 
       {message && <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-sm text-brand-dark">{message}</p>}
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 flex flex-wrap gap-2 border-b border-border pb-3">
+      <div className="mt-6 flex gap-2 overflow-x-auto border-b border-border pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => (
           <Link
             key={t.key}
             href={`/kunden/${id}?tab=${t.key}`}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${
               activeTab === t.key ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"
             }`}
           >
@@ -262,6 +283,21 @@ export default async function KundeDetailPage({
           </Link>
         ))}
       </div>
+
+      {showSaveButton && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 p-3 backdrop-blur lg:hidden"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <button
+            type="submit"
+            form={saveFormId}
+            className="w-full rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
+          >
+            💾 Speichern
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
         <div>
