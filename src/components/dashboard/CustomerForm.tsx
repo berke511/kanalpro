@@ -62,7 +62,7 @@ const CARD_CLASS = "rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-
 const inputBaseClass =
   "mt-1.5 w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-base outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/10 sm:text-sm";
 const errorInputClass = "border-red-300 ring-2 ring-red-100";
-const labelClass = "text-sm font-medium text-foreground";
+const labelClass = "text-sm font-medium text-foreground break-words";
 const helperClass = "mt-1 text-xs text-muted";
 
 const COUNTRY_OPTIONS = [
@@ -216,13 +216,13 @@ export function CustomerForm({
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div>
                     <span className={labelClass}>Kundenart</span>
-                    <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    <div className="mt-2 grid grid-cols-3 gap-2">
                       {CUSTOMER_KINDS.map((k) => (
                         <label key={k} className="cursor-pointer">
                           <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
-                          <div className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-2 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
-                            <CustomerKindIcon kind={k} className="h-5 w-5 text-muted" />
-                            <span className="text-xs font-medium">{CUSTOMER_KIND_LABELS[k]}</span>
+                          <div className="flex h-full flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-1.5 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
+                            <CustomerKindIcon kind={k} className="h-5 w-5 shrink-0 text-muted" />
+                            <span className="break-words text-xs font-medium leading-tight">{CUSTOMER_KIND_LABELS[k]}</span>
                           </div>
                         </label>
                       ))}
@@ -391,7 +391,7 @@ export function CustomerForm({
               </SectionCard>
 
               <SectionCard icon={Banknote} title="Zahlungsinformationen" description="Zahlungsziel, Skonto und Debitorennummer.">
-                <div className="grid gap-5 sm:grid-cols-3">
+                <div className="grid gap-5 sm:grid-cols-2">
                   <Field id="payment_term_days" label="Zahlungsziel (Tage)" helper="Frist bis zur Fälligkeit.">
                     <input id="payment_term_days" name="payment_term_days" type="number" min="0" placeholder="14" defaultValue={defaultValues?.payment_term_days ?? ""} className={inputBaseClass} />
                   </Field>
