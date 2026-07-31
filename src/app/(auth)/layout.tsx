@@ -1,12 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Headset, MapPin, ShieldCheck } from "lucide-react";
-
-const TRUST_ITEMS = [
-  { icon: ShieldCheck, label: "DSGVO-konform" },
-  { icon: MapPin, label: "Serverstandort Deutschland" },
-  { icon: Headset, label: "Persönlicher Support" },
-];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,15 +23,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="rounded-3xl border border-white bg-card/95 p-8 shadow-[0_20px_60px_-15px_rgba(15,23,42,0.15)] backdrop-blur-sm sm:p-10">
           {children}
-        </div>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 animate-auth-fade-in">
-          {TRUST_ITEMS.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs font-medium text-muted">
-              <Icon className="h-3.5 w-3.5 text-brand" />
-              {label}
-            </div>
-          ))}
         </div>
       </div>
 
