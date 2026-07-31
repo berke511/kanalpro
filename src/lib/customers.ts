@@ -30,6 +30,40 @@ export const CUSTOMER_STATUS_BADGE_CLASS: Record<string, string> = {
   gesperrt: "bg-red-50 text-red-700",
 };
 
+// Farbiger Punkt je Status, z. B. für Chips/Auswahl und Listenansichten.
+export const CUSTOMER_STATUS_DOT_CLASS: Record<string, string> = {
+  interessent: "bg-amber-400",
+  aktiv: "bg-green-500",
+  inaktiv: "bg-gray-400",
+  gesperrt: "bg-red-500",
+};
+
+export const CUSTOMER_KIND_ICONS: Record<string, string> = {
+  privat: "🏠",
+  gewerbe: "🏢",
+  industrie: "🏭",
+  kommune: "🏛️",
+  sonstige: "✦",
+};
+
+// Slots für die Pflichtfeld-Fortschrittsanzeige im Formular. "hard" wird beim
+// Speichern serverseitig erzwungen (siehe actions.ts), "soft" ist empfohlen,
+// aber nicht blockierend – zählt trotzdem in den Fortschritt.
+export const CUSTOMER_REQUIRED_FIELD_SLOTS: Array<{
+  key: string;
+  label: string;
+  hard: boolean;
+  fieldNames: string[];
+}> = [
+  { key: "kind", label: "Kundenart", hard: true, fieldNames: ["kind"] },
+  { key: "status", label: "Status", hard: true, fieldNames: ["status"] },
+  { key: "name", label: "Name", hard: true, fieldNames: ["first_name", "last_name", "company_name"] },
+  { key: "contact", label: "Kontakt (E-Mail oder Telefon)", hard: false, fieldNames: ["email", "phone"] },
+  { key: "street", label: "Straße", hard: false, fieldNames: ["street"] },
+  { key: "postal_code", label: "PLZ", hard: false, fieldNames: ["postal_code"] },
+  { key: "city", label: "Ort", hard: false, fieldNames: ["city"] },
+];
+
 export function isCompanyKind(kind: string) {
   return COMPANY_KINDS.includes(kind);
 }

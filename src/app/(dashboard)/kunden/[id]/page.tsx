@@ -7,6 +7,7 @@ import {
   deleteCustomer,
   deleteCustomerContact,
   deleteCustomerDocument,
+  duplicateCustomer,
   updateCustomer,
   uploadCustomerDocument,
 } from "@/app/(dashboard)/kunden/actions";
@@ -15,21 +16,33 @@ import { CustomerContactForm } from "@/components/dashboard/CustomerContactForm"
 import { CustomerNoteForm } from "@/components/dashboard/CustomerNoteForm";
 import { CustomerDocumentForm } from "@/components/dashboard/CustomerDocumentForm";
 import {
+  CUSTOMER_KIND_ICONS,
   CUSTOMER_KIND_LABELS,
   CUSTOMER_STATUS_BADGE_CLASS,
+  CUSTOMER_STATUS_DOT_CLASS,
   CUSTOMER_STATUS_LABELS,
 } from "@/lib/customers";
 
 const TABS = [
-  { key: "stammdaten", label: "Stammdaten" },
-  { key: "kontakte", label: "Ansprechpartner" },
-  { key: "dokumente", label: "Dokumente" },
-  { key: "notizen", label: "Notizen & Verlauf" },
+  { key: "allgemein", label: "Allgemein", icon: "👤" },
+  { key: "adressen", label: "Adressen", icon: "📍" },
+  { key: "kontakte", label: "Ansprechpartner", icon: "🧑‍🤝‍🧑" },
+  { key: "auftraege", label: "Aufträge", icon: "🧰" },
+  { key: "rechnungen", label: "Abrechnung", icon: "💶" },
+  { key: "dokumente", label: "Dokumente", icon: "📎" },
+  { key: "notizen", label: "Notizen & Verlauf", icon: "📝" },
 ];
+
+const FORM_ID_ALLGEMEIN = "customer-edit-allgemein";
+const FORM_ID_ADRESSEN = "customer-edit-adressen";
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return "—";
   return new Date(value).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function formatEuro(value: number) {
+  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 }
 
 function formatBytes(bytes: number | null) {
@@ -51,11 +64,12 @@ export default async function KundeDetailPage({
     draft?: string;
     duplicate?: string;
     matches?: string;
+    missing?: string;
   }>;
 }) {
   const { id } = await params;
-  const { error, message, tab, draft, duplicate, matches } = await searchParams;
-  const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "stammdaten";
+  const { error, message, tab, draft, duplicate, matches, missing } = await searchParams;
+  const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "allgemein";
 
   const supabase = await createClient();
   const { data: customer } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
@@ -66,6 +80,7 @@ export default async function KundeDetailPage({
 
   const updateWithId = updateCustomer.bind(null, id);
   const deleteWithId = deleteCustomer.bind(null, id);
+  const duplicateWithId = duplicateCustomer.bind(null, id);
 
   let defaultValues: Record<string, unknown> = customer;
   if (draft) {
@@ -76,6 +91,7 @@ export default async function KundeDetailPage({
     }
   }
   const duplicateWarning = duplicate === "1" && matches ? matches.split(";").map((m) => m.trim()) : undefined;
+  const missingFields = missing ? missing.split(",") : undefined;
 
   const [creator, updater] = await Promise.all([
     customer.created_by
@@ -92,6 +108,8 @@ export default async function KundeDetailPage({
   let notes: Array<{ id: string; note: string; created_at: string; author_id: string | null }> = [];
   let auditLog: Array<{ id: string; action: string; summary: string | null; created_at: string; actor_id: string | null }> = [];
   let authorNames: Record<string, string> = {};
+  let orders: Array<{ id: string; title: string; status: string; scheduled_date: string | null }> = [];
+  let invoices: Array<{ id: string; kind: string; invoice_number: string | null; status: string; issue_date: string }> = [];
 
   if (activeTab === "kontakte") {
     const { data } = await supabase
@@ -101,6 +119,24 @@ export default async function KundeDetailPage({
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true });
     contacts = data ?? [];
+  }
+
+  if (activeTab === "auftraege") {
+    const { data } = await supabase
+      .from("orders")
+      .select("id, title, status, scheduled_date")
+      .eq("customer_id", id)
+      .order("created_at", { ascending: false });
+    orders = data ?? [];
+  }
+
+  if (activeTab === "rechnungen") {
+    const { data } = await supabase
+      .from("invoices")
+      .select("id, kind, invoice_number, status, issue_date")
+      .eq("customer_id", id)
+      .order("created_at", { ascending: false });
+    invoices = data ?? [];
   }
 
   if (activeTab === "dokumente") {
@@ -146,8 +182,11 @@ export default async function KundeDetailPage({
     }
   }
 
+  const showSaveButton = activeTab === "allgemein" || activeTab === "adressen";
+  const saveFormId = activeTab === "adressen" ? FORM_ID_ADRESSEN : FORM_ID_ALLGEMEIN;
+
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-6xl p-6">
       <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Kundenliste
       </Link>
@@ -155,10 +194,12 @@ export default async function KundeDetailPage({
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xl">{CUSTOMER_KIND_ICONS[customer.kind] ?? "✦"}</span>
             <h1 className="text-2xl font-semibold tracking-tight">{customer.name}</h1>
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
             >
+              <span className={`h-1.5 w-1.5 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[customer.status] ?? "bg-gray-400"}`} />
               {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
             </span>
           </div>
@@ -167,39 +208,38 @@ export default async function KundeDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {showSaveButton && (
+            <button
+              type="submit"
+              form={saveFormId}
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            >
+              💾 Speichern
+            </button>
+          )}
           <Link
-            href={`/auftraege/neu?customer_id=${customer.id}`}
+            href={`/kunden/${id}?tab=${activeTab}`}
             className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background"
           >
-            + Auftrag
+            ❌ Abbrechen
           </Link>
-          <Link
-            href={`/rechnungen/neu?customer_id=${customer.id}`}
-            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background"
-          >
-            + Angebot/Rechnung
-          </Link>
+          <form action={duplicateWithId}>
+            <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">
+              📋 Duplizieren
+            </button>
+          </form>
           <form action={deleteWithId}>
             <button
               type="submit"
               className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
             >
-              Löschen
+              🗑 Löschen
             </button>
           </form>
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
-        Erstellt {formatDateTime(customer.created_at)}
-        {creator.data?.full_name ? ` von ${creator.data.full_name}` : ""} · Zuletzt geändert{" "}
-        {formatDateTime(customer.updated_at)}
-        {updater.data?.full_name ? ` von ${updater.data.full_name}` : ""}
-      </p>
-
-      {message && (
-        <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-sm text-brand-dark">{message}</p>
-      )}
+      {message && <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-sm text-brand-dark">{message}</p>}
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <div className="mt-6 flex flex-wrap gap-2 border-b border-border pb-3">
@@ -207,148 +247,280 @@ export default async function KundeDetailPage({
           <Link
             key={t.key}
             href={`/kunden/${id}?tab=${t.key}`}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ${
               activeTab === t.key ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"
             }`}
           >
+            <span>{t.icon}</span>
             {t.label}
           </Link>
         ))}
       </div>
 
-      {activeTab === "stammdaten" && (
-        <div className="mt-6 rounded-2xl border border-border bg-card p-6">
-          <CustomerForm
-            action={updateWithId}
-            defaultValues={defaultValues as never}
-            submitLabel={duplicateWarning ? "Trotzdem speichern" : "Änderungen speichern"}
-            duplicateWarning={duplicateWarning}
-          />
-        </div>
-      )}
-
-      {activeTab === "kontakte" && (
-        <div className="mt-6 space-y-4">
-          {contacts.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted">
-              Noch keine Ansprechpartner hinterlegt.
-            </p>
+      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_300px] lg:items-start">
+        <div>
+          {activeTab === "allgemein" && (
+            <CustomerForm
+              formId={FORM_ID_ALLGEMEIN}
+              action={updateWithId}
+              defaultValues={defaultValues as never}
+              submitLabel={duplicateWarning ? "Trotzdem speichern" : "Änderungen speichern"}
+              duplicateWarning={duplicateWarning}
+              missingFields={missingFields}
+              section="allgemein"
+              showProgress
+            />
           )}
-          {contacts.map((c) => (
-            <div key={c.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4">
+
+          {activeTab === "adressen" && (
+            <CustomerForm
+              formId={FORM_ID_ADRESSEN}
+              action={updateWithId}
+              defaultValues={defaultValues as never}
+              submitLabel="Änderungen speichern"
+              section="adressen"
+              showProgress={false}
+            />
+          )}
+
+          {activeTab === "kontakte" && (
+            <div className="space-y-4">
+              {contacts.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted">
+                  Noch keine Ansprechpartner hinterlegt.
+                </p>
+              )}
+              {contacts.map((c) => (
+                <div key={c.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {c.name}
+                      {c.is_primary && (
+                        <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-dark">
+                          Hauptkontakt
+                        </span>
+                      )}
+                    </p>
+                    {c.role && <p className="text-xs text-muted">{c.role}</p>}
+                    <p className="mt-1 text-xs text-muted">{[c.phone, c.email].filter(Boolean).join(" · ") || "—"}</p>
+                  </div>
+                  <form action={deleteCustomerContact.bind(null, id, c.id)}>
+                    <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
+                      Entfernen
+                    </button>
+                  </form>
+                </div>
+              ))}
+              <CustomerContactForm action={addCustomerContact.bind(null, id)} />
+            </div>
+          )}
+
+          {activeTab === "auftraege" && (
+            <div className="space-y-4">
+              {orders.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted">
+                  Noch keine Aufträge für diesen Kunden.
+                </p>
+              )}
+              {orders.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                  <table className="w-full text-left text-sm">
+                    <tbody>
+                      {orders.map((o) => (
+                        <tr key={o.id} className="border-b border-border last:border-0">
+                          <td className="px-4 py-3">
+                            <Link href={`/auftraege/${o.id}`} className="font-medium text-foreground hover:text-brand">
+                              {o.title}
+                            </Link>
+                            <p className="text-xs text-muted">{o.scheduled_date ? formatDateTime(o.scheduled_date) : "Kein Termin"}</p>
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-muted">{o.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <Link
+                href={`/auftraege/neu?customer_id=${id}`}
+                className="inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                + Neuer Auftrag
+              </Link>
+            </div>
+          )}
+
+          {activeTab === "rechnungen" && (
+            <div className="space-y-4">
+              {invoices.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted">
+                  Noch keine Angebote oder Rechnungen für diesen Kunden.
+                </p>
+              )}
+              {invoices.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                  <table className="w-full text-left text-sm">
+                    <tbody>
+                      {invoices.map((inv) => (
+                        <tr key={inv.id} className="border-b border-border last:border-0">
+                          <td className="px-4 py-3">
+                            <Link href={`/rechnungen/${inv.id}`} className="font-medium text-foreground hover:text-brand">
+                              {inv.kind === "angebot" ? "Angebot" : "Rechnung"} {inv.invoice_number ?? ""}
+                            </Link>
+                            <p className="text-xs text-muted">{formatDateTime(inv.issue_date)}</p>
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-muted">{inv.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <Link
+                href={`/rechnungen/neu?customer_id=${id}`}
+                className="inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+              >
+                + Neues Angebot / Neue Rechnung
+              </Link>
+            </div>
+          )}
+
+          {activeTab === "dokumente" && (
+            <div className="space-y-4">
+              {documents.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted">
+                  Noch keine Dokumente hochgeladen.
+                </p>
+              )}
+              {documents.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                  <table className="w-full text-left text-sm">
+                    <tbody>
+                      {documents.map((d) => (
+                        <tr key={d.id} className="border-b border-border last:border-0">
+                          <td className="px-4 py-3">
+                            {documentUrls[d.storage_path] ? (
+                              <a href={documentUrls[d.storage_path]} target="_blank" rel="noreferrer" className="font-medium text-brand hover:underline">
+                                {d.file_name}
+                              </a>
+                            ) : (
+                              d.file_name
+                            )}
+                            <p className="text-xs text-muted">
+                              {formatBytes(d.size_bytes)} · {formatDateTime(d.created_at)}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <form action={deleteCustomerDocument.bind(null, id, d.id, d.storage_path)}>
+                              <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
+                                Löschen
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <CustomerDocumentForm action={uploadCustomerDocument.bind(null, id)} />
+            </div>
+          )}
+
+          {activeTab === "notizen" && (
+            <div className="space-y-6">
               <div>
-                <p className="text-sm font-medium">
-                  {c.name}
-                  {c.is_primary && (
-                    <span className="ml-2 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-dark">
-                      Hauptkontakt
-                    </span>
-                  )}
-                </p>
-                {c.role && <p className="text-xs text-muted">{c.role}</p>}
-                <p className="mt-1 text-xs text-muted">
-                  {[c.phone, c.email].filter(Boolean).join(" · ") || "—"}
-                </p>
-              </div>
-              <form action={deleteCustomerContact.bind(null, id, c.id)}>
-                <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
-                  Entfernen
-                </button>
-              </form>
-            </div>
-          ))}
-          <CustomerContactForm action={addCustomerContact.bind(null, id)} />
-        </div>
-      )}
-
-      {activeTab === "dokumente" && (
-        <div className="mt-6 space-y-4">
-          {documents.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted">
-              Noch keine Dokumente hochgeladen.
-            </p>
-          )}
-          {documents.length > 0 && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card">
-              <table className="w-full text-left text-sm">
-                <tbody>
-                  {documents.map((d) => (
-                    <tr key={d.id} className="border-b border-border last:border-0">
-                      <td className="px-4 py-3">
-                        {documentUrls[d.storage_path] ? (
-                          <a
-                            href={documentUrls[d.storage_path]}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-medium text-brand hover:underline"
-                          >
-                            {d.file_name}
-                          </a>
-                        ) : (
-                          d.file_name
-                        )}
-                        <p className="text-xs text-muted">
-                          {formatBytes(d.size_bytes)} · {formatDateTime(d.created_at)}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <form action={deleteCustomerDocument.bind(null, id, d.id, d.storage_path)}>
-                          <button type="submit" className="text-xs font-medium text-red-600 hover:text-red-700">
-                            Löschen
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
+                <h2 className="text-sm font-semibold">Interne Notizen</h2>
+                <div className="mt-3">
+                  <CustomerNoteForm action={addCustomerNote.bind(null, id)} />
+                </div>
+                <div className="mt-4 space-y-3">
+                  {notes.length === 0 && <p className="text-sm text-muted">Noch keine Notizen.</p>}
+                  {notes.map((n) => (
+                    <div key={n.id} className="rounded-lg border border-border bg-card p-3">
+                      <p className="text-sm">{n.note}</p>
+                      <p className="mt-1 text-xs text-muted">
+                        {n.author_id ? authorNames[n.author_id] ?? "Unbekannt" : "Unbekannt"} · {formatDateTime(n.created_at)}
+                      </p>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-sm font-semibold">Änderungsverlauf (Audit-Log)</h2>
+                <div className="mt-3 space-y-2">
+                  {auditLog.length === 0 && <p className="text-sm text-muted">Noch keine Einträge.</p>}
+                  {auditLog.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                      <span>
+                        <span className="font-medium">
+                          {a.action === "created" ? "Angelegt" : a.action === "updated" ? "Aktualisiert" : "Gelöscht"}
+                        </span>
+                        {a.summary ? ` – ${a.summary}` : ""}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {a.actor_id ? authorNames[a.actor_id] ?? "Unbekannt" : "Unbekannt"} · {formatDateTime(a.created_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-          <CustomerDocumentForm action={uploadCustomerDocument.bind(null, id)} />
         </div>
-      )}
 
-      {activeTab === "notizen" && (
-        <div className="mt-6 space-y-6">
-          <div>
-            <h2 className="text-sm font-semibold">Interne Notizen</h2>
-            <div className="mt-3">
-              <CustomerNoteForm action={addCustomerNote.bind(null, id)} />
-            </div>
-            <div className="mt-4 space-y-3">
-              {notes.length === 0 && <p className="text-sm text-muted">Noch keine Notizen.</p>}
-              {notes.map((n) => (
-                <div key={n.id} className="rounded-lg border border-border bg-card p-3">
-                  <p className="text-sm">{n.note}</p>
-                  <p className="mt-1 text-xs text-muted">
-                    {n.author_id ? authorNames[n.author_id] ?? "Unbekannt" : "Unbekannt"} · {formatDateTime(n.created_at)}
-                  </p>
-                </div>
-              ))}
-            </div>
+        <aside className="lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="text-sm font-semibold">Kundenübersicht</h2>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Kundennummer</dt>
+                <dd className="mt-0.5 font-medium">{customer.customer_number ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Status</dt>
+                <dd className="mt-1">
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[customer.status] ?? "bg-gray-400"}`} />
+                    {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Erstellt am</dt>
+                <dd className="mt-0.5">{formatDateTime(customer.created_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Erstellt von</dt>
+                <dd className="mt-0.5">{creator.data?.full_name ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Letzte Änderung</dt>
+                <dd className="mt-0.5">{formatDateTime(customer.updated_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted">Geändert von</dt>
+                <dd className="mt-0.5">{updater.data?.full_name ?? "—"}</dd>
+              </div>
+            </dl>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold">Änderungsverlauf (Audit-Log)</h2>
-            <div className="mt-3 space-y-2">
-              {auditLog.length === 0 && <p className="text-sm text-muted">Noch keine Einträge.</p>}
-              {auditLog.map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm">
-                  <span>
-                    <span className="font-medium">
-                      {a.action === "created" ? "Angelegt" : a.action === "updated" ? "Aktualisiert" : "Gelöscht"}
-                    </span>
-                    {a.summary ? ` – ${a.summary}` : ""}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {a.actor_id ? authorNames[a.actor_id] ?? "Unbekannt" : "Unbekannt"} · {formatDateTime(a.created_at)}
-                  </span>
-                </div>
-              ))}
+          <div className="mt-4 rounded-2xl border border-border bg-card p-5">
+            <h2 className="text-sm font-semibold">Schnellaktionen</h2>
+            <div className="mt-3 flex flex-col gap-2">
+              <Link href={`/auftraege/neu?customer_id=${id}`} className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium hover:bg-background">
+                + Auftrag
+              </Link>
+              <Link href={`/rechnungen/neu?customer_id=${id}`} className="rounded-lg border border-border px-3 py-2 text-center text-sm font-medium hover:bg-background">
+                + Angebot/Rechnung
+              </Link>
             </div>
           </div>
-        </div>
-      )}
+        </aside>
+      </div>
     </div>
   );
 }

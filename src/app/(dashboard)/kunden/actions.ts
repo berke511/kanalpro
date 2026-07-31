@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
-import { customerDisplayName, geocodeAddress, isCompanyKind } from "@/lib/customers";
+import { CUSTOMER_REQUIRED_FIELD_SLOTS, customerDisplayName, geocodeAddress, isCompanyKind } from "@/lib/customers";
 import type { Database } from "@/lib/supabase/types";
 
 type DbClient = Awaited<ReturnType<typeof createClient>>;
@@ -118,6 +118,17 @@ function fieldsToQuery(fields: CustomerFields) {
   return params;
 }
 
+function missingHardSlots(fields: CustomerFields) {
+  const fieldMap = fields as unknown as Record<string, unknown>;
+  return CUSTOMER_REQUIRED_FIELD_SLOTS.filter((slot) => slot.hard).filter((slot) => {
+    const filled = slot.fieldNames.some((name) => {
+      const value = fieldMap[name];
+      return typeof value === "string" && value.trim().length > 0;
+    });
+    return !filled;
+  });
+}
+
 async function findDuplicateCustomers(
   supabase: DbClient,
   companyId: string,
@@ -189,11 +200,12 @@ export async function createCustomer(formData: FormData) {
   const fields = readCustomerForm(formData);
   const confirmDuplicate = formData.get("confirm_duplicate") === "1";
 
-  if (isCompanyKind(fields.kind) && !fields.company_name) {
-    redirect(`/kunden/neu?error=Firmenname+ist+erforderlich&${fieldsToQuery(fields).toString()}`);
-  }
-  if (!isCompanyKind(fields.kind) && !fields.last_name) {
-    redirect(`/kunden/neu?error=Nachname+ist+erforderlich&${fieldsToQuery(fields).toString()}`);
+  const missing = missingHardSlots(fields);
+  if (missing.length > 0) {
+    const params = fieldsToQuery(fields);
+    params.set("missing", missing.map((s) => s.key).join(","));
+    const label = isCompanyKind(fields.kind) ? "Firmenname" : "Nachname";
+    redirect(`/kunden/neu?error=${encodeURIComponent(label + " ist erforderlich")}&${params.toString()}`);
   }
 
   if (!confirmDuplicate) {
@@ -246,12 +258,16 @@ export async function updateCustomer(id: string, formData: FormData) {
   const { supabase, companyId, userId } = await requireCompanyContext();
   const fields = readCustomerForm(formData);
   const confirmDuplicate = formData.get("confirm_duplicate") === "1";
+  const activeSection = emptyToNull(formData.get("active_section")) ?? "allgemein";
+  const tab = activeSection === "adressen" ? "adressen" : "allgemein";
 
-  if (isCompanyKind(fields.kind) && !fields.company_name) {
-    redirect(`/kunden/${id}?error=Firmenname+ist+erforderlich&${fieldsToQuery(fields).toString()}`);
-  }
-  if (!isCompanyKind(fields.kind) && !fields.last_name) {
-    redirect(`/kunden/${id}?error=Nachname+ist+erforderlich&${fieldsToQuery(fields).toString()}`);
+  const missing = missingHardSlots(fields);
+  if (missing.length > 0) {
+    const params = fieldsToQuery(fields);
+    params.set("missing", missing.map((s) => s.key).join(","));
+    params.set("tab", tab);
+    const label = isCompanyKind(fields.kind) ? "Firmenname" : "Nachname";
+    redirect(`/kunden/${id}?error=${encodeURIComponent(label + " ist erforderlich")}&${params.toString()}`);
   }
 
   if (!confirmDuplicate) {
@@ -261,6 +277,7 @@ export async function updateCustomer(id: string, formData: FormData) {
       const params = fieldsToQuery(fields);
       params.set("duplicate", "1");
       params.set("matches", matches);
+      params.set("tab", tab);
       redirect(`/kunden/${id}?${params.toString()}`);
     }
   }
@@ -279,7 +296,7 @@ export async function updateCustomer(id: string, formData: FormData) {
     .eq("id", id);
 
   if (error) {
-    redirect(`/kunden/${id}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/kunden/${id}?error=${encodeURIComponent(error.message)}&tab=${tab}`);
   }
 
   await logAudit(supabase, {
@@ -293,7 +310,7 @@ export async function updateCustomer(id: string, formData: FormData) {
 
   revalidatePath("/kunden");
   revalidatePath(`/kunden/${id}`);
-  redirect(`/kunden/${id}?message=Gespeichert`);
+  redirect(`/kunden/${id}?message=Gespeichert&tab=${tab}`);
 }
 
 export async function deleteCustomer(id: string) {
@@ -317,6 +334,80 @@ export async function deleteCustomer(id: string) {
   await supabase.from("customers").delete().eq("id", id);
   revalidatePath("/kunden");
   redirect("/kunden");
+}
+
+export async function duplicateCustomer(id: string) {
+  const { supabase, companyId, userId } = await requireCompanyContext();
+
+  const { data: source } = await supabase.from("customers").select("*").eq("id", id).maybeSingle();
+  if (!source) {
+    redirect("/kunden?error=Kunde+nicht+gefunden");
+  }
+
+  const { data: customerNumber } = await supabase.rpc("next_customer_number", { p_company_id: companyId });
+
+  const duplicateName =
+    source.kind && ["gewerbe", "industrie", "kommune", "sonstige"].includes(source.kind)
+      ? `${source.company_name ?? source.name} (Kopie)`
+      : `${source.name} (Kopie)`;
+
+  const { data: created, error } = await supabase
+    .from("customers")
+    .insert({
+      kind: source.kind,
+      status: "interessent",
+      first_name: source.first_name,
+      last_name: source.last_name,
+      company_name: source.company_name,
+      legal_form: source.legal_form,
+      register_number: source.register_number,
+      vat_id: source.vat_id,
+      email: source.email,
+      phone: source.phone,
+      mobile: source.mobile,
+      fax: source.fax,
+      website: source.website,
+      street: source.street,
+      postal_code: source.postal_code,
+      city: source.city,
+      country: source.country,
+      billing_same_as_main: source.billing_same_as_main,
+      billing_street: source.billing_street,
+      billing_postal_code: source.billing_postal_code,
+      billing_city: source.billing_city,
+      service_same_as_main: source.service_same_as_main,
+      service_street: source.service_street,
+      service_postal_code: source.service_postal_code,
+      service_city: source.service_city,
+      payment_term_days: source.payment_term_days,
+      discount_percent: source.discount_percent,
+      discount_days: source.discount_days,
+      debitor_number: source.debitor_number,
+      tags: source.tags,
+      company_id: companyId,
+      customer_number: customerNumber ?? null,
+      name: duplicateName,
+      created_by: userId,
+      updated_by: userId,
+    })
+    .select("id, name")
+    .single();
+
+  if (error || !created) {
+    redirect(`/kunden/${id}?error=${encodeURIComponent(error?.message ?? "Duplizieren fehlgeschlagen")}`);
+  }
+
+  await logAudit(supabase, {
+    companyId,
+    customerId: created.id,
+    customerLabel: created.name,
+    actorId: userId,
+    action: "created",
+    summary: `Als Kopie von ${source.customer_number ?? source.name} angelegt`,
+  });
+
+  revalidatePath("/kunden");
+  redirect(`/kunden/${created.id}?message=Kunde+dupliziert`);
 }
 
 // --- Ansprechpartner ---

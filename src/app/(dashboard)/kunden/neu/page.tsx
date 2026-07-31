@@ -2,12 +2,14 @@ import Link from "next/link";
 import { createCustomer } from "@/app/(dashboard)/kunden/actions";
 import { CustomerForm } from "@/components/dashboard/CustomerForm";
 
+const FORM_ID = "customer-create-form";
+
 export default async function NeuerKundePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; draft?: string; duplicate?: string; matches?: string }>;
+  searchParams: Promise<{ error?: string; draft?: string; duplicate?: string; matches?: string; missing?: string }>;
 }) {
-  const { error, draft, duplicate, matches } = await searchParams;
+  const { error, draft, duplicate, matches, missing } = await searchParams;
 
   let defaultValues;
   if (draft) {
@@ -19,24 +21,43 @@ export default async function NeuerKundePage({
   }
 
   const duplicateWarning = duplicate === "1" && matches ? matches.split(";").map((m) => m.trim()) : undefined;
+  const missingFields = missing ? missing.split(",") : undefined;
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-5xl p-6">
       <Link href="/kunden" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Kundenliste
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Neuer Kunde</h1>
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Neuer Kunde</h1>
+          <p className="mt-1 text-sm text-muted">Lege einen neuen Kunden mit allen Stammdaten an.</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/kunden" className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-background">
+            ❌ Abbrechen
+          </Link>
+          <button
+            type="submit"
+            form={FORM_ID}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
+          >
+            💾 Speichern
+          </button>
+        </div>
+      </div>
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6">
+      {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+
+      <div className="mt-6">
         <CustomerForm
+          formId={FORM_ID}
           action={createCustomer}
           defaultValues={defaultValues}
           submitLabel={duplicateWarning ? "Trotzdem anlegen" : "Kunde anlegen"}
           duplicateWarning={duplicateWarning}
+          missingFields={missingFields}
         />
       </div>
     </div>
