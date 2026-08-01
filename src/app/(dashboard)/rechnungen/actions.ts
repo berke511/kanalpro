@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { INVOICE_KINDS, INVOICE_STATUSES } from "@/lib/invoices";
+import { todayBerlinISO } from "@/lib/date";
 
 async function requireCompanyContext() {
   const supabase = await createClient();
@@ -47,7 +48,7 @@ function readInvoiceForm(formData: FormData) {
     order_id: emptyToNull(formData.get("order_id")),
     customer_id: emptyToNull(formData.get("customer_id")),
     invoice_number: emptyToNull(formData.get("invoice_number")),
-    issue_date: issueDateRaw || new Date().toISOString().slice(0, 10),
+    issue_date: issueDateRaw || todayBerlinISO(),
     due_date: emptyToNull(formData.get("due_date")),
     notes: emptyToNull(formData.get("notes")),
   };

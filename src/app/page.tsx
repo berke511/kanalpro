@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { currentBerlinYear } from "@/lib/date";
 
 const MODULES = [
   { title: "Kundenverwaltung", desc: "Kompletter Kundenstamm mit Historie, Objekten und Ansprechpartnern." },
@@ -99,7 +100,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-xs text-muted">
-        © {new Date().getFullYear()} KanalPro
+        © {currentBerlinYear()} KanalPro
       </footer>
     </div>
   );

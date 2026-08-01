@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate, formatDateTime } from "@/lib/date";
 import {
   addCustomerContact,
   addCustomerNote,
@@ -54,11 +55,6 @@ const TABS: Array<{ key: string; label: string; icon: LucideIcon }> = [
 
 const FORM_ID_ALLGEMEIN = "customer-edit-allgemein";
 const FORM_ID_ADRESSEN = "customer-edit-adressen";
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
-}
 
 function formatBytes(bytes: number | null) {
   if (!bytes) return "";
@@ -417,7 +413,7 @@ export default async function KundeDetailPage({
                             <Link href={`/auftraege/${o.id}`} className="font-medium text-foreground hover:text-brand">
                               {o.title}
                             </Link>
-                            <p className="text-xs text-muted">{o.scheduled_date ? formatDateTime(o.scheduled_date) : "Kein Termin"}</p>
+                            <p className="text-xs text-muted">{o.scheduled_date ? formatDate(o.scheduled_date) : "Kein Termin"}</p>
                           </td>
                           <td className="px-4 py-3 text-right text-xs text-muted">{o.status}</td>
                         </tr>
@@ -453,7 +449,7 @@ export default async function KundeDetailPage({
                             <Link href={`/rechnungen/${inv.id}`} className="font-medium text-foreground hover:text-brand">
                               {inv.kind === "angebot" ? "Angebot" : "Rechnung"} {inv.invoice_number ?? ""}
                             </Link>
-                            <p className="text-xs text-muted">{formatDateTime(inv.issue_date)}</p>
+                            <p className="text-xs text-muted">{formatDate(inv.issue_date)}</p>
                           </td>
                           <td className="px-4 py-3 text-right text-xs text-muted">{inv.status}</td>
                         </tr>

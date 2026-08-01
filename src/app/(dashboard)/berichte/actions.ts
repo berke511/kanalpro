@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { todayBerlinISO } from "@/lib/date";
 
 async function requireCompanyContext() {
   const supabase = await createClient();
@@ -40,7 +41,7 @@ function readReportForm(formData: FormData) {
   const reportDateRaw = String(formData.get("report_date") ?? "").trim();
   return {
     order_id: String(formData.get("order_id") ?? "").trim(),
-    report_date: reportDateRaw || new Date().toISOString().slice(0, 10),
+    report_date: reportDateRaw || todayBerlinISO(),
     work_performed: String(formData.get("work_performed") ?? "").trim(),
     hours_worked: toNumberOrNull(formData.get("hours_worked")),
     materials_notes: emptyToNull(formData.get("materials_notes")),

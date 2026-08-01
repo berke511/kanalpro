@@ -1,4 +1,5 @@
 import { INVOICE_KIND_LABELS, INVOICE_STATUS_LABELS } from "@/lib/invoices";
+import { todayBerlinISO } from "@/lib/date";
 
 type InvoiceFormValues = {
   kind?: string;
@@ -16,10 +17,6 @@ type Option = { id: string; label: string };
 const inputClass =
   "mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand";
 const labelClass = "text-sm font-medium";
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function InvoiceForm({
   action,
@@ -137,7 +134,7 @@ export function InvoiceForm({
             id="issue_date"
             name="issue_date"
             type="date"
-            defaultValue={defaultValues?.issue_date ?? todayISO()}
+            defaultValue={defaultValues?.issue_date ?? todayBerlinISO()}
             className={inputClass}
           />
         </div>

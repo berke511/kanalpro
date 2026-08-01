@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_LABELS } from "@/lib/orders";
+import { dateFromISO, todayBerlinISO } from "@/lib/date";
 import { scheduleOrder, unscheduleOrder } from "./actions";
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -21,12 +22,18 @@ function formatShort(iso: string) {
   return `${day}.${month}.`;
 }
 
+// Wochenanfang relativ zum heutigen Kalendertag in der Zeitzone
+// Europe/Berlin – nicht relativ zur Prozess-Zeitzone des Servers (Vercel
+// läuft standardmäßig auf UTC). `today` wird bewusst auf UTC-Mitternacht
+// verankert (siehe `dateFromISO`) und danach ausschließlich mit den
+// UTC-Methoden weiterverarbeitet, damit "heute"/"diese Woche" unabhängig
+// von der Server-Zeitzone stets dem Berliner Kalendertag entsprechen.
 function getMonday(offsetWeeks: number) {
-  const now = new Date();
-  const day = now.getDay();
+  const today = dateFromISO(todayBerlinISO());
+  const day = today.getUTCDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  monday.setDate(monday.getDate() + diffToMonday + offsetWeeks * 7);
+  const monday = new Date(today);
+  monday.setUTCDate(monday.getUTCDate() + diffToMonday + offsetWeeks * 7);
   return monday;
 }
 
@@ -41,12 +48,12 @@ export default async function EinsatzplanungPage({
   const monday = getMonday(weekOffset);
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    d.setUTCDate(monday.getUTCDate() + i);
     return d;
   });
   const rangeStart = toISODate(days[0]);
   const rangeEnd = toISODate(days[6]);
-  const todayISO = toISODate(new Date());
+  const todayISO = todayBerlinISO();
 
   const supabase = await createClient();
 

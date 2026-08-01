@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { currentBerlinYear } from "@/lib/date";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -36,7 +37,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Datenschutz
           </Link>
         </div>
-        <span>© {new Date().getFullYear()} KanalPro</span>
+        <span>© {currentBerlinYear()} KanalPro</span>
       </footer>
     </div>
   );

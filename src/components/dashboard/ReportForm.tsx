@@ -1,3 +1,5 @@
+import { formatDateTime, todayBerlinISO } from "@/lib/date";
+
 type ReportFormValues = {
   order_id?: string;
   report_date?: string | null;
@@ -13,10 +15,6 @@ type Option = { id: string; label: string };
 const inputClass =
   "mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand";
 const labelClass = "text-sm font-medium";
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function ReportForm({
   action,
@@ -62,7 +60,7 @@ export function ReportForm({
             id="report_date"
             name="report_date"
             type="date"
-            defaultValue={defaultValues?.report_date ?? todayISO()}
+            defaultValue={defaultValues?.report_date ?? todayBerlinISO()}
             className={inputClass}
           />
         </div>
@@ -130,7 +128,7 @@ export function ReportForm({
         />
         {defaultValues?.signed_at && (
           <p className="mt-2 text-xs font-medium text-green-700">
-            Unterschrieben am {new Date(defaultValues.signed_at).toLocaleString("de-DE")}
+            Unterschrieben am {formatDateTime(defaultValues.signed_at)}
           </p>
         )}
       </div>
