@@ -16,7 +16,7 @@ export function CustomerContactForm({ action }: { action: (formData: FormData) =
       </div>
       <div>
         <label className="text-xs font-medium text-muted">Telefon</label>
-        <input name="phone" type="text" className={`mt-1 w-full ${inputClass}`} />
+        <input name="phone" type="text" defaultValue="+49 " className={`mt-1 w-full ${inputClass}`} />
       </div>
       <div>
         <label className="text-xs font-medium text-muted">E-Mail</label>

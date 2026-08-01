@@ -380,10 +380,10 @@ export function CustomerForm({
                   <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? "+49 "} className={inputBaseClass} />
                 </Field>
                 <Field id="mobile" label="Mobil">
-                  <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? ""} className={inputBaseClass} />
+                  <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? "+49 "} className={inputBaseClass} />
                 </Field>
                 <Field id="fax" label="Fax">
-                  <input id="fax" name="fax" type="text" defaultValue={defaultValues?.fax ?? ""} className={inputBaseClass} />
+                  <input id="fax" name="fax" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.fax ?? "+49 "} className={inputBaseClass} />
                 </Field>
                 <Field id="website" label="Website">
                   <input id="website" name="website" type="text" placeholder="https://www.firma.de" defaultValue={defaultValues?.website ?? ""} className={inputBaseClass} />
