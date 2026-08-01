@@ -79,7 +79,7 @@ function readCustomerForm(formData: FormData): CustomerFields {
 
   return {
     kind: kindRaw,
-    status: String(formData.get("status") ?? "interessent"),
+    status: String(formData.get("status") ?? "neukunde"),
     first_name: emptyToNull(formData.get("first_name")),
     last_name: emptyToNull(formData.get("last_name")),
     company_name: emptyToNull(formData.get("company_name")),
@@ -356,7 +356,7 @@ export async function duplicateCustomer(id: string) {
     .from("customers")
     .insert({
       kind: source.kind,
-      status: "interessent",
+      status: "neukunde",
       first_name: source.first_name,
       last_name: source.last_name,
       company_name: source.company_name,
@@ -452,7 +452,7 @@ export async function checkCustomerDuplicatesLive(input: {
 
   const fields: CustomerFields = {
     kind: "sonstige",
-    status: "interessent",
+    status: "neukunde",
     company_name: emptyToNull(input.companyName ?? null),
     email: emptyToNull(input.email ?? null),
     phone: emptyToNull(input.phone ?? null),

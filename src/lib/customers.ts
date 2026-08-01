@@ -17,28 +17,31 @@ export const COMPANY_KINDS = ["gewerbe", "industrie", "kommune", "sonstige"];
 // (siehe Tags-Feld im Kundenformular), statt eine eigene Spalte anzulegen.
 export const MAINTENANCE_CONTRACT_TAG = "Wartungsvertrag";
 
-export const CUSTOMER_STATUSES = ["interessent", "aktiv", "inaktiv", "gesperrt"] as const;
+export const CUSTOMER_STATUSES = ["neukunde", "bestandskunde", "wartungskunde", "ehemalig", "gesperrt"] as const;
 export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
 
 export const CUSTOMER_STATUS_LABELS: Record<string, string> = {
-  interessent: "Interessent",
-  aktiv: "Aktiv",
-  inaktiv: "Inaktiv",
+  neukunde: "Neukunde",
+  bestandskunde: "Bestandskunde",
+  wartungskunde: "Wartungskunde",
+  ehemalig: "Ehemaliger Kunde",
   gesperrt: "Gesperrt",
 };
 
 export const CUSTOMER_STATUS_BADGE_CLASS: Record<string, string> = {
-  interessent: "bg-amber-50 text-amber-700",
-  aktiv: "bg-green-50 text-green-700",
-  inaktiv: "bg-gray-100 text-gray-600",
+  neukunde: "bg-blue-50 text-blue-700",
+  bestandskunde: "bg-green-50 text-green-700",
+  wartungskunde: "bg-indigo-50 text-indigo-700",
+  ehemalig: "bg-gray-100 text-gray-600",
   gesperrt: "bg-red-50 text-red-700",
 };
 
 // Farbiger Punkt je Status, z. B. für Chips/Auswahl und Listenansichten.
 export const CUSTOMER_STATUS_DOT_CLASS: Record<string, string> = {
-  interessent: "bg-amber-400",
-  aktiv: "bg-green-500",
-  inaktiv: "bg-gray-400",
+  neukunde: "bg-blue-400",
+  bestandskunde: "bg-green-500",
+  wartungskunde: "bg-indigo-500",
+  ehemalig: "bg-gray-400",
   gesperrt: "bg-red-500",
 };
 

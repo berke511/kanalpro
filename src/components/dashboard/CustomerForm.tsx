@@ -236,7 +236,7 @@ export function CustomerForm({
                         type="radio"
                         name="status"
                         value={s}
-                        defaultChecked={(defaultValues?.status ?? "interessent") === s}
+                        defaultChecked={(defaultValues?.status ?? "neukunde") === s}
                         className="peer sr-only"
                       />
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm font-medium text-foreground transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:text-brand-dark peer-focus-visible:ring-2 peer-focus-visible:ring-brand/20">
@@ -426,7 +426,7 @@ export function CustomerForm({
         {!showAllgemein && (
           <>
             {hiddenText("kind", kind)}
-            {hiddenText("status", defaultValues?.status ?? "interessent")}
+            {hiddenText("status", defaultValues?.status ?? "neukunde")}
             {hiddenText("first_name", defaultValues?.first_name)}
             {hiddenText("last_name", defaultValues?.last_name)}
             {hiddenText("company_name", defaultValues?.company_name)}
