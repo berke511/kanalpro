@@ -446,8 +446,8 @@ export function CustomerForm({
         )}
 
         {showAdressen && (
-          <div className="grid gap-6 xl:grid-cols-2">
-            <SectionCard icon={MapPin} title="Hauptadresse" description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert)." span2>
+          <div className="space-y-6">
+            <SectionCard icon={MapPin} title="Hauptadresse" description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert).">
               <Field id="street" label="Straße & Hausnummer">
                 <input id="street" name="street" type="text" placeholder="Musterstraße 12" defaultValue={defaultValues?.street ?? ""} className={inputBaseClass} />
               </Field>
