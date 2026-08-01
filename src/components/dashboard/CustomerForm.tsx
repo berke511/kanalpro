@@ -212,57 +212,59 @@ export function CustomerForm({
         {showAllgemein && (
           <div className="space-y-6">
             <SectionCard icon={UserRound} title="Allgemeine Informationen" description="Grundlegende Stammdaten des Kunden.">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <span className={labelClass}>Kundenart</span>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {CUSTOMER_KINDS.map((k) => (
-                      <label key={k} className="cursor-pointer">
-                        <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
-                        <div className="flex h-full flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-1.5 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
-                          <CustomerKindIcon kind={k} className="h-5 w-5 shrink-0 text-muted" />
-                          <span className="break-words text-xs font-medium leading-tight">{CUSTOMER_KIND_LABELS[k]}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <span className={labelClass}>Status</span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {CUSTOMER_STATUSES.map((s) => (
-                      <label key={s} className="cursor-pointer">
-                        <input
-                          type="radio"
-                          name="status"
-                          value={s}
-                          defaultChecked={(defaultValues?.status ?? "interessent") === s}
-                          className="peer sr-only"
-                        />
-                        <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2.5 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
-                          <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
-                          {CUSTOMER_STATUS_LABELS[s]}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+              <div>
+                <span className={labelClass}>Kundenart</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CUSTOMER_KINDS.map((k) => (
+                    <label key={k} className="cursor-pointer">
+                      <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm font-medium text-foreground transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:text-brand-dark peer-focus-visible:ring-2 peer-focus-visible:ring-brand/20">
+                        <CustomerKindIcon kind={k} className="h-4 w-4 shrink-0" />
+                        {CUSTOMER_KIND_LABELS[k]}
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
-              <Field id="assigned_employee_id" label="Zuständiger Mitarbeiter" helper="Optional – für interne Zuordnung und Filter.">
-                <select
-                  id="assigned_employee_id"
-                  name="assigned_employee_id"
-                  defaultValue={defaultValues?.assigned_employee_id ?? ""}
-                  className={inputBaseClass}
-                >
-                  <option value="">Kein zuständiger Mitarbeiter</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.full_name ?? "Unbenannt"}
-                    </option>
+
+              <div>
+                <span className={labelClass}>Status</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CUSTOMER_STATUSES.map((s) => (
+                    <label key={s} className="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="status"
+                        value={s}
+                        defaultChecked={(defaultValues?.status ?? "interessent") === s}
+                        className="peer sr-only"
+                      />
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm font-medium text-foreground transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:text-brand-dark peer-focus-visible:ring-2 peer-focus-visible:ring-brand/20">
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
+                        {CUSTOMER_STATUS_LABELS[s]}
+                      </div>
+                    </label>
                   ))}
-                </select>
-              </Field>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-5">
+                <Field id="assigned_employee_id" label="Zuständiger Mitarbeiter" helper="Optional – für interne Zuordnung und Filter.">
+                  <select
+                    id="assigned_employee_id"
+                    name="assigned_employee_id"
+                    defaultValue={defaultValues?.assigned_employee_id ?? ""}
+                    className={inputBaseClass}
+                  >
+                    <option value="">Kein zuständiger Mitarbeiter</option>
+                    {employees.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.full_name ?? "Unbenannt"}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
             </SectionCard>
 
             {!showCompanyFields && (
