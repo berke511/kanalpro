@@ -377,7 +377,7 @@ export function CustomerForm({
                   <input id="email" name="email" type="email" placeholder="kontakt@firma.de" defaultValue={defaultValues?.email ?? ""} className={inputBaseClass} />
                 </Field>
                 <Field id="phone" label="Telefon">
-                  <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? ""} className={inputBaseClass} />
+                  <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? "+49 "} className={inputBaseClass} />
                 </Field>
                 <Field id="mobile" label="Mobil">
                   <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? ""} className={inputBaseClass} />
