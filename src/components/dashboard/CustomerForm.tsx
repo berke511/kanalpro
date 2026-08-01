@@ -209,305 +209,303 @@ export function CustomerForm({
 
         {showAllgemein && <DuplicateCheckLive formId={formId} excludeId={customerId} />}
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          {showAllgemein && (
-            <>
-              <SectionCard icon={UserRound} title="Allgemeine Informationen" description="Grundlegende Stammdaten des Kunden." span2>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <span className={labelClass}>Kundenart</span>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      {CUSTOMER_KINDS.map((k) => (
-                        <label key={k} className="cursor-pointer">
-                          <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
-                          <div className="flex h-full flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-1.5 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
-                            <CustomerKindIcon kind={k} className="h-5 w-5 shrink-0 text-muted" />
-                            <span className="break-words text-xs font-medium leading-tight">{CUSTOMER_KIND_LABELS[k]}</span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <span className={labelClass}>Status</span>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {CUSTOMER_STATUSES.map((s) => (
-                        <label key={s} className="cursor-pointer">
-                          <input
-                            type="radio"
-                            name="status"
-                            value={s}
-                            defaultChecked={(defaultValues?.status ?? "interessent") === s}
-                            className="peer sr-only"
-                          />
-                          <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2.5 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
-                            <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
-                            {CUSTOMER_STATUS_LABELS[s]}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+        {showAllgemein && (
+          <div className="space-y-6">
+            <SectionCard icon={UserRound} title="Allgemeine Informationen" description="Grundlegende Stammdaten des Kunden.">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <span className={labelClass}>Kundenart</span>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {CUSTOMER_KINDS.map((k) => (
+                      <label key={k} className="cursor-pointer">
+                        <input type="radio" name="kind" value={k} defaultChecked={kind === k} className="peer sr-only" />
+                        <div className="flex h-full flex-col items-center gap-1.5 rounded-xl border-2 border-border bg-background px-1.5 py-3.5 text-center transition peer-checked:border-brand peer-checked:bg-brand-soft">
+                          <CustomerKindIcon kind={k} className="h-5 w-5 shrink-0 text-muted" />
+                          <span className="break-words text-xs font-medium leading-tight">{CUSTOMER_KIND_LABELS[k]}</span>
+                        </div>
+                      </label>
+                    ))}
                   </div>
                 </div>
-                <Field id="assigned_employee_id" label="Zuständiger Mitarbeiter" helper="Optional – für interne Zuordnung und Filter.">
-                  <select
-                    id="assigned_employee_id"
-                    name="assigned_employee_id"
-                    defaultValue={defaultValues?.assigned_employee_id ?? ""}
-                    className={inputBaseClass}
-                  >
-                    <option value="">Kein zuständiger Mitarbeiter</option>
-                    {employees.map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.full_name ?? "Unbenannt"}
-                      </option>
+                <div>
+                  <span className={labelClass}>Status</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {CUSTOMER_STATUSES.map((s) => (
+                      <label key={s} className="cursor-pointer">
+                        <input
+                          type="radio"
+                          name="status"
+                          value={s}
+                          defaultChecked={(defaultValues?.status ?? "interessent") === s}
+                          className="peer sr-only"
+                        />
+                        <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2.5 text-sm transition peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:font-semibold">
+                          <span className={`h-2 w-2 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[s]}`} />
+                          {CUSTOMER_STATUS_LABELS[s]}
+                        </div>
+                      </label>
                     ))}
-                  </select>
-                </Field>
-              </SectionCard>
-
-              {!showCompanyFields && (
-                <SectionCard icon={UserRound} title="Persönliche Daten" description="Name des Privatkunden." span2>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field id="first_name" label="Vorname" helper="Optional.">
-                      <input
-                        id="first_name"
-                        name="first_name"
-                        type="text"
-                        placeholder="Max"
-                        defaultValue={defaultValues?.first_name ?? ""}
-                        className={inputBaseClass}
-                      />
-                    </Field>
-                    <Field id="last_name" label="Nachname" error={nameMissing}>
-                      <input
-                        id="last_name"
-                        name="last_name"
-                        type="text"
-                        placeholder="Mustermann"
-                        autoFocus={autoFocusFirstField}
-                        defaultValue={defaultValues?.last_name ?? ""}
-                        className={`${inputBaseClass} ${nameMissing ? errorInputClass : ""}`}
-                      />
-                    </Field>
                   </div>
-                </SectionCard>
-              )}
+                </div>
+              </div>
+              <Field id="assigned_employee_id" label="Zuständiger Mitarbeiter" helper="Optional – für interne Zuordnung und Filter.">
+                <select
+                  id="assigned_employee_id"
+                  name="assigned_employee_id"
+                  defaultValue={defaultValues?.assigned_employee_id ?? ""}
+                  className={inputBaseClass}
+                >
+                  <option value="">Kein zuständiger Mitarbeiter</option>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.full_name ?? "Unbenannt"}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </SectionCard>
 
-              {showCompanyFields && (
-                <SectionCard icon={Building2} title="Unternehmen" description="Firmendaten und rechtliche Angaben." span2>
-                  <Field id="company_name" label="Firmenname" error={nameMissing} helper="Erscheint auf Rechnungen und Angeboten.">
+            {!showCompanyFields && (
+              <SectionCard icon={UserRound} title="Persönliche Daten" description="Name des Privatkunden.">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field id="first_name" label="Vorname" helper="Optional.">
                     <input
-                      id="company_name"
-                      name="company_name"
+                      id="first_name"
+                      name="first_name"
                       type="text"
-                      placeholder="z. B. Mustermann GmbH"
+                      placeholder="Max"
+                      defaultValue={defaultValues?.first_name ?? ""}
+                      className={inputBaseClass}
+                    />
+                  </Field>
+                  <Field id="last_name" label="Nachname" error={nameMissing}>
+                    <input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      placeholder="Mustermann"
                       autoFocus={autoFocusFirstField}
-                      defaultValue={defaultValues?.company_name ?? ""}
+                      defaultValue={defaultValues?.last_name ?? ""}
                       className={`${inputBaseClass} ${nameMissing ? errorInputClass : ""}`}
                     />
                   </Field>
-                  <div className="grid gap-5 sm:grid-cols-3">
-                    <Field id="legal_form" label="Rechtsform">
-                      <input
-                        id="legal_form"
-                        name="legal_form"
-                        type="text"
-                        list="legal-form-options"
-                        placeholder="z. B. GmbH"
-                        defaultValue={defaultValues?.legal_form ?? ""}
-                        className={inputBaseClass}
-                      />
-                      <datalist id="legal-form-options">
-                        {LEGAL_FORM_OPTIONS.map((o) => (
-                          <option key={o} value={o} />
-                        ))}
-                      </datalist>
-                    </Field>
-                    <Field id="register_number" label="Handelsregister">
-                      <input
-                        id="register_number"
-                        name="register_number"
-                        type="text"
-                        placeholder="HRB 12345"
-                        defaultValue={defaultValues?.register_number ?? ""}
-                        className={inputBaseClass}
-                      />
-                    </Field>
-                    <Field id="vat_id" label="USt-IdNr." helper="Für Rechnungen an Unternehmen.">
-                      <input
-                        id="vat_id"
-                        name="vat_id"
-                        type="text"
-                        placeholder="DE123456789"
-                        defaultValue={defaultValues?.vat_id ?? ""}
-                        className={inputBaseClass}
-                      />
-                    </Field>
-                  </div>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field id="first_name" label="Ansprechpartner – Vorname">
-                      <input
-                        id="first_name"
-                        name="first_name"
-                        type="text"
-                        placeholder="Max"
-                        defaultValue={defaultValues?.first_name ?? ""}
-                        className={inputBaseClass}
-                      />
-                    </Field>
-                    <Field id="last_name" label="Ansprechpartner – Nachname">
-                      <input
-                        id="last_name"
-                        name="last_name"
-                        type="text"
-                        placeholder="Mustermann"
-                        defaultValue={defaultValues?.last_name ?? ""}
-                        className={inputBaseClass}
-                      />
-                    </Field>
-                  </div>
-                </SectionCard>
-              )}
-
-              <SectionCard icon={Phone} title="Kontakt" description="Wie der Kunde erreichbar ist.">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field id="email" label="E-Mail">
-                    <input id="email" name="email" type="email" placeholder="kontakt@firma.de" defaultValue={defaultValues?.email ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="phone" label="Telefon">
-                    <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="mobile" label="Mobil">
-                    <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="fax" label="Fax">
-                    <input id="fax" name="fax" type="text" defaultValue={defaultValues?.fax ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="website" label="Website">
-                    <input id="website" name="website" type="text" placeholder="https://www.firma.de" defaultValue={defaultValues?.website ?? ""} className={inputBaseClass} />
-                  </Field>
                 </div>
               </SectionCard>
+            )}
 
-              <SectionCard icon={Banknote} title="Zahlungsinformationen" description="Zahlungsziel, Skonto und Debitorennummer.">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field id="payment_term_days" label="Zahlungsziel (Tage)" helper="Frist bis zur Fälligkeit.">
-                    <input id="payment_term_days" name="payment_term_days" type="number" min="0" placeholder="14" defaultValue={defaultValues?.payment_term_days ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="discount_percent" label="Skonto (%)">
-                    <input id="discount_percent" name="discount_percent" type="number" step="0.01" min="0" placeholder="2" defaultValue={defaultValues?.discount_percent ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="discount_days" label="Skontofrist (Tage)">
-                    <input id="discount_days" name="discount_days" type="number" min="0" placeholder="7" defaultValue={defaultValues?.discount_days ?? ""} className={inputBaseClass} />
-                  </Field>
-                </div>
-                <Field id="debitor_number" label="Debitorennummer">
-                  <input id="debitor_number" name="debitor_number" type="text" placeholder="D-10023" defaultValue={defaultValues?.debitor_number ?? ""} className={inputBaseClass} />
-                </Field>
-              </SectionCard>
-
-              <SectionCard icon={TagsIcon} title="Tags" description="Freie Klassifizierung, z. B. für Filter und Auswertungen.">
-                <Field id="tags" label="Tags" helper="Mehrere Tags durch Komma trennen.">
+            {showCompanyFields && (
+              <SectionCard icon={Building2} title="Unternehmen" description="Firmendaten und rechtliche Angaben.">
+                <Field id="company_name" label="Firmenname" error={nameMissing} helper="Erscheint auf Rechnungen und Angeboten.">
                   <input
-                    id="tags"
-                    name="tags"
+                    id="company_name"
+                    name="company_name"
                     type="text"
-                    placeholder="z. B. Stammkunde, Notdienst, VIP"
-                    defaultValue={(defaultValues?.tags ?? []).join(", ")}
-                    className={inputBaseClass}
+                    placeholder="z. B. Mustermann GmbH"
+                    autoFocus={autoFocusFirstField}
+                    defaultValue={defaultValues?.company_name ?? ""}
+                    className={`${inputBaseClass} ${nameMissing ? errorInputClass : ""}`}
                   />
                 </Field>
-              </SectionCard>
-            </>
-          )}
-
-          {!showAllgemein && (
-            <>
-              {hiddenText("kind", kind)}
-              {hiddenText("status", defaultValues?.status ?? "interessent")}
-              {hiddenText("first_name", defaultValues?.first_name)}
-              {hiddenText("last_name", defaultValues?.last_name)}
-              {hiddenText("company_name", defaultValues?.company_name)}
-              {hiddenText("legal_form", defaultValues?.legal_form)}
-              {hiddenText("register_number", defaultValues?.register_number)}
-              {hiddenText("vat_id", defaultValues?.vat_id)}
-              {hiddenText("email", defaultValues?.email)}
-              {hiddenText("phone", defaultValues?.phone)}
-              {hiddenText("mobile", defaultValues?.mobile)}
-              {hiddenText("fax", defaultValues?.fax)}
-              {hiddenText("website", defaultValues?.website)}
-              {hiddenText("payment_term_days", defaultValues?.payment_term_days)}
-              {hiddenText("discount_percent", defaultValues?.discount_percent)}
-              {hiddenText("discount_days", defaultValues?.discount_days)}
-              {hiddenText("debitor_number", defaultValues?.debitor_number)}
-              {hiddenText("tags", (defaultValues?.tags ?? []).join(", "))}
-              {hiddenText("assigned_employee_id", defaultValues?.assigned_employee_id)}
-            </>
-          )}
-
-          {showAdressen && (
-            <>
-              <SectionCard icon={MapPin} title="Hauptadresse" description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert)." span2>
-                <Field id="street" label="Straße & Hausnummer">
-                  <input id="street" name="street" type="text" placeholder="Musterstraße 12" defaultValue={defaultValues?.street ?? ""} className={inputBaseClass} />
-                </Field>
-                <div className="grid gap-5 sm:grid-cols-[140px_1fr_160px]">
-                  <Field id="postal_code" label="PLZ">
-                    <input id="postal_code" name="postal_code" type="text" placeholder="12345" defaultValue={defaultValues?.postal_code ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="city" label="Ort">
-                    <input id="city" name="city" type="text" placeholder="Berlin" defaultValue={defaultValues?.city ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="country" label="Land">
-                    <input id="country" name="country" type="text" list="country-options" defaultValue={defaultValues?.country ?? "Deutschland"} className={inputBaseClass} />
-                    <datalist id="country-options">
-                      {COUNTRY_OPTIONS.map((c) => (
-                        <option key={c} value={c} />
+                <div className="grid gap-5 sm:grid-cols-3">
+                  <Field id="legal_form" label="Rechtsform">
+                    <input
+                      id="legal_form"
+                      name="legal_form"
+                      type="text"
+                      list="legal-form-options"
+                      placeholder="z. B. GmbH"
+                      defaultValue={defaultValues?.legal_form ?? ""}
+                      className={inputBaseClass}
+                    />
+                    <datalist id="legal-form-options">
+                      {LEGAL_FORM_OPTIONS.map((o) => (
+                        <option key={o} value={o} />
                       ))}
                     </datalist>
                   </Field>
+                  <Field id="register_number" label="Handelsregister">
+                    <input
+                      id="register_number"
+                      name="register_number"
+                      type="text"
+                      placeholder="HRB 12345"
+                      defaultValue={defaultValues?.register_number ?? ""}
+                      className={inputBaseClass}
+                    />
+                  </Field>
+                  <Field id="vat_id" label="USt-IdNr." helper="Für Rechnungen an Unternehmen.">
+                    <input
+                      id="vat_id"
+                      name="vat_id"
+                      type="text"
+                      placeholder="DE123456789"
+                      defaultValue={defaultValues?.vat_id ?? ""}
+                      className={inputBaseClass}
+                    />
+                  </Field>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field id="first_name" label="Ansprechpartner – Vorname">
+                    <input
+                      id="first_name"
+                      name="first_name"
+                      type="text"
+                      placeholder="Max"
+                      defaultValue={defaultValues?.first_name ?? ""}
+                      className={inputBaseClass}
+                    />
+                  </Field>
+                  <Field id="last_name" label="Ansprechpartner – Nachname">
+                    <input
+                      id="last_name"
+                      name="last_name"
+                      type="text"
+                      placeholder="Mustermann"
+                      defaultValue={defaultValues?.last_name ?? ""}
+                      className={inputBaseClass}
+                    />
+                  </Field>
                 </div>
               </SectionCard>
+            )}
 
-              <SectionCard icon={Receipt} title="Rechnungsadresse">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="billing_same_as_main" defaultChecked={billingSame} />
-                  Gleich wie Hauptadresse
-                </label>
-                <Field id="billing_street" label="Straße & Hausnummer">
-                  <input id="billing_street" name="billing_street" type="text" defaultValue={defaultValues?.billing_street ?? ""} className={inputBaseClass} />
+            <SectionCard icon={Phone} title="Kontakt" description="Wie der Kunde erreichbar ist.">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="email" label="E-Mail">
+                  <input id="email" name="email" type="email" placeholder="kontakt@firma.de" defaultValue={defaultValues?.email ?? ""} className={inputBaseClass} />
                 </Field>
-                <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
-                  <Field id="billing_postal_code" label="PLZ">
-                    <input id="billing_postal_code" name="billing_postal_code" type="text" defaultValue={defaultValues?.billing_postal_code ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="billing_city" label="Ort">
-                    <input id="billing_city" name="billing_city" type="text" defaultValue={defaultValues?.billing_city ?? ""} className={inputBaseClass} />
-                  </Field>
-                </div>
-              </SectionCard>
+                <Field id="phone" label="Telefon">
+                  <input id="phone" name="phone" type="text" placeholder="+49 30 1234567" defaultValue={defaultValues?.phone ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="mobile" label="Mobil">
+                  <input id="mobile" name="mobile" type="text" placeholder="+49 151 1234567" defaultValue={defaultValues?.mobile ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="fax" label="Fax">
+                  <input id="fax" name="fax" type="text" defaultValue={defaultValues?.fax ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="website" label="Website">
+                  <input id="website" name="website" type="text" placeholder="https://www.firma.de" defaultValue={defaultValues?.website ?? ""} className={inputBaseClass} />
+                </Field>
+              </div>
+            </SectionCard>
 
-              <SectionCard icon={Wrench} title="Einsatzadresse">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="service_same_as_main" defaultChecked={serviceSame} />
-                  Gleich wie Hauptadresse
-                </label>
-                <Field id="service_street" label="Straße & Hausnummer">
-                  <input id="service_street" name="service_street" type="text" defaultValue={defaultValues?.service_street ?? ""} className={inputBaseClass} />
+            <SectionCard icon={Banknote} title="Zahlungsinformationen" description="Zahlungsziel, Skonto und Debitorennummer.">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="payment_term_days" label="Zahlungsziel (Tage)" helper="Frist bis zur Fälligkeit.">
+                  <input id="payment_term_days" name="payment_term_days" type="number" min="0" placeholder="14" defaultValue={defaultValues?.payment_term_days ?? ""} className={inputBaseClass} />
                 </Field>
-                <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
-                  <Field id="service_postal_code" label="PLZ">
-                    <input id="service_postal_code" name="service_postal_code" type="text" defaultValue={defaultValues?.service_postal_code ?? ""} className={inputBaseClass} />
-                  </Field>
-                  <Field id="service_city" label="Ort">
-                    <input id="service_city" name="service_city" type="text" defaultValue={defaultValues?.service_city ?? ""} className={inputBaseClass} />
-                  </Field>
-                </div>
-              </SectionCard>
-            </>
-          )}
-        </div>
+                <Field id="discount_percent" label="Skonto (%)">
+                  <input id="discount_percent" name="discount_percent" type="number" step="0.01" min="0" placeholder="2" defaultValue={defaultValues?.discount_percent ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="discount_days" label="Skontofrist (Tage)">
+                  <input id="discount_days" name="discount_days" type="number" min="0" placeholder="7" defaultValue={defaultValues?.discount_days ?? ""} className={inputBaseClass} />
+                </Field>
+              </div>
+              <Field id="debitor_number" label="Debitorennummer">
+                <input id="debitor_number" name="debitor_number" type="text" placeholder="D-10023" defaultValue={defaultValues?.debitor_number ?? ""} className={inputBaseClass} />
+              </Field>
+            </SectionCard>
+
+            <SectionCard icon={TagsIcon} title="Tags" description="Freie Klassifizierung, z. B. für Filter und Auswertungen.">
+              <Field id="tags" label="Tags" helper="Mehrere Tags durch Komma trennen.">
+                <input
+                  id="tags"
+                  name="tags"
+                  type="text"
+                  placeholder="z. B. Stammkunde, Notdienst, VIP"
+                  defaultValue={(defaultValues?.tags ?? []).join(", ")}
+                  className={inputBaseClass}
+                />
+              </Field>
+            </SectionCard>
+          </div>
+        )}
+
+        {!showAllgemein && (
+          <>
+            {hiddenText("kind", kind)}
+            {hiddenText("status", defaultValues?.status ?? "interessent")}
+            {hiddenText("first_name", defaultValues?.first_name)}
+            {hiddenText("last_name", defaultValues?.last_name)}
+            {hiddenText("company_name", defaultValues?.company_name)}
+            {hiddenText("legal_form", defaultValues?.legal_form)}
+            {hiddenText("register_number", defaultValues?.register_number)}
+            {hiddenText("vat_id", defaultValues?.vat_id)}
+            {hiddenText("email", defaultValues?.email)}
+            {hiddenText("phone", defaultValues?.phone)}
+            {hiddenText("mobile", defaultValues?.mobile)}
+            {hiddenText("fax", defaultValues?.fax)}
+            {hiddenText("website", defaultValues?.website)}
+            {hiddenText("payment_term_days", defaultValues?.payment_term_days)}
+            {hiddenText("discount_percent", defaultValues?.discount_percent)}
+            {hiddenText("discount_days", defaultValues?.discount_days)}
+            {hiddenText("debitor_number", defaultValues?.debitor_number)}
+            {hiddenText("tags", (defaultValues?.tags ?? []).join(", "))}
+            {hiddenText("assigned_employee_id", defaultValues?.assigned_employee_id)}
+          </>
+        )}
+
+        {showAdressen && (
+          <div className="grid gap-6 xl:grid-cols-2">
+            <SectionCard icon={MapPin} title="Hauptadresse" description="Koordinaten werden beim Speichern automatisch ermittelt (bestmöglich, nicht garantiert)." span2>
+              <Field id="street" label="Straße & Hausnummer">
+                <input id="street" name="street" type="text" placeholder="Musterstraße 12" defaultValue={defaultValues?.street ?? ""} className={inputBaseClass} />
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-[140px_1fr_160px]">
+                <Field id="postal_code" label="PLZ">
+                  <input id="postal_code" name="postal_code" type="text" placeholder="12345" defaultValue={defaultValues?.postal_code ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="city" label="Ort">
+                  <input id="city" name="city" type="text" placeholder="Berlin" defaultValue={defaultValues?.city ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="country" label="Land">
+                  <input id="country" name="country" type="text" list="country-options" defaultValue={defaultValues?.country ?? "Deutschland"} className={inputBaseClass} />
+                  <datalist id="country-options">
+                    {COUNTRY_OPTIONS.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </Field>
+              </div>
+            </SectionCard>
+
+            <SectionCard icon={Receipt} title="Rechnungsadresse">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="billing_same_as_main" defaultChecked={billingSame} />
+                Gleich wie Hauptadresse
+              </label>
+              <Field id="billing_street" label="Straße & Hausnummer">
+                <input id="billing_street" name="billing_street" type="text" defaultValue={defaultValues?.billing_street ?? ""} className={inputBaseClass} />
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
+                <Field id="billing_postal_code" label="PLZ">
+                  <input id="billing_postal_code" name="billing_postal_code" type="text" defaultValue={defaultValues?.billing_postal_code ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="billing_city" label="Ort">
+                  <input id="billing_city" name="billing_city" type="text" defaultValue={defaultValues?.billing_city ?? ""} className={inputBaseClass} />
+                </Field>
+              </div>
+            </SectionCard>
+
+            <SectionCard icon={Wrench} title="Einsatzadresse">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="service_same_as_main" defaultChecked={serviceSame} />
+                Gleich wie Hauptadresse
+              </label>
+              <Field id="service_street" label="Straße & Hausnummer">
+                <input id="service_street" name="service_street" type="text" defaultValue={defaultValues?.service_street ?? ""} className={inputBaseClass} />
+              </Field>
+              <div className="grid gap-5 sm:grid-cols-[140px_1fr]">
+                <Field id="service_postal_code" label="PLZ">
+                  <input id="service_postal_code" name="service_postal_code" type="text" defaultValue={defaultValues?.service_postal_code ?? ""} className={inputBaseClass} />
+                </Field>
+                <Field id="service_city" label="Ort">
+                  <input id="service_city" name="service_city" type="text" defaultValue={defaultValues?.service_city ?? ""} className={inputBaseClass} />
+                </Field>
+              </div>
+            </SectionCard>
+          </div>
+        )}
 
         {!showAdressen && (
           <>
