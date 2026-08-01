@@ -73,7 +73,7 @@ export default async function MitarbeiterPage({
       )}
 
       {isAdmin && (
-        <div className="mt-6 rounded-2xl border border-border bg-card p-5">
+        <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm p-5">
           <h2 className="text-sm font-semibold">Neuen Mitarbeiter einladen</h2>
           <p className="mt-1 text-sm text-muted">
             Erstelle einen Einladungslink und teile ihn mit deinem Kollegen. Nach der
@@ -105,7 +105,7 @@ export default async function MitarbeiterPage({
       )}
 
       {isAdmin && inviteUrls.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <div className="border-b border-border px-4 py-3 text-sm font-semibold">
             Offene Einladungen
           </div>
@@ -127,7 +127,7 @@ export default async function MitarbeiterPage({
         </div>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border bg-background text-xs uppercase text-muted">
             <tr>

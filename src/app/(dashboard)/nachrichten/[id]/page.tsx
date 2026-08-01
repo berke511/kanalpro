@@ -167,7 +167,7 @@ export default async function ConversationPage({
       {error && <p className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
       {message && <p className="mt-3 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">{message}</p>}
 
-      <div className="mt-4 flex flex-1 flex-col-reverse gap-3 overflow-y-auto rounded-2xl border border-border bg-card p-4">
+      <div className="mt-4 flex flex-1 flex-col-reverse gap-3 overflow-y-auto rounded-2xl border border-border bg-card shadow-sm p-4">
         {orderedMessages.length === 0 && (
           <p className="py-8 text-center text-sm text-muted">Noch keine Nachrichten – schreib die erste!</p>
         )}

@@ -18,7 +18,7 @@ export function ModulePlaceholder({
         </p>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6">
+      <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm p-6">
         <h2 className="text-sm font-semibold">Geplanter Funktionsumfang</h2>
         <ul className="mt-3 space-y-2">
           {upcoming.map((item) => (

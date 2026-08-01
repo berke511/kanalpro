@@ -50,19 +50,21 @@ export function MobileNav() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="mt-4 flex flex-1 flex-col gap-1 overflow-y-auto">
+            <nav className="mt-4 flex flex-1 flex-col gap-0.5 overflow-y-auto">
               {NAV_ITEMS.map((item) => {
                 const active = pathname === item.href;
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       active ? "bg-brand-soft text-brand" : "text-muted hover:bg-background hover:text-foreground"
                     }`}
                   >
-                    {item.label}
+                    <Icon className={`h-4 w-4 shrink-0 ${active ? "text-brand" : "text-muted"}`} />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}

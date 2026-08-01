@@ -53,7 +53,7 @@ export default async function BerichtDetailPage({
         <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       )}
 
-      <div className="mt-6 rounded-2xl border border-border bg-card p-6">
+      <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm p-6">
         <ReportForm
           action={updateWithId}
           defaultValues={report}

@@ -64,7 +64,7 @@ export default async function NachrichtenPage({
           </Link>
         </div>
       ) : (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <ul className="divide-y divide-border">
             {conversations.map((c) => {
               const name = conversationDisplayName(c);

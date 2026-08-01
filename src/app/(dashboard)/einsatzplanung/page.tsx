@@ -186,7 +186,7 @@ export default async function EinsatzplanungPage({
         })}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-border bg-card p-6">
+      <div className="mt-8 rounded-2xl border border-border bg-card shadow-sm p-6">
         <h2 className="text-sm font-semibold">
           Nicht eingeplante Aufträge ({unscheduledOrders?.length ?? 0})
         </h2>

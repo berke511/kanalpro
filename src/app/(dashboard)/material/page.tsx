@@ -81,7 +81,7 @@ export default async function MaterialPage({
       )}
 
       {visibleItems && visibleItems.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-background text-xs uppercase text-muted">
               <tr>

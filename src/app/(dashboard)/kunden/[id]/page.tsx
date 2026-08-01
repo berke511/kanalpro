@@ -368,7 +368,7 @@ export default async function KundeDetailPage({
                 </p>
               )}
               {contacts.map((c) => (
-                <div key={c.id} className="flex items-start justify-between rounded-2xl border border-border bg-card p-4">
+                <div key={c.id} className="flex items-start justify-between rounded-2xl border border-border bg-card shadow-sm p-4">
                   <div>
                     <p className="text-sm font-medium">
                       {c.name}
@@ -404,7 +404,7 @@ export default async function KundeDetailPage({
                 </p>
               )}
               {orders.length > 0 && (
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                   <table className="w-full text-left text-sm">
                     <tbody>
                       {orders.map((o) => (
@@ -440,7 +440,7 @@ export default async function KundeDetailPage({
                 </p>
               )}
               {invoices.length > 0 && (
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                   <table className="w-full text-left text-sm">
                     <tbody>
                       {invoices.map((inv) => (
@@ -476,7 +476,7 @@ export default async function KundeDetailPage({
                 </p>
               )}
               {documents.length > 0 && (
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                   <table className="w-full text-left text-sm">
                     <tbody>
                       {documents.map((d) => (
