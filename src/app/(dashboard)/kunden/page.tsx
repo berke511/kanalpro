@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Search, UserPlus, X } from "lucide-react";
+import { ClipboardList, FileText, Receipt, Search, UserPlus, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CustomerFilterPanel } from "@/components/dashboard/CustomerFilterPanel";
+import { CustomerTable, type CustomerRow } from "@/components/dashboard/CustomerTable";
+import { PageSizeSelect } from "@/components/dashboard/PageSizeSelect";
 import {
   CUSTOMER_KINDS,
   CUSTOMER_KIND_LABELS,
@@ -25,6 +27,10 @@ type RawSearchParams = {
   openQuotes?: string;
   maintenance?: string;
   view?: string;
+  page?: string;
+  pageSize?: string;
+  sort?: string;
+  dir?: string;
 };
 
 type FilterState = {
@@ -41,7 +47,14 @@ type FilterState = {
   openQuotes: boolean;
   maintenance: boolean;
   view: string;
+  page: number;
+  pageSize: number;
+  sort: string;
+  dir: "asc" | "desc";
 };
+
+const SORTABLE_COLUMNS = ["name", "customer_number", "kind", "status", "city", "created_at"] as const;
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 function toArray(v?: string | string[]): string[] {
   if (!v) return [];
@@ -67,8 +80,17 @@ function buildHref(state: Partial<FilterState>) {
   if (state.openQuotes) params.set("openQuotes", "1");
   if (state.maintenance) params.set("maintenance", "1");
   if (state.view && state.view !== "list") params.set("view", state.view);
+  if (state.pageSize && state.pageSize !== 25) params.set("pageSize", String(state.pageSize));
+  if (state.sort && state.sort !== "created_at") params.set("sort", state.sort);
+  if (state.dir && state.dir !== "desc") params.set("dir", state.dir);
+  if (state.page && state.page > 1) params.set("page", String(state.page));
   const qs = params.toString();
   return qs ? `/kunden?${qs}` : "/kunden";
+}
+
+function buildSortHref(state: FilterState, column: string) {
+  const nextDir: "asc" | "desc" = state.sort === column && state.dir === "asc" ? "desc" : "asc";
+  return buildHref({ ...state, sort: column, dir: nextDir, page: 1 });
 }
 
 function formatDate(value: string) {
@@ -98,12 +120,57 @@ export default async function KundenPage({
     openQuotes: raw.openQuotes === "1",
     maintenance: raw.maintenance === "1",
     view: raw.view === "grid" ? "grid" : "list",
+    page: Math.max(1, Number.parseInt(raw.page ?? "1", 10) || 1),
+    pageSize: PAGE_SIZE_OPTIONS.includes(Number(raw.pageSize)) ? Number(raw.pageSize) : 25,
+    sort: (SORTABLE_COLUMNS as readonly string[]).includes(raw.sort ?? "") ? (raw.sort as string) : "created_at",
+    dir: raw.dir === "asc" ? "asc" : "desc",
   };
 
   const { data: employees } = await supabase
     .from("profiles")
     .select("id, full_name")
     .order("full_name", { ascending: true });
+
+  // Unternehmensweite Kennzahlen für die KPI-Kacheln – bewusst unabhängig
+  // von der aktuellen Suche/Filterung, damit sie eine stabile Übersicht
+  // liefern statt sich bei jeder Filteränderung mitzuverschieben.
+  const [
+    { count: totalCount },
+    { count: neukundenCount },
+    { count: bestandskundenCount },
+    { count: wartungskundenCount },
+    { count: maintenanceCount },
+    { count: openQuotesCount },
+    { count: openInvoicesCount },
+  ] = await Promise.all([
+    supabase.from("customers").select("id", { count: "exact", head: true }),
+    supabase.from("customers").select("id", { count: "exact", head: true }).eq("status", "neukunde"),
+    supabase.from("customers").select("id", { count: "exact", head: true }).eq("status", "bestandskunde"),
+    supabase.from("customers").select("id", { count: "exact", head: true }).eq("status", "wartungskunde"),
+    supabase
+      .from("customers")
+      .select("id", { count: "exact", head: true })
+      .contains("tags", [MAINTENANCE_CONTRACT_TAG]),
+    supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("kind", "angebot")
+      .in("status", ["entwurf", "versendet"]),
+    supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("kind", "rechnung")
+      .in("status", ["entwurf", "versendet"]),
+  ]);
+
+  const kpis = [
+    { label: "Gesamte Kunden", value: totalCount ?? 0, icon: Users },
+    { label: "Neukunden", value: neukundenCount ?? 0, icon: UserPlus },
+    { label: "Aktive Kunden", value: (bestandskundenCount ?? 0) + (wartungskundenCount ?? 0), icon: ClipboardList },
+    { label: "Wartungsverträge", value: maintenanceCount ?? 0, icon: Wrench },
+    { label: "Offene Angebote", value: openQuotesCount ?? 0, icon: FileText },
+    { label: "Offene Rechnungen", value: openInvoicesCount ?? 0, icon: Receipt },
+  ];
 
   // Subquery-basierte Schnittmengenfilter: Letzter Auftrag, offene
   // Rechnungen/Angebote. Jede aktive Bedingung liefert eine Menge von
@@ -159,16 +226,26 @@ export default async function KundenPage({
     phone: string | null;
     city: string | null;
     tags: string[] | null;
+    is_favorite: boolean;
+    assigned_employee_id: string | null;
   }> = [];
   let error: { message: string } | null = null;
+  let totalFilteredCount = 0;
+
+  const from = (state.page - 1) * state.pageSize;
+  const to = from + state.pageSize - 1;
 
   if (restrictedIds && restrictedIds.length === 0) {
     customers = [];
   } else {
     let query = supabase
       .from("customers")
-      .select("id, kind, status, name, company_name, customer_number, email, phone, city, tags")
-      .order("created_at", { ascending: false });
+      .select(
+        "id, kind, status, name, company_name, customer_number, email, phone, city, tags, is_favorite, assigned_employee_id",
+        { count: "exact" },
+      )
+      .order(state.sort, { ascending: state.dir === "asc" })
+      .range(from, to);
 
     if (state.kind.length > 0) {
       query = query.in("kind", state.kind);
@@ -205,7 +282,88 @@ export default async function KundenPage({
     const res = await query;
     customers = res.data ?? [];
     error = res.error;
+    totalFilteredCount = res.count ?? customers.length;
   }
+
+  // Zusatzdaten für die Tabellenspalten (Verantwortlicher, Letzter Auftrag,
+  // Umsatz, primärer Ansprechpartner) werden bewusst nur für die Kunden der
+  // aktuellen Seite geladen – nicht für die gesamte (ggf. gefilterte)
+  // Ergebnismenge, damit die Anfragen unabhängig von der Kundenzahl klein
+  // bleiben.
+  const pageIds = customers.map((c) => c.id);
+  const employeeNameById = Object.fromEntries((employees ?? []).map((e) => [e.id, e.full_name]));
+
+  const lastOrderByCustomer: Record<string, string> = {};
+  const revenueByCustomer: Record<string, number> = {};
+  const primaryContactByCustomer: Record<string, string> = {};
+
+  if (pageIds.length > 0) {
+    const [ordersRes, invoicesRes, contactsRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("customer_id, scheduled_date")
+        .in("customer_id", pageIds)
+        .not("scheduled_date", "is", null),
+      supabase
+        .from("invoices")
+        .select("id, customer_id")
+        .in("customer_id", pageIds)
+        .eq("kind", "rechnung")
+        .eq("status", "bezahlt"),
+      supabase
+        .from("customer_contacts")
+        .select("customer_id, name")
+        .in("customer_id", pageIds)
+        .eq("is_primary", true),
+    ]);
+
+    for (const row of ordersRes.data ?? []) {
+      if (!row.customer_id || !row.scheduled_date) continue;
+      const current = lastOrderByCustomer[row.customer_id];
+      if (!current || row.scheduled_date > current) {
+        lastOrderByCustomer[row.customer_id] = row.scheduled_date;
+      }
+    }
+
+    const paidInvoiceIds = (invoicesRes.data ?? []).map((inv) => inv.id);
+    const invoiceCustomerById = Object.fromEntries(
+      (invoicesRes.data ?? []).map((inv) => [inv.id, inv.customer_id]),
+    );
+
+    if (paidInvoiceIds.length > 0) {
+      const { data: items } = await supabase
+        .from("invoice_items")
+        .select("invoice_id, quantity, unit_price")
+        .in("invoice_id", paidInvoiceIds);
+
+      for (const item of items ?? []) {
+        const customerId = invoiceCustomerById[item.invoice_id];
+        if (!customerId) continue;
+        revenueByCustomer[customerId] =
+          (revenueByCustomer[customerId] ?? 0) + Number(item.quantity) * Number(item.unit_price);
+      }
+    }
+
+    for (const row of contactsRes.data ?? []) {
+      primaryContactByCustomer[row.customer_id] = row.name;
+    }
+  }
+
+  const customerRows: CustomerRow[] = customers.map((c) => ({
+    ...c,
+    employeeName: c.assigned_employee_id ? employeeNameById[c.assigned_employee_id] ?? null : null,
+    lastOrderDate: lastOrderByCustomer[c.id] ?? null,
+    revenue: revenueByCustomer[c.id] ?? 0,
+    primaryContactName: primaryContactByCustomer[c.id] ?? null,
+  }));
+
+  const totalPages = Math.max(1, Math.ceil(totalFilteredCount / state.pageSize));
+  const rangeStart = totalFilteredCount === 0 ? 0 : from + 1;
+  const rangeEnd = Math.min(from + customers.length, totalFilteredCount);
+
+  const sortHrefs = Object.fromEntries(
+    ["name", "customer_number", "kind", "status", "city"].map((col) => [col, buildSortHref(state, col)]),
+  );
 
   const activeCount =
     state.kind.length +
@@ -270,7 +428,7 @@ export default async function KundenPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kundenverwaltung</h1>
           <p className="mt-1 text-sm text-muted">
-            {customers.length} Kunde{customers.length === 1 ? "" : "n"}
+            {totalFilteredCount} Kunde{totalFilteredCount === 1 ? "" : "n"}
           </p>
         </div>
         <Link
@@ -280,6 +438,21 @@ export default async function KundenPage({
           <UserPlus className="h-4 w-4" />
           Neuer Kunde
         </Link>
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                <Icon className="h-4 w-4" />
+              </span>
+              <p className="mt-2.5 text-xs text-muted">{kpi.label}</p>
+              <p className="mt-0.5 text-xl font-semibold tabular-nums">{kpi.value}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -300,6 +473,9 @@ export default async function KundenPage({
           {state.openQuotes && <input type="hidden" name="openQuotes" value="1" />}
           {state.maintenance && <input type="hidden" name="maintenance" value="1" />}
           {state.view !== "list" && <input type="hidden" name="view" value={state.view} />}
+          {state.pageSize !== 25 && <input type="hidden" name="pageSize" value={state.pageSize} />}
+          {state.sort !== "created_at" && <input type="hidden" name="sort" value={state.sort} />}
+          {state.dir !== "desc" && <input type="hidden" name="dir" value={state.dir} />}
           <div className="relative min-w-[220px] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
@@ -358,7 +534,16 @@ export default async function KundenPage({
         </p>
       )}
 
-      {!error && customers.length === 0 && (
+      {!error && customers.length === 0 && totalFilteredCount > 0 && (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <p className="text-sm font-medium text-muted">Diese Seite enthält keine Kunden mehr.</p>
+          <Link href={buildHref({ ...state, page: 1 })} className="mt-3 inline-block text-sm font-medium text-brand">
+            Zurück zur ersten Seite
+          </Link>
+        </div>
+      )}
+
+      {!error && totalFilteredCount === 0 && (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
           <p className="text-sm font-medium text-muted">
             {hasAnyFilter ? "Keine Kunden gefunden." : "Noch keine Kunden angelegt."}
@@ -376,52 +561,12 @@ export default async function KundenPage({
       )}
 
       {customers.length > 0 && state.view === "list" && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-background text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Kunde</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">Nr.</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">Art</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Kontakt</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Ort</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.map((customer) => (
-                <tr key={customer.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/kunden/${customer.id}`}
-                      className="font-medium text-foreground hover:text-brand"
-                    >
-                      {customer.name}
-                    </Link>
-                    {customer.tags && customer.tags.length > 0 && (
-                      <p className="mt-0.5 text-xs text-muted">{customer.tags.join(" · ")}</p>
-                    )}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted sm:table-cell">{customer.customer_number ?? "—"}</td>
-                  <td className="hidden px-4 py-3 text-muted sm:table-cell">
-                    {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
-                    >
-                      {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
-                    </span>
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted md:table-cell">
-                    {customer.email || customer.phone || "—"}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted md:table-cell">{customer.city || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CustomerTable
+          customers={customerRows}
+          sortHrefs={sortHrefs}
+          currentSort={state.sort}
+          currentDir={state.dir}
+        />
       )}
 
       {customers.length > 0 && state.view === "grid" && (
@@ -453,6 +598,44 @@ export default async function KundenPage({
               )}
             </Link>
           ))}
+        </div>
+      )}
+
+      {totalFilteredCount > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted">
+            {rangeStart}–{rangeEnd} von {totalFilteredCount}
+          </p>
+          <div className="flex items-center gap-4">
+            <PageSizeSelect baseHref={buildHref({ ...state, page: 1, pageSize: 25 })} value={state.pageSize} />
+            <div className="flex items-center gap-1">
+              <Link
+                href={buildHref({ ...state, page: Math.max(1, state.page - 1) })}
+                aria-disabled={state.page <= 1}
+                className={`rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium ${
+                  state.page <= 1
+                    ? "pointer-events-none text-muted/40"
+                    : "text-muted hover:bg-background hover:text-foreground"
+                }`}
+              >
+                Zurück
+              </Link>
+              <span className="px-2 text-xs text-muted">
+                Seite {state.page} von {totalPages}
+              </span>
+              <Link
+                href={buildHref({ ...state, page: Math.min(totalPages, state.page + 1) })}
+                aria-disabled={state.page >= totalPages}
+                className={`rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium ${
+                  state.page >= totalPages
+                    ? "pointer-events-none text-muted/40"
+                    : "text-muted hover:bg-background hover:text-foreground"
+                }`}
+              >
+                Weiter
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -484,6 +484,7 @@ export type Database = {
           fax: string | null
           first_name: string | null
           id: string
+          is_favorite: boolean
           kind: string
           last_name: string | null
           latitude: number | null
@@ -529,6 +530,7 @@ export type Database = {
           fax?: string | null
           first_name?: string | null
           id?: string
+          is_favorite?: boolean
           kind?: string
           last_name?: string | null
           latitude?: number | null
@@ -574,6 +576,7 @@ export type Database = {
           fax?: string | null
           first_name?: string | null
           id?: string
+          is_favorite?: boolean
           kind?: string
           last_name?: string | null
           latitude?: number | null

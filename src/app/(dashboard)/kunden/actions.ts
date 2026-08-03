@@ -538,3 +538,9 @@ export async function deleteCustomerDocument(customerId: string, documentId: str
   revalidatePath(`/kunden/${customerId}`);
   redirect(`/kunden/${customerId}?tab=dokumente`);
 }
+
+export async function toggleCustomerFavorite(customerId: string, nextValue: boolean) {
+  const { supabase } = await requireCompanyContext();
+  await supabase.from("customers").update({ is_favorite: nextValue }).eq("id", customerId);
+  revalidatePath("/kunden");
+}
