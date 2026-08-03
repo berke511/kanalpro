@@ -18,7 +18,7 @@ import { OrderTable, type OrderRow } from "@/components/dashboard/OrderTable";
 import { OrderDetailPanel, type OrderDetailPanelData, type PanelTabKey } from "@/components/dashboard/OrderDetailPanel";
 import { PageSizeSelect } from "@/components/dashboard/PageSizeSelect";
 import { CUSTOMER_KIND_LABELS } from "@/lib/customers";
-import { canCreateOrders, canManageResourcesAndSchedule } from "@/lib/roles";
+import { canCreateOrders, canDeleteOrArchiveOrders, canManageResourcesAndSchedule } from "@/lib/roles";
 import { formatDate, monthRangeBerlin, todayBerlinISO, yesterdayBerlinISO } from "@/lib/date";
 import {
   assignEmployee,
@@ -389,10 +389,14 @@ export default async function AuftraegePage({
     start_time: string | null;
     customer_id: string | null;
     property_id: string | null;
+    dispatcher_id: string | null;
     created_at: string;
+    updated_at: string;
     started_at: string | null;
     documentation_completed_at: string | null;
     completed_at: string | null;
+    order_value: number | null;
+    planned_duration_minutes: number | null;
   };
 
   let orders: OrderQueryRow[] = [];
@@ -408,7 +412,7 @@ export default async function AuftraegePage({
     let query = supabase
       .from("orders")
       .select(
-        "id, order_number, title, order_kind, status, priority, is_favorite, is_archived, scheduled_date, start_time, customer_id, property_id, created_at, started_at, documentation_completed_at, completed_at",
+        "id, order_number, title, order_kind, status, priority, is_favorite, is_archived, scheduled_date, start_time, customer_id, property_id, dispatcher_id, created_at, updated_at, started_at, documentation_completed_at, completed_at, order_value, planned_duration_minutes",
         { count: "exact" },
       )
       .order(state.sort, { ascending: state.dir === "asc" })
@@ -556,6 +560,14 @@ export default async function AuftraegePage({
       employees,
       vehicles,
       progressPercent: progress.percent,
+      created_at: o.created_at,
+      updated_at: o.updated_at,
+      dispatcherName: o.dispatcher_id ? employeeNameById[o.dispatcher_id] ?? null : null,
+      order_value: o.order_value,
+      planned_duration_minutes: o.planned_duration_minutes,
+      isDocumented: progress.steps.some(
+        (s) => (s.key === "documentation_completed" || s.key === "report_created") && s.done,
+      ),
     };
   });
 
@@ -1054,6 +1066,13 @@ export default async function AuftraegePage({
           currentDir={state.dir}
           showingArchived={state.archived}
           panelBaseQuery={listQueryString}
+          employees={(employeeOptions ?? []).map((e) => ({ id: e.id, label: e.full_name || "Unbekannt" }))}
+          vehicles={(vehicleOptions ?? []).map((v) => ({
+            id: v.id,
+            label: v.license_plate ? `${v.license_plate} · ${v.name}` : v.name,
+          }))}
+          canManageResources={canManageResourcesAndSchedule(role)}
+          canDelete={canDeleteOrArchiveOrders(role)}
         />
       )}
 

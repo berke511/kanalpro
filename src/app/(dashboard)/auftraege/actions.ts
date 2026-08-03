@@ -542,3 +542,51 @@ export async function deleteOrderDocument(orderId: string, documentId: string, s
   revalidatePath("/auftraege");
   redirect(returnTo);
 }
+
+// --- Massenaktionen ---
+//
+// Werden alle direkt aus der Auftragstabelle (Client-Komponente) heraus
+// aufgerufen, analog zu toggleOrderFavorite oben – kein <form action>, kein
+// Redirect nötig, der Aufrufer ruft danach selbst router.refresh().
+
+export async function bulkSetOrderStatus(orderIds: string[], status: string) {
+  const { supabase, userId } = await requireCompanyContext();
+  if (orderIds.length === 0 || !(ORDER_STATUSES as readonly string[]).includes(status)) return;
+  await supabase.from("orders").update({ status, updated_by: userId }).in("id", orderIds);
+  revalidatePath("/auftraege");
+}
+
+export async function bulkAssignEmployeeToOrders(orderIds: string[], employeeId: string) {
+  const { supabase, companyId, userId, role } = await requireCompanyContext();
+  if (orderIds.length === 0 || !employeeId || !canManageResourcesAndSchedule(role)) return;
+  const rows = orderIds.map((orderId) => ({
+    company_id: companyId,
+    order_id: orderId,
+    employee_id: employeeId,
+    assigned_by: userId,
+  }));
+  await supabase.from("order_assignments").upsert(rows, { onConflict: "order_id,employee_id", ignoreDuplicates: true });
+  revalidatePath("/auftraege");
+}
+
+export async function bulkAssignVehicleToOrders(orderIds: string[], fleetItemId: string) {
+  const { supabase, companyId, role } = await requireCompanyContext();
+  if (orderIds.length === 0 || !fleetItemId || !canManageResourcesAndSchedule(role)) return;
+  const rows = orderIds.map((orderId) => ({ company_id: companyId, order_id: orderId, fleet_item_id: fleetItemId }));
+  await supabase.from("order_resources").upsert(rows, { onConflict: "order_id,fleet_item_id", ignoreDuplicates: true });
+  revalidatePath("/auftraege");
+}
+
+export async function bulkSetOrderArchived(orderIds: string[], archived: boolean) {
+  const { supabase, userId, role } = await requireCompanyContext();
+  if (orderIds.length === 0 || !canDeleteOrArchiveOrders(role)) return;
+  await supabase.from("orders").update({ is_archived: archived, updated_by: userId }).in("id", orderIds);
+  revalidatePath("/auftraege");
+}
+
+export async function bulkDeleteOrders(orderIds: string[]) {
+  const { supabase, role } = await requireCompanyContext();
+  if (orderIds.length === 0 || !canDeleteOrArchiveOrders(role)) return;
+  await supabase.from("orders").delete().in("id", orderIds);
+  revalidatePath("/auftraege");
+}

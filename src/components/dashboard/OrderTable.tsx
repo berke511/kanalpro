@@ -1,32 +1,47 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Archive,
+  ArchiveRestore,
   Building2,
   CalendarClock,
+  Columns3,
   Copy,
+  Download,
   Eye,
   FileEdit,
   MoreVertical,
   Star,
   Trash2,
   Truck,
+  UserPlus,
   Users,
   Wrench,
-  Archive,
-  ArchiveRestore,
 } from "lucide-react";
 import {
   ORDER_KIND_LABELS,
   ORDER_PRIORITY_BADGE_CLASS,
   ORDER_PRIORITY_LABELS,
+  ORDER_STATUSES,
   ORDER_STATUS_BADGE_CLASS,
   STATUS_LABELS,
 } from "@/lib/orders";
-import { formatDate, formatTime } from "@/lib/date";
-import { deleteOrder, duplicateOrder, setOrderArchived, toggleOrderFavorite } from "@/app/(dashboard)/auftraege/actions";
+import { formatDate, formatDateTime, formatTime } from "@/lib/date";
+import { formatEuro } from "@/lib/format";
+import {
+  bulkAssignEmployeeToOrders,
+  bulkAssignVehicleToOrders,
+  bulkDeleteOrders,
+  bulkSetOrderArchived,
+  bulkSetOrderStatus,
+  deleteOrder,
+  duplicateOrder,
+  setOrderArchived,
+  toggleOrderFavorite,
+} from "@/app/(dashboard)/auftraege/actions";
 
 export type OrderRow = {
   id: string;
@@ -47,13 +62,112 @@ export type OrderRow = {
   employees: Array<{ id: string; name: string }>;
   vehicles: Array<{ id: string; name: string; licensePlate: string | null }>;
   progressPercent: number;
+  created_at: string;
+  updated_at: string;
+  dispatcherName: string | null;
+  order_value: number | null;
+  planned_duration_minutes: number | null;
+  isDocumented: boolean;
 };
+
+type ColumnKey = "created_at" | "updated_at" | "dispatcher" | "order_value" | "duration" | "documentation";
+
+const COLUMN_DEFS: Array<{ key: ColumnKey; label: string }> = [
+  { key: "created_at", label: "Erstellungsdatum" },
+  { key: "updated_at", label: "Letzte Änderung" },
+  { key: "dispatcher", label: "Verantwortlicher Disponent" },
+  { key: "order_value", label: "Auftragswert" },
+  { key: "duration", label: "Einsatzdauer" },
+  { key: "documentation", label: "Dokumentationsstatus" },
+];
+
+const STORAGE_KEY = "kanalpro:auftraege:columns";
+const COLUMNS_EVENT = "kanalpro:auftraege:columns-changed";
+const DEFAULT_VISIBLE: ColumnKey[] = [];
+
+// Sichtbarkeit der optionalen Spalten wird geräteweise in localStorage
+// gespeichert – gleiches Muster wie in der Kundenverwaltung
+// (useSyncExternalStore statt useState+useEffect, damit das erste Rendern
+// auf Server und Client identisch bleibt).
+function subscribeToColumnPrefs(callback: () => void) {
+  window.addEventListener(COLUMNS_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(COLUMNS_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+function getColumnPrefsSnapshot() {
+  return window.localStorage.getItem(STORAGE_KEY) ?? "";
+}
+function getColumnPrefsServerSnapshot() {
+  return "";
+}
+function parseVisibleColumns(raw: string): Set<ColumnKey> {
+  if (!raw) return new Set(DEFAULT_VISIBLE);
+  try {
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(parsed.filter((k): k is ColumnKey => COLUMN_DEFS.some((c) => c.key === k)));
+  } catch {
+    return new Set(DEFAULT_VISIBLE);
+  }
+}
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function escapeCsvCell(value: string) {
+  if (value.includes(";") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function exportOrdersCsv(rows: OrderRow[]) {
+  const headers = [
+    "Auftragsnummer",
+    "Titel",
+    "Kunde",
+    "Objekt",
+    "Termin",
+    "Status",
+    "Priorität",
+    "Fortschritt",
+    "Mitarbeiter",
+    "Fahrzeuge",
+    "Archiviert",
+  ];
+  const lines = [headers.join(";")];
+  for (const o of rows) {
+    const cells = [
+      o.order_number ?? "",
+      o.title,
+      o.customerName ?? "",
+      o.propertyName ?? o.propertyStreet ?? "",
+      o.scheduled_date ? formatDate(o.scheduled_date) : "",
+      STATUS_LABELS[o.status] ?? o.status,
+      ORDER_PRIORITY_LABELS[o.priority] ?? o.priority,
+      `${o.progressPercent}%`,
+      o.employees.map((e) => e.name).join(", "),
+      o.vehicles.map((v) => v.licensePlate || v.name).join(", "),
+      o.is_archived ? "Ja" : "Nein",
+    ];
+    lines.push(cells.map(escapeCsvCell).join(";"));
+  }
+  const csv = "﻿" + lines.join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `auftraege-export-${rows.length}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function OrderTable({
@@ -63,6 +177,11 @@ export function OrderTable({
   currentDir,
   showingArchived,
   panelBaseQuery,
+  density = "comfortable",
+  employees = [],
+  vehicles = [],
+  canManageResources = true,
+  canDelete = true,
 }: {
   orders: OrderRow[];
   sortHrefs: Record<string, string>;
@@ -70,11 +189,44 @@ export function OrderTable({
   currentDir: "asc" | "desc";
   showingArchived: boolean;
   panelBaseQuery: string;
+  density?: "comfortable" | "compact";
+  employees?: Array<{ id: string; label: string }>;
+  vehicles?: Array<{ id: string; label: string }>;
+  canManageResources?: boolean;
+  canDelete?: boolean;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [employeeMenuOpen, setEmployeeMenuOpen] = useState(false);
+  const [vehicleMenuOpen, setVehicleMenuOpen] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<string>(ORDER_STATUSES[0]);
+  const [bulkEmployeeValue, setBulkEmployeeValue] = useState("");
+  const [bulkVehicleValue, setBulkVehicleValue] = useState("");
+
+  const columnPrefsRaw = useSyncExternalStore(
+    subscribeToColumnPrefs,
+    getColumnPrefsSnapshot,
+    getColumnPrefsServerSnapshot,
+  );
+  const visible = useMemo(() => parseVisibleColumns(columnPrefsRaw), [columnPrefsRaw]);
+
+  function toggleColumn(key: ColumnKey) {
+    const next = new Set(visible);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(next)));
+      window.dispatchEvent(new Event(COLUMNS_EVENT));
+    } catch {
+      // localStorage nicht verfügbar (z. B. Privatmodus) – Änderung bleibt dann nur für diese Anzeige ohne Effekt.
+    }
+  }
 
   // Öffnet das rechte Detailpanel für den angeklickten Auftrag, statt auf
   // die volle Profilseite zu navigieren – alle übrigen Filter/Sortier-/
@@ -132,12 +284,356 @@ export function OrderTable({
     return <span className="text-brand">{currentDir === "asc" ? "↑" : "↓"}</span>;
   }
 
+  const allOnPageSelected = orders.length > 0 && orders.every((o) => selected.has(o.id));
+
+  function toggleSelectAll() {
+    setSelected(allOnPageSelected ? new Set() : new Set(orders.map((o) => o.id)));
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
+    setStatusMenuOpen(false);
+    setEmployeeMenuOpen(false);
+    setVehicleMenuOpen(false);
+  }
+
+  function handleExportSelected() {
+    exportOrdersCsv(orders.filter((o) => selected.has(o.id)));
+  }
+
+  function handleBulkArchiveToggle() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const nextArchived = !showingArchived;
+    startTransition(async () => {
+      await bulkSetOrderArchived(ids, nextArchived);
+      clearSelection();
+      router.refresh();
+    });
+  }
+
+  function handleBulkDelete() {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const ok = window.confirm(
+      `${ids.length} Auftrag${ids.length === 1 ? "" : "e"} wirklich endgültig löschen? Dies kann nicht rückgängig gemacht werden.`,
+    );
+    if (!ok) return;
+    startTransition(async () => {
+      await bulkDeleteOrders(ids);
+      clearSelection();
+      router.refresh();
+    });
+  }
+
+  function handleBulkStatusSubmit(e: FormEvent) {
+    e.preventDefault();
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    startTransition(async () => {
+      await bulkSetOrderStatus(ids, bulkStatusValue);
+      setStatusMenuOpen(false);
+      setSelected(new Set());
+      router.refresh();
+    });
+  }
+
+  function handleBulkEmployeeSubmit(e: FormEvent) {
+    e.preventDefault();
+    const ids = Array.from(selected);
+    if (ids.length === 0 || !bulkEmployeeValue) return;
+    startTransition(async () => {
+      await bulkAssignEmployeeToOrders(ids, bulkEmployeeValue);
+      setBulkEmployeeValue("");
+      setEmployeeMenuOpen(false);
+      setSelected(new Set());
+      router.refresh();
+    });
+  }
+
+  function handleBulkVehicleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const ids = Array.from(selected);
+    if (ids.length === 0 || !bulkVehicleValue) return;
+    startTransition(async () => {
+      await bulkAssignVehicleToOrders(ids, bulkVehicleValue);
+      setBulkVehicleValue("");
+      setVehicleMenuOpen(false);
+      setSelected(new Set());
+      router.refresh();
+    });
+  }
+
+  const rowPad = density === "compact" ? "py-1.5" : "py-3";
+  const actionBtnClass =
+    "flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-background hover:text-foreground";
+
   return (
     <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/60 px-3 py-2">
+        {selected.size > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-foreground">{selected.size} ausgewählt</span>
+            <button type="button" onClick={clearSelection} className={actionBtnClass}>
+              Auswahl aufheben
+            </button>
+          </div>
+        ) : (
+          <span />
+        )}
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {selected.size > 0 && (
+            <>
+              <button type="button" onClick={handleExportSelected} className={actionBtnClass}>
+                <Download className="h-3.5 w-3.5" />
+                Exportieren
+              </button>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusMenuOpen((v) => !v);
+                    setEmployeeMenuOpen(false);
+                    setVehicleMenuOpen(false);
+                  }}
+                  className={actionBtnClass}
+                >
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  Status ändern
+                </button>
+                {statusMenuOpen && (
+                  <>
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-10 cursor-default"
+                      aria-label="Menü schließen"
+                      onClick={() => setStatusMenuOpen(false)}
+                    />
+                    <form
+                      onSubmit={handleBulkStatusSubmit}
+                      className="absolute right-0 z-20 mt-2 w-60 space-y-2 rounded-lg border border-border bg-card p-3 shadow-lg"
+                    >
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                        Neuer Status
+                      </label>
+                      <select
+                        value={bulkStatusValue}
+                        onChange={(e) => setBulkStatusValue(e.target.value)}
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-brand"
+                      >
+                        {ORDER_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_LABELS[s] ?? s}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        className="w-full rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark"
+                      >
+                        Übernehmen
+                      </button>
+                    </form>
+                  </>
+                )}
+              </div>
+
+              {canManageResources && (
+                <>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmployeeMenuOpen((v) => !v);
+                        setStatusMenuOpen(false);
+                        setVehicleMenuOpen(false);
+                      }}
+                      className={actionBtnClass}
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Mitarbeiter zuweisen
+                    </button>
+                    {employeeMenuOpen && (
+                      <>
+                        <button
+                          type="button"
+                          className="fixed inset-0 z-10 cursor-default"
+                          aria-label="Menü schließen"
+                          onClick={() => setEmployeeMenuOpen(false)}
+                        />
+                        <form
+                          onSubmit={handleBulkEmployeeSubmit}
+                          className="absolute right-0 z-20 mt-2 w-60 space-y-2 rounded-lg border border-border bg-card p-3 shadow-lg"
+                        >
+                          <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                            Mitarbeiter auswählen
+                          </label>
+                          <select
+                            value={bulkEmployeeValue}
+                            onChange={(e) => setBulkEmployeeValue(e.target.value)}
+                            className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-brand"
+                          >
+                            <option value="">Bitte wählen…</option>
+                            {employees.map((emp) => (
+                              <option key={emp.id} value={emp.id}>
+                                {emp.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="submit"
+                            className="w-full rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark"
+                          >
+                            Übernehmen
+                          </button>
+                        </form>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVehicleMenuOpen((v) => !v);
+                        setStatusMenuOpen(false);
+                        setEmployeeMenuOpen(false);
+                      }}
+                      className={actionBtnClass}
+                    >
+                      <Truck className="h-3.5 w-3.5" />
+                      Fahrzeug zuweisen
+                    </button>
+                    {vehicleMenuOpen && (
+                      <>
+                        <button
+                          type="button"
+                          className="fixed inset-0 z-10 cursor-default"
+                          aria-label="Menü schließen"
+                          onClick={() => setVehicleMenuOpen(false)}
+                        />
+                        <form
+                          onSubmit={handleBulkVehicleSubmit}
+                          className="absolute right-0 z-20 mt-2 w-60 space-y-2 rounded-lg border border-border bg-card p-3 shadow-lg"
+                        >
+                          <label className="block text-xs font-semibold uppercase tracking-wide text-muted">
+                            Fahrzeug auswählen
+                          </label>
+                          <select
+                            value={bulkVehicleValue}
+                            onChange={(e) => setBulkVehicleValue(e.target.value)}
+                            className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-brand"
+                          >
+                            <option value="">Bitte wählen…</option>
+                            {vehicles.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="submit"
+                            className="w-full rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-dark"
+                          >
+                            Übernehmen
+                          </button>
+                        </form>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {canDelete && (
+                <>
+                  <button type="button" onClick={handleBulkArchiveToggle} className={actionBtnClass}>
+                    {showingArchived ? (
+                      <>
+                        <ArchiveRestore className="h-3.5 w-3.5" />
+                        Dearchivieren
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="h-3.5 w-3.5" />
+                        Archivieren
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Löschen
+                  </button>
+                </>
+              )}
+            </>
+          )}
+
+          <div className="relative">
+            <button type="button" onClick={() => setColumnsMenuOpen((v) => !v)} className={actionBtnClass}>
+              <Columns3 className="h-3.5 w-3.5" />
+              Spalten
+            </button>
+            {columnsMenuOpen && (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-10 cursor-default"
+                  aria-label="Menü schließen"
+                  onClick={() => setColumnsMenuOpen(false)}
+                />
+                <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-border bg-card p-2 shadow-lg">
+                  <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                    Zusätzliche Spalten
+                  </p>
+                  {COLUMN_DEFS.map((col) => (
+                    <label
+                      key={col.key}
+                      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-background"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visible.has(col.key)}
+                        onChange={() => toggleColumn(col.key)}
+                        className="h-4 w-4 rounded border-border text-brand focus:ring-brand"
+                      />
+                      {col.label}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-border bg-background text-xs uppercase text-muted">
             <tr>
+              <th className="w-10 px-3 py-3">
+                <input
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={toggleSelectAll}
+                  aria-label="Alle auswählen"
+                  className="h-4 w-4 rounded border-border text-brand focus:ring-brand"
+                />
+              </th>
               <th className="w-10 px-3 py-3" />
               <th className="px-4 py-3 font-medium">
                 <Link href={sortHrefs.order_number} className="flex items-center gap-1 hover:text-foreground">
@@ -164,13 +660,28 @@ export function OrderTable({
                   Priorität {sortIcon("priority")}
                 </Link>
               </th>
+              {visible.has("created_at") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Erstellungsdatum</th>}
+              {visible.has("updated_at") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Letzte Änderung</th>}
+              {visible.has("dispatcher") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Disponent</th>}
+              {visible.has("order_value") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Auftragswert</th>}
+              {visible.has("duration") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Einsatzdauer</th>}
+              {visible.has("documentation") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Dokumentation</th>}
               <th className="w-10 px-3 py-3" />
             </tr>
           </thead>
           <tbody>
             {orders.map((order) => (
               <tr key={order.id} className="group border-b border-border transition-colors last:border-0 hover:bg-background/70">
-                <td className="px-3 py-3">
+                <td className={`px-3 ${rowPad}`}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(order.id)}
+                    onChange={() => toggleSelectOne(order.id)}
+                    aria-label={`${order.order_number ?? order.title} auswählen`}
+                    className="h-4 w-4 rounded border-border text-brand focus:ring-brand"
+                  />
+                </td>
+                <td className={`px-3 ${rowPad}`}>
                   <button
                     type="button"
                     onClick={() => handleFavoriteClick(order)}
@@ -180,7 +691,7 @@ export function OrderTable({
                     <Star className={`h-4 w-4 ${isFavorite(order) ? "fill-amber-400 text-amber-400" : ""}`} />
                   </button>
                 </td>
-                <td className="px-4 py-3">
+                <td className={`px-4 ${rowPad}`}>
                   <Link href={panelHref(order.id)} className="font-medium text-foreground hover:text-brand">
                     {order.order_number ?? "—"}
                   </Link>
@@ -191,7 +702,7 @@ export function OrderTable({
                     </span>
                   )}
                 </td>
-                <td className="hidden px-4 py-3 sm:table-cell">
+                <td className={`hidden px-4 ${rowPad} sm:table-cell`}>
                   {order.customerName ? (
                     <>
                       <p className="truncate font-medium text-foreground">{order.customerName}</p>
@@ -203,7 +714,7 @@ export function OrderTable({
                     <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className="hidden px-4 py-3 text-muted lg:table-cell">
+                <td className={`hidden px-4 ${rowPad} text-muted lg:table-cell`}>
                   {order.propertyName || order.propertyStreet ? (
                     <>
                       <p className="truncate">{order.propertyName || order.propertyStreet}</p>
@@ -213,7 +724,7 @@ export function OrderTable({
                     "—"
                   )}
                 </td>
-                <td className="hidden px-4 py-3 text-muted md:table-cell">
+                <td className={`hidden px-4 ${rowPad} text-muted md:table-cell`}>
                   {order.scheduled_date ? (
                     <>
                       <p>{formatDate(order.scheduled_date)}</p>
@@ -223,7 +734,7 @@ export function OrderTable({
                     "—"
                   )}
                 </td>
-                <td className="hidden px-4 py-3 lg:table-cell">
+                <td className={`hidden px-4 ${rowPad} lg:table-cell`}>
                   {order.employees.length > 0 ? (
                     <div className="flex items-center -space-x-2">
                       {order.employees.slice(0, 3).map((e) => (
@@ -245,7 +756,7 @@ export function OrderTable({
                     <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className="hidden px-4 py-3 xl:table-cell">
+                <td className={`hidden px-4 ${rowPad} xl:table-cell`}>
                   {order.vehicles.length > 0 ? (
                     <div className="flex items-center gap-1.5">
                       <Truck className="h-3.5 w-3.5 shrink-0 text-muted" />
@@ -262,14 +773,14 @@ export function OrderTable({
                     <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className={`px-4 ${rowPad}`}>
                   <span
                     className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[order.status] ?? "bg-gray-100 text-gray-600"}`}
                   >
                     {STATUS_LABELS[order.status] ?? order.status}
                   </span>
                 </td>
-                <td className="hidden px-4 py-3 md:table-cell">
+                <td className={`hidden px-4 ${rowPad} md:table-cell`}>
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-16 overflow-hidden rounded-full bg-background">
                       <div
@@ -280,14 +791,42 @@ export function OrderTable({
                     <span className="shrink-0 text-xs tabular-nums text-muted">{order.progressPercent}%</span>
                   </div>
                 </td>
-                <td className="hidden px-4 py-3 sm:table-cell">
+                <td className={`hidden px-4 ${rowPad} sm:table-cell`}>
                   <span
                     className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_PRIORITY_BADGE_CLASS[order.priority] ?? "bg-gray-100 text-gray-600"}`}
                   >
                     {ORDER_PRIORITY_LABELS[order.priority] ?? order.priority}
                   </span>
                 </td>
-                <td className="px-3 py-3">
+                {visible.has("created_at") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted xl:table-cell`}>{formatDateTime(order.created_at)}</td>
+                )}
+                {visible.has("updated_at") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted xl:table-cell`}>{formatDateTime(order.updated_at)}</td>
+                )}
+                {visible.has("dispatcher") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted xl:table-cell`}>{order.dispatcherName ?? "—"}</td>
+                )}
+                {visible.has("order_value") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted xl:table-cell`}>
+                    {order.order_value ? formatEuro(order.order_value) : "—"}
+                  </td>
+                )}
+                {visible.has("duration") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted xl:table-cell`}>
+                    {order.planned_duration_minutes ? `${order.planned_duration_minutes} Min.` : "—"}
+                  </td>
+                )}
+                {visible.has("documentation") && (
+                  <td className={`hidden px-4 ${rowPad} xl:table-cell`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${order.isDocumented ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                    >
+                      {order.isDocumented ? "Dokumentiert" : "Offen"}
+                    </span>
+                  </td>
+                )}
+                <td className={`px-3 ${rowPad}`}>
                   <div className="relative">
                     <button
                       type="button"
