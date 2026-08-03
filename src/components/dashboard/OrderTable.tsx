@@ -866,20 +866,24 @@ export function OrderTable({
                           >
                             <CalendarClock className="h-3.5 w-3.5" /> Status ändern
                           </Link>
-                          <Link
-                            href={panelHref(order.id, "ressourcen")}
-                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
-                            onClick={() => setOpenMenuId(null)}
-                          >
-                            <Users className="h-3.5 w-3.5" /> Mitarbeiter zuweisen
-                          </Link>
-                          <Link
-                            href={panelHref(order.id, "ressourcen")}
-                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
-                            onClick={() => setOpenMenuId(null)}
-                          >
-                            <Truck className="h-3.5 w-3.5" /> Fahrzeug zuweisen
-                          </Link>
+                          {canManageResources && (
+                            <>
+                              <Link
+                                href={panelHref(order.id, "ressourcen")}
+                                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                                onClick={() => setOpenMenuId(null)}
+                              >
+                                <Users className="h-3.5 w-3.5" /> Mitarbeiter zuweisen
+                              </Link>
+                              <Link
+                                href={panelHref(order.id, "ressourcen")}
+                                className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                                onClick={() => setOpenMenuId(null)}
+                              >
+                                <Truck className="h-3.5 w-3.5" /> Fahrzeug zuweisen
+                              </Link>
+                            </>
+                          )}
                           <Link
                             href={`/berichte/neu?order=${order.id}`}
                             className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
@@ -894,28 +898,32 @@ export function OrderTable({
                           >
                             <Copy className="h-3.5 w-3.5" /> Auftrag duplizieren
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleArchiveToggle(order)}
-                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-background"
-                          >
-                            {order.is_archived ? (
-                              <>
-                                <ArchiveRestore className="h-3.5 w-3.5" /> Dearchivieren
-                              </>
-                            ) : (
-                              <>
-                                <Archive className="h-3.5 w-3.5" /> Archivieren
-                              </>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(order)}
-                            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" /> Löschen
-                          </button>
+                          {canDelete && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleArchiveToggle(order)}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-background"
+                              >
+                                {order.is_archived ? (
+                                  <>
+                                    <ArchiveRestore className="h-3.5 w-3.5" /> Dearchivieren
+                                  </>
+                                ) : (
+                                  <>
+                                    <Archive className="h-3.5 w-3.5" /> Archivieren
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(order)}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" /> Löschen
+                              </button>
+                            </>
+                          )}
                         </div>
                       </>
                     )}

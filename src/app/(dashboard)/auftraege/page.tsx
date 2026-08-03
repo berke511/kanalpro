@@ -64,6 +64,7 @@ type RawSearchParams = {
   dir?: string;
   panel?: string;
   panelTab?: string;
+  error?: string;
 };
 
 type FilterState = {
@@ -914,6 +915,9 @@ export default async function AuftraegePage({
 
   return (
     <div className="p-4 sm:p-6">
+      {raw.error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Auftragsmanagement</h1>

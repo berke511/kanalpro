@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { canCreateOrders } from "@/lib/roles";
 import { OrderWizard } from "@/components/dashboard/OrderWizard";
 
 export default async function NeuerAuftragPage({
@@ -9,6 +12,15 @@ export default async function NeuerAuftragPage({
 }) {
   const { error, customer_id: customerId } = await searchParams;
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profile = user ? await getOrCreateProfile(supabase, user) : null;
+
+  if (!canCreateOrders(profile?.role ?? null)) {
+    redirect("/auftraege?error=Keine+Berechtigung+zum+Anlegen+von+Auftr%C3%A4gen");
+  }
 
   const [{ data: customers }, { data: properties }, { data: employees }, { data: fleetItems }] = await Promise.all([
     supabase.from("customers").select("id, name, company_name").eq("is_archived", false).order("name", { ascending: true }),
