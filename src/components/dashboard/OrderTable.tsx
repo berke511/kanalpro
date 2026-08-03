@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
+  CalendarClock,
   Copy,
   Eye,
   FileEdit,
@@ -12,6 +13,8 @@ import {
   Star,
   Trash2,
   Truck,
+  Users,
+  Wrench,
   Archive,
   ArchiveRestore,
 } from "lucide-react";
@@ -59,17 +62,30 @@ export function OrderTable({
   currentSort,
   currentDir,
   showingArchived,
+  panelBaseQuery,
 }: {
   orders: OrderRow[];
   sortHrefs: Record<string, string>;
   currentSort: string;
   currentDir: "asc" | "desc";
   showingArchived: boolean;
+  panelBaseQuery: string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Öffnet das rechte Detailpanel für den angeklickten Auftrag, statt auf
+  // die volle Profilseite zu navigieren – alle übrigen Filter/Sortier-/
+  // Seiten-Parameter bleiben dabei erhalten (gleiches Muster wie /kunden).
+  function panelHref(orderId: string, tab?: string) {
+    const params = new URLSearchParams(panelBaseQuery);
+    params.set("panel", orderId);
+    if (tab) params.set("panelTab", tab);
+    else params.delete("panelTab");
+    return `/auftraege?${params.toString()}`;
+  }
 
   function isFavorite(order: OrderRow) {
     return favoriteOverrides[order.id] ?? order.is_favorite;
@@ -165,7 +181,7 @@ export function OrderTable({
                   </button>
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={`/auftraege/${order.id}`} className="font-medium text-foreground hover:text-brand">
+                  <Link href={panelHref(order.id)} className="font-medium text-foreground hover:text-brand">
                     {order.order_number ?? "—"}
                   </Link>
                   <p className="truncate text-xs text-muted">{order.title || ORDER_KIND_LABELS[order.order_kind] || order.order_kind}</p>
@@ -289,9 +305,9 @@ export function OrderTable({
                           aria-label="Menü schließen"
                           onClick={() => setOpenMenuId(null)}
                         />
-                        <div className="absolute right-0 z-20 mt-1 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+                        <div className="absolute right-0 z-20 mt-1 w-56 rounded-lg border border-border bg-card p-1.5 shadow-lg">
                           <Link
-                            href={`/auftraege/${order.id}`}
+                            href={panelHref(order.id)}
                             className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
                             onClick={() => setOpenMenuId(null)}
                           >
@@ -303,6 +319,34 @@ export function OrderTable({
                             onClick={() => setOpenMenuId(null)}
                           >
                             <FileEdit className="h-3.5 w-3.5" /> Bearbeiten
+                          </Link>
+                          <Link
+                            href={panelHref(order.id, "uebersicht")}
+                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <CalendarClock className="h-3.5 w-3.5" /> Status ändern
+                          </Link>
+                          <Link
+                            href={panelHref(order.id, "ressourcen")}
+                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <Users className="h-3.5 w-3.5" /> Mitarbeiter zuweisen
+                          </Link>
+                          <Link
+                            href={panelHref(order.id, "ressourcen")}
+                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <Truck className="h-3.5 w-3.5" /> Fahrzeug zuweisen
+                          </Link>
+                          <Link
+                            href={`/berichte/neu?order=${order.id}`}
+                            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <Wrench className="h-3.5 w-3.5" /> Einsatzbericht öffnen
                           </Link>
                           <button
                             type="button"

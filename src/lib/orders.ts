@@ -91,6 +91,25 @@ export const ORDER_KIND_LABELS: Record<string, string> = {
   sonstige: "Sonstige",
 };
 
+// Anzeige-Labels für die Aktionen im Auftrags-Audit-Log (order_audit_log.action,
+// siehe Migration 0019_orders_foundation.sql) – gemeinsam genutzt vom
+// Aktivitäten-Tab und der "Letzte Aktivität"-Anzeige im Detailpanel.
+export const ORDER_AUDIT_ACTION_LABELS: Record<string, string> = {
+  created: "Auftrag erstellt",
+  updated: "Auftrag aktualisiert",
+  status_changed: "Status geändert",
+  assigned: "Mitarbeiter zugewiesen",
+  unassigned: "Mitarbeiter entfernt",
+  resource_assigned: "Fahrzeug/Maschine zugewiesen",
+  resource_unassigned: "Fahrzeug/Maschine entfernt",
+  material_added: "Material hinzugefügt",
+  document_uploaded: "Dokument hochgeladen",
+  note_added: "Notiz hinzugefügt",
+  archived: "Archiviert",
+  unarchived: "Dearchiviert",
+  deleted: "Gelöscht",
+};
+
 // Statuswerte, die einen laufenden bzw. bereits gestarteten Einsatz
 // kennzeichnen (für "Einsatz begonnen"-Fortschrittsschritt und KPIs).
 export const IN_PROGRESS_STATUSES: readonly string[] = [

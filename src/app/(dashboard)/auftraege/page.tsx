@@ -15,11 +15,23 @@ import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { CustomerSearchInput } from "@/components/dashboard/CustomerSearchInput";
 import { OrderFilterPanel } from "@/components/dashboard/OrderFilterPanel";
 import { OrderTable, type OrderRow } from "@/components/dashboard/OrderTable";
+import { OrderDetailPanel, type OrderDetailPanelData, type PanelTabKey } from "@/components/dashboard/OrderDetailPanel";
 import { PageSizeSelect } from "@/components/dashboard/PageSizeSelect";
 import { CUSTOMER_KIND_LABELS } from "@/lib/customers";
-import { canCreateOrders } from "@/lib/roles";
+import { canCreateOrders, canManageResourcesAndSchedule } from "@/lib/roles";
 import { formatDate, monthRangeBerlin, todayBerlinISO, yesterdayBerlinISO } from "@/lib/date";
 import {
+  assignEmployee,
+  assignVehicle,
+  addOrderMaterial,
+  deleteOrderDocument,
+  removeOrderMaterial,
+  unassignEmployee,
+  unassignVehicle,
+  uploadOrderDocument,
+} from "@/app/(dashboard)/auftraege/actions";
+import {
+  ORDER_AUDIT_ACTION_LABELS,
   ORDER_KINDS,
   ORDER_KIND_LABELS,
   ORDER_PRIORITIES,
@@ -28,6 +40,8 @@ import {
   STATUS_LABELS,
   computeOrderProgress,
 } from "@/lib/orders";
+
+const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "details", "ressourcen", "material", "dokumente", "aktivitaeten"];
 
 type RawSearchParams = {
   q?: string;
@@ -45,6 +59,8 @@ type RawSearchParams = {
   pageSize?: string;
   sort?: string;
   dir?: string;
+  panel?: string;
+  panelTab?: string;
 };
 
 type FilterState = {
@@ -611,6 +627,273 @@ export default async function AuftraegePage({
 
   const canCreate = canCreateOrders(role);
 
+  // Rechtes Detailpanel: gesteuert über die Query-Parameter "panel"
+  // (Auftrags-ID) und "panelTab", damit ein Auftrag geöffnet werden kann,
+  // ohne die Liste zu verlassen (gleiches Muster wie /kunden).
+  const listQueryString = buildHref(state).split("?")[1] ?? "";
+  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
+  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
+
+  function panelHref(orderId: string, tab: PanelTabKey = "uebersicht") {
+    const params = new URLSearchParams(listQueryString);
+    params.set("panel", orderId);
+    if (tab !== "uebersicht") params.set("panelTab", tab);
+    else params.delete("panelTab");
+    return `/auftraege?${params.toString()}`;
+  }
+
+  function panelCloseHref() {
+    const params = new URLSearchParams(listQueryString);
+    params.delete("panel");
+    params.delete("panelTab");
+    const qs = params.toString();
+    return qs ? `/auftraege?${qs}` : "/auftraege";
+  }
+
+  let panelData: OrderDetailPanelData | null = null;
+
+  if (panelId) {
+    const { data: panelOrder } = await supabase.from("orders").select("*").eq("id", panelId).maybeSingle();
+
+    if (panelOrder) {
+      const returnTo = panelHref(panelId, panelTab);
+      const canManageResources = canManageResourcesAndSchedule(role);
+
+      const [
+        { data: customerRow },
+        { data: primaryContactRow },
+        { data: propertyRow },
+        { data: createdByRow },
+        { data: updatedByRow },
+        { data: dispatcherRow },
+        { data: assignmentRows },
+        { data: resourceRows },
+        { data: reportRows },
+        { data: lastAuditRows },
+        { data: allMaterials },
+      ] = await Promise.all([
+        panelOrder.customer_id
+          ? supabase.from("customers").select("id, name, phone, email").eq("id", panelOrder.customer_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        panelOrder.customer_id
+          ? supabase
+              .from("customer_contacts")
+              .select("name, phone, email")
+              .eq("customer_id", panelOrder.customer_id)
+              .eq("is_primary", true)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        panelOrder.property_id
+          ? supabase
+              .from("customer_properties")
+              .select("name, street, postal_code, city")
+              .eq("id", panelOrder.property_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        panelOrder.created_by
+          ? supabase.from("profiles").select("full_name").eq("id", panelOrder.created_by).maybeSingle()
+          : Promise.resolve({ data: null }),
+        panelOrder.updated_by
+          ? supabase.from("profiles").select("full_name").eq("id", panelOrder.updated_by).maybeSingle()
+          : Promise.resolve({ data: null }),
+        panelOrder.dispatcher_id
+          ? supabase.from("profiles").select("full_name").eq("id", panelOrder.dispatcher_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("order_assignments")
+          .select("id, employee_id, profiles!order_assignments_employee_id_fkey(full_name)")
+          .eq("order_id", panelId),
+        supabase.from("order_resources").select("id, fleet_item_id, fleet_items(name, license_plate)").eq("order_id", panelId),
+        supabase.from("service_reports").select("created_at, signed_at").eq("order_id", panelId),
+        supabase
+          .from("order_audit_log")
+          .select("action, summary, created_at, actor_id")
+          .eq("order_id", panelId)
+          .order("created_at", { ascending: false })
+          .limit(1),
+        supabase.from("materials").select("id, name, unit").order("name", { ascending: true }),
+      ]);
+
+      const employees = (assignmentRows ?? []).map((a) => ({
+        assignmentId: a.id,
+        id: a.employee_id,
+        name: a.profiles?.full_name ?? "Unbekannt",
+        unassignAction: unassignEmployee.bind(null, panelId, a.id, returnTo),
+      }));
+      const vehicles = (resourceRows ?? []).map((r) => ({
+        resourceId: r.id,
+        id: r.fleet_item_id,
+        name: r.fleet_items?.name ?? "Unbekannt",
+        licensePlate: r.fleet_items?.license_plate ?? null,
+        unassignAction: unassignVehicle.bind(null, panelId, r.id, returnTo),
+      }));
+
+      let firstReportAt: string | null = null;
+      let signedAt: string | null = null;
+      for (const r of reportRows ?? []) {
+        if (!firstReportAt || r.created_at < firstReportAt) firstReportAt = r.created_at;
+        if (r.signed_at && (!signedAt || r.signed_at < signedAt)) signedAt = r.signed_at;
+      }
+
+      const progress = computeOrderProgress({
+        createdAt: panelOrder.created_at,
+        status: panelOrder.status,
+        hasResources: employees.length > 0 || vehicles.length > 0,
+        resourcesAssignedAt: null,
+        startedAt: panelOrder.started_at,
+        documentationCompletedAt: panelOrder.documentation_completed_at,
+        firstReportAt,
+        signedAt,
+        completedAt: panelOrder.completed_at,
+      });
+
+      const lastAudit = lastAuditRows?.[0] ?? null;
+
+      let materials: OrderDetailPanelData["materials"] = [];
+      let documents: OrderDetailPanelData["documents"] = [];
+      let activity: OrderDetailPanelData["activity"] = [];
+
+      if (panelTab === "material") {
+        const { data } = await supabase
+          .from("order_materials")
+          .select("id, quantity, materials(name, unit)")
+          .eq("order_id", panelId)
+          .order("created_at", { ascending: true });
+        materials = (data ?? []).map((m) => ({
+          linkId: m.id,
+          name: m.materials?.name ?? "Unbekannt",
+          unit: m.materials?.unit ?? null,
+          quantity: Number(m.quantity),
+          removeAction: removeOrderMaterial.bind(null, panelId, m.id, returnTo),
+        }));
+      }
+
+      if (panelTab === "dokumente") {
+        const { data } = await supabase
+          .from("order_documents")
+          .select("id, file_name, storage_path, category, size_bytes, created_at")
+          .eq("order_id", panelId)
+          .order("created_at", { ascending: false });
+        const docs = data ?? [];
+        let urlByPath: Record<string, string> = {};
+        if (docs.length > 0) {
+          const { data: signed } = await supabase.storage
+            .from("order-documents")
+            .createSignedUrls(docs.map((d) => d.storage_path), 60 * 10);
+          urlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
+        }
+        documents = docs.map((d) => ({
+          id: d.id,
+          file_name: d.file_name,
+          category: d.category,
+          size_bytes: d.size_bytes,
+          created_at: d.created_at,
+          url: urlByPath[d.storage_path] ?? null,
+          deleteAction: deleteOrderDocument.bind(null, panelId, d.id, d.storage_path, returnTo),
+        }));
+      }
+
+      if (panelTab === "aktivitaeten") {
+        const { data } = await supabase
+          .from("order_audit_log")
+          .select("id, action, summary, created_at, actor_id")
+          .eq("order_id", panelId)
+          .order("created_at", { ascending: false });
+        activity = (data ?? []).map((a) => ({
+          id: a.id,
+          action: a.action,
+          summary: a.summary,
+          authorName: a.actor_id ? employeeNameById[a.actor_id] ?? "Unbekannt" : "System",
+          createdAt: a.created_at,
+        }));
+      }
+
+      const assignedEmployeeIds = new Set(employees.map((e) => e.id));
+      const assignedVehicleIds = new Set(vehicles.map((v) => v.id));
+
+      panelData = {
+        order: {
+          id: panelOrder.id,
+          order_number: panelOrder.order_number,
+          title: panelOrder.title,
+          description: panelOrder.description,
+          status: panelOrder.status,
+          priority: panelOrder.priority,
+          order_kind: panelOrder.order_kind,
+          service_type: panelOrder.service_type,
+          is_favorite: panelOrder.is_favorite,
+          is_archived: panelOrder.is_archived,
+          scheduled_date: panelOrder.scheduled_date,
+          start_time: panelOrder.start_time,
+          planned_duration_minutes: panelOrder.planned_duration_minutes,
+          time_window_start: panelOrder.time_window_start,
+          time_window_end: panelOrder.time_window_end,
+          all_day: panelOrder.all_day,
+          is_recurring: panelOrder.is_recurring,
+          internal_notes: panelOrder.internal_notes,
+          access_info: panelOrder.access_info,
+          arrival_info: panelOrder.arrival_info,
+          onsite_contact: panelOrder.onsite_contact,
+          safety_notes: panelOrder.safety_notes,
+          order_value: panelOrder.order_value,
+          created_at: panelOrder.created_at,
+          updated_at: panelOrder.updated_at,
+        },
+        customer: customerRow
+          ? { id: customerRow.id, name: customerRow.name, phone: customerRow.phone, email: customerRow.email }
+          : null,
+        primaryContact: primaryContactRow ?? null,
+        property: propertyRow
+          ? {
+              name: propertyRow.name,
+              street: propertyRow.street,
+              postal_code: propertyRow.postal_code,
+              city: propertyRow.city,
+              latitude: null,
+              longitude: null,
+            }
+          : null,
+        createdByName: createdByRow?.full_name ?? null,
+        updatedByName: updatedByRow?.full_name ?? null,
+        dispatcherName: dispatcherRow?.full_name ?? null,
+        progress,
+        lastActivity: lastAudit
+          ? {
+              text: lastAudit.summary || ORDER_AUDIT_ACTION_LABELS[lastAudit.action] || lastAudit.action,
+              createdAt: lastAudit.created_at,
+              authorName: lastAudit.actor_id ? employeeNameById[lastAudit.actor_id] ?? "Unbekannt" : "System",
+            }
+          : null,
+        employees,
+        vehicles,
+        materials,
+        documents,
+        activity,
+        activeTab: panelTab,
+        canManageResources,
+        employeeOptions: (employeeOptions ?? [])
+          .filter((e) => !assignedEmployeeIds.has(e.id))
+          .map((e) => ({ id: e.id, label: e.full_name || "Unbekannt" })),
+        vehicleOptions: (vehicleOptions ?? [])
+          .filter((v) => !assignedVehicleIds.has(v.id))
+          .map((v) => ({ id: v.id, label: v.license_plate ? `${v.license_plate} · ${v.name}` : v.name })),
+        materialOptions: (allMaterials ?? []).map((m) => ({ id: m.id, label: m.name, unit: m.unit })),
+        hrefs: {
+          close: panelCloseHref(),
+          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
+          fullProfile: `/auftraege/${panelId}`,
+          newReport: `/berichte/neu?order=${panelId}`,
+          newQuote: customerRow ? `/rechnungen/neu?customer_id=${customerRow.id}&kind=angebot` : null,
+          newInvoice: customerRow ? `/rechnungen/neu?customer_id=${customerRow.id}&kind=rechnung` : null,
+        },
+        assignEmployeeAction: assignEmployee.bind(null, panelId, returnTo),
+        assignVehicleAction: assignVehicle.bind(null, panelId, returnTo),
+        addMaterialAction: addOrderMaterial.bind(null, panelId, returnTo),
+        uploadDocumentAction: uploadOrderDocument.bind(null, panelId, returnTo),
+      };
+    }
+  }
+
   return (
     <div className="p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -770,6 +1053,7 @@ export default async function AuftraegePage({
           currentSort={state.sort}
           currentDir={state.dir}
           showingArchived={state.archived}
+          panelBaseQuery={listQueryString}
         />
       )}
 
@@ -810,6 +1094,8 @@ export default async function AuftraegePage({
           </div>
         </div>
       )}
+
+      {panelData && <OrderDetailPanel data={panelData} />}
     </div>
   );
 }
