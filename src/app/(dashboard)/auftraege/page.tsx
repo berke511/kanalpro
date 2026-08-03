@@ -35,8 +35,10 @@ import {
   ORDER_KINDS,
   ORDER_KIND_LABELS,
   ORDER_PRIORITIES,
+  ORDER_PRIORITY_BADGE_CLASS,
   ORDER_PRIORITY_LABELS,
   ORDER_STATUSES,
+  ORDER_STATUS_BADGE_CLASS,
   STATUS_LABELS,
   computeOrderProgress,
 } from "@/lib/orders";
@@ -55,6 +57,7 @@ type RawSearchParams = {
   kind?: string | string[];
   priority?: string | string[];
   archived?: string;
+  view?: string;
   page?: string;
   pageSize?: string;
   sort?: string;
@@ -75,6 +78,7 @@ type FilterState = {
   kind: string[];
   priority: string[];
   archived: boolean;
+  view: string;
   page: number;
   pageSize: number;
   sort: string;
@@ -105,6 +109,7 @@ function buildHref(state: Partial<FilterState>) {
   (state.kind ?? []).forEach((k) => params.append("kind", k));
   (state.priority ?? []).forEach((p) => params.append("priority", p));
   if (state.archived) params.set("archived", "1");
+  if (state.view && state.view !== "list") params.set("view", state.view);
   if (state.pageSize && state.pageSize !== 25) params.set("pageSize", String(state.pageSize));
   if (state.sort && state.sort !== "created_at") params.set("sort", state.sort);
   if (state.dir && state.dir !== "desc") params.set("dir", state.dir);
@@ -149,6 +154,7 @@ export default async function AuftraegePage({
     kind: toArray(raw.kind).filter((k) => (ORDER_KINDS as readonly string[]).includes(k)),
     priority: toArray(raw.priority).filter((p) => (ORDER_PRIORITIES as readonly string[]).includes(p)),
     archived: raw.archived === "1",
+    view: raw.view === "grid" ? "grid" : raw.view === "compact" ? "compact" : raw.view === "kanban" ? "kanban" : "list",
     page: Math.max(1, Number.parseInt(raw.page ?? "1", 10) || 1),
     pageSize: PAGE_SIZE_OPTIONS.includes(Number(raw.pageSize)) ? Number(raw.pageSize) : 25,
     sort: (SORTABLE_COLUMNS as readonly string[]).includes(raw.sort ?? "") ? (raw.sort as string) : "created_at",
@@ -962,6 +968,11 @@ export default async function AuftraegePage({
 
         <OrderFilterPanel
           q={state.q}
+          view={state.view}
+          listHref={buildHref({ ...state, view: "list" })}
+          compactHref={buildHref({ ...state, view: "compact" })}
+          gridHref={buildHref({ ...state, view: "grid" })}
+          kanbanHref={buildHref({ ...state, view: "kanban" })}
           statuses={ORDER_STATUSES}
           statusLabels={STATUS_LABELS}
           kinds={ORDER_KINDS}
@@ -1058,7 +1069,7 @@ export default async function AuftraegePage({
         </div>
       )}
 
-      {orderRows.length > 0 && (
+      {orderRows.length > 0 && (state.view === "list" || state.view === "compact") && (
         <OrderTable
           orders={orderRows}
           sortHrefs={sortHrefs}
@@ -1066,6 +1077,7 @@ export default async function AuftraegePage({
           currentDir={state.dir}
           showingArchived={state.archived}
           panelBaseQuery={listQueryString}
+          density={state.view === "compact" ? "compact" : "comfortable"}
           employees={(employeeOptions ?? []).map((e) => ({ id: e.id, label: e.full_name || "Unbekannt" }))}
           vehicles={(vehicleOptions ?? []).map((v) => ({
             id: v.id,
@@ -1074,6 +1086,99 @@ export default async function AuftraegePage({
           canManageResources={canManageResourcesAndSchedule(role)}
           canDelete={canDeleteOrArchiveOrders(role)}
         />
+      )}
+
+      {orderRows.length > 0 && state.view === "grid" && (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {orderRows.map((order) => (
+            <Link
+              key={order.id}
+              href={panelHref(order.id)}
+              className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-brand/40 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{order.order_number ?? "—"}</p>
+                  <p className="truncate text-xs text-muted">
+                    {order.title || ORDER_KIND_LABELS[order.order_kind] || order.order_kind}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {order.is_favorite && <span className="text-amber-400">★</span>}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[order.status] ?? "bg-gray-100 text-gray-600"}`}
+                  >
+                    {STATUS_LABELS[order.status] ?? order.status}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                {order.customerName ?? "Kein Kunde"}
+                {order.propertyCityLine ? ` · ${order.propertyCityLine}` : ""}
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                {order.scheduled_date ? formatDate(order.scheduled_date) : "Noch nicht terminiert"}
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-background">
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${order.progressPercent}%` }} />
+                </div>
+                <span className="shrink-0 text-xs tabular-nums text-muted">{order.progressPercent}%</span>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-medium ${ORDER_PRIORITY_BADGE_CLASS[order.priority] ?? "bg-gray-100 text-gray-600"}`}
+                >
+                  {ORDER_PRIORITY_LABELS[order.priority] ?? order.priority}
+                </span>
+                <span className="text-muted">{order.employees.length > 0 ? order.employees.map((e) => e.name).join(", ") : "—"}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {orderRows.length > 0 && state.view === "kanban" && (
+        <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
+          {ORDER_STATUSES.map((s) => {
+            const columnOrders = orderRows.filter((o) => o.status === s);
+            return (
+              <div key={s} className="w-72 shrink-0 rounded-2xl border border-border bg-card p-3">
+                <div className="mb-3 flex items-center justify-between">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[s] ?? "bg-gray-100 text-gray-600"}`}
+                  >
+                    {STATUS_LABELS[s] ?? s}
+                  </span>
+                  <span className="text-xs text-muted">{columnOrders.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {columnOrders.map((order) => (
+                    <Link
+                      key={order.id}
+                      href={panelHref(order.id)}
+                      className="block rounded-xl border border-border bg-background/60 p-2.5 text-xs hover:border-brand/40"
+                    >
+                      <p className="truncate font-medium text-foreground">{order.order_number ?? order.title}</p>
+                      <p className="truncate text-muted">{order.customerName ?? "Kein Kunde"}</p>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="text-muted">
+                          {order.scheduled_date ? formatDate(order.scheduled_date) : "—"}
+                        </span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 font-medium ${ORDER_PRIORITY_BADGE_CLASS[order.priority] ?? "bg-gray-100 text-gray-600"}`}
+                        >
+                          {ORDER_PRIORITY_LABELS[order.priority] ?? order.priority}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                  {columnOrders.length === 0 && <p className="py-4 text-center text-xs text-muted">Keine Aufträge</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {totalFilteredCount > 0 && (

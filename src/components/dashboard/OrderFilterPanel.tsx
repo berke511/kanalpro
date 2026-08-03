@@ -2,15 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Kanban, LayoutGrid, List, Rows3, SlidersHorizontal, X } from "lucide-react";
 
 type Option = { id: string; label: string };
 
-// Der Ansicht-Umschalter (Liste/Kompakt/Karten/Kanban) folgt in einer
-// späteren Phase (Massenaktionen + weitere Ansichten) – Phase "Basis"
-// deckt bewusst nur die Listenansicht ab.
 type OrderFilterPanelProps = {
   q: string;
+  view: string;
   statuses: readonly string[];
   statusLabels: Record<string, string>;
   kinds: readonly string[];
@@ -34,10 +32,15 @@ type OrderFilterPanelProps = {
     archived: boolean;
   };
   activeCount: number;
+  listHref: string;
+  compactHref: string;
+  gridHref: string;
+  kanbanHref: string;
 };
 
 export function OrderFilterPanel({
   q,
+  view,
   statuses,
   statusLabels,
   kinds,
@@ -50,6 +53,10 @@ export function OrderFilterPanel({
   vehicles,
   initial,
   activeCount,
+  listHref,
+  compactHref,
+  gridHref,
+  kanbanHref,
 }: OrderFilterPanelProps) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -108,6 +115,7 @@ export function OrderFilterPanel({
               <div className="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" />
               <form method="GET" action="/auftraege" onSubmit={() => setOpen(false)} className="space-y-5">
                 <input type="hidden" name="q" value={q} />
+                {view !== "list" && <input type="hidden" name="view" value={view} />}
 
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold">Filter</h3>
@@ -237,6 +245,37 @@ export function OrderFilterPanel({
             </div>
           </>
         )}
+      </div>
+
+      <div className="flex items-center overflow-hidden rounded-lg border border-border bg-card">
+        <a
+          href={listHref}
+          aria-label="Listenansicht"
+          className={`flex items-center px-2.5 py-2.5 sm:py-2 ${view === "list" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+        >
+          <List className="h-4 w-4" />
+        </a>
+        <a
+          href={compactHref}
+          aria-label="Kompakte Tabellenansicht"
+          className={`flex items-center border-l border-border px-2.5 py-2.5 sm:py-2 ${view === "compact" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+        >
+          <Rows3 className="h-4 w-4" />
+        </a>
+        <a
+          href={gridHref}
+          aria-label="Kartenansicht"
+          className={`flex items-center border-l border-border px-2.5 py-2.5 sm:py-2 ${view === "grid" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+        >
+          <LayoutGrid className="h-4 w-4" />
+        </a>
+        <a
+          href={kanbanHref}
+          aria-label="Kanban-Ansicht"
+          className={`flex items-center border-l border-border px-2.5 py-2.5 sm:py-2 ${view === "kanban" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+        >
+          <Kanban className="h-4 w-4" />
+        </a>
       </div>
     </div>
   );
