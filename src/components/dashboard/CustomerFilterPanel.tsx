@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LayoutGrid, List, SlidersHorizontal, X } from "lucide-react";
+import { LayoutGrid, List, Rows3, SlidersHorizontal, X } from "lucide-react";
 
 type CustomerFilterPanelProps = {
   q: string;
@@ -24,9 +24,11 @@ type CustomerFilterPanelProps = {
     openInvoices: boolean;
     openQuotes: boolean;
     maintenance: boolean;
+    archived: boolean;
   };
   activeCount: number;
   listHref: string;
+  compactHref: string;
   gridHref: string;
 };
 
@@ -41,6 +43,7 @@ export function CustomerFilterPanel({
   initial,
   activeCount,
   listHref,
+  compactHref,
   gridHref,
 }: CustomerFilterPanelProps) {
   const [open, setOpen] = useState(false);
@@ -198,7 +201,7 @@ export function CustomerFilterPanel({
                 </div>
               </div>
 
-              <details className="group rounded-lg border border-border/70" open={Boolean(initial.lastOrderFrom || initial.lastOrderTo || initial.openInvoices || initial.openQuotes || initial.maintenance)}>
+              <details className="group rounded-lg border border-border/70" open={Boolean(initial.lastOrderFrom || initial.lastOrderTo || initial.openInvoices || initial.openQuotes || initial.maintenance || initial.archived)}>
                 <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted [&::-webkit-details-marker]:hidden">
                   Weitere Filter
                 </summary>
@@ -251,6 +254,16 @@ export function CustomerFilterPanel({
                     />
                     Kunden mit Wartungsvertrag
                   </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="archived"
+                      value="1"
+                      defaultChecked={initial.archived}
+                      className="h-4 w-4 rounded border-border text-brand focus:ring-brand"
+                    />
+                    Auch archivierte Kunden anzeigen
+                  </label>
                 </div>
               </details>
 
@@ -282,13 +295,20 @@ export function CustomerFilterPanel({
         <a
           href={listHref}
           aria-label="Listenansicht"
-          className={`flex items-center px-2.5 py-2.5 sm:py-2 ${view !== "grid" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+          className={`flex items-center px-2.5 py-2.5 sm:py-2 ${view === "list" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
         >
           <List className="h-4 w-4" />
         </a>
         <a
+          href={compactHref}
+          aria-label="Kompaktansicht"
+          className={`flex items-center border-l border-border px-2.5 py-2.5 sm:py-2 ${view === "compact" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
+        >
+          <Rows3 className="h-4 w-4" />
+        </a>
+        <a
           href={gridHref}
-          aria-label="Rasteransicht"
+          aria-label="Kartenansicht"
           className={`flex items-center border-l border-border px-2.5 py-2.5 sm:py-2 ${view === "grid" ? "bg-brand-soft text-brand-dark" : "text-muted hover:bg-background"}`}
         >
           <LayoutGrid className="h-4 w-4" />

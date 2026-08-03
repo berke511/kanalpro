@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ClipboardList, FileText, Receipt, UserPlus, Users, Wrench, X } from "lucide-react";
+import { Building2, ClipboardList, FileText, Receipt, Star, UserPlus, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatEuro } from "@/lib/format";
 import {
   addCustomerNote,
   addCustomerProperty,
@@ -20,6 +21,7 @@ import {
   CUSTOMER_STATUS_BADGE_CLASS,
   CUSTOMER_STATUS_LABELS,
   MAINTENANCE_CONTRACT_TAG,
+  isCompanyKind,
 } from "@/lib/customers";
 
 const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "stammdaten", "objekte", "dokumente", "aktivitaeten"];
@@ -37,6 +39,7 @@ type RawSearchParams = {
   openInvoices?: string;
   openQuotes?: string;
   maintenance?: string;
+  archived?: string;
   view?: string;
   page?: string;
   pageSize?: string;
@@ -59,6 +62,7 @@ type FilterState = {
   openInvoices: boolean;
   openQuotes: boolean;
   maintenance: boolean;
+  archived: boolean;
   view: string;
   page: number;
   pageSize: number;
@@ -92,6 +96,7 @@ function buildHref(state: Partial<FilterState>) {
   if (state.openInvoices) params.set("openInvoices", "1");
   if (state.openQuotes) params.set("openQuotes", "1");
   if (state.maintenance) params.set("maintenance", "1");
+  if (state.archived) params.set("archived", "1");
   if (state.view && state.view !== "list") params.set("view", state.view);
   if (state.pageSize && state.pageSize !== 25) params.set("pageSize", String(state.pageSize));
   if (state.sort && state.sort !== "created_at") params.set("sort", state.sort);
@@ -109,6 +114,13 @@ function buildSortHref(state: FilterState, column: string) {
 function formatDate(value: string) {
   const [y, m, d] = value.split("-");
   return y && m && d ? `${d}.${m}.${y}` : value;
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
 export default async function KundenPage({
@@ -132,7 +144,8 @@ export default async function KundenPage({
     openInvoices: raw.openInvoices === "1",
     openQuotes: raw.openQuotes === "1",
     maintenance: raw.maintenance === "1",
-    view: raw.view === "grid" ? "grid" : "list",
+    archived: raw.archived === "1",
+    view: raw.view === "grid" ? "grid" : raw.view === "compact" ? "compact" : "list",
     page: Math.max(1, Number.parseInt(raw.page ?? "1", 10) || 1),
     pageSize: PAGE_SIZE_OPTIONS.includes(Number(raw.pageSize)) ? Number(raw.pageSize) : 25,
     sort: (SORTABLE_COLUMNS as readonly string[]).includes(raw.sort ?? "") ? (raw.sort as string) : "created_at",
@@ -263,6 +276,7 @@ export default async function KundenPage({
     city: string | null;
     tags: string[] | null;
     is_favorite: boolean;
+    is_archived: boolean;
     assigned_employee_id: string | null;
   }> = [];
   let error: { message: string } | null = null;
@@ -277,12 +291,15 @@ export default async function KundenPage({
     let query = supabase
       .from("customers")
       .select(
-        "id, kind, status, name, company_name, customer_number, email, phone, city, tags, is_favorite, assigned_employee_id",
+        "id, kind, status, name, company_name, customer_number, email, phone, city, tags, is_favorite, is_archived, assigned_employee_id",
         { count: "exact" },
       )
       .order(state.sort, { ascending: state.dir === "asc" })
       .range(from, to);
 
+    if (!state.archived) {
+      query = query.eq("is_archived", false);
+    }
     if (state.kind.length > 0) {
       query = query.in("kind", state.kind);
     }
@@ -406,7 +423,8 @@ export default async function KundenPage({
     (state.lastOrderTo ? 1 : 0) +
     (state.openInvoices ? 1 : 0) +
     (state.openQuotes ? 1 : 0) +
-    (state.maintenance ? 1 : 0);
+    (state.maintenance ? 1 : 0) +
+    (state.archived ? 1 : 0);
 
   // Rechtes Detailpanel: wird über die Query-Parameter "panel" (Kunden-ID)
   // und "panelTab" gesteuert, damit ein Kunde geöffnet werden kann, ohne die
@@ -630,6 +648,9 @@ export default async function KundenPage({
     ...(state.maintenance
       ? [{ key: "maintenance", label: "Wartungsvertrag", href: buildHref({ ...state, maintenance: false }) }]
       : []),
+    ...(state.archived
+      ? [{ key: "archived", label: "Inkl. archivierte Kunden", href: buildHref({ ...state, archived: false }) }]
+      : []),
   ];
 
   return (
@@ -681,6 +702,7 @@ export default async function KundenPage({
           initial={state}
           activeCount={activeCount}
           listHref={buildHref({ ...state, view: "list" })}
+          compactHref={buildHref({ ...state, view: "compact" })}
           gridHref={buildHref({ ...state, view: "grid" })}
         />
       </div>
@@ -735,45 +757,64 @@ export default async function KundenPage({
         </div>
       )}
 
-      {customers.length > 0 && state.view === "list" && (
+      {customers.length > 0 && (state.view === "list" || state.view === "compact") && (
         <CustomerTable
           customers={customerRows}
           sortHrefs={sortHrefs}
           currentSort={state.sort}
           currentDir={state.dir}
           panelBaseQuery={listQueryString}
+          density={state.view === "compact" ? "compact" : "comfortable"}
+          employees={employees ?? []}
+          showingArchived={state.archived}
         />
       )}
 
       {customers.length > 0 && state.view === "grid" && (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {customers.map((customer) => (
-            <Link
-              key={customer.id}
-              href={panelHref(customer.id)}
-              className="rounded-2xl border border-border bg-card p-4 transition hover:border-brand/40 hover:shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium text-foreground">{customer.name}</p>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
-                >
-                  {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted">
-                {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
-                {customer.customer_number ? ` · Nr. ${customer.customer_number}` : ""}
-              </p>
-              <div className="mt-3 space-y-1 text-sm text-muted">
-                <p>{customer.email || customer.phone || "—"}</p>
-                <p>{customer.city || "—"}</p>
-              </div>
-              {customer.tags && customer.tags.length > 0 && (
-                <p className="mt-2 text-xs text-muted">{customer.tags.join(" · ")}</p>
-              )}
-            </Link>
-          ))}
+          {customerRows.map((customer) => {
+            const isCompany = isCompanyKind(customer.kind);
+            return (
+              <Link
+                key={customer.id}
+                href={panelHref(customer.id)}
+                className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-brand/40 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand-dark">
+                      {isCompany ? <Building2 className="h-4 w-4" /> : initials(customer.name)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">{customer.name}</p>
+                      <p className="truncate text-xs text-muted">
+                        {customer.primaryContactName || CUSTOMER_KIND_LABELS[customer.kind] || customer.kind}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {customer.is_favorite && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
+                    >
+                      {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-muted">
+                  {customer.customer_number ? `Nr. ${customer.customer_number} · ` : ""}
+                  {customer.email || customer.phone || "—"}
+                  {customer.city ? ` · ${customer.city}` : ""}
+                </p>
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs text-muted">
+                  <span>Letzter Auftrag: {customer.lastOrderDate ? formatDate(customer.lastOrderDate) : "—"}</span>
+                  <span className="font-medium text-foreground">
+                    {customer.revenue > 0 ? formatEuro(customer.revenue) : "—"}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 

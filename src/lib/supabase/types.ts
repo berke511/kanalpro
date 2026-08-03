@@ -541,6 +541,7 @@ export type Database = {
           fax: string | null
           first_name: string | null
           id: string
+          is_archived: boolean
           is_favorite: boolean
           kind: string
           last_name: string | null
@@ -587,6 +588,7 @@ export type Database = {
           fax?: string | null
           first_name?: string | null
           id?: string
+          is_archived?: boolean
           is_favorite?: boolean
           kind?: string
           last_name?: string | null
@@ -633,6 +635,7 @@ export type Database = {
           fax?: string | null
           first_name?: string | null
           id?: string
+          is_archived?: boolean
           is_favorite?: boolean
           kind?: string
           last_name?: string | null

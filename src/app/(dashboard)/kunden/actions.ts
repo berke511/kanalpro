@@ -593,3 +593,59 @@ export async function toggleCustomerFavorite(customerId: string, nextValue: bool
   await supabase.from("customers").update({ is_favorite: nextValue }).eq("id", customerId);
   revalidatePath("/kunden");
 }
+
+// --- Massenaktionen ---
+//
+// Werden alle direkt aus der Kundentabelle (Client-Komponente) heraus
+// aufgerufen, analog zu toggleCustomerFavorite oben – kein <form action>,
+// kein Redirect nötig, der Aufrufer ruft danach selbst router.refresh().
+
+export async function bulkSetArchived(customerIds: string[], archived: boolean) {
+  const { supabase } = await requireCompanyContext();
+  if (customerIds.length === 0) return;
+  await supabase.from("customers").update({ is_archived: archived }).in("id", customerIds);
+  revalidatePath("/kunden");
+}
+
+export async function bulkAssignEmployee(customerIds: string[], employeeId: string | null) {
+  const { supabase } = await requireCompanyContext();
+  if (customerIds.length === 0) return;
+  await supabase.from("customers").update({ assigned_employee_id: employeeId }).in("id", customerIds);
+  revalidatePath("/kunden");
+}
+
+export async function bulkAddTag(customerIds: string[], tag: string) {
+  const { supabase } = await requireCompanyContext();
+  const trimmed = tag.trim();
+  if (customerIds.length === 0 || !trimmed) return;
+
+  const { data: rows } = await supabase.from("customers").select("id, tags").in("id", customerIds);
+  await Promise.all(
+    (rows ?? [])
+      .filter((c) => !(c.tags ?? []).includes(trimmed))
+      .map((c) => supabase.from("customers").update({ tags: [...(c.tags ?? []), trimmed] }).eq("id", c.id)),
+  );
+  revalidatePath("/kunden");
+}
+
+export async function bulkDeleteCustomers(customerIds: string[]) {
+  const { supabase, companyId, userId } = await requireCompanyContext();
+  if (customerIds.length === 0) return;
+
+  const { data: rows } = await supabase.from("customers").select("id, name, customer_number").in("id", customerIds);
+  await Promise.all(
+    (rows ?? []).map((c) =>
+      logAudit(supabase, {
+        companyId,
+        customerId: c.id,
+        customerLabel: `${c.customer_number ?? ""} ${c.name}`.trim(),
+        actorId: userId,
+        action: "deleted",
+        summary: "Kunde per Massenaktion gelöscht",
+      }),
+    ),
+  );
+
+  await supabase.from("customers").delete().in("id", customerIds);
+  revalidatePath("/kunden");
+}
