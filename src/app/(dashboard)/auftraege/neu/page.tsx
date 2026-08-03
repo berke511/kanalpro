@@ -1,38 +1,53 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { createOrder } from "@/app/(dashboard)/auftraege/actions";
-import { OrderForm } from "@/components/dashboard/OrderForm";
+import { OrderWizard } from "@/components/dashboard/OrderWizard";
 
 export default async function NeuerAuftragPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; customer_id?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, customer_id: customerId } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: customers }, { data: employees }] = await Promise.all([
-    supabase.from("customers").select("id, name").order("name", { ascending: true }),
+  const [{ data: customers }, { data: properties }, { data: employees }, { data: fleetItems }] = await Promise.all([
+    supabase.from("customers").select("id, name, company_name").eq("is_archived", false).order("name", { ascending: true }),
+    supabase.from("customer_properties").select("id, name, customer_id").order("name", { ascending: true }),
     supabase.from("profiles").select("id, full_name").order("full_name", { ascending: true }),
+    supabase
+      .from("fleet_items")
+      .select("id, name, license_plate, kind, status")
+      .eq("status", "verfuegbar")
+      .order("name", { ascending: true }),
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <Link href="/auftraege" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Auftragsliste
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Neuer Auftrag</h1>
+      <div className="mt-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Neuer Auftrag</h1>
+        <p className="mt-1 text-sm text-muted">
+          Legen Sie einen neuen Auftrag Schritt für Schritt an – Kunde, Auftragsart, Termin, Ressourcen, Hinweise und
+          Dokumente.
+        </p>
+      </div>
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
+      {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm p-6">
-        <OrderForm
-          action={createOrder}
-          submitLabel="Auftrag anlegen"
-          customers={(customers ?? []).map((c) => ({ id: c.id, label: c.name }))}
+      <div className="mt-6">
+        <OrderWizard
+          customers={(customers ?? []).map((c) => ({ id: c.id, label: c.company_name || c.name }))}
+          properties={(properties ?? []).map((p) => ({ id: p.id, label: p.name, customerId: p.customer_id }))}
           employees={(employees ?? []).map((e) => ({ id: e.id, label: e.full_name || "Unbenannt" }))}
+          vehicles={(fleetItems ?? [])
+            .filter((f) => f.kind === "fahrzeug")
+            .map((f) => ({ id: f.id, label: f.license_plate ? `${f.license_plate} · ${f.name}` : f.name }))}
+          machines={(fleetItems ?? [])
+            .filter((f) => f.kind === "maschine")
+            .map((f) => ({ id: f.id, label: f.name }))}
+          initialCustomerId={customerId}
         />
       </div>
     </div>
