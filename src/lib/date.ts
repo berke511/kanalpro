@@ -73,3 +73,37 @@ export function dateFromISO(iso: string): Date {
 export function currentBerlinYear(): number {
   return Number(new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric" }).format(new Date()));
 }
+
+/**
+ * Formatiert eine reine `time`-Spalte (z. B. `orders.start_time`, Format
+ * `HH:MM:SS` aus Postgres) als `HH:MM`. Keine Zeitzonenumrechnung nötig,
+ * da `time` (ohne "with time zone") keine Zeitzoneninformation trägt.
+ */
+export function formatTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const match = /^(\d{2}):(\d{2})/.exec(value);
+  return match ? `${match[1]}:${match[2]}` : value;
+}
+
+/**
+ * Gestriges Kalenderdatum in Europe/Berlin als `YYYY-MM-DD` – für
+ * Tag-über-Tag-Vergleiche bei KPI-Kacheln (z. B. "Heute" vs. "Gestern").
+ */
+export function yesterdayBerlinISO(): string {
+  const [y, m, d] = todayBerlinISO().split("-").map(Number);
+  const date = new Date(Date.UTC(y, (m ?? 1) - 1, (d ?? 1) - 1));
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" }).format(date);
+}
+
+/**
+ * Start (inklusiv) und Ende (exklusiv) eines Kalendermonats in
+ * Europe/Berlin als `YYYY-MM-DD`, für KPI-Vormonatsvergleiche.
+ * `offsetMonths = 0` ist der aktuelle Monat, `-1` der Vormonat.
+ */
+export function monthRangeBerlin(offsetMonths: number): { start: string; end: string } {
+  const [y, m] = todayBerlinISO().split("-").map(Number);
+  const startDate = new Date(Date.UTC(y, (m ?? 1) - 1 + offsetMonths, 1));
+  const endDate = new Date(Date.UTC(y, (m ?? 1) + offsetMonths, 1));
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "UTC" });
+  return { start: fmt.format(startDate), end: fmt.format(endDate) };
+}

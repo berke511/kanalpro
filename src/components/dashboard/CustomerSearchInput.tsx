@@ -9,7 +9,13 @@ import { Search } from "lucide-react";
 // Submit mehr nötig). Alle übrigen Filter/Sortier-/Seiten-Parameter in der
 // URL bleiben dabei unangetastet – nur "q" wird gesetzt/entfernt und "page"
 // wird zurückgesetzt, da sich die Ergebnismenge ändert.
-export function CustomerSearchInput({ initialQuery }: { initialQuery: string }) {
+export function CustomerSearchInput({
+  initialQuery,
+  placeholder = "Suche nach Name, Firma, Ansprechpartner, Telefon, E-Mail, Kundennummer…",
+}: {
+  initialQuery: string;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -59,7 +65,7 @@ export function CustomerSearchInput({ initialQuery }: { initialQuery: string }) 
         type="search"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Suche nach Name, Firma, Ansprechpartner, Telefon, E-Mail, Kundennummer…"
+        placeholder={placeholder}
         className="w-full rounded-lg border border-border bg-card py-2.5 pl-9 pr-3 text-base outline-none focus:border-brand sm:text-sm"
       />
     </div>
