@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ClipboardList, FileText, Receipt, Search, UserPlus, Users, Wrench, X } from "lucide-react";
+import { ClipboardList, FileText, Receipt, UserPlus, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { CustomerFilterPanel } from "@/components/dashboard/CustomerFilterPanel";
+import { CustomerSearchInput } from "@/components/dashboard/CustomerSearchInput";
 import { CustomerTable, type CustomerRow } from "@/components/dashboard/CustomerTable";
 import { PageSizeSelect } from "@/components/dashboard/PageSizeSelect";
 import {
@@ -178,6 +179,29 @@ export default async function KundenPage({
   // Bedingungen.
   const idFilterSets: string[][] = [];
 
+  // Suche: kombiniert Treffer direkt auf dem Kundendatensatz (Name, Firma,
+  // E-Mail, Telefon, Kundennummer) mit Treffern auf zugeordneten
+  // Ansprechpartnern (customer_contacts.name) – innerhalb der Suche als
+  // Vereinigung (ein Treffer in irgendeinem Feld reicht), kombiniert mit den
+  // übrigen Filtern über die bestehende Schnittmengen-Logik.
+  if (state.q) {
+    const term = state.q.replace(/[%,()]/g, " ");
+    const [directRes, contactsRes] = await Promise.all([
+      supabase
+        .from("customers")
+        .select("id")
+        .or(
+          `name.ilike.%${term}%,company_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,customer_number.ilike.%${term}%`,
+        ),
+      supabase.from("customer_contacts").select("customer_id").ilike("name", `%${term}%`),
+    ]);
+    const directIds = (directRes.data ?? []).map((r) => r.id);
+    const contactIds = (contactsRes.data ?? [])
+      .map((r) => r.customer_id)
+      .filter((v): v is string => Boolean(v));
+    idFilterSets.push(Array.from(new Set([...directIds, ...contactIds])));
+  }
+
   if (state.lastOrderFrom || state.lastOrderTo) {
     let oq = supabase.from("orders").select("customer_id").not("customer_id", "is", null);
     if (state.lastOrderFrom) oq = oq.gte("scheduled_date", state.lastOrderFrom);
@@ -252,12 +276,6 @@ export default async function KundenPage({
     }
     if (state.status.length > 0) {
       query = query.in("status", state.status);
-    }
-    if (state.q) {
-      const term = state.q.replace(/[%,()]/g, " ");
-      query = query.or(
-        `name.ilike.%${term}%,company_name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,customer_number.ilike.%${term}%`,
-      );
     }
     if (state.city) {
       const term = state.city.replace(/[%,()]/g, " ");
@@ -456,44 +474,9 @@ export default async function KundenPage({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <form method="GET" action="/kunden" className="flex max-w-xl flex-1 flex-wrap gap-3">
-          {state.kind.map((k) => (
-            <input key={k} type="hidden" name="kind" value={k} />
-          ))}
-          {state.status.map((s) => (
-            <input key={s} type="hidden" name="status" value={s} />
-          ))}
-          {state.city && <input type="hidden" name="city" value={state.city} />}
-          {state.employee && <input type="hidden" name="employee" value={state.employee} />}
-          {state.createdFrom && <input type="hidden" name="createdFrom" value={state.createdFrom} />}
-          {state.createdTo && <input type="hidden" name="createdTo" value={state.createdTo} />}
-          {state.lastOrderFrom && <input type="hidden" name="lastOrderFrom" value={state.lastOrderFrom} />}
-          {state.lastOrderTo && <input type="hidden" name="lastOrderTo" value={state.lastOrderTo} />}
-          {state.openInvoices && <input type="hidden" name="openInvoices" value="1" />}
-          {state.openQuotes && <input type="hidden" name="openQuotes" value="1" />}
-          {state.maintenance && <input type="hidden" name="maintenance" value="1" />}
-          {state.view !== "list" && <input type="hidden" name="view" value={state.view} />}
-          {state.pageSize !== 25 && <input type="hidden" name="pageSize" value={state.pageSize} />}
-          {state.sort !== "created_at" && <input type="hidden" name="sort" value={state.sort} />}
-          {state.dir !== "desc" && <input type="hidden" name="dir" value={state.dir} />}
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <input
-              type="search"
-              name="q"
-              defaultValue={state.q}
-              placeholder="Suche nach Name, Firma, E-Mail, Telefon, Kundennummer…"
-              className="w-full rounded-lg border border-border bg-card py-2.5 pl-9 pr-3 text-base outline-none focus:border-brand sm:text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-background sm:py-2"
-          >
-            <Search className="h-4 w-4" />
-            Suchen
-          </button>
-        </form>
+        <div className="flex max-w-xl flex-1 flex-wrap gap-3">
+          <CustomerSearchInput initialQuery={state.q} />
+        </div>
 
         <CustomerFilterPanel
           q={state.q}
