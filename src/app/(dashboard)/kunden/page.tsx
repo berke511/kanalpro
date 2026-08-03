@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { ClipboardList, FileText, Receipt, UserPlus, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import {
+  addCustomerNote,
+  addCustomerProperty,
+  deleteCustomerDocument,
+  deleteCustomerProperty,
+  uploadCustomerDocument,
+} from "@/app/(dashboard)/kunden/actions";
 import { CustomerFilterPanel } from "@/components/dashboard/CustomerFilterPanel";
 import { CustomerSearchInput } from "@/components/dashboard/CustomerSearchInput";
 import { CustomerTable, type CustomerRow } from "@/components/dashboard/CustomerTable";
+import { CustomerDetailPanel, type CustomerDetailPanelData, type PanelTabKey } from "@/components/dashboard/CustomerDetailPanel";
 import { PageSizeSelect } from "@/components/dashboard/PageSizeSelect";
 import {
   CUSTOMER_KINDS,
@@ -13,6 +21,8 @@ import {
   CUSTOMER_STATUS_LABELS,
   MAINTENANCE_CONTRACT_TAG,
 } from "@/lib/customers";
+
+const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "stammdaten", "objekte", "dokumente", "aktivitaeten"];
 
 type RawSearchParams = {
   q?: string;
@@ -32,6 +42,8 @@ type RawSearchParams = {
   pageSize?: string;
   sort?: string;
   dir?: string;
+  panel?: string;
+  panelTab?: string;
 };
 
 type FilterState = {
@@ -396,6 +408,186 @@ export default async function KundenPage({
     (state.openQuotes ? 1 : 0) +
     (state.maintenance ? 1 : 0);
 
+  // Rechtes Detailpanel: wird über die Query-Parameter "panel" (Kunden-ID)
+  // und "panelTab" gesteuert, damit ein Kunde geöffnet werden kann, ohne die
+  // Kundenliste zu verlassen (Zurück-Button/direkter Link funktionieren
+  // dadurch weiterhin normal). "listQueryString" ist der aktuelle Filter-/
+  // Sortier-/Seitenzustand ohne Panel-Parameter – Grundlage für alle
+  // Panel-bezogenen Links (öffnen, Tab wechseln, schließen).
+  const listQueryString = buildHref(state).split("?")[1] ?? "";
+  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
+  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
+
+  function panelHref(customerId: string, tab: PanelTabKey = "uebersicht") {
+    const params = new URLSearchParams(listQueryString);
+    params.set("panel", customerId);
+    if (tab !== "uebersicht") params.set("panelTab", tab);
+    else params.delete("panelTab");
+    return `/kunden?${params.toString()}`;
+  }
+
+  function panelCloseHref() {
+    const params = new URLSearchParams(listQueryString);
+    params.delete("panel");
+    params.delete("panelTab");
+    const qs = params.toString();
+    return qs ? `/kunden?${qs}` : "/kunden";
+  }
+
+  let panelData: CustomerDetailPanelData | null = null;
+
+  if (panelId) {
+    const { data: panelCustomer } = await supabase.from("customers").select("*").eq("id", panelId).maybeSingle();
+
+    if (panelCustomer) {
+      const returnTo = panelHref(panelId, panelTab);
+
+      const [{ data: primaryContactRow }, { count: objectsCount }, { data: invoiceRows }, { data: lastOrderRows }] =
+        await Promise.all([
+          supabase
+            .from("customer_contacts")
+            .select("name, role, phone, email")
+            .eq("customer_id", panelId)
+            .eq("is_primary", true)
+            .maybeSingle(),
+          supabase.from("customer_properties").select("id", { count: "exact", head: true }).eq("customer_id", panelId),
+          supabase.from("invoices").select("id, kind, status").eq("customer_id", panelId),
+          supabase
+            .from("orders")
+            .select("scheduled_date")
+            .eq("customer_id", panelId)
+            .not("scheduled_date", "is", null)
+            .order("scheduled_date", { ascending: false })
+            .limit(1),
+        ]);
+
+      const quotesCount = (invoiceRows ?? []).filter((i) => i.kind === "angebot").length;
+      const invoicesCount = (invoiceRows ?? []).filter((i) => i.kind === "rechnung").length;
+      const paidInvoiceIds = (invoiceRows ?? [])
+        .filter((i) => i.kind === "rechnung" && i.status === "bezahlt")
+        .map((i) => i.id);
+
+      let revenue = 0;
+      if (paidInvoiceIds.length > 0) {
+        const { data: items } = await supabase
+          .from("invoice_items")
+          .select("quantity, unit_price")
+          .in("invoice_id", paidInvoiceIds);
+        revenue = (items ?? []).reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_price), 0);
+      }
+
+      let properties: CustomerDetailPanelData["properties"] = [];
+      let documents: CustomerDetailPanelData["documents"] = [];
+      let activity: CustomerDetailPanelData["activity"] = [];
+
+      if (panelTab === "objekte") {
+        const { data } = await supabase
+          .from("customer_properties")
+          .select("id, name, street, postal_code, city, notes")
+          .eq("customer_id", panelId)
+          .order("created_at", { ascending: true });
+        properties = (data ?? []).map((p) => ({
+          ...p,
+          deleteAction: deleteCustomerProperty.bind(null, panelId, p.id, returnTo),
+        }));
+      }
+
+      if (panelTab === "dokumente") {
+        const { data } = await supabase
+          .from("customer_documents")
+          .select("id, file_name, storage_path, size_bytes, created_at")
+          .eq("customer_id", panelId)
+          .order("created_at", { ascending: false });
+        const docs = data ?? [];
+        let urlByPath: Record<string, string> = {};
+        if (docs.length > 0) {
+          const { data: signed } = await supabase.storage
+            .from("customer-documents")
+            .createSignedUrls(docs.map((d) => d.storage_path), 60 * 10);
+          urlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
+        }
+        documents = docs.map((d) => ({
+          ...d,
+          url: urlByPath[d.storage_path] ?? null,
+          deleteAction: deleteCustomerDocument.bind(null, panelId, d.id, d.storage_path, returnTo),
+        }));
+      }
+
+      if (panelTab === "aktivitaeten") {
+        const [{ data: noteData }, { data: auditData }] = await Promise.all([
+          supabase
+            .from("customer_notes")
+            .select("id, note, created_at, author_id")
+            .eq("customer_id", panelId)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("customer_audit_log")
+            .select("id, action, summary, created_at, actor_id")
+            .eq("customer_id", panelId)
+            .order("created_at", { ascending: false }),
+        ]);
+        const authorIds = Array.from(
+          new Set(
+            [...(noteData ?? []).map((n) => n.author_id), ...(auditData ?? []).map((a) => a.actor_id)].filter(
+              Boolean,
+            ) as string[],
+          ),
+        );
+        let authorNames: Record<string, string> = {};
+        if (authorIds.length > 0) {
+          const { data: profiles } = await supabase.from("profiles").select("id, full_name").in("id", authorIds);
+          authorNames = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name ?? "Unbekannt"]));
+        }
+        const noteItems = (noteData ?? []).map((n) => ({
+          id: `note-${n.id}`,
+          kind: "note" as const,
+          text: n.note,
+          authorName: n.author_id ? authorNames[n.author_id] ?? "Unbekannt" : "Unbekannt",
+          createdAt: n.created_at,
+        }));
+        const auditItems = (auditData ?? []).map((a) => ({
+          id: `audit-${a.id}`,
+          kind: "audit" as const,
+          text: `${a.action === "created" ? "Angelegt" : a.action === "updated" ? "Aktualisiert" : "Gelöscht"}${a.summary ? ` – ${a.summary}` : ""}`,
+          authorName: a.actor_id ? authorNames[a.actor_id] ?? "Unbekannt" : "Unbekannt",
+          createdAt: a.created_at,
+        }));
+        activity = [...noteItems, ...auditItems].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+      }
+
+      panelData = {
+        customer: panelCustomer,
+        employeeName: panelCustomer.assigned_employee_id
+          ? employeeNameById[panelCustomer.assigned_employee_id] ?? null
+          : null,
+        primaryContact: primaryContactRow ?? null,
+        kpis: {
+          objectsCount: objectsCount ?? 0,
+          revenue,
+          quotesCount,
+          invoicesCount,
+          lastOrderDate: lastOrderRows?.[0]?.scheduled_date ?? null,
+        },
+        activeTab: panelTab,
+        properties,
+        documents,
+        activity,
+        hrefs: {
+          close: panelCloseHref(),
+          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
+          fullProfile: `/kunden/${panelId}`,
+          editCustomer: `/kunden/${panelId}?tab=allgemein`,
+          newOrder: `/auftraege/neu?customer_id=${panelId}`,
+          newQuote: `/rechnungen/neu?customer_id=${panelId}&kind=angebot`,
+          newInvoice: `/rechnungen/neu?customer_id=${panelId}&kind=rechnung`,
+        },
+        addPropertyAction: addCustomerProperty.bind(null, panelId, returnTo),
+        addNoteAction: addCustomerNote.bind(null, panelId, returnTo),
+        uploadDocumentAction: uploadCustomerDocument.bind(null, panelId, returnTo),
+      };
+    }
+  }
+
   const hasAnyFilter = activeCount > 0 || Boolean(state.q);
   const employeeName = state.employee ? (employees ?? []).find((e) => e.id === state.employee)?.full_name ?? "Unbekannt" : "";
 
@@ -549,6 +741,7 @@ export default async function KundenPage({
           sortHrefs={sortHrefs}
           currentSort={state.sort}
           currentDir={state.dir}
+          panelBaseQuery={listQueryString}
         />
       )}
 
@@ -557,7 +750,7 @@ export default async function KundenPage({
           {customers.map((customer) => (
             <Link
               key={customer.id}
-              href={`/kunden/${customer.id}`}
+              href={panelHref(customer.id)}
               className="rounded-2xl border border-border bg-card p-4 transition hover:border-brand/40 hover:shadow-sm"
             >
               <div className="flex items-start justify-between gap-2">
@@ -621,6 +814,8 @@ export default async function KundenPage({
           </div>
         </div>
       )}
+
+      {panelData && <CustomerDetailPanel data={panelData} />}
     </div>
   );
 }

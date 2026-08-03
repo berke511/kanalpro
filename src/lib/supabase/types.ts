@@ -462,6 +462,63 @@ export type Database = {
           },
         ]
       }
+      customer_properties: {
+        Row: {
+          city: string | null
+          company_id: string
+          country: string
+          created_at: string
+          customer_id: string
+          id: string
+          name: string
+          notes: string | null
+          postal_code: string | null
+          street: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          company_id: string
+          country?: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          postal_code?: string | null
+          street?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          company_id?: string
+          country?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          postal_code?: string | null
+          street?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_properties_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_properties_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           assigned_employee_id: string | null

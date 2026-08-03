@@ -33,6 +33,14 @@ function emptyToNull(value: FormDataEntryValue | null) {
   return str.length ? str : null;
 }
 
+// Hängt eine Fehlermeldung an ein Rücksprungziel an (Vollprofil-Tab oder
+// Kundenliste mit geöffnetem Detailpanel), unabhängig davon, ob die
+// Ziel-URL bereits andere Query-Parameter enthält.
+function withError(returnTo: string, message: string) {
+  const sep = returnTo.includes("?") ? "&" : "?";
+  return `${returnTo}${sep}error=${encodeURIComponent(message)}`;
+}
+
 function intOrNull(value: FormDataEntryValue | null) {
   const str = String(value ?? "").trim();
   if (!str) return null;
@@ -475,13 +483,18 @@ export async function deleteCustomerContact(customerId: string, contactId: strin
 }
 
 // --- Notizen ---
+//
+// Nimmt zusätzlich ein "returnTo"-Ziel entgegen, da diese Aktion sowohl vom
+// Vollprofil (/kunden/[id]?tab=notizen) als auch aus dem rechten
+// Detailpanel auf der Kundenliste (/kunden?...&panel=<id>&panelTab=aktivitaeten)
+// heraus aufgerufen wird.
 
-export async function addCustomerNote(customerId: string, formData: FormData) {
+export async function addCustomerNote(customerId: string, returnTo: string, formData: FormData) {
   const { supabase, companyId, userId } = await requireCompanyContext();
   const note = emptyToNull(formData.get("note"));
 
   if (!note) {
-    redirect(`/kunden/${customerId}?tab=notizen`);
+    redirect(returnTo);
   }
 
   await supabase.from("customer_notes").insert({
@@ -492,17 +505,18 @@ export async function addCustomerNote(customerId: string, formData: FormData) {
   });
 
   revalidatePath(`/kunden/${customerId}`);
-  redirect(`/kunden/${customerId}?tab=notizen`);
+  revalidatePath("/kunden");
+  redirect(returnTo);
 }
 
 // --- Dokumente ---
 
-export async function uploadCustomerDocument(customerId: string, formData: FormData) {
+export async function uploadCustomerDocument(customerId: string, returnTo: string, formData: FormData) {
   const { supabase, companyId, userId } = await requireCompanyContext();
   const file = formData.get("file");
 
   if (!(file instanceof File) || file.size === 0) {
-    redirect(`/kunden/${customerId}?tab=dokumente&error=Bitte+eine+Datei+auswählen`);
+    redirect(withError(returnTo, "Bitte eine Datei auswählen"));
   }
 
   const safeName = (file as File).name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -514,7 +528,7 @@ export async function uploadCustomerDocument(customerId: string, formData: FormD
   });
 
   if (uploadError) {
-    redirect(`/kunden/${customerId}?tab=dokumente&error=${encodeURIComponent(uploadError.message)}`);
+    redirect(withError(returnTo, uploadError.message));
   }
 
   await supabase.from("customer_documents").insert({
@@ -528,15 +542,50 @@ export async function uploadCustomerDocument(customerId: string, formData: FormD
   });
 
   revalidatePath(`/kunden/${customerId}`);
-  redirect(`/kunden/${customerId}?tab=dokumente`);
+  revalidatePath("/kunden");
+  redirect(returnTo);
 }
 
-export async function deleteCustomerDocument(customerId: string, documentId: string, storagePath: string) {
+export async function deleteCustomerDocument(customerId: string, documentId: string, storagePath: string, returnTo: string) {
   const { supabase } = await requireCompanyContext();
   await supabase.storage.from("customer-documents").remove([storagePath]);
   await supabase.from("customer_documents").delete().eq("id", documentId);
   revalidatePath(`/kunden/${customerId}`);
-  redirect(`/kunden/${customerId}?tab=dokumente`);
+  revalidatePath("/kunden");
+  redirect(returnTo);
+}
+
+// --- Objekte (Einsatzobjekte/Standorte) ---
+
+export async function addCustomerProperty(customerId: string, returnTo: string, formData: FormData) {
+  const { supabase, companyId } = await requireCompanyContext();
+  const name = emptyToNull(formData.get("name"));
+
+  if (!name) {
+    redirect(withError(returnTo, "Bezeichnung ist erforderlich"));
+  }
+
+  await supabase.from("customer_properties").insert({
+    company_id: companyId,
+    customer_id: customerId,
+    name: name!,
+    street: emptyToNull(formData.get("street")),
+    postal_code: emptyToNull(formData.get("postal_code")),
+    city: emptyToNull(formData.get("city")),
+    notes: emptyToNull(formData.get("notes")),
+  });
+
+  revalidatePath(`/kunden/${customerId}`);
+  revalidatePath("/kunden");
+  redirect(returnTo);
+}
+
+export async function deleteCustomerProperty(customerId: string, propertyId: string, returnTo: string) {
+  const { supabase } = await requireCompanyContext();
+  await supabase.from("customer_properties").delete().eq("id", propertyId);
+  revalidatePath(`/kunden/${customerId}`);
+  revalidatePath("/kunden");
+  redirect(returnTo);
 }
 
 export async function toggleCustomerFavorite(customerId: string, nextValue: boolean) {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  Building2,
   Copy,
   Info,
   MapPin,
@@ -24,9 +25,11 @@ import { formatDate, formatDateTime } from "@/lib/date";
 import {
   addCustomerContact,
   addCustomerNote,
+  addCustomerProperty,
   deleteCustomer,
   deleteCustomerContact,
   deleteCustomerDocument,
+  deleteCustomerProperty,
   duplicateCustomer,
   updateCustomer,
   uploadCustomerDocument,
@@ -35,6 +38,7 @@ import { CustomerForm } from "@/components/dashboard/CustomerForm";
 import { CustomerContactForm } from "@/components/dashboard/CustomerContactForm";
 import { CustomerNoteForm } from "@/components/dashboard/CustomerNoteForm";
 import { CustomerDocumentForm } from "@/components/dashboard/CustomerDocumentForm";
+import { CustomerPropertyForm } from "@/components/dashboard/CustomerPropertyForm";
 import { CustomerKindIcon } from "@/components/dashboard/CustomerKindIcon";
 import {
   CUSTOMER_KIND_LABELS,
@@ -47,6 +51,7 @@ const TABS: Array<{ key: string; label: string; icon: LucideIcon }> = [
   { key: "allgemein", label: "Allgemein", icon: User },
   { key: "adressen", label: "Adressen", icon: MapPin },
   { key: "kontakte", label: "Ansprechpartner", icon: Users },
+  { key: "objekte", label: "Objekte", icon: Building2 },
   { key: "auftraege", label: "Aufträge", icon: Wrench },
   { key: "rechnungen", label: "Abrechnung", icon: Receipt },
   { key: "dokumente", label: "Dokumente", icon: Paperclip },
@@ -115,6 +120,7 @@ export default async function KundeDetailPage({
   ]);
 
   let contacts: Array<{ id: string; name: string; role: string | null; phone: string | null; email: string | null; is_primary: boolean }> = [];
+  let properties: Array<{ id: string; name: string; street: string | null; postal_code: string | null; city: string | null; notes: string | null }> = [];
   let documents: Array<{ id: string; file_name: string; storage_path: string; size_bytes: number | null; created_at: string }> = [];
   let documentUrls: Record<string, string> = {};
   let notes: Array<{ id: string; note: string; created_at: string; author_id: string | null }> = [];
@@ -131,6 +137,15 @@ export default async function KundeDetailPage({
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true });
     contacts = data ?? [];
+  }
+
+  if (activeTab === "objekte") {
+    const { data } = await supabase
+      .from("customer_properties")
+      .select("id, name, street, postal_code, city, notes")
+      .eq("customer_id", id)
+      .order("created_at", { ascending: true });
+    properties = data ?? [];
   }
 
   if (activeTab === "auftraege") {
@@ -396,6 +411,37 @@ export default async function KundeDetailPage({
             </div>
           )}
 
+          {activeTab === "objekte" && (
+            <div className="space-y-4">
+              {properties.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted">
+                  Noch keine Objekte (Einsatzorte/Liegenschaften) hinterlegt.
+                </p>
+              )}
+              {properties.map((p) => (
+                <div key={p.id} className="flex items-start justify-between rounded-2xl border border-border bg-card shadow-sm p-4">
+                  <div>
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {[p.street, [p.postal_code, p.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "—"}
+                    </p>
+                    {p.notes && <p className="mt-1 text-xs text-muted">{p.notes}</p>}
+                  </div>
+                  <form action={deleteCustomerProperty.bind(null, id, p.id, `/kunden/${id}?tab=objekte`)}>
+                    <button
+                      type="submit"
+                      className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Entfernen
+                    </button>
+                  </form>
+                </div>
+              ))}
+              <CustomerPropertyForm action={addCustomerProperty.bind(null, id, `/kunden/${id}?tab=objekte`)} />
+            </div>
+          )}
+
           {activeTab === "auftraege" && (
             <div className="space-y-4">
               {orders.length === 0 && (
@@ -494,7 +540,7 @@ export default async function KundeDetailPage({
                             </p>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <form action={deleteCustomerDocument.bind(null, id, d.id, d.storage_path)}>
+                            <form action={deleteCustomerDocument.bind(null, id, d.id, d.storage_path, `/kunden/${id}?tab=dokumente`)}>
                               <button
                                 type="submit"
                                 className="ml-auto flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
@@ -510,7 +556,7 @@ export default async function KundeDetailPage({
                   </table>
                 </div>
               )}
-              <CustomerDocumentForm action={uploadCustomerDocument.bind(null, id)} />
+              <CustomerDocumentForm action={uploadCustomerDocument.bind(null, id, `/kunden/${id}?tab=dokumente`)} />
             </div>
           )}
 
@@ -522,7 +568,7 @@ export default async function KundeDetailPage({
                   Interne Notizen
                 </h2>
                 <div className="mt-3">
-                  <CustomerNoteForm action={addCustomerNote.bind(null, id)} />
+                  <CustomerNoteForm action={addCustomerNote.bind(null, id, `/kunden/${id}?tab=notizen`)} />
                 </div>
                 <div className="mt-4 space-y-3">
                   {notes.length === 0 && <p className="text-sm text-muted">Noch keine Notizen.</p>}

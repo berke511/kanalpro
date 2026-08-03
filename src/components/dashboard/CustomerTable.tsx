@@ -88,13 +88,25 @@ export function CustomerTable({
   sortHrefs,
   currentSort,
   currentDir,
+  panelBaseQuery,
 }: {
   customers: CustomerRow[];
   sortHrefs: Record<string, string>;
   currentSort: string;
   currentDir: "asc" | "desc";
+  panelBaseQuery: string;
 }) {
   const router = useRouter();
+
+  // Öffnet das rechte Detailpanel für den angeklickten Kunden, statt auf die
+  // volle Profilseite zu navigieren – alle übrigen Filter/Sortier-/Seiten-
+  // Parameter der aktuellen Ansicht bleiben dabei erhalten.
+  function panelHref(customerId: string) {
+    const params = new URLSearchParams(panelBaseQuery);
+    params.delete("panelTab");
+    params.set("panel", customerId);
+    return `/kunden?${params.toString()}`;
+  }
   const [, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   // Optimistische Überschreibungen für den Favoriten-Stern: nur Einträge,
@@ -254,7 +266,7 @@ export function CustomerTable({
                         {isCompany ? <Building2 className="h-4 w-4" /> : initials(customer.name)}
                       </span>
                       <div className="min-w-0">
-                        <Link href={`/kunden/${customer.id}`} className="font-medium text-foreground hover:text-brand">
+                        <Link href={panelHref(customer.id)} className="font-medium text-foreground hover:text-brand">
                           {customer.name}
                         </Link>
                         <p className="truncate text-xs text-muted">{secondLine}</p>

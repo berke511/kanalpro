@@ -6,9 +6,9 @@ import { InvoiceForm } from "@/components/dashboard/InvoiceForm";
 export default async function NeuesRechnungPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; customer_id?: string; kind?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, customer_id: customerId, kind } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: orders }, { data: customers }] = await Promise.all([
@@ -31,6 +31,10 @@ export default async function NeuesRechnungPage({
         <InvoiceForm
           action={createInvoice}
           submitLabel="Anlegen"
+          defaultValues={{
+            kind: kind === "angebot" || kind === "rechnung" ? kind : undefined,
+            customer_id: customerId ?? undefined,
+          }}
           orders={(orders ?? []).map((o) => ({
             id: o.id,
             label: o.customers?.name ? `${o.title} (${o.customers.name})` : o.title,
