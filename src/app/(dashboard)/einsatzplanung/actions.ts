@@ -41,7 +41,7 @@ export async function scheduleOrder(formData: FormData) {
     .update({
       scheduled_date: scheduledDateRaw,
       assigned_to: assignedToRaw.length ? assignedToRaw : null,
-      status: "eingeplant",
+      status: "geplant",
     })
     .eq("id", id);
 

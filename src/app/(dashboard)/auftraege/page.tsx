@@ -19,7 +19,7 @@ export default async function AuftraegePage({
 
   let query = supabase
     .from("orders")
-    .select("id, title, status, scheduled_date, customers(name), profiles(full_name)")
+    .select("id, title, status, scheduled_date, customers(name), profiles!orders_assigned_to_fkey(full_name)")
     .order("created_at", { ascending: false });
 
   if (status && status in STATUS_LABELS) {

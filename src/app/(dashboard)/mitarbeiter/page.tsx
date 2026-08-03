@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { INVITABLE_ROLES, ROLE_LABELS } from "@/lib/roles";
 import {
   createInvite,
   revokeInvite,
@@ -8,12 +9,6 @@ import {
   removeEmployee,
   getInviteUrl,
 } from "./actions";
-
-const ROLE_LABELS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  mitarbeiter: "Mitarbeiter",
-};
 
 export default async function MitarbeiterPage({
   searchParams,
@@ -87,11 +82,14 @@ export default async function MitarbeiterPage({
               <select
                 id="role"
                 name="role"
-                defaultValue="mitarbeiter"
+                defaultValue="techniker"
                 className="mt-1 rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand"
               >
-                <option value="mitarbeiter">Mitarbeiter</option>
-                <option value="admin">Admin</option>
+                {INVITABLE_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_LABELS[role]}
+                  </option>
+                ))}
               </select>
             </div>
             <button
@@ -160,8 +158,11 @@ export default async function MitarbeiterPage({
                             defaultValue={employee.role}
                             className="rounded-lg border border-border px-2 py-1 text-xs outline-none focus:border-brand"
                           >
-                            <option value="mitarbeiter">Mitarbeiter</option>
-                            <option value="admin">Admin</option>
+                            {INVITABLE_ROLES.map((role) => (
+                              <option key={role} value={role}>
+                                {ROLE_LABELS[role]}
+                              </option>
+                            ))}
                           </select>
                           <button type="submit" className="text-xs font-medium text-brand">
                             Speichern

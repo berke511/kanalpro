@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { INVITABLE_ROLES } from "@/lib/roles";
 
 async function requireAdminContext() {
   const supabase = await createClient();
@@ -31,8 +32,8 @@ async function requireAdminContext() {
 
 export async function createInvite(formData: FormData) {
   const { supabase, profile } = await requireAdminContext();
-  const roleRaw = String(formData.get("role") ?? "mitarbeiter");
-  const role = roleRaw === "admin" ? "admin" : "mitarbeiter";
+  const roleRaw = String(formData.get("role") ?? "techniker");
+  const role = (INVITABLE_ROLES as readonly string[]).includes(roleRaw) ? roleRaw : "techniker";
 
   const { error } = await supabase.from("company_invites").insert({
     company_id: profile.company_id,
@@ -57,8 +58,8 @@ export async function revokeInvite(id: string) {
 
 export async function updateEmployeeRole(id: string, formData: FormData) {
   const { supabase } = await requireAdminContext();
-  const roleRaw = String(formData.get("role") ?? "mitarbeiter");
-  const role = roleRaw === "owner" || roleRaw === "admin" ? roleRaw : "mitarbeiter";
+  const roleRaw = String(formData.get("role") ?? "techniker");
+  const role = (INVITABLE_ROLES as readonly string[]).includes(roleRaw) ? roleRaw : "techniker";
 
   const { error } = await supabase.from("profiles").update({ role }).eq("id", id);
 

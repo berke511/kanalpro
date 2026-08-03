@@ -901,42 +901,416 @@ export type Database = {
           },
         ]
       }
-      orders: {
+      order_assignments: {
         Row: {
-          assigned_to: string | null
+          assigned_at: string
+          assigned_by: string | null
+          company_id: string
+          employee_id: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          company_id: string
+          employee_id: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          company_id?: string
+          employee_id?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
           company_id: string
           created_at: string
-          customer_id: string | null
-          description: string | null
           id: string
-          scheduled_date: string | null
-          status: string
-          title: string
+          order_id: string | null
+          order_label: string | null
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          order_label?: string | null
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          order_label?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_audit_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_documents: {
+        Row: {
+          category: string
+          company_id: string
+          content_type: string | null
+          created_at: string
+          file_name: string
+          id: string
+          order_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          company_id: string
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          id?: string
+          order_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          id?: string
+          order_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_documents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_materials: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          material_id: string
+          order_id: string
+          quantity: number
           updated_at: string
         }
         Insert: {
-          assigned_to?: string | null
           company_id: string
           created_at?: string
-          customer_id?: string | null
-          description?: string | null
           id?: string
-          scheduled_date?: string | null
-          status?: string
-          title: string
+          material_id: string
+          order_id: string
+          quantity?: number
           updated_at?: string
         }
         Update: {
-          assigned_to?: string | null
           company_id?: string
           created_at?: string
+          id?: string
+          material_id?: string
+          order_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_materials_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_number_counters: {
+        Row: {
+          company_id: string
+          next_number: number
+        }
+        Insert: {
+          company_id: string
+          next_number?: number
+        }
+        Update: {
+          company_id?: string
+          next_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_number_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_resources: {
+        Row: {
+          assigned_at: string
+          company_id: string
+          fleet_item_id: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          company_id: string
+          fleet_item_id: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          assigned_at?: string
+          company_id?: string
+          fleet_item_id?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_resources_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_resources_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_resources_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          access_info: string | null
+          all_day: boolean
+          arrival_info: string | null
+          assigned_to: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          description: string | null
+          dispatcher_id: string | null
+          documentation_completed_at: string | null
+          id: string
+          internal_notes: string | null
+          is_archived: boolean
+          is_favorite: boolean
+          is_recurring: boolean
+          onsite_contact: string | null
+          order_kind: string
+          order_number: string | null
+          order_value: number | null
+          planned_duration_minutes: number | null
+          priority: string
+          property_id: string | null
+          recurrence_rule: string | null
+          resources_assigned_at: string | null
+          safety_notes: string | null
+          scheduled_date: string | null
+          service_type: string | null
+          start_time: string | null
+          started_at: string | null
+          status: string
+          time_window_end: string | null
+          time_window_start: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          access_info?: string | null
+          all_day?: boolean
+          arrival_info?: string | null
+          assigned_to?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
           customer_id?: string | null
           description?: string | null
+          dispatcher_id?: string | null
+          documentation_completed_at?: string | null
           id?: string
+          internal_notes?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_recurring?: boolean
+          onsite_contact?: string | null
+          order_kind?: string
+          order_number?: string | null
+          order_value?: number | null
+          planned_duration_minutes?: number | null
+          priority?: string
+          property_id?: string | null
+          recurrence_rule?: string | null
+          resources_assigned_at?: string | null
+          safety_notes?: string | null
           scheduled_date?: string | null
+          service_type?: string | null
+          start_time?: string | null
+          started_at?: string | null
           status?: string
+          time_window_end?: string | null
+          time_window_start?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          access_info?: string | null
+          all_day?: boolean
+          arrival_info?: string | null
+          assigned_to?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          description?: string | null
+          dispatcher_id?: string | null
+          documentation_completed_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          is_archived?: boolean
+          is_favorite?: boolean
+          is_recurring?: boolean
+          onsite_contact?: string | null
+          order_kind?: string
+          order_number?: string | null
+          order_value?: number | null
+          planned_duration_minutes?: number | null
+          priority?: string
+          property_id?: string | null
+          recurrence_rule?: string | null
+          resources_assigned_at?: string | null
+          safety_notes?: string | null
+          scheduled_date?: string | null
+          service_type?: string | null
+          start_time?: string | null
+          started_at?: string | null
+          status?: string
+          time_window_end?: string | null
+          time_window_start?: string | null
           title?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -954,10 +1328,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_dispatcher_id_fkey"
+            columns: ["dispatcher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "customer_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1088,12 +1490,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_edit_order: { Args: { p_order_id: string }; Returns: boolean }
+      can_view_order: { Args: { p_order_id: string }; Returns: boolean }
       current_company_id: { Args: never; Returns: string }
+      current_user_role: { Args: never; Returns: string }
       is_conversation_member: {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
+      next_order_number: { Args: { p_company_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

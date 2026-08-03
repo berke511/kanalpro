@@ -59,7 +59,7 @@ export default async function EinsatzplanungPage({
 
   const { data: scheduledOrders, error: scheduledError } = await supabase
     .from("orders")
-    .select("id, title, status, scheduled_date, assigned_to, customers(name), profiles(full_name)")
+    .select("id, title, status, scheduled_date, assigned_to, customers(name), profiles!orders_assigned_to_fkey(full_name)")
     .gte("scheduled_date", rangeStart)
     .lte("scheduled_date", rangeEnd)
     .order("scheduled_date", { ascending: true });
