@@ -91,6 +91,25 @@ export const ORDER_KIND_LABELS: Record<string, string> = {
   sonstige: "Sonstige",
 };
 
+// Farbcodierung nach Auftragsart – für die Einsatzplanung (Kalenderkarten:
+// linker Rand + Punkt) und überall sonst, wo Aufträge nach Art statt nach
+// Status eingefärbt werden sollen. Bewusst als eigenes Mapping getrennt von
+// ORDER_STATUS_BADGE_CLASS/ORDER_PRIORITY_BADGE_CLASS.
+export const ORDER_KIND_COLOR: Record<string, { dot: string; border: string; bg: string; text: string }> = {
+  rohrreinigung: { dot: "bg-emerald-500", border: "border-l-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700" },
+  kanalreinigung: { dot: "bg-green-500", border: "border-l-green-500", bg: "bg-green-50", text: "text-green-700" },
+  tv_inspektion: { dot: "bg-purple-500", border: "border-l-purple-500", bg: "bg-purple-50", text: "text-purple-700" },
+  dichtheitspruefung: { dot: "bg-blue-500", border: "border-l-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+  fraesarbeiten: { dot: "bg-amber-500", border: "border-l-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
+  ortung: { dot: "bg-cyan-500", border: "border-l-cyan-500", bg: "bg-cyan-50", text: "text-cyan-700" },
+  notdienst: { dot: "bg-red-500", border: "border-l-red-500", bg: "bg-red-50", text: "text-red-700" },
+  sanierung: { dot: "bg-pink-500", border: "border-l-pink-500", bg: "bg-pink-50", text: "text-pink-700" },
+  schachtreinigung: { dot: "bg-teal-500", border: "border-l-teal-500", bg: "bg-teal-50", text: "text-teal-700" },
+  sinkkastenreinigung: { dot: "bg-lime-500", border: "border-l-lime-500", bg: "bg-lime-50", text: "text-lime-700" },
+  pumpwerk: { dot: "bg-orange-500", border: "border-l-orange-500", bg: "bg-orange-50", text: "text-orange-700" },
+  sonstige: { dot: "bg-gray-400", border: "border-l-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
+};
+
 // Anzeige-Labels für die Aktionen im Auftrags-Audit-Log (order_audit_log.action,
 // siehe Migration 0019_orders_foundation.sql) – gemeinsam genutzt vom
 // Aktivitäten-Tab und der "Letzte Aktivität"-Anzeige im Detailpanel.

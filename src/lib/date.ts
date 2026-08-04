@@ -96,6 +96,22 @@ export function yesterdayBerlinISO(): string {
 }
 
 /**
+ * Aktuelle Uhrzeit in Europe/Berlin als Minuten seit Mitternacht (0–1439) –
+ * für die "Jetzt"-Linie im Einsatzplanungs-Kalender.
+ */
+export function nowBerlinMinutes(): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  return hour * 60 + minute;
+}
+
+/**
  * Start (inklusiv) und Ende (exklusiv) eines Kalendermonats in
  * Europe/Berlin als `YYYY-MM-DD`, für KPI-Vormonatsvergleiche.
  * `offsetMonths = 0` ist der aktuelle Monat, `-1` der Vormonat.
