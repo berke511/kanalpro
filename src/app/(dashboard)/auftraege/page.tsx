@@ -557,6 +557,8 @@ export default async function AuftraegePage({
       is_archived: o.is_archived,
       scheduled_date: o.scheduled_date,
       start_time: o.start_time,
+      customerId: o.customer_id,
+      propertyId: o.property_id,
       customerName: customer ? customer.company_name || customer.name : null,
       customerSecondLine: customer
         ? (o.customer_id ? primaryContactByCustomer[o.customer_id] : null) ?? CUSTOMER_KIND_LABELS[customer.kind] ?? null

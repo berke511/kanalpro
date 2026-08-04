@@ -54,6 +54,8 @@ export type OrderRow = {
   is_archived: boolean;
   scheduled_date: string | null;
   start_time: string | null;
+  customerId: string | null;
+  propertyId: string | null;
   customerName: string | null;
   customerSecondLine: string | null;
   propertyName: string | null;
@@ -703,7 +705,14 @@ export function OrderTable({
                   )}
                 </td>
                 <td className={`hidden px-4 ${rowPad} sm:table-cell`}>
-                  {order.customerName ? (
+                  {order.customerName && order.customerId ? (
+                    <Link href={`/kunden?panel=${order.customerId}`} className="block hover:text-brand">
+                      <p className="truncate font-medium text-foreground hover:text-brand">{order.customerName}</p>
+                      {order.customerSecondLine && (
+                        <p className="truncate text-xs text-muted">{order.customerSecondLine}</p>
+                      )}
+                    </Link>
+                  ) : order.customerName ? (
                     <>
                       <p className="truncate font-medium text-foreground">{order.customerName}</p>
                       {order.customerSecondLine && (
@@ -715,7 +724,12 @@ export function OrderTable({
                   )}
                 </td>
                 <td className={`hidden px-4 ${rowPad} text-muted lg:table-cell`}>
-                  {order.propertyName || order.propertyStreet ? (
+                  {(order.propertyName || order.propertyStreet) && order.customerId ? (
+                    <Link href={`/kunden?panel=${order.customerId}&panelTab=objekte`} className="block hover:text-brand">
+                      <p className="truncate">{order.propertyName || order.propertyStreet}</p>
+                      {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
+                    </Link>
+                  ) : order.propertyName || order.propertyStreet ? (
                     <>
                       <p className="truncate">{order.propertyName || order.propertyStreet}</p>
                       {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
@@ -758,17 +772,17 @@ export function OrderTable({
                 </td>
                 <td className={`hidden px-4 ${rowPad} xl:table-cell`}>
                   {order.vehicles.length > 0 ? (
-                    <div className="flex items-center gap-1.5">
+                    <Link href={`/fahrzeuge/${order.vehicles[0].id}`} className="flex items-center gap-1.5 hover:text-brand">
                       <Truck className="h-3.5 w-3.5 shrink-0 text-muted" />
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-medium text-foreground">
+                        <p className="truncate text-xs font-medium text-foreground hover:text-brand">
                           {order.vehicles[0].licensePlate || order.vehicles[0].name}
                         </p>
                         {order.vehicles.length > 1 && (
                           <p className="text-[11px] text-muted">+{order.vehicles.length - 1} weitere</p>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   ) : (
                     <span className="text-muted">—</span>
                   )}
