@@ -78,14 +78,20 @@ export function EinsatzplanungGrid({
   const nowTop = ((nowMinutes - HOUR_START * 60) / ((HOUR_END - HOUR_START) * 60)) * GRID_HEIGHT;
   const showNowLine = nowMinutes >= HOUR_START * 60 && nowMinutes <= HOUR_END * 60;
 
+  // Bewusst KEIN horizontales Scrollen: alle Tagesspalten sind fluid
+  // (flex-1 mit min-w-0) statt mit einer festen Mindestbreite, damit die
+  // gesamte Woche immer auf einen Blick sichtbar ist – auch auf schmalen
+  // Smartphone-Bildschirmen – statt sie erst zur Seite schieben zu müssen.
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex min-w-[720px]">
+    <div className="rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex">
         {/* Stundenraster links */}
-        <div className="w-14 shrink-0 border-r border-border pt-9">
+        <div className="w-9 shrink-0 border-r border-border pt-9 sm:w-14">
           {hours.map((h) => (
             <div key={h} style={{ height: HOUR_PX }} className="relative">
-              <span className="absolute -top-2 right-2 text-[11px] font-medium text-muted">{String(h).padStart(2, "0")}:00</span>
+              <span className="absolute -top-2 right-1 text-[9px] font-medium text-muted sm:right-2 sm:text-[11px]">
+                {String(h).padStart(2, "0")}:00
+              </span>
             </div>
           ))}
         </div>
@@ -99,11 +105,13 @@ export function EinsatzplanungGrid({
           const [, , day] = iso.split("-");
 
           return (
-            <div key={iso} className={`min-w-[140px] flex-1 border-r border-border last:border-r-0 ${isToday ? "bg-brand-soft/10" : ""}`}>
-              <div className={`sticky top-0 z-[1] border-b px-2 py-2 text-center ${isToday ? "border-brand/20 bg-brand-soft/30" : "border-border bg-card"}`}>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{weekdayLabels[dayIdx % weekdayLabels.length]}</p>
+            <div key={iso} className={`min-w-0 flex-1 border-r border-border last:border-r-0 ${isToday ? "bg-brand-soft/10" : ""}`}>
+              <div className={`sticky top-0 z-[1] border-b px-0.5 py-2 text-center sm:px-2 ${isToday ? "border-brand/20 bg-brand-soft/30" : "border-border bg-card"}`}>
+                <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-muted sm:text-[11px]">
+                  {weekdayLabels[dayIdx % weekdayLabels.length]}
+                </p>
                 <p
-                  className={`mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`mx-auto mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold sm:h-6 sm:w-6 sm:text-xs ${
                     isToday ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-foreground"
                   }`}
                 >
