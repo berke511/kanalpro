@@ -340,41 +340,59 @@ export default async function EinsatzplanungPage({
   return (
     <div className="p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Einsatzplanung & Disposition</h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-            <CalendarDays className="h-4 w-4" />
-            {headerLabel}
-          </p>
+        <div className="flex items-center gap-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
+            <CalendarDays className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Einsatzplanung & Disposition</h1>
+            <p className="mt-0.5 text-sm text-muted">{headerLabel}</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 text-sm font-medium">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 text-sm font-medium shadow-sm">
             {(["tag", "woche", "monat"] as const).map((v) => (
               <Link
                 key={v}
                 href={buildQuery({ view: v, offset: 0 })}
-                className={`rounded-md px-3 py-1.5 capitalize ${
-                  view === v ? "bg-brand text-white" : "text-muted hover:bg-background hover:text-foreground"
+                className={`rounded-lg px-3 py-1.5 capitalize transition-all duration-150 ${
+                  view === v
+                    ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm"
+                    : "text-muted hover:bg-background hover:text-foreground"
                 }`}
               >
                 {v}
               </Link>
             ))}
           </div>
-          <Link href={buildQuery({ offset: offset - 1 })} className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-brand-soft">
-            ← Zurück
-          </Link>
-          <Link href={buildQuery({ offset: 0 })} className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-brand-soft">
-            Heute
-          </Link>
-          <Link href={buildQuery({ offset: offset + 1 })} className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-brand-soft">
-            Weiter →
-          </Link>
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+            <Link
+              href={buildQuery({ offset: offset - 1 })}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+            >
+              ←
+            </Link>
+            <Link
+              href={buildQuery({ offset: 0 })}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-brand-soft hover:text-brand"
+            >
+              Heute
+            </Link>
+            <Link
+              href={buildQuery({ offset: offset + 1 })}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+            >
+              →
+            </Link>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Filter className="h-4 w-4 text-muted" />
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm">
+        <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
+          <Filter className="h-3.5 w-3.5" />
+          Filter
+        </span>
         <EinsatzplanungFilterBar
           baseQuery={baseQuery}
           employees={employeeSelectOptions}
@@ -397,15 +415,17 @@ export default async function EinsatzplanungPage({
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         <div className="w-full shrink-0 lg:w-72">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-foreground">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               Nicht eingeplante Aufträge
-              <span className="ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark px-1.5 text-xs font-semibold text-white shadow-sm">
                 {unscheduledOrders?.length ?? 0}
               </span>
             </h2>
             <div className="mt-3 space-y-2">
               {(!unscheduledOrders || unscheduledOrders.length === 0) && (
-                <p className="text-xs text-muted">Alle offenen Aufträge sind eingeplant.</p>
+                <p className="rounded-lg border border-dashed border-border py-6 text-center text-xs text-muted">
+                  Alle offenen Aufträge sind eingeplant.
+                </p>
               )}
               {(unscheduledOrders ?? []).map((order) => (
                 <UnscheduledOrderCard
@@ -426,7 +446,7 @@ export default async function EinsatzplanungPage({
           </div>
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div key={`${view}-${offset}`} className="min-w-0 flex-1 animate-fade-in">
           {view === "monat" ? (
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase text-muted">
@@ -447,11 +467,17 @@ export default async function EinsatzplanungPage({
                     <Link
                       key={iso}
                       href={buildQuery({ view: "tag", offset: dayOffset })}
-                      className={`flex min-h-[84px] flex-col rounded-lg border p-1.5 text-left ${
-                        isToday ? "border-brand bg-brand-soft/20" : "border-border hover:bg-background"
+                      className={`flex min-h-[84px] flex-col rounded-lg border p-1.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md ${
+                        isToday ? "border-brand/40 bg-brand-soft/30 ring-1 ring-brand/20" : "border-border hover:border-brand/30 hover:bg-background"
                       }`}
                     >
-                      <span className={`text-xs font-medium ${isToday ? "text-brand" : "text-foreground"}`}>{Number(day)}</span>
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium ${
+                          isToday ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-foreground"
+                        }`}
+                      >
+                        {Number(day)}
+                      </span>
                       <div className="mt-1 flex flex-wrap gap-0.5">
                         {dayOrders.slice(0, 6).map((o) => (
                           <span key={o.id} className={`h-1.5 w-1.5 rounded-full ${ORDER_KIND_COLOR[o.order_kind]?.dot ?? "bg-gray-400"}`} />
@@ -478,18 +504,24 @@ export default async function EinsatzplanungPage({
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               {vehicleUtilization.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <Truck className="h-4 w-4" /> Fahrzeugauslastung
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                      <Truck className="h-3.5 w-3.5" />
+                    </span>
+                    Fahrzeugauslastung
                   </h3>
                   <div className="mt-3 space-y-2.5">
                     {vehicleUtilization.map((v) => (
                       <div key={v.id}>
                         <div className="flex items-center justify-between text-xs">
                           <span className="truncate text-foreground">{v.name}</span>
-                          <span className="text-muted">{v.percent}%</span>
+                          <span className="font-medium text-muted">{v.percent}%</span>
                         </div>
                         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-background">
-                          <div className="h-full rounded-full bg-brand" style={{ width: `${v.percent}%` }} />
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-brand to-brand-dark transition-all"
+                            style={{ width: `${v.percent}%` }}
+                          />
                         </div>
                       </div>
                     ))}
@@ -498,18 +530,24 @@ export default async function EinsatzplanungPage({
               )}
               {employeeUtilization.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <User className="h-4 w-4" /> Mitarbeiterauslastung
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                      <User className="h-3.5 w-3.5" />
+                    </span>
+                    Mitarbeiterauslastung
                   </h3>
                   <div className="mt-3 space-y-2.5">
                     {employeeUtilization.map((e) => (
                       <div key={e.id}>
                         <div className="flex items-center justify-between text-xs">
                           <span className="truncate text-foreground">{e.name}</span>
-                          <span className="text-muted">{e.percent}%</span>
+                          <span className="font-medium text-muted">{e.percent}%</span>
                         </div>
                         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-background">
-                          <div className="h-full rounded-full bg-brand" style={{ width: `${e.percent}%` }} />
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-brand to-brand-dark transition-all"
+                            style={{ width: `${e.percent}%` }}
+                          />
                         </div>
                       </div>
                     ))}

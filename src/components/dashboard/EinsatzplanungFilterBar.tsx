@@ -31,7 +31,7 @@ export function EinsatzplanungFilterBar({
   }
 
   const selectClass =
-    "rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground outline-none focus:border-brand";
+    "rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground outline-none transition-colors hover:border-brand/40 focus:border-brand focus:ring-2 focus:ring-brand/10";
 
   return (
     <div className="flex flex-wrap items-center gap-2">

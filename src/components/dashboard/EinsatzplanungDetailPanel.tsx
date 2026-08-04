@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
-import { Loader2, Mail, MapPin, Phone, Truck, User, X } from "lucide-react";
+import { Loader2, Mail, MapPin, Phone, Truck, X } from "lucide-react";
 import {
   ORDER_KIND_LABELS,
   ORDER_PRIORITY_BADGE_CLASS,
@@ -50,58 +50,64 @@ export function EinsatzplanungDetailPanel({ data }: { data: EinsatzplanungPanelD
 
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/20 lg:hidden" onClick={() => router.push(data.closeHref)} />
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:shadow-none">
+      <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] lg:hidden" onClick={() => router.push(data.closeHref)} />
+      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-sm animate-slide-in-right overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:animate-none lg:shadow-none">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Auftragsdetails</h2>
-          <Link href={data.closeHref} className="rounded-md p-1 text-muted hover:bg-background hover:text-foreground">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Auftragsdetails</h2>
+          <Link href={data.closeHref} className="rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-foreground">
             <X className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${ORDER_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
             {STATUS_LABELS[data.status] ?? data.status}
           </span>
           {data.priority !== "standard" && (
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_PRIORITY_BADGE_CLASS[data.priority] ?? ""}`}>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${ORDER_PRIORITY_BADGE_CLASS[data.priority] ?? ""}`}>
               {ORDER_PRIORITY_LABELS[data.priority] ?? data.priority}
             </span>
           )}
         </div>
 
-        <h3 className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+        <h3 className="mt-3 text-lg font-semibold tracking-tight text-foreground">
           {data.order_number ? `${data.order_number} · ` : ""}
           {data.title || ORDER_KIND_LABELS[data.order_kind] || data.order_kind}
         </h3>
         <p className="text-sm text-muted">{data.customerName ?? "Kein Kunde hinterlegt"}</p>
 
-        <div className="mt-5 space-y-4 text-sm">
+        <div className="mt-5 space-y-3 text-sm">
           {data.addressLine && (
-            <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-              <p className="text-foreground">{data.addressLine}</p>
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-muted">
+                <MapPin className="h-4 w-4" />
+              </span>
+              <p className="mt-1.5 text-foreground">{data.addressLine}</p>
             </div>
           )}
           {data.customerPhone && (
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 shrink-0 text-muted" />
-              <a href={`tel:${data.customerPhone}`} className="text-foreground hover:text-brand">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-muted">
+                <Phone className="h-4 w-4" />
+              </span>
+              <a href={`tel:${data.customerPhone}`} className="text-foreground transition-colors hover:text-brand">
                 {data.customerPhone}
               </a>
             </div>
           )}
           {data.customerEmail && (
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 shrink-0 text-muted" />
-              <a href={`mailto:${data.customerEmail}`} className="truncate text-foreground hover:text-brand">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-muted">
+                <Mail className="h-4 w-4" />
+              </span>
+              <a href={`mailto:${data.customerEmail}`} className="truncate text-foreground transition-colors hover:text-brand">
                 {data.customerEmail}
               </a>
             </div>
           )}
-          <div>
+          <div className="rounded-xl bg-background p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted">Termin</p>
-            <p className="mt-1 text-foreground">
+            <p className="mt-1 font-medium text-foreground">
               {data.scheduled_date ? formatDate(data.scheduled_date) : "Noch nicht terminiert"}
               {data.start_time ? ` · ${data.start_time.slice(0, 5)} Uhr` : ""}
               {data.planned_duration_minutes ? ` (${(data.planned_duration_minutes / 60).toFixed(1).replace(/\.0$/, "")}h)` : ""}
@@ -111,20 +117,24 @@ export function EinsatzplanungDetailPanel({ data }: { data: EinsatzplanungPanelD
 
         <div className="mt-5 border-t border-border pt-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">Zugewiesen</p>
-          <div className="mt-2 space-y-2 text-sm">
+          <div className="mt-2.5 space-y-2 text-sm">
             {data.employees.length === 0 && data.vehicles.length === 0 && data.machines.length === 0 && (
               <p className="text-muted">Noch keine Ressourcen zugewiesen</p>
             )}
             {data.employees.map((e) => (
-              <div key={e.id} className="flex items-center gap-2">
-                <User className="h-4 w-4 shrink-0 text-muted" />
-                <span className="text-foreground">{e.name}</span>
+              <div key={e.id} className="flex items-center gap-2.5 rounded-lg bg-background px-2.5 py-1.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-[10px] font-semibold text-white">
+                  {e.name.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="truncate text-foreground">{e.name}</span>
               </div>
             ))}
             {[...data.vehicles, ...data.machines].map((v) => (
-              <div key={v.id} className="flex items-center gap-2">
-                <Truck className="h-4 w-4 shrink-0 text-muted" />
-                <span className="text-foreground">{v.name}</span>
+              <div key={v.id} className="flex items-center gap-2.5 rounded-lg bg-background px-2.5 py-1.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+                  <Truck className="h-3.5 w-3.5" />
+                </span>
+                <span className="truncate text-foreground">{v.name}</span>
               </div>
             ))}
           </div>
@@ -134,7 +144,7 @@ export function EinsatzplanungDetailPanel({ data }: { data: EinsatzplanungPanelD
           <p className="text-xs font-medium uppercase tracking-wide text-muted">Aktionen</p>
           <Link
             href={`/auftraege/${data.id}`}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-3 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-brand to-brand-dark px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md"
           >
             Bearbeiten
           </Link>
@@ -143,7 +153,7 @@ export function EinsatzplanungDetailPanel({ data }: { data: EinsatzplanungPanelD
               type="button"
               disabled={pending !== null}
               onClick={() => runStatusChange("in_bearbeitung", "start")}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-foreground hover:bg-background disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-brand/30 hover:bg-brand-soft disabled:opacity-60"
             >
               {pending === "start" && <Loader2 className="h-4 w-4 animate-spin" />}
               In Arbeit setzen
@@ -156,7 +166,7 @@ export function EinsatzplanungDetailPanel({ data }: { data: EinsatzplanungPanelD
               onClick={() => {
                 if (window.confirm("Diesen Auftrag wirklich absagen?")) runStatusChange("storniert", "cancel");
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
             >
               {pending === "cancel" && <Loader2 className="h-4 w-4 animate-spin" />}
               Absagen

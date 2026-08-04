@@ -85,7 +85,7 @@ export function EinsatzplanungGrid({
         <div className="w-14 shrink-0 border-r border-border pt-9">
           {hours.map((h) => (
             <div key={h} style={{ height: HOUR_PX }} className="relative">
-              <span className="absolute -top-2 right-2 text-[11px] text-muted">{String(h).padStart(2, "0")}:00</span>
+              <span className="absolute -top-2 right-2 text-[11px] font-medium text-muted">{String(h).padStart(2, "0")}:00</span>
             </div>
           ))}
         </div>
@@ -96,14 +96,18 @@ export function EinsatzplanungGrid({
           const timedOrders = dayOrders.filter((o) => !o.all_day);
           const packed = packColumns(timedOrders);
           const isToday = iso === todayISO;
-          const [, month, day] = iso.split("-");
+          const [, , day] = iso.split("-");
 
           return (
-            <div key={iso} className={`min-w-[140px] flex-1 border-r border-border last:border-r-0 ${isToday ? "bg-brand-soft/20" : ""}`}>
-              <div className="sticky top-0 z-[1] border-b border-border bg-card px-2 py-2 text-center">
-                <p className="text-[11px] font-semibold uppercase text-muted">{weekdayLabels[dayIdx % weekdayLabels.length]}</p>
-                <p className={`text-xs font-medium ${isToday ? "text-brand" : "text-foreground"}`}>
-                  {day}.{month}.
+            <div key={iso} className={`min-w-[140px] flex-1 border-r border-border last:border-r-0 ${isToday ? "bg-brand-soft/10" : ""}`}>
+              <div className={`sticky top-0 z-[1] border-b px-2 py-2 text-center ${isToday ? "border-brand/20 bg-brand-soft/30" : "border-border bg-card"}`}>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{weekdayLabels[dayIdx % weekdayLabels.length]}</p>
+                <p
+                  className={`mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                    isToday ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-foreground"
+                  }`}
+                >
+                  {day}
                 </p>
               </div>
 
@@ -115,7 +119,7 @@ export function EinsatzplanungGrid({
                       <Link
                         key={o.id}
                         href={panelHref(o.id)}
-                        className={`block truncate rounded border-l-2 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] font-medium ${colors.text}`}
+                        className={`block truncate rounded-md border-l-2 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:shadow ${colors.text}`}
                       >
                         {o.title}
                       </Link>
@@ -131,8 +135,11 @@ export function EinsatzplanungGrid({
 
                 {isToday && showNowLine && (
                   <div className="absolute left-0 right-0 z-[2] flex items-center" style={{ top: nowTop }}>
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                    <span className="h-px flex-1 bg-red-500" />
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50" />
+                    </span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-red-500 to-red-500/30" />
                   </div>
                 )}
 
@@ -151,7 +158,7 @@ export function EinsatzplanungGrid({
                       key={order.id}
                       href={panelHref(order.id)}
                       title={`${order.title} · ${order.customerName ?? ""}`}
-                      className={`absolute overflow-hidden rounded-md border-l-4 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] shadow-sm hover:shadow-md`}
+                      className={`absolute overflow-hidden rounded-lg border-l-4 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] shadow-sm transition-all duration-150 hover:z-10 hover:-translate-y-0.5 hover:shadow-lg`}
                       style={{
                         top,
                         height,
@@ -172,10 +179,10 @@ export function EinsatzplanungGrid({
           );
         })}
       </div>
-      <div className="flex flex-wrap gap-3 border-t border-border px-3 py-2">
+      <div className="flex flex-wrap gap-1.5 border-t border-border bg-background/60 px-3 py-2.5">
         {Object.entries(ORDER_KIND_LABELS).map(([key, label]) => (
-          <span key={key} className="flex items-center gap-1 text-[11px] text-muted">
-            <span className={`h-2 w-2 rounded-full ${ORDER_KIND_COLOR[key]?.dot ?? "bg-gray-400"}`} />
+          <span key={key} className="flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted">
+            <span className={`h-1.5 w-1.5 rounded-full ${ORDER_KIND_COLOR[key]?.dot ?? "bg-gray-400"}`} />
             {label}
           </span>
         ))}
