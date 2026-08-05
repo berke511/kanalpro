@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { hasFullAccess } from "@/lib/roles";
-import { syncExpiryReminders } from "@/lib/notifications";
+import { syncExpiryReminders, syncFleetReminders } from "@/lib/notifications";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import type { NotificationItem } from "@/components/dashboard/NotificationBell";
@@ -34,6 +34,7 @@ export default async function DashboardLayout({
   // dank reminder_sent_at in der Regel ein No-Op.
   if (hasFullAccess(profile.role)) {
     await syncExpiryReminders(supabase, profile.company_id);
+    await syncFleetReminders(supabase, profile.company_id);
   }
 
   const { data: notificationRows } = await supabase

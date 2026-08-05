@@ -882,39 +882,251 @@ export type Database = {
           },
         ]
       }
+      fleet_cost_entries: {
+        Row: {
+          amount: number
+          category: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          fleet_item_id: string
+          id: string
+          note: string | null
+          occurred_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          fleet_item_id: string
+          id?: string
+          note?: string | null
+          occurred_at: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          fleet_item_id?: string
+          id?: string
+          note?: string | null
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_cost_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_cost_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_cost_entries_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_documents: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          file_name: string
+          fleet_item_id: string
+          id: string
+          reminder_sent_at: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          file_name: string
+          fleet_item_id: string
+          id?: string
+          reminder_sent_at?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          file_name?: string
+          fleet_item_id?: string
+          id?: string
+          reminder_sent_at?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_documents_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_items: {
         Row: {
           company_id: string
           created_at: string
+          default_crew_size: number | null
+          default_equipment: string | null
+          fuel_type: string | null
           id: string
+          insurance_due_date: string | null
+          insurance_reminder_sent_at: string | null
+          inventory_number: string | null
+          is_archived: boolean
           kind: string
+          last_maintenance_at: string | null
+          leasing_end_date: string | null
+          leasing_reminder_sent_at: string | null
           license_plate: string | null
+          linked_vehicle_id: string | null
+          location: string | null
+          maintenance_reminder_sent_at: string | null
+          manufacturer: string | null
+          max_crew_size: number | null
+          model: string | null
           name: string
+          next_maintenance_at: string | null
+          next_maintenance_note: string | null
           notes: string | null
+          odometer_interval_km: number | null
+          odometer_km: number | null
+          operating_hours: number | null
+          operating_hours_interval: number | null
+          ownership: string | null
+          photo_path: string | null
+          service_area: string | null
           status: string
+          tuv_due_date: string | null
+          tuv_reminder_sent_at: string | null
           updated_at: string
+          uvv_due_date: string | null
+          uvv_reminder_sent_at: string | null
+          year_built: number | null
         }
         Insert: {
           company_id: string
           created_at?: string
+          default_crew_size?: number | null
+          default_equipment?: string | null
+          fuel_type?: string | null
           id?: string
+          insurance_due_date?: string | null
+          insurance_reminder_sent_at?: string | null
+          inventory_number?: string | null
+          is_archived?: boolean
           kind?: string
+          last_maintenance_at?: string | null
+          leasing_end_date?: string | null
+          leasing_reminder_sent_at?: string | null
           license_plate?: string | null
+          linked_vehicle_id?: string | null
+          location?: string | null
+          maintenance_reminder_sent_at?: string | null
+          manufacturer?: string | null
+          max_crew_size?: number | null
+          model?: string | null
           name: string
+          next_maintenance_at?: string | null
+          next_maintenance_note?: string | null
           notes?: string | null
+          odometer_interval_km?: number | null
+          odometer_km?: number | null
+          operating_hours?: number | null
+          operating_hours_interval?: number | null
+          ownership?: string | null
+          photo_path?: string | null
+          service_area?: string | null
           status?: string
+          tuv_due_date?: string | null
+          tuv_reminder_sent_at?: string | null
           updated_at?: string
+          uvv_due_date?: string | null
+          uvv_reminder_sent_at?: string | null
+          year_built?: number | null
         }
         Update: {
           company_id?: string
           created_at?: string
+          default_crew_size?: number | null
+          default_equipment?: string | null
+          fuel_type?: string | null
           id?: string
+          insurance_due_date?: string | null
+          insurance_reminder_sent_at?: string | null
+          inventory_number?: string | null
+          is_archived?: boolean
           kind?: string
+          last_maintenance_at?: string | null
+          leasing_end_date?: string | null
+          leasing_reminder_sent_at?: string | null
           license_plate?: string | null
+          linked_vehicle_id?: string | null
+          location?: string | null
+          maintenance_reminder_sent_at?: string | null
+          manufacturer?: string | null
+          max_crew_size?: number | null
+          model?: string | null
           name?: string
+          next_maintenance_at?: string | null
+          next_maintenance_note?: string | null
           notes?: string | null
+          odometer_interval_km?: number | null
+          odometer_km?: number | null
+          operating_hours?: number | null
+          operating_hours_interval?: number | null
+          ownership?: string | null
+          photo_path?: string | null
+          service_area?: string | null
           status?: string
+          tuv_due_date?: string | null
+          tuv_reminder_sent_at?: string | null
           updated_at?: string
+          uvv_due_date?: string | null
+          uvv_reminder_sent_at?: string | null
+          year_built?: number | null
         }
         Relationships: [
           {
@@ -922,6 +1134,80 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_items_linked_vehicle_id_fkey"
+            columns: ["linked_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_maintenance_records: {
+        Row: {
+          company_id: string
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fleet_item_id: string
+          id: string
+          odometer_km: number | null
+          operating_hours: number | null
+          performed_at: string
+          performed_by: string | null
+          record_type: string
+        }
+        Insert: {
+          company_id: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fleet_item_id: string
+          id?: string
+          odometer_km?: number | null
+          operating_hours?: number | null
+          performed_at: string
+          performed_by?: string | null
+          record_type: string
+        }
+        Update: {
+          company_id?: string
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fleet_item_id?: string
+          id?: string
+          odometer_km?: number | null
+          operating_hours?: number | null
+          performed_at?: string
+          performed_by?: string | null
+          record_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_maintenance_records_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_maintenance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleet_maintenance_records_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1869,6 +2155,7 @@ export type Database = {
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
       next_order_number: { Args: { p_company_id: string }; Returns: string }
       sync_expiry_reminders: { Args: { p_company_id: string }; Returns: number }
+      sync_fleet_reminders: { Args: { p_company_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never

@@ -1,135 +1,602 @@
 import Link from "next/link";
+import { AlertTriangle, Ban, CheckCircle2, Layers, Truck, Wrench } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { FLEET_KIND_LABELS, FLEET_STATUS_LABELS } from "@/lib/fleet";
+import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { canManageResourcesAndSchedule } from "@/lib/roles";
+import {
+  FLEET_KIND_LABELS,
+  FLEET_KINDS,
+  FLEET_STATUS_LABELS,
+  FLEET_STATUSES,
+  isDueSoon,
+  isOverdue,
+  maintenanceProgress,
+} from "@/lib/fleet";
+import { formatEuro } from "@/lib/format";
+import { monthRangeBerlin, todayBerlinISO } from "@/lib/date";
+import { FleetCard, type FleetCardData } from "@/components/dashboard/FleetCard";
+import { FleetFilterPanel } from "@/components/dashboard/FleetFilterPanel";
+import { FleetTable, type FleetRow } from "@/components/dashboard/FleetTable";
+import { FleetDetailPanel, type FleetDetailPanelData, type PanelTabKey } from "@/components/dashboard/FleetDetailPanel";
+import {
+  addCostEntry,
+  addMaintenanceRecord,
+  archiveFleetItem,
+  assignFleetEmployee,
+  deleteFleetDocument,
+  deleteFleetItem,
+  removeCostEntry,
+  removeFleetPhoto,
+  removeMaintenanceRecord,
+  unassignFleetEmployee,
+  updateFleetProfile,
+  updateFleetStatus,
+  uploadFleetDocument,
+  uploadFleetPhoto,
+} from "./actions";
 
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  verfuegbar: "bg-green-50 text-green-700",
-  im_einsatz: "bg-blue-50 text-blue-700",
-  wartung: "bg-amber-50 text-amber-700",
-  defekt: "bg-red-50 text-red-700",
+const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "technik", "wartung", "dokumente", "kosten"];
+
+type RawSearchParams = {
+  q?: string;
+  view?: string;
+  kind?: string | string[];
+  status?: string | string[];
+  manufacturer?: string;
+  location?: string;
+  employee?: string;
+  ownership?: string | string[];
+  fuelType?: string | string[];
+  maintenanceDue?: string;
+  tuvDue?: string;
+  uvvDue?: string;
+  archived?: string;
+  panel?: string;
+  panelTab?: string;
+  error?: string;
+  message?: string;
 };
 
-export default async function FahrzeugePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ kind?: string }>;
-}) {
-  const { kind } = await searchParams;
+function toArray(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+export default async function FahrzeugePage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  let query = supabase
-    .from("fleet_items")
-    .select("id, kind, name, license_plate, status")
-    .order("name", { ascending: true });
+  if (!user) return null;
 
-  if (kind && kind in FLEET_KIND_LABELS) {
-    query = query.eq("kind", kind);
+  const currentProfile = await getOrCreateProfile(supabase, user);
+  const role = currentProfile?.role ?? null;
+  const isAdmin = canManageResourcesAndSchedule(role);
+  const today = todayBerlinISO();
+
+  const q = (raw.q ?? "").trim().toLowerCase();
+  const view = raw.view === "grid" ? "grid" : "list";
+  const kindFilter = toArray(raw.kind).filter((k) => (FLEET_KINDS as readonly string[]).includes(k));
+  const statusFilter = toArray(raw.status).filter((s) => (FLEET_STATUSES as readonly string[]).includes(s));
+  const ownershipFilter = toArray(raw.ownership);
+  const fuelTypeFilter = toArray(raw.fuelType);
+  const manufacturerFilter = (raw.manufacturer ?? "").trim();
+  const locationFilter = (raw.location ?? "").trim();
+  const employeeFilter = (raw.employee ?? "").trim();
+  const maintenanceDueFilter = raw.maintenanceDue === "1";
+  const tuvDueFilter = raw.tuvDue === "1";
+  const uvvDueFilter = raw.uvvDue === "1";
+  const showArchived = raw.archived === "1";
+
+  const [{ data: allItemsRaw }, { data: employeesRaw }] = await Promise.all([
+    supabase.from("fleet_items").select("*").order("name", { ascending: true }),
+    supabase.from("profiles").select("id, full_name, main_vehicle_id, is_archived").order("full_name", { ascending: true }),
+  ]);
+
+  const allItems = allItemsRaw ?? [];
+  const employees = employeesRaw ?? [];
+  const activeEmployees = employees.filter((e) => !e.is_archived);
+
+  // "Zugewiesener Mitarbeiter" wird einzig aus profiles.main_vehicle_id
+  // abgeleitet (siehe Migrationskommentar) – hier einmalig zu einer Map
+  // gruppiert, damit jede Fahrzeugkarte/-zeile ohne Zusatzabfrage sofort
+  // weiß, wer aktuell zugewiesen ist.
+  const employeeNamesByFleetId: Record<string, string[]> = {};
+  for (const e of employees) {
+    if (e.main_vehicle_id) {
+      (employeeNamesByFleetId[e.main_vehicle_id] ??= []).push(e.full_name ?? "Unbenannt");
+    }
   }
 
-  const { data: items, error } = await query;
+  const fleetIds = allItems.map((i) => i.id);
+  const { data: resourceRows } = fleetIds.length
+    ? await supabase
+        .from("order_resources")
+        .select("fleet_item_id, orders!inner(id, title, status, scheduled_date, start_time, customer_id)")
+        .in("fleet_item_id", fleetIds)
+        .eq("orders.scheduled_date", today)
+    : { data: [] as Array<{ fleet_item_id: string; orders: { id: string; title: string; status: string; scheduled_date: string; start_time: string | null; customer_id: string | null } | null }> };
+
+  const customerIds = Array.from(new Set((resourceRows ?? []).map((r) => r.orders?.customer_id).filter((v): v is string => Boolean(v))));
+  const { data: customerRows } = customerIds.length
+    ? await supabase.from("customers").select("id, name, company_name").in("id", customerIds)
+    : { data: [] as Array<{ id: string; name: string; company_name: string | null }> };
+  const customerNameById = Object.fromEntries((customerRows ?? []).map((c) => [c.id, c.company_name || c.name]));
+
+  const currentOrderByFleetId: Record<string, { id: string; title: string; customerName: string | null; startTime: string | null }> = {};
+  for (const r of resourceRows ?? []) {
+    if (r.orders && !currentOrderByFleetId[r.fleet_item_id]) {
+      currentOrderByFleetId[r.fleet_item_id] = {
+        id: r.orders.id,
+        title: r.orders.title,
+        customerName: r.orders.customer_id ? customerNameById[r.orders.customer_id] ?? null : null,
+        startTime: r.orders.start_time,
+      };
+    }
+  }
+
+  // Signierte Fotos in einem Rutsch laden (Bucket ist privat).
+  const photoPaths = allItems.map((i) => i.photo_path).filter((p): p is string => Boolean(p));
+  let photoUrlByPath: Record<string, string> = {};
+  if (photoPaths.length > 0) {
+    const { data: signed } = await supabase.storage.from("fleet-photos").createSignedUrls(photoPaths, 60 * 10);
+    photoUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
+  }
+
+  // KPI-Kacheln: bewusst ungefiltert (stabile Unternehmensübersicht), aber
+  // ohne archivierte Einträge.
+  const activeItems = allItems.filter((i) => !i.is_archived);
+  const kpis = [
+    { key: "gesamt", label: "Gesamt", icon: Layers, value: activeItems.length },
+    { key: "verfuegbar", label: "Verfügbar", icon: CheckCircle2, value: activeItems.filter((i) => i.status === "verfuegbar").length },
+    { key: "im_einsatz", label: "Im Einsatz", icon: Truck, value: activeItems.filter((i) => i.status === "im_einsatz").length },
+    { key: "wartung", label: "In Wartung", icon: Wrench, value: activeItems.filter((i) => i.status === "wartung" || i.status === "werkstatt").length },
+    { key: "defekt", label: "Defekt", icon: Ban, value: activeItems.filter((i) => i.status === "defekt").length },
+    {
+      key: "tuev",
+      label: "TÜV fällig",
+      icon: AlertTriangle,
+      value: activeItems.filter((i) => isDueSoon(i.tuv_due_date) || isOverdue(i.tuv_due_date)).length,
+    },
+  ];
+
+  // Flottenweite Statistiken (Gesamtauslastung, Einsatztage, Kosten,
+  // Betriebsstunden, Verfügbarkeitsquote) – bewusst als kompakte,
+  // unternehmensweite Kennzahlen unterhalb der KPI-Kacheln, unabhängig von
+  // den aktuell gesetzten Filtern.
+  const currentMonth = monthRangeBerlin(0);
+  const [{ data: allMaintenanceRecords }, { data: allCostEntries }, { data: monthOrderResources }] = await Promise.all([
+    fleetIds.length
+      ? supabase.from("fleet_maintenance_records").select("record_type, cost").in("fleet_item_id", fleetIds)
+      : Promise.resolve({ data: [] as Array<{ record_type: string; cost: number | null }> }),
+    fleetIds.length
+      ? supabase.from("fleet_cost_entries").select("category, amount").in("fleet_item_id", fleetIds)
+      : Promise.resolve({ data: [] as Array<{ category: string; amount: number }> }),
+    fleetIds.length
+      ? supabase
+          .from("order_resources")
+          .select("fleet_item_id, orders!inner(scheduled_date)")
+          .in("fleet_item_id", fleetIds)
+          .gte("orders.scheduled_date", currentMonth.start)
+          .lt("orders.scheduled_date", currentMonth.end)
+      : Promise.resolve({ data: [] as Array<{ fleet_item_id: string; orders: { scheduled_date: string } | null }> }),
+  ]);
+
+  const fleetStats = {
+    verfuegbarkeitsquote: activeItems.length ? Math.round((activeItems.filter((i) => i.status === "verfuegbar").length / activeItems.length) * 100) : 0,
+    gesamtauslastung: activeItems.length ? Math.round((activeItems.filter((i) => i.status === "im_einsatz").length / activeItems.length) * 100) : 0,
+    einsatztageMonat: new Set((monthOrderResources ?? []).map((r) => `${r.fleet_item_id}-${r.orders?.scheduled_date}`)).size,
+    wartungskosten: (allMaintenanceRecords ?? []).filter((r) => r.record_type === "wartung").reduce((sum, r) => sum + Number(r.cost ?? 0), 0),
+    reparaturkosten: (allMaintenanceRecords ?? []).filter((r) => r.record_type === "reparatur").reduce((sum, r) => sum + Number(r.cost ?? 0), 0),
+    kraftstoffkosten: (allCostEntries ?? []).filter((c) => c.category === "kraftstoff").reduce((sum, c) => sum + Number(c.amount ?? 0), 0),
+    betriebsstundenGesamt: activeItems.reduce((sum, i) => sum + Number(i.operating_hours ?? 0), 0),
+    kilometerstandGesamt: activeItems.reduce((sum, i) => sum + Number(i.odometer_km ?? 0), 0),
+  };
+
+  const manufacturerOptions = Array.from(new Set(allItems.map((i) => i.manufacturer).filter((v): v is string => Boolean(v)))).sort();
+  const locationOptions = Array.from(new Set(allItems.map((i) => i.location).filter((v): v is string => Boolean(v)))).sort();
+
+  // Filterung im Speicher – der Fuhrpark eines KMU ist überschaubar groß.
+  let visibleItems = showArchived ? allItems : allItems.filter((i) => !i.is_archived);
+  if (q) {
+    visibleItems = visibleItems.filter(
+      (i) =>
+        i.name.toLowerCase().includes(q) ||
+        (i.license_plate ?? "").toLowerCase().includes(q) ||
+        (i.inventory_number ?? "").toLowerCase().includes(q) ||
+        (i.manufacturer ?? "").toLowerCase().includes(q) ||
+        (i.model ?? "").toLowerCase().includes(q),
+    );
+  }
+  if (kindFilter.length) visibleItems = visibleItems.filter((i) => kindFilter.includes(i.kind));
+  if (statusFilter.length) visibleItems = visibleItems.filter((i) => statusFilter.includes(i.status));
+  if (ownershipFilter.length) visibleItems = visibleItems.filter((i) => i.ownership && ownershipFilter.includes(i.ownership));
+  if (fuelTypeFilter.length) visibleItems = visibleItems.filter((i) => i.fuel_type && fuelTypeFilter.includes(i.fuel_type));
+  if (manufacturerFilter) visibleItems = visibleItems.filter((i) => i.manufacturer === manufacturerFilter);
+  if (locationFilter) visibleItems = visibleItems.filter((i) => i.location === locationFilter);
+  if (employeeFilter) visibleItems = visibleItems.filter((i) => (employeeNamesByFleetId[i.id] ?? []).length > 0 && employees.some((e) => e.id === employeeFilter && e.main_vehicle_id === i.id));
+  if (maintenanceDueFilter) visibleItems = visibleItems.filter((i) => isDueSoon(i.next_maintenance_at) || isOverdue(i.next_maintenance_at));
+  if (tuvDueFilter) visibleItems = visibleItems.filter((i) => isDueSoon(i.tuv_due_date) || isOverdue(i.tuv_due_date));
+  if (uvvDueFilter) visibleItems = visibleItems.filter((i) => isDueSoon(i.uvv_due_date) || isOverdue(i.uvv_due_date));
+
+  const fleetRows: FleetRow[] = visibleItems.map((i) => ({
+    id: i.id,
+    kind: i.kind,
+    name: i.name,
+    licensePlate: i.license_plate,
+    status: i.status,
+    photoUrl: i.photo_path ? photoUrlByPath[i.photo_path] ?? null : null,
+    inventoryNumber: i.inventory_number,
+    manufacturer: i.manufacturer,
+    model: i.model,
+    yearBuilt: i.year_built,
+    location: i.location,
+    assignedEmployeeNames: employeeNamesByFleetId[i.id] ?? [],
+    currentOrderTitle: currentOrderByFleetId[i.id]?.title ?? null,
+    odometerKm: i.odometer_km,
+    operatingHours: i.operating_hours,
+    lastMaintenanceAt: i.last_maintenance_at,
+    nextMaintenanceAt: i.next_maintenance_at,
+    tuvDueDate: i.tuv_due_date,
+    uvvDueDate: i.uvv_due_date,
+    maintenanceProgress: maintenanceProgress(i.last_maintenance_at, i.next_maintenance_at),
+    isArchived: i.is_archived,
+  }));
+
+  const fleetCards: FleetCardData[] = visibleItems.map((i) => ({
+    id: i.id,
+    kind: i.kind,
+    name: i.name,
+    licensePlate: i.license_plate,
+    status: i.status,
+    photoUrl: i.photo_path ? photoUrlByPath[i.photo_path] ?? null : null,
+    manufacturer: i.manufacturer,
+    model: i.model,
+    location: i.location,
+    assignedEmployeeNames: employeeNamesByFleetId[i.id] ?? [],
+    currentOrderTitle: currentOrderByFleetId[i.id]?.title ?? null,
+    nextMaintenanceAt: i.next_maintenance_at,
+    tuvDueDate: i.tuv_due_date,
+    maintenanceProgress: maintenanceProgress(i.last_maintenance_at, i.next_maintenance_at),
+    isArchived: i.is_archived,
+  }));
+
+  // URL-Hilfsfunktionen fürs Detailpanel/Filter (gleiches Muster wie
+  // /mitarbeiter und /kunden).
+  const baseParams = new URLSearchParams();
+  if (q) baseParams.set("q", q);
+  if (view !== "list") baseParams.set("view", view);
+  kindFilter.forEach((k) => baseParams.append("kind", k));
+  statusFilter.forEach((s) => baseParams.append("status", s));
+  ownershipFilter.forEach((o) => baseParams.append("ownership", o));
+  fuelTypeFilter.forEach((f) => baseParams.append("fuelType", f));
+  if (manufacturerFilter) baseParams.set("manufacturer", manufacturerFilter);
+  if (locationFilter) baseParams.set("location", locationFilter);
+  if (employeeFilter) baseParams.set("employee", employeeFilter);
+  if (maintenanceDueFilter) baseParams.set("maintenanceDue", "1");
+  if (tuvDueFilter) baseParams.set("tuvDue", "1");
+  if (uvvDueFilter) baseParams.set("uvvDue", "1");
+  if (showArchived) baseParams.set("archived", "1");
+  const baseQuery = baseParams.toString();
+
+  function panelHref(id: string, tab: PanelTabKey = "uebersicht") {
+    const params = new URLSearchParams(baseQuery);
+    params.set("panel", id);
+    if (tab !== "uebersicht") params.set("panelTab", tab);
+    else params.delete("panelTab");
+    return `/fahrzeuge?${params.toString()}`;
+  }
+  function panelCloseHref() {
+    const params = new URLSearchParams(baseQuery);
+    params.delete("panel");
+    params.delete("panelTab");
+    const qs = params.toString();
+    return qs ? `/fahrzeuge?${qs}` : "/fahrzeuge";
+  }
+  function viewHref(nextView: string) {
+    const params = new URLSearchParams(baseQuery);
+    if (nextView === "list") params.delete("view");
+    else params.set("view", nextView);
+    const qs = params.toString();
+    return qs ? `/fahrzeuge?${qs}` : "/fahrzeuge";
+  }
+
+  const activeCount =
+    kindFilter.length +
+    statusFilter.length +
+    ownershipFilter.length +
+    fuelTypeFilter.length +
+    (manufacturerFilter ? 1 : 0) +
+    (locationFilter ? 1 : 0) +
+    (employeeFilter ? 1 : 0) +
+    (maintenanceDueFilter ? 1 : 0) +
+    (tuvDueFilter ? 1 : 0) +
+    (uvvDueFilter ? 1 : 0) +
+    (showArchived ? 1 : 0);
+
+  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
+  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
+  let panelData: FleetDetailPanelData | null = null;
+
+  if (panelId) {
+    const { data: panelItem } = await supabase.from("fleet_items").select("*").eq("id", panelId).maybeSingle();
+
+    if (panelItem) {
+      const returnTo = panelHref(panelId, panelTab);
+
+      const [{ data: maintenanceRecords }, { data: costEntries }, { data: documents }, { data: linkedVehicleRow }] = await Promise.all([
+        supabase
+          .from("fleet_maintenance_records")
+          .select("id, record_type, performed_at, description, cost, performed_by, odometer_km, operating_hours")
+          .eq("fleet_item_id", panelId)
+          .order("performed_at", { ascending: false }),
+        supabase
+          .from("fleet_cost_entries")
+          .select("id, category, amount, occurred_at, note")
+          .eq("fleet_item_id", panelId)
+          .order("occurred_at", { ascending: false }),
+        supabase
+          .from("fleet_documents")
+          .select("id, category, file_name, storage_path, size_bytes, expires_at, created_at")
+          .eq("fleet_item_id", panelId)
+          .order("created_at", { ascending: false }),
+        panelItem.linked_vehicle_id
+          ? supabase.from("fleet_items").select("id, name").eq("id", panelItem.linked_vehicle_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
+      let documentUrlByPath: Record<string, string> = {};
+      const docPaths = (documents ?? []).map((d) => d.storage_path);
+      if (docPaths.length > 0) {
+        const { data: signed } = await supabase.storage.from("fleet-documents").createSignedUrls(docPaths, 60 * 10);
+        documentUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
+      }
+
+      let photoUrl: string | null = null;
+      if (panelItem.photo_path) {
+        const { data: signed } = await supabase.storage.from("fleet-photos").createSignedUrl(panelItem.photo_path, 60 * 10);
+        photoUrl = signed?.signedUrl ?? null;
+      }
+
+      const costTotals = { wartung: 0, reparatur: 0, kraftstoff: 0, versicherung: 0, leasing: 0, sonstige: 0, total: 0 };
+      for (const r of maintenanceRecords ?? []) {
+        const cost = Number(r.cost ?? 0);
+        if (r.record_type === "wartung") costTotals.wartung += cost;
+        else if (r.record_type === "reparatur") costTotals.reparatur += cost;
+        costTotals.total += cost;
+      }
+      for (const c of costEntries ?? []) {
+        const amount = Number(c.amount ?? 0);
+        if (c.category in costTotals) {
+          (costTotals as unknown as Record<string, number>)[c.category] += amount;
+        }
+        costTotals.total += amount;
+      }
+
+      const assignedEmployees = employees
+        .filter((e) => e.main_vehicle_id === panelId)
+        .map((e) => ({
+          id: e.id,
+          fullName: e.full_name,
+          unassignAction: unassignFleetEmployee.bind(null, panelId, e.id, returnTo),
+        }));
+
+      panelData = {
+        id: panelItem.id,
+        kind: panelItem.kind,
+        name: panelItem.name,
+        licensePlate: panelItem.license_plate,
+        status: panelItem.status,
+        notes: panelItem.notes,
+        photoUrl,
+        inventoryNumber: panelItem.inventory_number,
+        manufacturer: panelItem.manufacturer,
+        model: panelItem.model,
+        yearBuilt: panelItem.year_built,
+        location: panelItem.location,
+        serviceArea: panelItem.service_area,
+        ownership: panelItem.ownership,
+        fuelType: panelItem.fuel_type,
+        odometerKm: panelItem.odometer_km,
+        operatingHours: panelItem.operating_hours,
+        odometerIntervalKm: panelItem.odometer_interval_km,
+        operatingHoursInterval: panelItem.operating_hours_interval,
+        lastMaintenanceAt: panelItem.last_maintenance_at,
+        nextMaintenanceAt: panelItem.next_maintenance_at,
+        nextMaintenanceNote: panelItem.next_maintenance_note,
+        tuvDueDate: panelItem.tuv_due_date,
+        uvvDueDate: panelItem.uvv_due_date,
+        insuranceDueDate: panelItem.insurance_due_date,
+        leasingEndDate: panelItem.leasing_end_date,
+        defaultCrewSize: panelItem.default_crew_size,
+        maxCrewSize: panelItem.max_crew_size,
+        defaultEquipment: panelItem.default_equipment,
+        linkedVehicle: linkedVehicleRow ? { id: linkedVehicleRow.id, name: linkedVehicleRow.name } : null,
+        linkedVehicleOptions: allItems.filter((i) => i.id !== panelId).map((i) => ({ id: i.id, label: i.license_plate ? `${i.license_plate} · ${i.name}` : i.name })),
+        maintenanceProgress: maintenanceProgress(panelItem.last_maintenance_at, panelItem.next_maintenance_at),
+        isArchived: panelItem.is_archived,
+        assignedEmployees,
+        employeeOptions: activeEmployees.filter((e) => e.main_vehicle_id !== panelId).map((e) => ({ id: e.id, label: e.full_name ?? "Unbenannt" })),
+        currentOrder: currentOrderByFleetId[panelId] ?? null,
+        maintenanceRecords: (maintenanceRecords ?? []).map((r) => ({
+          ...r,
+          removeAction: removeMaintenanceRecord.bind(null, r.id, returnTo),
+        })),
+        costEntries: (costEntries ?? []).map((c) => ({
+          ...c,
+          removeAction: removeCostEntry.bind(null, c.id, returnTo),
+        })),
+        costTotals,
+        documents: (documents ?? []).map((d) => ({
+          id: d.id,
+          category: d.category,
+          file_name: d.file_name,
+          size_bytes: d.size_bytes,
+          expires_at: d.expires_at,
+          created_at: d.created_at,
+          url: documentUrlByPath[d.storage_path] ?? null,
+          deleteAction: deleteFleetDocument.bind(null, d.id, d.storage_path, returnTo),
+        })),
+        canManage: isAdmin,
+        activeTab: panelTab,
+        hrefs: {
+          close: panelCloseHref(),
+          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
+        },
+        updateStatusAction: updateFleetStatus.bind(null, panelId, returnTo),
+        updateProfileAction: updateFleetProfile.bind(null, panelId, returnTo),
+        assignEmployeeAction: assignFleetEmployee.bind(null, panelId, returnTo),
+        uploadPhotoAction: uploadFleetPhoto.bind(null, panelId, returnTo),
+        removePhotoAction: removeFleetPhoto.bind(null, panelId, returnTo),
+        addMaintenanceAction: addMaintenanceRecord.bind(null, panelId, returnTo),
+        addCostAction: addCostEntry.bind(null, panelId, returnTo),
+        uploadDocumentAction: uploadFleetDocument.bind(null, panelId, returnTo),
+        archiveAction: archiveFleetItem.bind(null, panelId, !panelItem.is_archived),
+        deleteAction: deleteFleetItem.bind(null, panelId),
+      };
+    }
+  }
 
   return (
     <div className="p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Fahrzeug- & Maschinenverwaltung</h1>
-          <p className="mt-1 text-sm text-muted">
-            {items?.length ?? 0} Eintrag{items?.length === 1 ? "" : "e"}
-          </p>
+        <div className="flex items-center gap-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
+            <Truck className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Fahrzeug- & Maschinenverwaltung</h1>
+            <p className="mt-0.5 text-sm text-muted">{activeItems.length} Einträge im Fuhrpark</p>
+          </div>
         </div>
-        <Link
-          href="/fahrzeuge/neu"
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark"
-        >
-          + Neuer Eintrag
-        </Link>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Link
-          href="/fahrzeuge"
-          className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-            !kind ? "bg-foreground text-background" : "bg-card text-muted border border-border"
-          }`}
-        >
-          Alle
-        </Link>
-        {Object.entries(FLEET_KIND_LABELS).map(([value, label]) => (
-          <Link
-            key={value}
-            href={`/fahrzeuge?kind=${value}`}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              kind === value
-                ? "bg-foreground text-background"
-                : "bg-card text-muted border border-border"
-            }`}
-          >
-            {label}
+        {isAdmin && (
+          <Link href="/fahrzeuge/neu" className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md">
+            + Neuer Eintrag
           </Link>
-        ))}
+        )}
       </div>
 
-      {error && (
-        <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          Einträge konnten nicht geladen werden: {error.message}
-        </p>
-      )}
+      {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
+      {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      {!error && (!items || items.length === 0) && (
-        <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
-          <p className="text-sm font-medium text-muted">
-            {kind ? "Keine Einträge in dieser Kategorie." : "Noch keine Fahrzeuge oder Maschinen angelegt."}
-          </p>
-          {!kind && (
-            <Link href="/fahrzeuge/neu" className="mt-3 inline-block text-sm font-medium text-brand">
-              Ersten Eintrag anlegen
-            </Link>
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                <Icon className="h-4 w-4" />
+              </span>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
+              <p className="text-xs text-muted">{kpi.label}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <details className="mt-4 rounded-2xl border border-border bg-card shadow-sm">
+        <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-foreground">Flotten-Statistiken</summary>
+        <div className="grid grid-cols-2 gap-3 border-t border-border p-5 sm:grid-cols-4">
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{fleetStats.verfuegbarkeitsquote}%</p>
+            <p className="text-xs text-muted">Verfügbarkeitsquote</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{fleetStats.gesamtauslastung}%</p>
+            <p className="text-xs text-muted">Gesamtauslastung</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{fleetStats.einsatztageMonat}</p>
+            <p className="text-xs text-muted">Einsatztage (Monat)</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{fleetStats.betriebsstundenGesamt.toLocaleString("de-DE")} Std.</p>
+            <p className="text-xs text-muted">Betriebsstunden gesamt</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{formatEuro(fleetStats.wartungskosten)}</p>
+            <p className="text-xs text-muted">Wartungskosten (erfasst)</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{formatEuro(fleetStats.reparaturkosten)}</p>
+            <p className="text-xs text-muted">Reparaturkosten (erfasst)</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{formatEuro(fleetStats.kraftstoffkosten)}</p>
+            <p className="text-xs text-muted">Kraftstoffkosten (erfasst)</p>
+          </div>
+          <div className="rounded-xl bg-background p-3">
+            <p className="text-lg font-semibold text-foreground">{fleetStats.kilometerstandGesamt.toLocaleString("de-DE")} km</p>
+            <p className="text-xs text-muted">Kilometerstand gesamt</p>
+          </div>
+        </div>
+      </details>
+
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <form method="GET" action="/fahrzeuge" className="relative min-w-[220px] flex-1">
+          {view !== "list" && <input type="hidden" name="view" value={view} />}
+          <input
+            type="search"
+            name="q"
+            defaultValue={raw.q ?? ""}
+            placeholder="Fahrzeuge & Maschinen suchen…"
+            className="w-full rounded-lg border border-border bg-card py-2.5 pl-3 pr-3 text-base outline-none focus:border-brand sm:text-sm"
+          />
+        </form>
+
+        <FleetFilterPanel
+          q={raw.q ?? ""}
+          view={view}
+          kinds={FLEET_KINDS}
+          kindLabels={FLEET_KIND_LABELS}
+          statuses={FLEET_STATUSES}
+          statusLabels={FLEET_STATUS_LABELS}
+          manufacturerOptions={manufacturerOptions}
+          locationOptions={locationOptions}
+          employees={activeEmployees}
+          initial={{
+            kind: kindFilter,
+            status: statusFilter,
+            manufacturer: manufacturerFilter,
+            location: locationFilter,
+            employee: employeeFilter,
+            ownership: ownershipFilter,
+            fuelType: fuelTypeFilter,
+            maintenanceDue: maintenanceDueFilter,
+            tuvDue: tuvDueFilter,
+            uvvDue: uvvDueFilter,
+            archived: showArchived,
+          }}
+          activeCount={activeCount}
+          listHref={viewHref("list")}
+          gridHref={viewHref("grid")}
+        />
+      </div>
+
+      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
+        <div className="min-w-0 flex-1">
+          {fleetRows.length === 0 ? (
+            <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Einträge gefunden.</p>
+          ) : view === "grid" ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {fleetCards.map((item) => (
+                <FleetCard key={item.id} item={item} href={panelHref(item.id)} />
+              ))}
+            </div>
+          ) : (
+            <FleetTable items={fleetRows} panelBaseQuery={baseQuery} showingArchived={showArchived} />
           )}
         </div>
-      )}
 
-      {items && items.length > 0 && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-background text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Bezeichnung</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">Typ</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Kennzeichen</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/fahrzeuge/${item.id}`}
-                      className="font-medium text-foreground hover:text-brand"
-                    >
-                      {item.name}
-                    </Link>
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted sm:table-cell">
-                    {FLEET_KIND_LABELS[item.kind] ?? item.kind}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted md:table-cell">
-                    {item.license_plate ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                        STATUS_BADGE_CLASS[item.status] ?? "bg-brand-soft text-brand"
-                      }`}
-                    >
-                      {FLEET_STATUS_LABELS[item.status] ?? item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {panelData && <FleetDetailPanel data={panelData} />}
+      </div>
+
+      {!isAdmin && (
+        <p className="mt-6 text-xs text-muted">
+          Nur Owner, Admin, Geschäftsführer oder Disponent können den Fuhrpark bearbeiten oder neue Einträge anlegen.
+        </p>
       )}
     </div>
   );

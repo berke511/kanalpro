@@ -28,3 +28,23 @@ export async function syncExpiryReminders(
     // die eigentliche Seite zum Absturz bringen.
   }
 }
+
+/**
+ * Stößt public.sync_fleet_reminders() an (SECURITY DEFINER, siehe
+ * supabase/migrations/0022_fahrzeugverwaltung.sql): erzeugt
+ * Benachrichtigungen für Fahrzeuge/Maschinen, bei denen TÜV, UVV, Wartung,
+ * Versicherung, Leasing-Ende oder ein Dokument in den nächsten 30 Tagen
+ * fällig werden. Gleiches Opportunistisch-bei-jedem-Seitenaufruf-Muster wie
+ * syncExpiryReminders() oben.
+ */
+export async function syncFleetReminders(
+  supabase: SupabaseClient<Database>,
+  companyId: string,
+): Promise<void> {
+  try {
+    await supabase.rpc("sync_fleet_reminders", { p_company_id: companyId });
+  } catch {
+    // Erinnerungen sind ein Komfortfeature – ein Fehlschlag hier darf nie
+    // die eigentliche Seite zum Absturz bringen.
+  }
+}
