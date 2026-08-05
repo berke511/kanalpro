@@ -692,6 +692,196 @@ export type Database = {
           },
         ]
       }
+      employee_documents: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          employee_id: string
+          expires_at: string | null
+          file_name: string
+          id: string
+          reminder_sent_at: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          company_id: string
+          created_at?: string
+          employee_id: string
+          expires_at?: string | null
+          file_name: string
+          id?: string
+          reminder_sent_at?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          expires_at?: string | null
+          file_name?: string
+          id?: string
+          reminder_sent_at?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_qualifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          expires_at: string | null
+          id: string
+          issued_date: string | null
+          label: string | null
+          notes: string | null
+          qualification_type: string
+          reminder_sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          expires_at?: string | null
+          id?: string
+          issued_date?: string | null
+          label?: string | null
+          notes?: string | null
+          qualification_type: string
+          reminder_sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          expires_at?: string | null
+          id?: string
+          issued_date?: string | null
+          label?: string | null
+          notes?: string | null
+          qualification_type?: string
+          reminder_sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_qualifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_qualifications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_qualifications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_vehicle_history: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          company_id: string
+          employee_id: string
+          fleet_item_id: string
+          id: string
+          unassigned_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          company_id: string
+          employee_id: string
+          fleet_item_id: string
+          id?: string
+          unassigned_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          company_id?: string
+          employee_id?: string
+          fleet_item_id?: string
+          id?: string
+          unassigned_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_vehicle_history_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vehicle_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vehicle_history_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vehicle_history_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fleet_items: {
         Row: {
           company_id: string
@@ -897,6 +1087,57 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          company_id: string
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          recipient_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1366,25 +1607,97 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
+          city: string | null
           company_id: string
           created_at: string
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string | null
+          hire_date: string | null
           id: string
+          is_archived: boolean
+          location: string | null
+          main_vehicle_id: string | null
+          notes: string | null
+          overtime_hours: number
+          personnel_number: string | null
+          phone: string | null
+          photo_path: string | null
+          postal_code: string | null
           role: string
+          sick_days_current_year: number
+          status: string
+          street: string | null
+          updated_at: string
+          vacation_days_total: number
+          vacation_days_used: number
+          weekly_hours: number | null
+          work_time_model: string
         }
         Insert: {
+          birth_date?: string | null
+          city?: string | null
           company_id: string
           created_at?: string
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
+          hire_date?: string | null
           id: string
+          is_archived?: boolean
+          location?: string | null
+          main_vehicle_id?: string | null
+          notes?: string | null
+          overtime_hours?: number
+          personnel_number?: string | null
+          phone?: string | null
+          photo_path?: string | null
+          postal_code?: string | null
           role?: string
+          sick_days_current_year?: number
+          status?: string
+          street?: string | null
+          updated_at?: string
+          vacation_days_total?: number
+          vacation_days_used?: number
+          weekly_hours?: number | null
+          work_time_model?: string
         }
         Update: {
+          birth_date?: string | null
+          city?: string | null
           company_id?: string
           created_at?: string
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
+          hire_date?: string | null
           id?: string
+          is_archived?: boolean
+          location?: string | null
+          main_vehicle_id?: string | null
+          notes?: string | null
+          overtime_hours?: number
+          personnel_number?: string | null
+          phone?: string | null
+          photo_path?: string | null
+          postal_code?: string | null
           role?: string
+          sick_days_current_year?: number
+          status?: string
+          street?: string | null
+          updated_at?: string
+          vacation_days_total?: number
+          vacation_days_used?: number
+          weekly_hours?: number | null
+          work_time_model?: string
         }
         Relationships: [
           {
@@ -1392,6 +1705,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_main_vehicle_id_fkey"
+            columns: ["main_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1461,11 +1781,35 @@ export type Database = {
       accept_company_invite: {
         Args: { p_full_name: string; p_token: string }
         Returns: {
+          birth_date: string | null
+          city: string | null
           company_id: string
           created_at: string
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string | null
+          hire_date: string | null
           id: string
+          is_archived: boolean
+          location: string | null
+          main_vehicle_id: string | null
+          notes: string | null
+          overtime_hours: number
+          personnel_number: string | null
+          phone: string | null
+          photo_path: string | null
+          postal_code: string | null
           role: string
+          sick_days_current_year: number
+          status: string
+          street: string | null
+          updated_at: string
+          vacation_days_total: number
+          vacation_days_used: number
+          weekly_hours: number | null
+          work_time_model: string
         }
         SetofOptions: {
           from: "*"
@@ -1477,11 +1821,35 @@ export type Database = {
       bootstrap_company_and_profile: {
         Args: { p_company_name: string; p_full_name: string }
         Returns: {
+          birth_date: string | null
+          city: string | null
           company_id: string
           created_at: string
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string | null
+          hire_date: string | null
           id: string
+          is_archived: boolean
+          location: string | null
+          main_vehicle_id: string | null
+          notes: string | null
+          overtime_hours: number
+          personnel_number: string | null
+          phone: string | null
+          photo_path: string | null
+          postal_code: string | null
           role: string
+          sick_days_current_year: number
+          status: string
+          street: string | null
+          updated_at: string
+          vacation_days_total: number
+          vacation_days_used: number
+          weekly_hours: number | null
+          work_time_model: string
         }
         SetofOptions: {
           from: "*"
@@ -1500,6 +1868,7 @@ export type Database = {
       }
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
       next_order_number: { Args: { p_company_id: string }; Returns: string }
+      sync_expiry_reminders: { Args: { p_company_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never

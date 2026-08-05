@@ -25,6 +25,18 @@ export async function getOrCreateProfile(
     .maybeSingle();
 
   if (existing) {
+    // E-Mail-Adresse mit auth.users synchron halten (z. B. nach einer
+    // Adressänderung) – nur bei Abweichung schreiben, damit nicht bei
+    // jedem Seitenaufruf ein unnötiges UPDATE anfällt.
+    if (existing.email !== user.email && user.email) {
+      const { data: updated } = await supabase
+        .from("profiles")
+        .update({ email: user.email })
+        .eq("id", user.id)
+        .select("*, companies(*)")
+        .maybeSingle();
+      if (updated) return updated as Profile;
+    }
     return existing as Profile;
   }
 

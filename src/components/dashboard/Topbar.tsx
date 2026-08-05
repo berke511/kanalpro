@@ -1,13 +1,16 @@
 import { LogOut } from "lucide-react";
 import { signOut } from "@/app/(auth)/actions";
 import { MobileNav } from "@/components/dashboard/MobileNav";
+import { NotificationBell, type NotificationItem } from "@/components/dashboard/NotificationBell";
 
 export function Topbar({
   companyName,
   userName,
+  notifications,
 }: {
   companyName: string;
   userName: string | null;
+  notifications: NotificationItem[];
 }) {
   const initial = (userName || companyName || "?").trim().charAt(0).toUpperCase();
 
@@ -23,15 +26,18 @@ export function Topbar({
           {userName && <p className="truncate text-xs text-muted">{userName}</p>}
         </div>
       </div>
-      <form action={signOut}>
-        <button
-          type="submit"
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Abmelden</span>
-        </button>
-      </form>
+      <div className="flex items-center gap-2">
+        <NotificationBell items={notifications} />
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Abmelden</span>
+          </button>
+        </form>
+      </div>
     </header>
   );
 }

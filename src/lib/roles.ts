@@ -60,3 +60,18 @@ export function canCreateOrdersAndLinkCommercialDocuments(role: string | null | 
 export function canDeleteOrArchiveOrders(role: string | null | undefined) {
   return hasFullAccess(role);
 }
+
+// Personaldaten (Profil, Qualifikationen, Dokumente, Fahrzeugzuweisung,
+// Arbeitszeiten) sind sensibel – nur volle Rechte-Rollen dürfen sie
+// pflegen. Disponent/Büro/Techniker sehen die Mitarbeiterverwaltung nur
+// lesend (Disponent zusätzlich mit Statuswechsel, siehe unten).
+export function canManageEmployees(role: string | null | undefined) {
+  return hasFullAccess(role);
+}
+
+// Den Arbeitsstatus (verfügbar/im Einsatz/Urlaub/krank/…) darf zusätzlich
+// der Disponent ändern, da er im Tagesgeschäft am ehesten mitbekommt, wer
+// gerade einsatzbereit ist.
+export function canChangeEmployeeStatus(role: string | null | undefined) {
+  return role === "disponent" || hasFullAccess(role);
+}
