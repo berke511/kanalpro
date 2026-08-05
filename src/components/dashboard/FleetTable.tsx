@@ -73,7 +73,7 @@ const COLUMN_DEFS: Array<{ key: ColumnKey; label: string }> = [
 
 const STORAGE_KEY = "kanalpro:fahrzeuge:columns";
 const COLUMNS_EVENT = "kanalpro:fahrzeuge:columns-changed";
-const DEFAULT_VISIBLE: ColumnKey[] = ["kind", "assigned_employee", "mileage", "next_maintenance", "tuv_uvv"];
+const DEFAULT_VISIBLE: ColumnKey[] = ["kind"];
 
 function subscribeToColumnPrefs(callback: () => void) {
   window.addEventListener(COLUMNS_EVENT, callback);
