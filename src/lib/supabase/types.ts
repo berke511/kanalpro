@@ -2352,45 +2352,388 @@ export type Database = {
           },
         ]
       }
-      service_reports: {
+      report_employees: {
         Row: {
           company_id: string
           created_at: string
-          customer_signature_name: string | null
-          hours_worked: number | null
+          employee_id: string
           id: string
-          materials_notes: string | null
-          order_id: string
-          report_date: string
-          signed_at: string | null
-          updated_at: string
-          work_performed: string
+          report_id: string
         }
         Insert: {
           company_id: string
           created_at?: string
-          customer_signature_name?: string | null
-          hours_worked?: number | null
+          employee_id: string
           id?: string
-          materials_notes?: string | null
-          order_id: string
-          report_date?: string
-          signed_at?: string | null
-          updated_at?: string
-          work_performed: string
+          report_id: string
         }
         Update: {
           company_id?: string
           created_at?: string
+          employee_id?: string
+          id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_employees_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_employees_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_history: {
+        Row: {
+          action: string
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          report_id: string | null
+          report_label: string | null
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          report_label?: string | null
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          report_label?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_history_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_history_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_machines: {
+        Row: {
+          company_id: string
+          created_at: string
+          fleet_item_id: string
+          id: string
+          report_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          fleet_item_id: string
+          id?: string
+          report_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          fleet_item_id?: string
+          id?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_machines_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_machines_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_machines_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_materials: {
+        Row: {
+          company_id: string
+          consumed_at: string | null
+          created_at: string
+          id: string
+          material_id: string
+          quantity: number
+          report_id: string
+          unit_price: number | null
+        }
+        Insert: {
+          company_id: string
+          consumed_at?: string | null
+          created_at?: string
+          id?: string
+          material_id: string
+          quantity: number
+          report_id: string
+          unit_price?: number | null
+        }
+        Update: {
+          company_id?: string
+          consumed_at?: string | null
+          created_at?: string
+          id?: string
+          material_id?: string
+          quantity?: number
+          report_id?: string
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_materials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_materials_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_number_counters: {
+        Row: {
+          company_id: string
+          next_number: number
+        }
+        Insert: {
+          company_id: string
+          next_number?: number
+        }
+        Update: {
+          company_id?: string
+          next_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_number_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_photos: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          file_name: string
+          id: string
+          report_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          report_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          report_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_photos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_photos_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_reports: {
+        Row: {
+          archived_at: string | null
+          break_minutes: number | null
+          client_submit_token: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_signature_name: string | null
+          customer_signature_path: string | null
+          customer_signature_role: string | null
+          email_sent_at: string | null
+          end_time: string | null
+          gps_lat: number | null
+          gps_lng: number | null
+          hours_worked: number | null
+          id: string
+          internal_notes: string | null
+          invoice_prepared_at: string | null
+          is_archived: boolean
+          materials_notes: string | null
+          order_id: string
+          pdf_generated_at: string | null
+          report_date: string
+          report_number: string | null
+          signed_at: string | null
+          start_time: string | null
+          status: string
+          updated_at: string
+          weather: string | null
+          work_performed: string
+          work_types: string[] | null
+        }
+        Insert: {
+          archived_at?: string | null
+          break_minutes?: number | null
+          client_submit_token?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
           customer_signature_name?: string | null
+          customer_signature_path?: string | null
+          customer_signature_role?: string | null
+          email_sent_at?: string | null
+          end_time?: string | null
+          gps_lat?: number | null
+          gps_lng?: number | null
           hours_worked?: number | null
           id?: string
+          internal_notes?: string | null
+          invoice_prepared_at?: string | null
+          is_archived?: boolean
+          materials_notes?: string | null
+          order_id: string
+          pdf_generated_at?: string | null
+          report_date?: string
+          report_number?: string | null
+          signed_at?: string | null
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+          weather?: string | null
+          work_performed: string
+          work_types?: string[] | null
+        }
+        Update: {
+          archived_at?: string | null
+          break_minutes?: number | null
+          client_submit_token?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_signature_name?: string | null
+          customer_signature_path?: string | null
+          customer_signature_role?: string | null
+          email_sent_at?: string | null
+          end_time?: string | null
+          gps_lat?: number | null
+          gps_lng?: number | null
+          hours_worked?: number | null
+          id?: string
+          internal_notes?: string | null
+          invoice_prepared_at?: string | null
+          is_archived?: boolean
           materials_notes?: string | null
           order_id?: string
+          pdf_generated_at?: string | null
           report_date?: string
+          report_number?: string | null
           signed_at?: string | null
+          start_time?: string | null
+          status?: string
           updated_at?: string
+          weather?: string | null
           work_performed?: string
+          work_types?: string[] | null
         }
         Relationships: [
           {
@@ -2398,6 +2741,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {
@@ -2505,6 +2862,7 @@ export type Database = {
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
       next_material_number: { Args: { p_company_id: string }; Returns: string }
       next_order_number: { Args: { p_company_id: string }; Returns: string }
+      next_report_number: { Args: { p_company_id: string }; Returns: string }
       sync_expiry_reminders: { Args: { p_company_id: string }; Returns: number }
       sync_fleet_reminders: { Args: { p_company_id: string }; Returns: number }
       sync_low_stock_reminders: {
