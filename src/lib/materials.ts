@@ -101,6 +101,11 @@ export const MATERIAL_DOCUMENT_CATEGORY_LABELS: Record<string, string> = {
   sonstiges: "Sonstiges",
 };
 
+// Vorgeschlagene Einheiten für den Anlage-Assistenten (Auswahl als Karten
+// statt Freitext) – "Andere" blendet dort ein Freitextfeld ein, damit
+// abweichende Einheiten weiterhin möglich bleiben.
+export const UNIT_OPTIONS = ["Stück", "Meter", "Liter", "Kg", "Rolle", "Satz"] as const;
+
 export const RESERVATION_TARGET_TYPES = ["fahrzeug", "mitarbeiter"] as const;
 export type ReservationTargetType = (typeof RESERVATION_TARGET_TYPES)[number];
 

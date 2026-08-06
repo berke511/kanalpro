@@ -414,6 +414,7 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
         supplierEmail: panelItem.supplier_email,
         purchasePrice: panelItem.purchase_price !== null ? Number(panelItem.purchase_price) : null,
         unitPrice: panelItem.unit_price !== null ? Number(panelItem.unit_price) : null,
+        taxRate: panelItem.tax_rate !== null ? Number(panelItem.tax_rate) : null,
         lastOrderedAt: panelItem.last_ordered_at,
         isArchived: panelItem.is_archived,
         movements: (movements ?? []).map((m) => ({

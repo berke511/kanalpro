@@ -1632,6 +1632,7 @@ export type Database = {
           supplier_email: string | null
           supplier_name: string | null
           supplier_phone: string | null
+          tax_rate: number | null
           unit: string
           unit_price: number | null
           updated_at: string
@@ -1658,6 +1659,7 @@ export type Database = {
           supplier_email?: string | null
           supplier_name?: string | null
           supplier_phone?: string | null
+          tax_rate?: number | null
           unit?: string
           unit_price?: number | null
           updated_at?: string
@@ -1684,6 +1686,7 @@ export type Database = {
           supplier_email?: string | null
           supplier_name?: string | null
           supplier_phone?: string | null
+          tax_rate?: number | null
           unit?: string
           unit_price?: number | null
           updated_at?: string

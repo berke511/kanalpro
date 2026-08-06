@@ -89,6 +89,7 @@ function readMaterialForm(formData: FormData) {
     supplier_email: toNullableString(formData.get("supplier_email")),
     purchase_price: toNullableNumber(formData.get("purchase_price")),
     unit_price: toNullableNumber(formData.get("unit_price")),
+    tax_rate: toNullableNumber(formData.get("tax_rate")),
     notes: toNullableString(formData.get("notes")),
   };
 }
@@ -105,7 +106,12 @@ export async function createMaterial(formData: FormData) {
 
   const initialQuantity = toNullableNumber(formData.get("quantity")) ?? 0;
 
+  // Die Materialnummer wird immer vergeben (sie dient u. a. als eindeutiger
+  // Schlüssel für Bewegungen/Reservierungen) – der QR-Code ist davon
+  // abgeleitet, kann aber über die Checkbox im Assistenten deaktiviert
+  // werden, falls ein Unternehmen keine Barcode-Etiketten nutzt.
   const { data: materialNumber } = await supabase.rpc("next_material_number", { p_company_id: companyId });
+  const generateQr = formData.get("generate_qr") !== "0";
 
   const status = computeAutoStatus(initialQuantity, fields.min_quantity, "verfuegbar");
 
@@ -116,7 +122,7 @@ export async function createMaterial(formData: FormData) {
       quantity: initialQuantity,
       company_id: companyId,
       material_number: materialNumber ?? null,
-      qr_code: materialNumber ?? null,
+      qr_code: generateQr ? materialNumber ?? null : null,
       status,
     })
     .select("id")

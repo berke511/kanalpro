@@ -96,6 +96,7 @@ export type MaterialDetailPanelData = {
   supplierEmail: string | null;
   purchasePrice: number | null;
   unitPrice: number | null;
+  taxRate: number | null;
   lastOrderedAt: string | null;
   isArchived: boolean;
   movements: Array<{
@@ -461,7 +462,7 @@ export function MaterialDetailPanel({ data }: { data: MaterialDetailPanelData })
                         <input type="email" name="supplier_email" defaultValue={data.supplierEmail ?? ""} className={`mt-1 ${inputClass}`} />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <div>
                         <label className={labelClass}>Einkaufspreis (€)</label>
                         <input type="number" step="0.01" min="0" name="purchase_price" defaultValue={data.purchasePrice ?? ""} className={`mt-1 ${inputClass}`} />
@@ -469,6 +470,10 @@ export function MaterialDetailPanel({ data }: { data: MaterialDetailPanelData })
                       <div>
                         <label className={labelClass}>Verkaufspreis (€)</label>
                         <input type="number" step="0.01" min="0" name="unit_price" defaultValue={data.unitPrice ?? ""} className={`mt-1 ${inputClass}`} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>MwSt. (%)</label>
+                        <input type="number" step="0.01" min="0" name="tax_rate" defaultValue={data.taxRate ?? ""} className={`mt-1 ${inputClass}`} />
                       </div>
                     </div>
                     <div>
