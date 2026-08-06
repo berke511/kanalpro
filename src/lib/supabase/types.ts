@@ -1330,39 +1330,360 @@ export type Database = {
           },
         ]
       }
-      materials: {
+      material_documents: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          file_name: string
+          id: string
+          material_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          material_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          material_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_documents_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_locations: {
         Row: {
           company_id: string
           created_at: string
           id: string
-          min_quantity: number | null
           name: string
           notes: string | null
-          quantity: number
-          unit: string
-          unit_price: number | null
-          updated_at: string
         }
         Insert: {
           company_id: string
           created_at?: string
           id?: string
-          min_quantity?: number | null
           name: string
           notes?: string | null
-          quantity?: number
-          unit?: string
-          unit_price?: number | null
-          updated_at?: string
         }
         Update: {
           company_id?: string
           created_at?: string
           id?: string
+          name?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_locations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_movements: {
+        Row: {
+          company_id: string
+          created_at: string
+          from_location_id: string | null
+          id: string
+          material_id: string
+          movement_type: string
+          order_id: string | null
+          performed_by: string | null
+          quantity: number
+          reason: string | null
+          to_location_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          from_location_id?: string | null
+          id?: string
+          material_id: string
+          movement_type: string
+          order_id?: string | null
+          performed_by?: string | null
+          quantity: number
+          reason?: string | null
+          to_location_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          from_location_id?: string | null
+          id?: string
+          material_id?: string
+          movement_type?: string
+          order_id?: string | null
+          performed_by?: string | null
+          quantity?: number
+          reason?: string | null
+          to_location_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "material_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "material_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_number_counters: {
+        Row: {
+          company_id: string
+          next_number: number
+        }
+        Insert: {
+          company_id: string
+          next_number?: number
+        }
+        Update: {
+          company_id?: string
+          next_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_number_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_reservations: {
+        Row: {
+          company_id: string
+          employee_id: string | null
+          fleet_item_id: string | null
+          id: string
+          material_id: string
+          note: string | null
+          quantity: number
+          released_at: string | null
+          reserved_at: string
+          reserved_by: string | null
+          status: string
+          target_type: string
+        }
+        Insert: {
+          company_id: string
+          employee_id?: string | null
+          fleet_item_id?: string | null
+          id?: string
+          material_id: string
+          note?: string | null
+          quantity: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_by?: string | null
+          status?: string
+          target_type: string
+        }
+        Update: {
+          company_id?: string
+          employee_id?: string | null
+          fleet_item_id?: string | null
+          id?: string
+          material_id?: string
+          note?: string | null
+          quantity?: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_by?: string | null
+          status?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_reservations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_reservations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_reservations_fleet_item_id_fkey"
+            columns: ["fleet_item_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_reservations_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_reservations_reserved_by_fkey"
+            columns: ["reserved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materials: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          id: string
+          is_archived: boolean
+          last_ordered_at: string | null
+          location_id: string | null
+          low_stock_reminder_sent_at: string | null
+          material_number: string | null
+          min_quantity: number | null
+          name: string
+          notes: string | null
+          photo_path: string | null
+          purchase_price: number | null
+          qr_code: string | null
+          quantity: number
+          status: string
+          supplier_contact_name: string | null
+          supplier_email: string | null
+          supplier_name: string | null
+          supplier_phone: string | null
+          unit: string
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          last_ordered_at?: string | null
+          location_id?: string | null
+          low_stock_reminder_sent_at?: string | null
+          material_number?: string | null
+          min_quantity?: number | null
+          name: string
+          notes?: string | null
+          photo_path?: string | null
+          purchase_price?: number | null
+          qr_code?: string | null
+          quantity?: number
+          status?: string
+          supplier_contact_name?: string | null
+          supplier_email?: string | null
+          supplier_name?: string | null
+          supplier_phone?: string | null
+          unit?: string
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          last_ordered_at?: string | null
+          location_id?: string | null
+          low_stock_reminder_sent_at?: string | null
+          material_number?: string | null
           min_quantity?: number | null
           name?: string
           notes?: string | null
+          photo_path?: string | null
+          purchase_price?: number | null
+          qr_code?: string | null
           quantity?: number
+          status?: string
+          supplier_contact_name?: string | null
+          supplier_email?: string | null
+          supplier_name?: string | null
+          supplier_phone?: string | null
           unit?: string
           unit_price?: number | null
           updated_at?: string
@@ -1373,6 +1694,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "material_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -1602,33 +1930,52 @@ export type Database = {
       }
       order_materials: {
         Row: {
+          added_by: string | null
           company_id: string
+          consumed_at: string | null
           created_at: string
           id: string
           material_id: string
           order_id: string
           quantity: number
+          reserved_at: string
+          status: string
           updated_at: string
         }
         Insert: {
+          added_by?: string | null
           company_id: string
+          consumed_at?: string | null
           created_at?: string
           id?: string
           material_id: string
           order_id: string
           quantity?: number
+          reserved_at?: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          added_by?: string | null
           company_id?: string
+          consumed_at?: string | null
           created_at?: string
           id?: string
           material_id?: string
           order_id?: string
           quantity?: number
+          reserved_at?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "order_materials_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_materials_company_id_fkey"
             columns: ["company_id"]
@@ -2153,9 +2500,14 @@ export type Database = {
         Returns: boolean
       }
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
+      next_material_number: { Args: { p_company_id: string }; Returns: string }
       next_order_number: { Args: { p_company_id: string }; Returns: string }
       sync_expiry_reminders: { Args: { p_company_id: string }; Returns: number }
       sync_fleet_reminders: { Args: { p_company_id: string }; Returns: number }
+      sync_low_stock_reminders: {
+        Args: { p_company_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

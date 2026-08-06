@@ -48,3 +48,23 @@ export async function syncFleetReminders(
     // die eigentliche Seite zum Absturz bringen.
   }
 }
+
+/**
+ * Stößt public.sync_low_stock_reminders() an (SECURITY DEFINER, siehe
+ * supabase/migrations/0023_materialverwaltung.sql): erzeugt
+ * Benachrichtigungen für Materialien, deren Bestand den Mindestbestand
+ * erreicht oder unterschritten hat und die noch keine Erinnerung erhalten
+ * haben. Gleiches Opportunistisch-bei-jedem-Seitenaufruf-Muster wie
+ * syncExpiryReminders()/syncFleetReminders() oben.
+ */
+export async function syncLowStockReminders(
+  supabase: SupabaseClient<Database>,
+  companyId: string,
+): Promise<void> {
+  try {
+    await supabase.rpc("sync_low_stock_reminders", { p_company_id: companyId });
+  } catch {
+    // Erinnerungen sind ein Komfortfeature – ein Fehlschlag hier darf nie
+    // die eigentliche Seite zum Absturz bringen.
+  }
+}
