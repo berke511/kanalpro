@@ -1,12 +1,12 @@
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, LogOut, Send, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, LogOut, UserPlus, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { conversationDisplayName } from "@/lib/messaging";
-import { formatDateTime } from "@/lib/date";
-import { ChatAutoRefresh } from "@/components/dashboard/ChatAutoRefresh";
-import { addConversationMember, leaveConversation, sendMessage } from "../actions";
+import { ChatThread } from "@/components/dashboard/ChatThread";
+import { addConversationMember, leaveConversation } from "../actions";
 
 export default async function ConversationPage({
   params,
@@ -43,12 +43,12 @@ export default async function ConversationPage({
 
   const { data: memberRows } = await supabase
     .from("conversation_members")
-    .select("profile_id, profiles(id, full_name)")
+    .select("profile_id, last_read_at, profiles(id, full_name)")
     .eq("conversation_id", id);
 
   const members = (memberRows ?? [])
-    .map((m) => m.profiles)
-    .filter((p): p is { id: string; full_name: string | null } => Boolean(p));
+    .filter((m) => m.profiles)
+    .map((m) => ({ id: m.profiles!.id, full_name: m.profiles!.full_name, last_read_at: m.last_read_at as string | null }));
 
   const isMember = members.some((m) => m.id === profile.id);
   if (!isMember) {
@@ -61,13 +61,21 @@ export default async function ConversationPage({
 
   const { data: messages } = await supabase
     .from("chat_messages")
-    .select("id, body, created_at, sender_id")
+    .select("id, body, created_at, sender_id, reply_to_id, edited_at, deleted_at")
     .eq("conversation_id", id)
     .order("created_at", { ascending: true });
 
-  const nameById = Object.fromEntries(members.map((m) => [m.id, m.full_name || "Unbekannt"]));
+  const messageIds = (messages ?? []).map((m) => m.id);
+  const { data: reactionRows } =
+    messageIds.length > 0
+      ? await supabase
+          .from("chat_message_reactions")
+          .select("id, message_id, profile_id, emoji")
+          .in("message_id", messageIds)
+      : { data: [] as Array<{ id: string; message_id: string; profile_id: string; emoji: string }> };
 
-  // Konversation als gelesen markieren, sobald sie geöffnet wird.
+  // Konversation als gelesen markieren, sobald sie geöffnet wird (zusätzlich
+  // markiert die Chat-Oberfläche selbst live nach, siehe ChatThread).
   await supabase
     .from("conversation_members")
     .update({ last_read_at: new Date().toISOString() })
@@ -85,16 +93,11 @@ export default async function ConversationPage({
 
   const addableEmployees = (otherEmployees ?? []).filter((e) => !members.some((m) => m.id === e.id));
 
-  const sendWithId = sendMessage.bind(null, id);
   const addMemberWithId = addConversationMember.bind(null, id);
   const leaveWithId = leaveConversation.bind(null, id);
 
-  const orderedMessages = [...(messages ?? [])].reverse();
-
   return (
     <div className="mx-auto flex h-[calc(100vh-4.5rem)] max-w-3xl flex-col p-4 sm:p-6">
-      <ChatAutoRefresh />
-
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href="/nachrichten" className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground">
@@ -167,50 +170,14 @@ export default async function ConversationPage({
       {error && <p className="mt-3 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
       {message && <p className="mt-3 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">{message}</p>}
 
-      <div className="mt-4 flex flex-1 flex-col-reverse gap-3 overflow-y-auto rounded-2xl border border-border bg-card shadow-sm p-4">
-        {orderedMessages.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted">Noch keine Nachrichten – schreib die erste!</p>
-        )}
-        {orderedMessages.map((m) => {
-          const isMe = m.sender_id === profile.id;
-          return (
-            <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm ${
-                  isMe ? "bg-brand text-white" : "border border-border bg-background text-foreground"
-                }`}
-              >
-                {!isMe && conversationType === "group" && (
-                  <p className="mb-0.5 text-xs font-semibold text-brand-dark">
-                    {m.sender_id ? nameById[m.sender_id] ?? "Unbekannt" : "Unbekannt"}
-                  </p>
-                )}
-                <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={`mt-1 text-[11px] ${isMe ? "text-white/70" : "text-muted"}`}>
-                  {formatDateTime(m.created_at)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <form action={sendWithId} className="mt-3 flex items-end gap-2">
-        <textarea
-          name="body"
-          rows={1}
-          required
-          placeholder="Nachricht schreiben…"
-          className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-base outline-none focus:border-brand sm:text-sm"
-        />
-        <button
-          type="submit"
-          className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-dark"
-        >
-          <Send className="h-4 w-4" />
-          <span className="hidden sm:inline">Senden</span>
-        </button>
-      </form>
+      <ChatThread
+        conversationId={id}
+        currentProfileId={profile.id}
+        isGroup={conversationType === "group"}
+        members={members}
+        initialMessages={messages ?? []}
+        initialReactions={reactionRows ?? []}
+      />
     </div>
   );
 }
