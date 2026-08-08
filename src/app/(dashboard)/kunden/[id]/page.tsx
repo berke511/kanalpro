@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDateTime } from "@/lib/date";
+import { STATUS_LABELS as INVOICE_STATUS_LABELS } from "@/lib/invoices";
 import {
   addCustomerContact,
   addCustomerNote,
@@ -497,7 +498,7 @@ export default async function KundeDetailPage({
                             </Link>
                             <p className="text-xs text-muted">{formatDate(inv.issue_date)}</p>
                           </td>
-                          <td className="px-4 py-3 text-right text-xs text-muted">{inv.status}</td>
+                          <td className="px-4 py-3 text-right text-xs text-muted">{INVOICE_STATUS_LABELS[inv.status] ?? inv.status}</td>
                         </tr>
                       ))}
                     </tbody>

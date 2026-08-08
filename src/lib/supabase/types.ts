@@ -1212,6 +1212,61 @@ export type Database = {
           },
         ]
       }
+      invoice_history: {
+        Row: {
+          action: string
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          invoice_label: string | null
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_label?: string | null
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_label?: string | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_history_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_history_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           company_id: string
@@ -1263,55 +1318,137 @@ export type Database = {
           },
         ]
       }
-      invoices: {
+      invoice_number_counters: {
         Row: {
           company_id: string
+          kind: string
+          next_number: number
+        }
+        Insert: {
+          company_id: string
+          kind: string
+          next_number?: number
+        }
+        Update: {
+          company_id?: string
+          kind?: string
+          next_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_number_counters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          archived_at: string | null
+          assigned_to: string | null
+          client_submit_token: string | null
+          company_id: string
+          converted_to_invoice_id: string | null
           created_at: string
           customer_id: string | null
           due_date: string | null
+          dunning_level: number
           id: string
           invoice_number: string | null
+          is_archived: boolean
           issue_date: string
           kind: string
           notes: string | null
           order_id: string | null
+          paid_amount: number
+          payment_date: string | null
+          payment_method: string | null
+          sent_at: string | null
+          source_quote_id: string | null
           status: string
+          tax_rate: number
           updated_at: string
+          valid_until: string | null
+          viewed_at: string | null
         }
         Insert: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          client_submit_token?: string | null
           company_id: string
+          converted_to_invoice_id?: string | null
           created_at?: string
           customer_id?: string | null
           due_date?: string | null
+          dunning_level?: number
           id?: string
           invoice_number?: string | null
+          is_archived?: boolean
           issue_date?: string
           kind?: string
           notes?: string | null
           order_id?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          sent_at?: string | null
+          source_quote_id?: string | null
           status?: string
+          tax_rate?: number
           updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
         }
         Update: {
+          archived_at?: string | null
+          assigned_to?: string | null
+          client_submit_token?: string | null
           company_id?: string
+          converted_to_invoice_id?: string | null
           created_at?: string
           customer_id?: string | null
           due_date?: string | null
+          dunning_level?: number
           id?: string
           invoice_number?: string | null
+          is_archived?: boolean
           issue_date?: string
           kind?: string
           notes?: string | null
           order_id?: string | null
+          paid_amount?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          sent_at?: string | null
+          source_quote_id?: string | null
           status?: string
+          tax_rate?: number
           updated_at?: string
+          valid_until?: string | null
+          viewed_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_converted_to_invoice_id_fkey"
+            columns: ["converted_to_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {
@@ -1326,6 +1463,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_source_quote_id_fkey"
+            columns: ["source_quote_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -2860,6 +3004,10 @@ export type Database = {
         Returns: boolean
       }
       next_customer_number: { Args: { p_company_id: string }; Returns: string }
+      next_invoice_number: {
+        Args: { p_company_id: string; p_kind: string }
+        Returns: string
+      }
       next_material_number: { Args: { p_company_id: string }; Returns: string }
       next_order_number: { Args: { p_company_id: string }; Returns: string }
       next_report_number: { Args: { p_company_id: string }; Returns: string }

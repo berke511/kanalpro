@@ -187,6 +187,12 @@ async function prepareInvoiceFromReportInternal(
     .select("quantity, unit_price, materials(name, unit_price)")
     .eq("report_id", reportId);
 
+  // Fortlaufende Rechnungsnummer (RE-00001, …) auch für automatisch aus
+  // Einsatzberichten vorbereitete Entwürfe vergeben, damit sie in der
+  // Angebote-/Rechnungsverwaltung nicht als "Ohne Nummer" auftauchen (siehe
+  // next_invoice_number() in 0027_angebote_rechnungen.sql).
+  const { data: invoiceNumber } = await supabase.rpc("next_invoice_number", { p_company_id: companyId, p_kind: "rechnung" });
+
   const { data: invoice, error } = await supabase
     .from("invoices")
     .insert({
@@ -196,6 +202,7 @@ async function prepareInvoiceFromReportInternal(
       kind: "rechnung",
       status: "entwurf",
       issue_date: todayBerlinISO(),
+      invoice_number: invoiceNumber ?? null,
       notes: report.report_number ? `Automatisch vorbereitet aus Einsatzbericht ${report.report_number}` : "Automatisch vorbereitet aus Einsatzbericht",
     })
     .select("id")

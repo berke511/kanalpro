@@ -50,7 +50,12 @@ export default async function DashboardPage() {
       .gte("scheduled_date", weekStart)
       .lte("scheduled_date", weekEnd),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("status", "versendet"),
+    // "versendet" ist seit der Erweiterung der Angebots-/Rechnungsverwaltung
+    // (0027_angebote_rechnungen.sql) ausschließlich ein Angebots-Status –
+    // Rechnungen laufen über "offen"/"teilbezahlt". Für die KPI-Kachel
+    // "Offene Rechnungen" muss daher explizit auf kind="rechnung" gefiltert
+    // werden, sonst würde hier fälschlich (fast) immer 0 stehen.
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("kind", "rechnung").in("status", ["offen", "teilbezahlt"]),
   ]);
 
   const KPI_CARDS = [
