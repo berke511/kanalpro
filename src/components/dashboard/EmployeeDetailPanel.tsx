@@ -1,4 +1,6 @@
 
+
+
 "use client";
 
 import Link from "next/link";
@@ -13,6 +15,7 @@ import {
   Info,
   Mail,
   MapPin,
+  Pencil,
   Phone,
   Trash2,
   Truck,
@@ -182,21 +185,34 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
             {EMPLOYEE_STATUS_LABELS[data.status] ?? data.status}
           </span>
           {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
-          {data.canChangeStatus && (
-            <form action={data.updateStatusAction} className="ml-auto">
-              <select
-                name="status"
-                defaultValue={data.status}
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
-              >
-                {EMPLOYEE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {EMPLOYEE_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </form>
+          {(data.canChangeStatus || data.canManage) && (
+            <div className="ml-auto flex items-center gap-2">
+              {data.canChangeStatus && (
+                <form action={data.updateStatusAction}>
+                  <select
+                    name="status"
+                    defaultValue={data.status}
+                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                    className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+                  >
+                    {EMPLOYEE_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {EMPLOYEE_STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </form>
+              )}
+              {data.canManage && (
+                <Link
+                  href={data.hrefs.tabs.profil}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-brand/30 hover:bg-brand-soft"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Bearbeiten
+                </Link>
+              )}
+            </div>
           )}
         </div>
 
