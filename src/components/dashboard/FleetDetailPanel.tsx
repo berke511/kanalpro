@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Camera,
+  Clock,
   Euro,
   FileText,
   Gauge,
@@ -14,7 +13,6 @@ import {
   Trash2,
   Users,
   Wrench,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { formatDate } from "@/lib/date";
@@ -161,74 +159,138 @@ export type FleetDetailPanelData = {
   deleteAction: (formData: FormData) => void;
 };
 
+// Rendert die Fahrzeug-/Maschinen-Detailansicht als eigenständige Seite
+// (keine Overlay-/Drawer-Positionierung mehr) – wird von der eigenen Route
+// /fahrzeuge/[id] eingebettet, siehe dortige page.tsx. Bewusst als
+// zweigeteiltes Layout aufgebaut: ein "Hero"-Kopfbereich mit Foto,
+// Kennzeichen-Badge und Kennzahlen-Kacheln auf einen Blick, darunter die
+// Tabs mit den Detailinhalten – analog zu modernen SaaS-Detailseiten
+// (z. B. GitHub-Profile), statt der bisherigen kompakten Panel-Optik.
 export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") router.push(data.hrefs.close);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [router, data.hrefs.close]);
-
   const inputClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/10";
   const labelClass = "text-xs font-medium text-muted";
   const subtitle = [data.manufacturer, data.model].filter(Boolean).join(" ") || FLEET_KIND_LABELS[data.kind] || data.kind;
 
+  const assignedNames = data.assignedEmployees.map((e) => e.fullName ?? "Unbenannt");
+  const statTiles: Array<{ key: string; icon: LucideIcon; label: string; value: string; tone?: "warn" | "danger" }> = [
+    {
+      key: "odometer",
+      icon: Gauge,
+      label: "Kilometerstand",
+      value: data.odometerKm !== null ? `${data.odometerKm.toLocaleString("de-DE")} km` : "—",
+    },
+    {
+      key: "hours",
+      icon: Clock,
+      label: "Betriebsstunden",
+      value: data.operatingHours !== null ? `${data.operatingHours.toLocaleString("de-DE")} Std.` : "—",
+    },
+    {
+      key: "maintenance",
+      icon: Wrench,
+      label: "Nächste Wartung",
+      value: data.nextMaintenanceAt ? formatDate(data.nextMaintenanceAt) : "—",
+      tone: isOverdue(data.nextMaintenanceAt) ? "danger" : isDueSoon(data.nextMaintenanceAt) ? "warn" : undefined,
+    },
+    {
+      key: "assigned",
+      icon: Users,
+      label: "Zugewiesen an",
+      value: assignedNames.length > 0 ? assignedNames.join(", ") : "Niemand",
+    },
+  ];
+
   return (
-    <>
-      <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] lg:hidden" onClick={() => router.push(data.hrefs.close)} />
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-md animate-slide-in-right overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:animate-none lg:shadow-none">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Fahrzeug-/Maschinenakte</h2>
-          <Link href={data.hrefs.close} className="rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-foreground">
-            <X className="h-4 w-4" />
-          </Link>
-        </div>
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="h-20 bg-gradient-to-br from-brand to-brand-dark sm:h-24" />
+        <div className="-mt-12 px-5 pb-5 sm:-mt-14 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex items-end gap-4">
+              <div className="h-20 w-20 shrink-0 sm:h-24 sm:w-24">
+                {data.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.photoUrl}
+                    alt={data.name}
+                    className="h-20 w-20 rounded-2xl object-cover shadow-md ring-4 ring-card sm:h-24 sm:w-24"
+                  />
+                ) : (
+                  <span className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-2xl font-semibold text-white shadow-md ring-4 ring-card sm:h-24 sm:w-24">
+                    {initialsFor(data.name)}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 pb-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">{data.name}</h1>
+                  {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
+                </div>
+                <p className="truncate text-sm text-muted">{subtitle}</p>
+              </div>
+            </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <div className="relative h-14 w-14 shrink-0">
-            {data.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.photoUrl} alt={data.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
-            ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-lg font-semibold text-white shadow-sm">
-                {initialsFor(data.name)}
+            <div className="flex items-center gap-2 pb-1">
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${FLEET_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
+                {FLEET_STATUS_LABELS[data.status] ?? data.status}
               </span>
-            )}
+              {data.canManage && (
+                <form action={data.updateStatusAction}>
+                  <select
+                    name="status"
+                    defaultValue={data.status}
+                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                    className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+                  >
+                    {FLEET_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {FLEET_STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </form>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{data.name}</h3>
-            <p className="truncate text-sm text-muted">{subtitle}</p>
-          </div>
-        </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${FLEET_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
-            {FLEET_STATUS_LABELS[data.status] ?? data.status}
-          </span>
-          {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
-          {data.canManage && (
-            <form action={data.updateStatusAction} className="ml-auto">
-              <select
-                name="status"
-                defaultValue={data.status}
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
-              >
-                {FLEET_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {FLEET_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </form>
+          {data.licensePlate && (
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-lg border-2 border-foreground/10 bg-background px-3 py-1.5">
+              <ShieldCheck className="h-4 w-4 text-muted" />
+              <span className="font-mono text-sm font-semibold tracking-wider text-foreground">{data.licensePlate}</span>
+            </div>
           )}
-        </div>
 
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {statTiles.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <div key={tile.key} className="rounded-xl bg-background p-3">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      tile.tone === "danger" ? "bg-red-50 text-red-600" : tile.tone === "warn" ? "bg-amber-50 text-amber-600" : "bg-brand-soft text-brand"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <p
+                    className={`mt-2 truncate text-sm font-semibold ${
+                      tile.tone === "danger" ? "text-red-600" : tile.tone === "warn" ? "text-amber-600" : "text-foreground"
+                    }`}
+                    title={tile.value}
+                  >
+                    {tile.value}
+                  </p>
+                  <p className="text-[11px] text-muted">{tile.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
           {TABS.map((t) => {
             const Icon = t.icon;
             return (
@@ -250,12 +312,6 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
           {data.activeTab === "uebersicht" && (
             <div className="space-y-4 text-sm">
               <div className="space-y-2.5 rounded-xl bg-background p-3">
-                {data.licensePlate && (
-                  <div className="flex items-center gap-2.5">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-muted" />
-                    <p className="text-foreground">{data.licensePlate}</p>
-                  </div>
-                )}
                 {data.location && (
                   <div className="flex items-start gap-2.5">
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
@@ -277,7 +333,7 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
                     <p className="text-foreground">{OWNERSHIP_LABELS[data.ownership] ?? data.ownership}</p>
                   </div>
                 )}
-                {!data.licensePlate && !data.location && !data.inventoryNumber && !data.ownership && (
+                {!data.location && !data.inventoryNumber && !data.ownership && (
                   <p className="text-muted">Noch keine Stammdaten hinterlegt.</p>
                 )}
               </div>
@@ -773,6 +829,6 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
