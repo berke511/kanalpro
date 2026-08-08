@@ -1,8 +1,7 @@
+
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Award,
   Briefcase,
@@ -18,7 +17,6 @@ import {
   Trash2,
   Truck,
   User,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { formatDate } from "@/lib/date";
@@ -147,17 +145,10 @@ export type EmployeeDetailPanelData = {
   deleteAction: (formData: FormData) => void;
 };
 
+// Rendert die Mitarbeiter-Detailansicht als normalen Seiteninhalt (keine
+// Overlay-/Drawer-Positionierung mehr) – wird von der eigenen Route
+// /mitarbeiter/[id] eingebettet, siehe dortige page.tsx.
 export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") router.push(data.hrefs.close);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [router, data.hrefs.close]);
-
   const restUrlaub = Math.max(0, data.vacationDaysTotal - data.vacationDaysUsed);
   const addressLine = [data.street, [data.postalCode, data.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   const inputClass =
@@ -165,17 +156,8 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
   const labelClass = "text-xs font-medium text-muted";
 
   return (
-    <>
-      <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] lg:hidden" onClick={() => router.push(data.hrefs.close)} />
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-md animate-slide-in-right overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:animate-none lg:shadow-none">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Mitarbeiterdetails</h2>
-          <Link href={data.hrefs.close} className="rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-foreground">
-            <X className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="mt-4 flex items-center gap-3">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center gap-3">
           <div className="relative h-14 w-14 shrink-0">
             {data.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -772,6 +754,7 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
           )}
         </div>
       </div>
-    </>
   );
 }
+
+
