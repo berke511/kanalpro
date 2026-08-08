@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Briefcase,
@@ -12,31 +13,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { INVITABLE_ROLES, ROLE_LABELS, ROLES, canManageEmployees } from "@/lib/roles";
 import { EMPLOYEE_STATUSES, isExpiringSoon } from "@/lib/employees";
-import { todayBerlinISO } from "@/lib/date";
 import { EmployeeCard, type EmployeeCardData } from "@/components/dashboard/EmployeeCard";
 import { EmployeeFilterBar } from "@/components/dashboard/EmployeeFilterBar";
-import { EmployeeDetailPanel, type EmployeeDetailPanelData, type PanelTabKey } from "@/components/dashboard/EmployeeDetailPanel";
-import {
-  addQualification,
-  archiveEmployee,
-  assignMainVehicle,
-  createInvite,
-  removeEmployee,
-  removeQualification,
-  revokeInvite,
-  unassignMainVehicle,
-  updateEmployeeProfile,
-  updateEmployeeRole,
-  updateEmployeeStatus,
-  updateEmployeeWorkTime,
-  uploadEmployeeDocument,
-  uploadEmployeePhoto,
-  removeEmployeePhoto,
-  deleteEmployeeDocument,
-  getInviteUrl,
-} from "./actions";
-
-const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "profil", "qualifikationen", "fahrzeug", "dokumente", "arbeitszeit"];
+import { createInvite, revokeInvite, getInviteUrl } from "./actions";
 
 type RawSearchParams = {
   q?: string;
@@ -45,8 +24,6 @@ type RawSearchParams = {
   department?: string;
   location?: string;
   archived?: string;
-  panel?: string;
-  panelTab?: string;
   error?: string;
   message?: string;
 };
@@ -67,7 +44,6 @@ export default async function MitarbeiterPage({
   const currentProfile = await getOrCreateProfile(supabase, user);
   const role = currentProfile?.role ?? null;
   const isAdmin = canManageEmployees(role);
-  const today = todayBerlinISO();
 
   const q = (raw.q ?? "").trim();
   const roleFilter = (ROLES as readonly string[]).includes(raw.role ?? "") ? (raw.role as string) : "";
@@ -95,10 +71,6 @@ export default async function MitarbeiterPage({
 
   const allEmployees = allEmployeesRaw ?? [];
   const fleetById = Object.fromEntries((fleetOptions ?? []).map((f) => [f.id, f]));
-  const vehicleSelectOptions = (fleetOptions ?? []).map((f) => ({
-    id: f.id,
-    label: f.license_plate ? `${f.license_plate} · ${f.name}` : f.name,
-  }));
 
   const employeeIds = allEmployees.map((e) => e.id);
   const { data: qualificationRows } = employeeIds.length
@@ -176,8 +148,9 @@ export default async function MitarbeiterPage({
     })),
   );
 
-  // URL-Hilfsfunktionen fürs Detailpanel (gleiches Muster wie
-  // /auftraege und /einsatzplanung).
+  // URL-Hilfsfunktion fürs Archiviert-Toggle (Filter bleiben beim Umschalten
+  // erhalten). Das frühere Detailpanel mit ?panel=/?panelTab= wurde durch
+  // die eigene Seite /mitarbeiter/[id] ersetzt (siehe dort).
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
   if (roleFilter) baseParams.set("role", roleFilter);
@@ -186,21 +159,6 @@ export default async function MitarbeiterPage({
   if (locationFilter) baseParams.set("location", locationFilter);
   if (showArchived) baseParams.set("archived", "1");
   const baseQuery = baseParams.toString();
-
-  function panelHref(employeeId: string, tab: PanelTabKey = "uebersicht") {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", employeeId);
-    if (tab !== "uebersicht") params.set("panelTab", tab);
-    return `/mitarbeiter?${params.toString()}`;
-  }
-
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
-    const qs = params.toString();
-    return qs ? `/mitarbeiter?${qs}` : "/mitarbeiter";
-  }
 
   function archivedToggleHref(next: boolean) {
     const params = new URLSearchParams(baseQuery);
@@ -211,161 +169,6 @@ export default async function MitarbeiterPage({
     }
     const qs = params.toString();
     return qs ? `/mitarbeiter?${qs}` : "/mitarbeiter";
-  }
-
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
-  let panelData: EmployeeDetailPanelData | null = null;
-
-  if (panelId) {
-    const { data: panelEmployee } = await supabase.from("profiles").select("*").eq("id", panelId).maybeSingle();
-
-    if (panelEmployee) {
-      const returnTo = panelHref(panelId, panelTab);
-      const canManage = isAdmin;
-      const canChangeStatus = canManage || role === "disponent";
-
-      const [{ data: qualifications }, { data: documents }, { data: vehicleHistory }, { data: todayOrders }] =
-        await Promise.all([
-          supabase
-            .from("employee_qualifications")
-            .select("id, qualification_type, label, issued_date, expires_at, notes")
-            .eq("employee_id", panelId)
-            .order("expires_at", { ascending: true, nullsFirst: false }),
-          supabase
-            .from("employee_documents")
-            .select("id, category, file_name, storage_path, size_bytes, expires_at, created_at")
-            .eq("employee_id", panelId)
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("employee_vehicle_history")
-            .select("id, assigned_at, unassigned_at, fleet_items(name, license_plate)")
-            .eq("employee_id", panelId)
-            .order("assigned_at", { ascending: false })
-            .limit(10),
-          supabase
-            .from("order_assignments")
-            .select("order_id, orders!inner(id, title, status, priority, scheduled_date, start_time, customer_id, property_id, dispatcher_id)")
-            .eq("employee_id", panelId)
-            .eq("orders.scheduled_date", today)
-            .order("start_time", { foreignTable: "orders", ascending: true })
-            .limit(1),
-        ]);
-
-      let documentUrlByPath: Record<string, string> = {};
-      const docPaths = (documents ?? []).map((d) => d.storage_path);
-      if (docPaths.length > 0) {
-        const { data: signed } = await supabase.storage.from("employee-documents").createSignedUrls(docPaths, 60 * 10);
-        documentUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
-      }
-
-      let photoUrl: string | null = null;
-      if (panelEmployee.photo_path) {
-        const { data: signed } = await supabase.storage.from("employee-photos").createSignedUrl(panelEmployee.photo_path, 60 * 10);
-        photoUrl = signed?.signedUrl ?? null;
-      }
-
-      let todayAssignment: EmployeeDetailPanelData["todayAssignment"] = null;
-      const todayOrder = todayOrders?.[0]?.orders;
-      if (todayOrder) {
-        const [{ data: customerRow }, { data: propertyRow }, { data: dispatcherRow }] = await Promise.all([
-          todayOrder.customer_id
-            ? supabase.from("customers").select("name, company_name").eq("id", todayOrder.customer_id).maybeSingle()
-            : Promise.resolve({ data: null }),
-          todayOrder.property_id
-            ? supabase.from("customer_properties").select("street, postal_code, city").eq("id", todayOrder.property_id).maybeSingle()
-            : Promise.resolve({ data: null }),
-          todayOrder.dispatcher_id
-            ? supabase.from("profiles").select("full_name").eq("id", todayOrder.dispatcher_id).maybeSingle()
-            : Promise.resolve({ data: null }),
-        ]);
-        const address = propertyRow
-          ? [propertyRow.street, [propertyRow.postal_code, propertyRow.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
-          : null;
-        todayAssignment = {
-          title: todayOrder.title,
-          customerName: customerRow ? customerRow.company_name || customerRow.name : null,
-          address: address || null,
-          startTime: todayOrder.start_time,
-          dispatcherName: dispatcherRow?.full_name ?? null,
-          priority: todayOrder.priority,
-          orderId: todayOrder.id,
-        };
-      }
-
-      panelData = {
-        id: panelEmployee.id,
-        fullName: panelEmployee.full_name,
-        role: panelEmployee.role,
-        status: panelEmployee.status,
-        email: panelEmployee.email,
-        phone: panelEmployee.phone,
-        street: panelEmployee.street,
-        postalCode: panelEmployee.postal_code,
-        city: panelEmployee.city,
-        birthDate: panelEmployee.birth_date,
-        hireDate: panelEmployee.hire_date,
-        personnelNumber: panelEmployee.personnel_number,
-        department: panelEmployee.department,
-        location: panelEmployee.location,
-        emergencyContactName: panelEmployee.emergency_contact_name,
-        emergencyContactPhone: panelEmployee.emergency_contact_phone,
-        notes: panelEmployee.notes,
-        photoUrl,
-        weeklyHours: panelEmployee.weekly_hours,
-        workTimeModel: panelEmployee.work_time_model,
-        vacationDaysTotal: Number(panelEmployee.vacation_days_total),
-        vacationDaysUsed: Number(panelEmployee.vacation_days_used),
-        sickDaysCurrentYear: Number(panelEmployee.sick_days_current_year),
-        overtimeHours: Number(panelEmployee.overtime_hours),
-        isArchived: panelEmployee.is_archived,
-        isSelf: user.id === panelEmployee.id,
-        mainVehicle: panelEmployee.main_vehicle_id
-          ? { id: panelEmployee.main_vehicle_id, name: fleetById[panelEmployee.main_vehicle_id]?.name ?? "Unbekannt" }
-          : null,
-        vehicleHistory: (vehicleHistory ?? []).map((h) => ({
-          id: h.id,
-          vehicleName: h.fleet_items?.license_plate ? `${h.fleet_items.license_plate} · ${h.fleet_items.name}` : h.fleet_items?.name ?? "Unbekannt",
-          assignedAt: h.assigned_at,
-          unassignedAt: h.unassigned_at,
-        })),
-        qualifications: (qualifications ?? []).map((q) => ({
-          ...q,
-          removeAction: removeQualification.bind(null, q.id, returnTo),
-        })),
-        documents: (documents ?? []).map((d) => ({
-          id: d.id,
-          category: d.category,
-          file_name: d.file_name,
-          size_bytes: d.size_bytes,
-          expires_at: d.expires_at,
-          created_at: d.created_at,
-          url: documentUrlByPath[d.storage_path] ?? null,
-          deleteAction: deleteEmployeeDocument.bind(null, d.id, d.storage_path, returnTo),
-        })),
-        todayAssignment,
-        canManage,
-        canChangeStatus,
-        activeTab: panelTab,
-        vehicleOptions: vehicleSelectOptions,
-        hrefs: {
-          close: panelCloseHref(),
-          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
-        },
-        updateStatusAction: updateEmployeeStatus.bind(null, panelId, returnTo),
-        updateProfileAction: updateEmployeeProfile.bind(null, panelId, returnTo),
-        updateWorkTimeAction: updateEmployeeWorkTime.bind(null, panelId, returnTo),
-        assignVehicleAction: assignMainVehicle.bind(null, panelId, returnTo),
-        unassignVehicleAction: unassignMainVehicle.bind(null, panelId, returnTo),
-        uploadPhotoAction: uploadEmployeePhoto.bind(null, panelId, returnTo),
-        removePhotoAction: removeEmployeePhoto.bind(null, panelId, returnTo),
-        addQualificationAction: addQualification.bind(null, panelId, returnTo),
-        uploadDocumentAction: uploadEmployeeDocument.bind(null, panelId, returnTo),
-        changeRoleAction: updateEmployeeRole.bind(null, panelId),
-        archiveAction: archiveEmployee.bind(null, panelId, !panelEmployee.is_archived),
-        deleteAction: removeEmployee.bind(null, panelId),
-      };
-    }
   }
 
   return (
@@ -469,30 +272,26 @@ export default async function MitarbeiterPage({
         </details>
       )}
 
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          {employeeCards.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
-              Keine Mitarbeiter gefunden.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {employeeCards.map((employee) => (
-                <EmployeeCard key={employee.id} employee={employee} href={panelHref(employee.id)} />
-              ))}
-            </div>
-          )}
+      <div className="mt-6">
+        {employeeCards.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">
+            Keine Mitarbeiter gefunden.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {employeeCards.map((employee) => (
+              <EmployeeCard key={employee.id} employee={employee} href={`/mitarbeiter/${employee.id}`} />
+            ))}
+          </div>
+        )}
 
-          {isAdmin && (
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
-              <Link href={archivedToggleHref(!showArchived)} className="hover:text-brand">
-                {showArchived ? "Archivierte ausblenden" : "Archivierte Mitarbeiter anzeigen"}
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {panelData && <EmployeeDetailPanel data={panelData} />}
+        {isAdmin && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted">
+            <Link href={archivedToggleHref(!showArchived)} className="hover:text-brand">
+              {showArchived ? "Archivierte ausblenden" : "Archivierte Mitarbeiter anzeigen"}
+            </Link>
+          </div>
+        )}
       </div>
 
       {!isAdmin && role !== "disponent" && (
