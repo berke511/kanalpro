@@ -1,53 +1,20 @@
-import Link from "next/link";
-import { MessageSquarePlus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
-import { listMyConversations } from "@/lib/messaging";
-import { ConversationListPane } from "@/components/dashboard/ConversationListPane";
-import { NachrichtenShell } from "@/components/dashboard/NachrichtenShell";
 
-// Geteilte Ansicht (Liste + Chat nebeneinander) statt einzelner Seiten mit
-// vollem Seitenwechsel: Next.js behält dieses Layout beim Navigieren
-// zwischen /nachrichten, /nachrichten/[id] und /nachrichten/neu bei, nur
-// {children} (die rechte Spalte) wird ausgetauscht. Die Konversationsliste
-// bleibt dadurch links immer sichtbar und lädt nicht bei jedem Klick neu.
-export default async function NachrichtenLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+// Kleine, reine Hilfsfunktion(en) rund um Konversationen, die sowohl von
+// Server-Komponenten/Actions (über src/lib/messaging.ts, "server-only")
+// als auch von Client-Komponenten (z. B. ConversationListPane, die aktive
+// Konversation clientseitig hervorheben/filtern muss) gebraucht werden.
+// Bewusst in einer eigenen Datei OHNE "server-only", damit sie in beiden
+// Welten importierbar bleibt.
 
-  if (!user) {
-    return null;
+/** Anzeigename einer Konversation: Gruppenname, sonst Namen der übrigen Mitglieder. */
+export function conversationDisplayName(conversation: {
+  type: "direct" | "group";
+  name: string | null;
+  otherMembers: Array<{ id: string; full_name: string | null }>;
+}): string {
+  if (conversation.type === "group") {
+    return conversation.name?.trim() || "Gruppenchat";
   }
-
-  const profile = await getOrCreateProfile(supabase, user);
-  if (!profile) {
-    return null;
-  }
-
-  const conversations = await listMyConversations(supabase, profile.id);
-
-  return (
-    <NachrichtenShell
-      list={
-        <>
-          <div className="flex items-center justify-between gap-2 px-4 pt-4 sm:px-5 sm:pt-5">
-            <h1 className="text-lg font-semibold tracking-tight">Nachrichten</h1>
-            <Link
-              href="/nachrichten/neu"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white transition-colors hover:bg-brand-dark"
-              aria-label="Neue Nachricht"
-              title="Neue Nachricht"
-            >
-              <MessageSquarePlus className="h-4 w-4" />
-            </Link>
-          </div>
-          <ConversationListPane conversations={conversations} />
-        </>
-      }
-    >
-      {children}
-    </NachrichtenShell>
-  );
+  const other = conversation.otherMembers[0];
+  return other?.full_name?.trim() || "Unbekannter Mitarbeiter";
 }
