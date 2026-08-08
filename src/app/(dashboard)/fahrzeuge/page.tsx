@@ -17,25 +17,6 @@ import { monthRangeBerlin, todayBerlinISO } from "@/lib/date";
 import { FleetCard, type FleetCardData } from "@/components/dashboard/FleetCard";
 import { FleetFilterPanel } from "@/components/dashboard/FleetFilterPanel";
 import { FleetTable, type FleetRow } from "@/components/dashboard/FleetTable";
-import { FleetDetailPanel, type FleetDetailPanelData, type PanelTabKey } from "@/components/dashboard/FleetDetailPanel";
-import {
-  addCostEntry,
-  addMaintenanceRecord,
-  archiveFleetItem,
-  assignFleetEmployee,
-  deleteFleetDocument,
-  deleteFleetItem,
-  removeCostEntry,
-  removeFleetPhoto,
-  removeMaintenanceRecord,
-  unassignFleetEmployee,
-  updateFleetProfile,
-  updateFleetStatus,
-  uploadFleetDocument,
-  uploadFleetPhoto,
-} from "./actions";
-
-const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "technik", "wartung", "dokumente", "kosten"];
 
 type RawSearchParams = {
   q?: string;
@@ -51,8 +32,6 @@ type RawSearchParams = {
   tuvDue?: string;
   uvvDue?: string;
   archived?: string;
-  panel?: string;
-  panelTab?: string;
   error?: string;
   message?: string;
 };
@@ -281,20 +260,6 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
   if (showArchived) baseParams.set("archived", "1");
   const baseQuery = baseParams.toString();
 
-  function panelHref(id: string, tab: PanelTabKey = "uebersicht") {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", id);
-    if (tab !== "uebersicht") params.set("panelTab", tab);
-    else params.delete("panelTab");
-    return `/fahrzeuge?${params.toString()}`;
-  }
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
-    const qs = params.toString();
-    return qs ? `/fahrzeuge?${qs}` : "/fahrzeuge";
-  }
   function viewHref(nextView: string) {
     const params = new URLSearchParams(baseQuery);
     if (nextView === "list") params.delete("view");
@@ -315,149 +280,6 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
     (tuvDueFilter ? 1 : 0) +
     (uvvDueFilter ? 1 : 0) +
     (showArchived ? 1 : 0);
-
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
-  let panelData: FleetDetailPanelData | null = null;
-
-  if (panelId) {
-    const { data: panelItem } = await supabase.from("fleet_items").select("*").eq("id", panelId).maybeSingle();
-
-    if (panelItem) {
-      const returnTo = panelHref(panelId, panelTab);
-
-      const [{ data: maintenanceRecords }, { data: costEntries }, { data: documents }, { data: linkedVehicleRow }] = await Promise.all([
-        supabase
-          .from("fleet_maintenance_records")
-          .select("id, record_type, performed_at, description, cost, performed_by, odometer_km, operating_hours")
-          .eq("fleet_item_id", panelId)
-          .order("performed_at", { ascending: false }),
-        supabase
-          .from("fleet_cost_entries")
-          .select("id, category, amount, occurred_at, note")
-          .eq("fleet_item_id", panelId)
-          .order("occurred_at", { ascending: false }),
-        supabase
-          .from("fleet_documents")
-          .select("id, category, file_name, storage_path, size_bytes, expires_at, created_at")
-          .eq("fleet_item_id", panelId)
-          .order("created_at", { ascending: false }),
-        panelItem.linked_vehicle_id
-          ? supabase.from("fleet_items").select("id, name").eq("id", panelItem.linked_vehicle_id).maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
-
-      let documentUrlByPath: Record<string, string> = {};
-      const docPaths = (documents ?? []).map((d) => d.storage_path);
-      if (docPaths.length > 0) {
-        const { data: signed } = await supabase.storage.from("fleet-documents").createSignedUrls(docPaths, 60 * 10);
-        documentUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
-      }
-
-      let photoUrl: string | null = null;
-      if (panelItem.photo_path) {
-        const { data: signed } = await supabase.storage.from("fleet-photos").createSignedUrl(panelItem.photo_path, 60 * 10);
-        photoUrl = signed?.signedUrl ?? null;
-      }
-
-      const costTotals = { wartung: 0, reparatur: 0, kraftstoff: 0, versicherung: 0, leasing: 0, sonstige: 0, total: 0 };
-      for (const r of maintenanceRecords ?? []) {
-        const cost = Number(r.cost ?? 0);
-        if (r.record_type === "wartung") costTotals.wartung += cost;
-        else if (r.record_type === "reparatur") costTotals.reparatur += cost;
-        costTotals.total += cost;
-      }
-      for (const c of costEntries ?? []) {
-        const amount = Number(c.amount ?? 0);
-        if (c.category in costTotals) {
-          (costTotals as unknown as Record<string, number>)[c.category] += amount;
-        }
-        costTotals.total += amount;
-      }
-
-      const assignedEmployees = employees
-        .filter((e) => e.main_vehicle_id === panelId)
-        .map((e) => ({
-          id: e.id,
-          fullName: e.full_name,
-          unassignAction: unassignFleetEmployee.bind(null, panelId, e.id, returnTo),
-        }));
-
-      panelData = {
-        id: panelItem.id,
-        kind: panelItem.kind,
-        name: panelItem.name,
-        licensePlate: panelItem.license_plate,
-        status: panelItem.status,
-        notes: panelItem.notes,
-        photoUrl,
-        inventoryNumber: panelItem.inventory_number,
-        manufacturer: panelItem.manufacturer,
-        model: panelItem.model,
-        yearBuilt: panelItem.year_built,
-        location: panelItem.location,
-        serviceArea: panelItem.service_area,
-        ownership: panelItem.ownership,
-        fuelType: panelItem.fuel_type,
-        odometerKm: panelItem.odometer_km,
-        operatingHours: panelItem.operating_hours,
-        odometerIntervalKm: panelItem.odometer_interval_km,
-        operatingHoursInterval: panelItem.operating_hours_interval,
-        lastMaintenanceAt: panelItem.last_maintenance_at,
-        nextMaintenanceAt: panelItem.next_maintenance_at,
-        nextMaintenanceNote: panelItem.next_maintenance_note,
-        tuvDueDate: panelItem.tuv_due_date,
-        uvvDueDate: panelItem.uvv_due_date,
-        insuranceDueDate: panelItem.insurance_due_date,
-        leasingEndDate: panelItem.leasing_end_date,
-        defaultCrewSize: panelItem.default_crew_size,
-        maxCrewSize: panelItem.max_crew_size,
-        defaultEquipment: panelItem.default_equipment,
-        linkedVehicle: linkedVehicleRow ? { id: linkedVehicleRow.id, name: linkedVehicleRow.name } : null,
-        linkedVehicleOptions: allItems.filter((i) => i.id !== panelId).map((i) => ({ id: i.id, label: i.license_plate ? `${i.license_plate} · ${i.name}` : i.name })),
-        maintenanceProgress: maintenanceProgress(panelItem.last_maintenance_at, panelItem.next_maintenance_at),
-        isArchived: panelItem.is_archived,
-        assignedEmployees,
-        employeeOptions: activeEmployees.filter((e) => e.main_vehicle_id !== panelId).map((e) => ({ id: e.id, label: e.full_name ?? "Unbenannt" })),
-        currentOrder: currentOrderByFleetId[panelId] ?? null,
-        maintenanceRecords: (maintenanceRecords ?? []).map((r) => ({
-          ...r,
-          removeAction: removeMaintenanceRecord.bind(null, r.id, returnTo),
-        })),
-        costEntries: (costEntries ?? []).map((c) => ({
-          ...c,
-          removeAction: removeCostEntry.bind(null, c.id, returnTo),
-        })),
-        costTotals,
-        documents: (documents ?? []).map((d) => ({
-          id: d.id,
-          category: d.category,
-          file_name: d.file_name,
-          size_bytes: d.size_bytes,
-          expires_at: d.expires_at,
-          created_at: d.created_at,
-          url: documentUrlByPath[d.storage_path] ?? null,
-          deleteAction: deleteFleetDocument.bind(null, d.id, d.storage_path, returnTo),
-        })),
-        canManage: isAdmin,
-        activeTab: panelTab,
-        hrefs: {
-          close: panelCloseHref(),
-          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
-        },
-        updateStatusAction: updateFleetStatus.bind(null, panelId, returnTo),
-        updateProfileAction: updateFleetProfile.bind(null, panelId, returnTo),
-        assignEmployeeAction: assignFleetEmployee.bind(null, panelId, returnTo),
-        uploadPhotoAction: uploadFleetPhoto.bind(null, panelId, returnTo),
-        removePhotoAction: removeFleetPhoto.bind(null, panelId, returnTo),
-        addMaintenanceAction: addMaintenanceRecord.bind(null, panelId, returnTo),
-        addCostAction: addCostEntry.bind(null, panelId, returnTo),
-        uploadDocumentAction: uploadFleetDocument.bind(null, panelId, returnTo),
-        archiveAction: archiveFleetItem.bind(null, panelId, !panelItem.is_archived),
-        deleteAction: deleteFleetItem.bind(null, panelId),
-      };
-    }
-  }
 
   return (
     <div className="p-6">
@@ -575,22 +397,18 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
         />
       </div>
 
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          {fleetRows.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Einträge gefunden.</p>
-          ) : view === "grid" ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {fleetCards.map((item) => (
-                <FleetCard key={item.id} item={item} href={panelHref(item.id)} />
-              ))}
-            </div>
-          ) : (
-            <FleetTable items={fleetRows} panelBaseQuery={baseQuery} showingArchived={showArchived} />
-          )}
-        </div>
-
-        {panelData && <FleetDetailPanel data={panelData} />}
+      <div className="mt-6">
+        {fleetRows.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Einträge gefunden.</p>
+        ) : view === "grid" ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {fleetCards.map((item) => (
+              <FleetCard key={item.id} item={item} href={`/fahrzeuge/${item.id}`} />
+            ))}
+          </div>
+        ) : (
+          <FleetTable items={fleetRows} showingArchived={showArchived} />
+        )}
       </div>
 
       {!isAdmin && (
