@@ -15,7 +15,7 @@ export function Topbar({
   const initial = (userName || companyName || "?").trim().charAt(0).toUpperCase();
 
   return (
-    <header className="flex items-center justify-between border-b border-border bg-card/95 px-4 py-3.5 shadow-sm backdrop-blur-sm sm:px-6">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card/95 px-4 py-3.5 shadow-sm backdrop-blur-sm sm:px-6">
       <div className="flex items-center gap-3">
         <MobileNav />
         <span className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-dark sm:flex">
