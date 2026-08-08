@@ -3,6 +3,11 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
+// Wird auch von Client-Komponenten gebraucht (z. B. ConversationListPane) –
+// diese Datei selbst darf wegen "server-only" oben nicht in einer
+// Client-Komponente importiert werden, die reine Hilfsfunktion aber schon.
+export { conversationDisplayName } from "@/lib/messaging-shared";
+
 export type ConversationSummary = {
   id: string;
   type: "direct" | "group";
@@ -89,17 +94,4 @@ export async function listMyConversations(
       unread,
     };
   });
-}
-
-/** Anzeigename einer Konversation: Gruppenname, sonst Namen der übrigen Mitglieder. */
-export function conversationDisplayName(conversation: {
-  type: "direct" | "group";
-  name: string | null;
-  otherMembers: Array<{ id: string; full_name: string | null }>;
-}): string {
-  if (conversation.type === "group") {
-    return conversation.name?.trim() || "Gruppenchat";
-  }
-  const other = conversation.otherMembers[0];
-  return other?.full_name?.trim() || "Unbekannter Mitarbeiter";
 }
