@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
@@ -72,9 +73,31 @@ export type OrderRow = {
   isDocumented: boolean;
 };
 
-type ColumnKey = "created_at" | "updated_at" | "dispatcher" | "order_value" | "duration" | "documentation";
+type ColumnKey =
+  | "property"
+  | "employees"
+  | "vehicle"
+  | "progress"
+  | "created_at"
+  | "updated_at"
+  | "dispatcher"
+  | "order_value"
+  | "duration"
+  | "documentation";
 
+// Objekt/Mitarbeiter/Fahrzeug/Fortschritt sind bewusst Teil des optionalen
+// "Spalten"-Menüs statt fest immer versucht angezeigt zu werden: die feste
+// Breite (table-fixed) aller "immer sichtbaren" Spalten zusammengerechnet
+// bleibt damit deutlich unter der auf typischen Desktop-Fensterbreiten
+// (~1280–1440px, abzüglich Sidebar + Padding) verfügbaren Inhaltsbreite –
+// die Tabelle braucht dadurch standardmäßig kein horizontales Scrollen mehr.
+// Wer mehr sehen will, blendet die Spalten hier gezielt ein (bewusster
+// Trade-off: dann ggf. wieder Scrollen nötig).
 const COLUMN_DEFS: Array<{ key: ColumnKey; label: string }> = [
+  { key: "property", label: "Objekt" },
+  { key: "employees", label: "Mitarbeiter" },
+  { key: "vehicle", label: "Fahrzeug" },
+  { key: "progress", label: "Fortschritt" },
   { key: "created_at", label: "Erstellungsdatum" },
   { key: "updated_at", label: "Letzte Änderung" },
   { key: "dispatcher", label: "Verantwortlicher Disponent" },
@@ -648,20 +671,20 @@ export function OrderTable({
                 </Link>
               </th>
               <th className="hidden w-40 px-4 py-3 font-medium sm:table-cell">Kunde</th>
-              <th className="hidden w-36 px-4 py-3 font-medium lg:table-cell">Objekt</th>
+              {visible.has("property") && <th className="hidden w-36 px-4 py-3 font-medium lg:table-cell">Objekt</th>}
               <th className="hidden w-28 px-4 py-3 font-medium md:table-cell">
                 <Link href={sortHrefs.scheduled_date} className="flex items-center gap-1 hover:text-foreground">
                   Termin {sortIcon("scheduled_date")}
                 </Link>
               </th>
-              <th className="hidden w-28 px-4 py-3 font-medium lg:table-cell">Mitarbeiter</th>
-              <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Fahrzeug</th>
+              {visible.has("employees") && <th className="hidden w-28 px-4 py-3 font-medium lg:table-cell">Mitarbeiter</th>}
+              {visible.has("vehicle") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Fahrzeug</th>}
               <th className="w-28 px-4 py-3 font-medium">
                 <Link href={sortHrefs.status} className="flex items-center gap-1 hover:text-foreground">
                   Status {sortIcon("status")}
                 </Link>
               </th>
-              <th className="hidden w-28 px-4 py-3 font-medium md:table-cell">Fortschritt</th>
+              {visible.has("progress") && <th className="hidden w-28 px-4 py-3 font-medium md:table-cell">Fortschritt</th>}
               <th className="hidden w-24 px-4 py-3 font-medium sm:table-cell">
                 <Link href={sortHrefs.priority} className="flex items-center gap-1 hover:text-foreground">
                   Priorität {sortIcon("priority")}
@@ -728,21 +751,23 @@ export function OrderTable({
                     <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className={`hidden px-4 ${rowPad} text-muted lg:table-cell`}>
-                  {(order.propertyName || order.propertyStreet) && order.customerId ? (
-                    <Link href={`/kunden?panel=${order.customerId}&panelTab=objekte`} className="block hover:text-brand">
-                      <p className="truncate">{order.propertyName || order.propertyStreet}</p>
-                      {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
-                    </Link>
-                  ) : order.propertyName || order.propertyStreet ? (
-                    <>
-                      <p className="truncate">{order.propertyName || order.propertyStreet}</p>
-                      {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </td>
+                {visible.has("property") && (
+                  <td className={`hidden px-4 ${rowPad} text-muted lg:table-cell`}>
+                    {(order.propertyName || order.propertyStreet) && order.customerId ? (
+                      <Link href={`/kunden?panel=${order.customerId}&panelTab=objekte`} className="block hover:text-brand">
+                        <p className="truncate">{order.propertyName || order.propertyStreet}</p>
+                        {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
+                      </Link>
+                    ) : order.propertyName || order.propertyStreet ? (
+                      <>
+                        <p className="truncate">{order.propertyName || order.propertyStreet}</p>
+                        {order.propertyCityLine && <p className="truncate text-xs text-muted">{order.propertyCityLine}</p>}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                )}
                 <td className={`hidden px-4 ${rowPad} text-muted md:table-cell`}>
                   {order.scheduled_date ? (
                     <>
@@ -753,45 +778,49 @@ export function OrderTable({
                     "—"
                   )}
                 </td>
-                <td className={`hidden px-4 ${rowPad} lg:table-cell`}>
-                  {order.employees.length > 0 ? (
-                    <div className="flex items-center -space-x-2">
-                      {order.employees.slice(0, 3).map((e) => (
-                        <span
-                          key={e.id}
-                          title={e.name}
-                          className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-brand-soft text-[10px] font-semibold text-brand-dark"
-                        >
-                          {initials(e.name)}
-                        </span>
-                      ))}
-                      {order.employees.length > 3 && (
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-background text-[10px] font-medium text-muted">
-                          +{order.employees.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
-                </td>
-                <td className={`hidden px-4 ${rowPad} xl:table-cell`}>
-                  {order.vehicles.length > 0 ? (
-                    <Link href={`/fahrzeuge/${order.vehicles[0].id}`} className="flex items-center gap-1.5 hover:text-brand">
-                      <Truck className="h-3.5 w-3.5 shrink-0 text-muted" />
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium text-foreground hover:text-brand">
-                          {order.vehicles[0].licensePlate || order.vehicles[0].name}
-                        </p>
-                        {order.vehicles.length > 1 && (
-                          <p className="text-[11px] text-muted">+{order.vehicles.length - 1} weitere</p>
+                {visible.has("employees") && (
+                  <td className={`hidden px-4 ${rowPad} lg:table-cell`}>
+                    {order.employees.length > 0 ? (
+                      <div className="flex items-center -space-x-2">
+                        {order.employees.slice(0, 3).map((e) => (
+                          <span
+                            key={e.id}
+                            title={e.name}
+                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-brand-soft text-[10px] font-semibold text-brand-dark"
+                          >
+                            {initials(e.name)}
+                          </span>
+                        ))}
+                        {order.employees.length > 3 && (
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-background text-[10px] font-medium text-muted">
+                            +{order.employees.length - 3}
+                          </span>
                         )}
                       </div>
-                    </Link>
-                  ) : (
-                    <span className="text-muted">—</span>
-                  )}
-                </td>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                )}
+                {visible.has("vehicle") && (
+                  <td className={`hidden px-4 ${rowPad} xl:table-cell`}>
+                    {order.vehicles.length > 0 ? (
+                      <Link href={`/fahrzeuge/${order.vehicles[0].id}`} className="flex items-center gap-1.5 hover:text-brand">
+                        <Truck className="h-3.5 w-3.5 shrink-0 text-muted" />
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-medium text-foreground hover:text-brand">
+                            {order.vehicles[0].licensePlate || order.vehicles[0].name}
+                          </p>
+                          {order.vehicles.length > 1 && (
+                            <p className="text-[11px] text-muted">+{order.vehicles.length - 1} weitere</p>
+                          )}
+                        </div>
+                      </Link>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                )}
                 <td className={`px-4 ${rowPad}`}>
                   <span
                     className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[order.status] ?? "bg-gray-100 text-gray-600"}`}
@@ -799,17 +828,19 @@ export function OrderTable({
                     {STATUS_LABELS[order.status] ?? order.status}
                   </span>
                 </td>
-                <td className={`hidden px-4 ${rowPad} md:table-cell`}>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-background">
-                      <div
-                        className="h-full rounded-full bg-brand"
-                        style={{ width: `${order.progressPercent}%` }}
-                      />
+                {visible.has("progress") && (
+                  <td className={`hidden px-4 ${rowPad} md:table-cell`}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-background">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{ width: `${order.progressPercent}%` }}
+                        />
+                      </div>
+                      <span className="shrink-0 text-xs tabular-nums text-muted">{order.progressPercent}%</span>
                     </div>
-                    <span className="shrink-0 text-xs tabular-nums text-muted">{order.progressPercent}%</span>
-                  </div>
-                </td>
+                  </td>
+                )}
                 <td className={`hidden px-4 ${rowPad} sm:table-cell`}>
                   <span
                     className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_PRIORITY_BADGE_CLASS[order.priority] ?? "bg-gray-100 text-gray-600"}`}
