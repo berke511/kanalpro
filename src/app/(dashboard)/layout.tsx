@@ -56,13 +56,19 @@ export default async function DashboardLayout({
   return (
     <div className="flex flex-1">
       <Sidebar />
-      <div className="flex flex-1 flex-col">
+      {/* min-w-0 ist hier Pflicht: Flex-Kinder haben per Default min-width:auto,
+          d.h. sie weigern sich, unter ihre Inhaltsbreite zu schrumpfen. Ohne
+          min-w-0 drückt eine breite Tabelle (z.B. Auftragsliste) diese ganze
+          Spalte – und damit die komplette Seite – nach rechts über den
+          Viewport hinaus, statt nur innerhalb ihres eigenen overflow-x-auto
+          zu scrollen. */}
+      <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           companyName={profile.companies?.name ?? "KanalPro"}
           userName={profile.full_name}
           notifications={notifications}
         />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
