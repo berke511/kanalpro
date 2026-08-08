@@ -623,8 +623,13 @@ export function OrderTable({
         </div>
       </div>
 
+      {/* table-fixed + feste Spaltenbreiten (statt automatischer Breitenberechnung
+          nach Inhalt): nur so greift "truncate" auf lange Kunden-/Objektnamen
+          tatsächlich – ohne table-fixed ignoriert die Browser-Tabellenlayout-
+          Berechnung overflow-hidden bei der Breitenermittlung und die Tabelle
+          (und damit die ganze Seite, siehe layout.tsx) wird beliebig breit. */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
           <thead className="border-b border-border bg-background text-xs uppercase text-muted">
             <tr>
               <th className="w-10 px-3 py-3">
@@ -637,37 +642,37 @@ export function OrderTable({
                 />
               </th>
               <th className="w-10 px-3 py-3" />
-              <th className="px-4 py-3 font-medium">
+              <th className="w-40 px-4 py-3 font-medium sm:w-48">
                 <Link href={sortHrefs.order_number} className="flex items-center gap-1 hover:text-foreground">
                   Auftrag {sortIcon("order_number")}
                 </Link>
               </th>
-              <th className="hidden px-4 py-3 font-medium sm:table-cell">Kunde</th>
-              <th className="hidden px-4 py-3 font-medium lg:table-cell">Objekt</th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">
+              <th className="hidden w-40 px-4 py-3 font-medium sm:table-cell">Kunde</th>
+              <th className="hidden w-36 px-4 py-3 font-medium lg:table-cell">Objekt</th>
+              <th className="hidden w-28 px-4 py-3 font-medium md:table-cell">
                 <Link href={sortHrefs.scheduled_date} className="flex items-center gap-1 hover:text-foreground">
                   Termin {sortIcon("scheduled_date")}
                 </Link>
               </th>
-              <th className="hidden px-4 py-3 font-medium lg:table-cell">Mitarbeiter</th>
-              <th className="hidden px-4 py-3 font-medium xl:table-cell">Fahrzeug</th>
-              <th className="px-4 py-3 font-medium">
+              <th className="hidden w-28 px-4 py-3 font-medium lg:table-cell">Mitarbeiter</th>
+              <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Fahrzeug</th>
+              <th className="w-28 px-4 py-3 font-medium">
                 <Link href={sortHrefs.status} className="flex items-center gap-1 hover:text-foreground">
                   Status {sortIcon("status")}
                 </Link>
               </th>
-              <th className="hidden px-4 py-3 font-medium md:table-cell">Fortschritt</th>
-              <th className="hidden px-4 py-3 font-medium sm:table-cell">
+              <th className="hidden w-28 px-4 py-3 font-medium md:table-cell">Fortschritt</th>
+              <th className="hidden w-24 px-4 py-3 font-medium sm:table-cell">
                 <Link href={sortHrefs.priority} className="flex items-center gap-1 hover:text-foreground">
                   Priorität {sortIcon("priority")}
                 </Link>
               </th>
-              {visible.has("created_at") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Erstellungsdatum</th>}
-              {visible.has("updated_at") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Letzte Änderung</th>}
-              {visible.has("dispatcher") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Disponent</th>}
-              {visible.has("order_value") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Auftragswert</th>}
-              {visible.has("duration") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Einsatzdauer</th>}
-              {visible.has("documentation") && <th className="hidden px-4 py-3 font-medium xl:table-cell">Dokumentation</th>}
+              {visible.has("created_at") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Erstellungsdatum</th>}
+              {visible.has("updated_at") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Letzte Änderung</th>}
+              {visible.has("dispatcher") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Disponent</th>}
+              {visible.has("order_value") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Auftragswert</th>}
+              {visible.has("duration") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Einsatzdauer</th>}
+              {visible.has("documentation") && <th className="hidden w-32 px-4 py-3 font-medium xl:table-cell">Dokumentation</th>}
               <th className="w-10 px-3 py-3" />
             </tr>
           </thead>
