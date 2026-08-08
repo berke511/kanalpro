@@ -220,11 +220,9 @@ function exportFleetPdf(rows: FleetRow[]) {
 
 export function FleetTable({
   items,
-  panelBaseQuery,
   showingArchived = false,
 }: {
   items: FleetRow[];
-  panelBaseQuery: string;
   showingArchived?: boolean;
 }) {
   const router = useRouter();
@@ -249,11 +247,8 @@ export function FleetTable({
     }
   }
 
-  function panelHref(id: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.delete("panelTab");
-    params.set("panel", id);
-    return `/fahrzeuge?${params.toString()}`;
+  function detailHref(id: string) {
+    return `/fahrzeuge/${id}`;
   }
 
   const allSelected = items.length > 0 && items.every((i) => selected.has(i.id));
@@ -468,7 +463,7 @@ export function FleetTable({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={panelHref(item.id)} className="font-medium text-foreground hover:text-brand">
+                    <Link href={detailHref(item.id)} className="font-medium text-foreground hover:text-brand">
                       {item.name}
                     </Link>
                     {item.licensePlate && <p className="text-xs text-muted">{item.licensePlate}</p>}
@@ -549,7 +544,7 @@ export function FleetTable({
                       <>
                         <button type="button" className="fixed inset-0 z-10 cursor-default" aria-label="Menü schließen" onClick={() => setRowMenuOpenId(null)} />
                         <div className="absolute right-2 z-20 mt-1 w-44 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                          <Link href={panelHref(item.id)} onClick={() => setRowMenuOpenId(null)} className="block rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
+                          <Link href={detailHref(item.id)} onClick={() => setRowMenuOpenId(null)} className="block rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
                             Details öffnen
                           </Link>
                           <button
