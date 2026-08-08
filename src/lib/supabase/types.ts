@@ -14,13 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_message_reactions: {
+        Row: {
+          company_id: string
+          conversation_id: string
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          profile_id: string
+        }
+        Insert: {
+          company_id: string
+          conversation_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          profile_id: string
+        }
+        Update: {
+          company_id?: string
+          conversation_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_reactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_reactions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_reactions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           body: string
           company_id: string
           conversation_id: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
+          reply_to_id: string | null
           sender_id: string | null
         }
         Insert: {
@@ -28,7 +90,10 @@ export type Database = {
           company_id: string
           conversation_id: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_id?: string | null
           sender_id?: string | null
         }
         Update: {
@@ -36,7 +101,10 @@ export type Database = {
           company_id?: string
           conversation_id?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
+          reply_to_id?: string | null
           sender_id?: string | null
         }
         Relationships: [
@@ -52,6 +120,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
           {
