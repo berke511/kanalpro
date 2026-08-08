@@ -1145,11 +1145,16 @@ export default async function AuftraegePage({
       )}
 
       {orderRows.length > 0 && state.view === "kanban" && (
-        <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
+        // Bewusst KEIN horizontales Scrollen: die Spalten liegen in einem Grid
+        // mit minmax(), das je nach verfügbarer Breite automatisch mehrere
+        // Spalten pro Zeile anordnet und bei Platzmangel umbricht – analog zum
+        // Ansatz der Einsatzplanungs-Wochenübersicht (EinsatzplanungGrid.tsx) –
+        // statt sie mit fester Breite und overflow-x zur Seite schieben zu müssen.
+        <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
           {ORDER_STATUSES.map((s) => {
             const columnOrders = orderRows.filter((o) => o.status === s);
             return (
-              <div key={s} className="w-72 shrink-0 rounded-2xl border border-border bg-card p-3">
+              <div key={s} className="rounded-2xl border border-border bg-card p-3">
                 <div className="mb-3 flex items-center justify-between">
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_BADGE_CLASS[s] ?? "bg-gray-100 text-gray-600"}`}
