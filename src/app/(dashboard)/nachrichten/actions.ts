@@ -130,34 +130,144 @@ export async function createConversation(formData: FormData) {
   redirect(`/nachrichten/${conversation.id}`);
 }
 
-export async function sendMessage(conversationId: string, formData: FormData) {
+// Die folgenden Actions werden NICHT mehr über <form action=...> (mit
+// redirect()/vollem Seiten-Reload) aufgerufen, sondern direkt als
+// asynchrone Funktionen aus der Chat-Oberfläche (ChatThread, Client-
+// Komponente) heraus – für sofortiges Senden, Bearbeiten, Löschen und
+// Reagieren ohne Neuladen. Sie werfen bei Fehlern eine normale Error
+// (statt zu redirecten), die die Client-Komponente selbst behandelt
+// (z. B. optimistische Nachricht wieder entfernen).
+
+export type SentMessage = {
+  id: string;
+  body: string;
+  created_at: string;
+  sender_id: string | null;
+  reply_to_id: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
+};
+
+export async function sendMessage(input: {
+  conversationId: string;
+  body: string;
+  replyToId?: string | null;
+}): Promise<SentMessage> {
   const { supabase, companyId, profileId } = await requireCompanyContext();
-  const body = String(formData.get("body") ?? "").trim();
+  const body = input.body.trim();
 
   if (!body) {
-    redirect(`/nachrichten/${conversationId}`);
+    throw new Error("Nachricht darf nicht leer sein");
   }
 
-  const { error } = await supabase.from("chat_messages").insert({
-    conversation_id: conversationId,
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      conversation_id: input.conversationId,
+      company_id: companyId,
+      sender_id: profileId,
+      body,
+      reply_to_id: input.replyToId ?? null,
+    })
+    .select("id, body, created_at, sender_id, reply_to_id, edited_at, deleted_at")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Nachricht konnte nicht gesendet werden");
+  }
+
+  await supabase
+    .from("conversation_members")
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("conversation_id", input.conversationId)
+    .eq("profile_id", profileId);
+
+  revalidatePath(`/nachrichten/${input.conversationId}`);
+  revalidatePath("/nachrichten");
+
+  return data;
+}
+
+export async function editMessage(input: { messageId: string; conversationId: string; body: string }) {
+  const { supabase, profileId } = await requireCompanyContext();
+  const body = input.body.trim();
+
+  if (!body) {
+    throw new Error("Nachricht darf nicht leer sein");
+  }
+
+  const { error } = await supabase
+    .from("chat_messages")
+    .update({ body, edited_at: new Date().toISOString() })
+    .eq("id", input.messageId)
+    .eq("sender_id", profileId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/nachrichten/${input.conversationId}`);
+}
+
+export async function deleteMessage(input: { messageId: string; conversationId: string }) {
+  const { supabase, profileId } = await requireCompanyContext();
+
+  const { error } = await supabase
+    .from("chat_messages")
+    .update({ deleted_at: new Date().toISOString(), body: "" })
+    .eq("id", input.messageId)
+    .eq("sender_id", profileId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/nachrichten/${input.conversationId}`);
+}
+
+export async function toggleReaction(input: {
+  messageId: string;
+  conversationId: string;
+  emoji: string;
+}): Promise<{ active: boolean }> {
+  const { supabase, companyId, profileId } = await requireCompanyContext();
+
+  const { data: existing } = await supabase
+    .from("chat_message_reactions")
+    .select("id")
+    .eq("message_id", input.messageId)
+    .eq("profile_id", profileId)
+    .eq("emoji", input.emoji)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("chat_message_reactions").delete().eq("id", existing.id);
+    return { active: false };
+  }
+
+  const { error } = await supabase.from("chat_message_reactions").insert({
+    message_id: input.messageId,
+    conversation_id: input.conversationId,
     company_id: companyId,
-    sender_id: profileId,
-    body,
+    profile_id: profileId,
+    emoji: input.emoji,
   });
 
   if (error) {
-    redirect(`/nachrichten/${conversationId}?error=${encodeURIComponent(error.message)}`);
+    throw new Error(error.message);
   }
+
+  return { active: true };
+}
+
+export async function markConversationRead(conversationId: string) {
+  const { supabase, profileId } = await requireCompanyContext();
 
   await supabase
     .from("conversation_members")
     .update({ last_read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("profile_id", profileId);
-
-  revalidatePath(`/nachrichten/${conversationId}`);
-  revalidatePath("/nachrichten");
-  redirect(`/nachrichten/${conversationId}`);
 }
 
 export async function addConversationMember(conversationId: string, formData: FormData) {
