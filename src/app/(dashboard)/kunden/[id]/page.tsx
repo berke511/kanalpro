@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDateTime } from "@/lib/date";
+import { formatEuro } from "@/lib/format";
 import { STATUS_LABELS as INVOICE_STATUS_LABELS } from "@/lib/invoices";
 import {
   addCustomerContact,
@@ -119,6 +120,43 @@ export default async function KundeDetailPage({
       : Promise.resolve({ data: null }),
     supabase.from("profiles").select("id, full_name").order("full_name", { ascending: true }),
   ]);
+
+  // Kennzahlen für die Hero-Leiste (Umsatz, Aufträge, Angebote, Rechnungen,
+  // Objekte, letzter Auftrag) – bewusst immer geladen, unabhängig vom
+  // aktiven Tab, nach demselben Muster wie das Detailpanel der Kundenliste
+  // (kunden/page.tsx panelData). Umsatz = Netto-Summe aus bezahlten
+  // Rechnungen (quantity * unit_price), analog zur bestehenden
+  // Umsatzspalte in der Kundenliste.
+  const [{ count: objectsCountAll }, { count: ordersCountAll }, { data: lastOrderRows }, { data: invoiceRowsAll }] =
+    await Promise.all([
+      supabase.from("customer_properties").select("id", { count: "exact", head: true }).eq("customer_id", id),
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", id),
+      supabase
+        .from("orders")
+        .select("scheduled_date")
+        .eq("customer_id", id)
+        .not("scheduled_date", "is", null)
+        .order("scheduled_date", { ascending: false })
+        .limit(1),
+      supabase.from("invoices").select("id, kind, status").eq("customer_id", id),
+    ]);
+
+  const quotesCountAll = (invoiceRowsAll ?? []).filter((i) => i.kind === "angebot").length;
+  const invoicesCountAll = (invoiceRowsAll ?? []).filter((i) => i.kind === "rechnung").length;
+  const paidInvoiceIdsAll = (invoiceRowsAll ?? [])
+    .filter((i) => i.kind === "rechnung" && i.status === "bezahlt")
+    .map((i) => i.id);
+
+  let revenueAll = 0;
+  if (paidInvoiceIdsAll.length > 0) {
+    const { data: items } = await supabase
+      .from("invoice_items")
+      .select("quantity, unit_price")
+      .in("invoice_id", paidInvoiceIdsAll);
+    revenueAll = (items ?? []).reduce((sum, item) => sum + Number(item.quantity) * Number(item.unit_price), 0);
+  }
+
+  const lastOrderDateAll = lastOrderRows?.[0]?.scheduled_date ?? null;
 
   let contacts: Array<{ id: string; name: string; role: string | null; phone: string | null; email: string | null; is_primary: boolean }> = [];
   let properties: Array<{ id: string; name: string; street: string | null; postal_code: string | null; city: string | null; notes: string | null }> = [];
@@ -220,78 +258,56 @@ export default async function KundeDetailPage({
         Zurück zur Kundenliste
       </Link>
 
-      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <CustomerKindIcon kind={customer.kind} className="h-5 w-5 text-muted" />
-            <h1 className="break-words text-2xl font-semibold tracking-tight">{customer.name}</h1>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${CUSTOMER_STATUS_BADGE_CLASS[customer.status] ?? "bg-gray-100 text-gray-600"}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${CUSTOMER_STATUS_DOT_CLASS[customer.status] ?? "bg-gray-400"}`} />
-              {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
+      <div className="relative mt-2 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[11px] bg-white/15 text-white">
+              <CustomerKindIcon kind={customer.kind} className="h-5 w-5" />
             </span>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="break-words text-2xl font-semibold tracking-tight">{customer.name}</h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {CUSTOMER_STATUS_LABELS[customer.status] ?? customer.status}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-white/80">
+                {customer.customer_number ?? "ohne Nummer"} · {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
+              </p>
+            </div>
           </div>
-          <p className="mt-1 text-sm text-muted">
-            {customer.customer_number ?? "ohne Nummer"} · {CUSTOMER_KIND_LABELS[customer.kind] ?? customer.kind}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {showSaveButton && (
-            <button
-              type="submit"
-              form={saveFormId}
-              className="hidden items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-flex"
+          <div className="flex flex-wrap items-center gap-2">
+            {showSaveButton && (
+              <button
+                type="submit"
+                form={saveFormId}
+                className="hidden items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90 lg:inline-flex"
+              >
+                <Save className="h-4 w-4" />
+                Speichern
+              </button>
+            )}
+            <Link
+              href={`/kunden/${id}?tab=${activeTab}`}
+              className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-white hover:bg-white/20"
             >
-              <Save className="h-4 w-4" />
-              Speichern
-            </button>
-          )}
-          <Link
-            href={`/kunden/${id}?tab=${activeTab}`}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
-          >
-            <X className="h-4 w-4" />
-            Abbrechen
-          </Link>
-          <Link
-            href={`/auftraege/neu?customer_id=${id}`}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
-          >
-            <Wrench className="h-4 w-4" />
-            Auftrag erstellen
-          </Link>
-          <div className="hidden gap-2 lg:flex">
-            <form action={duplicateWithId}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background"
-              >
-                <Copy className="h-4 w-4" />
-                Duplizieren
-              </button>
-            </form>
-            <form action={deleteWithId}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-card px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Löschen
-              </button>
-            </form>
-          </div>
-          {/* Auf Mobile werden die selteneren Aktionen in ein Menü eingeklappt,
-              damit die Aktionsleiste nicht über mehrere Zeilen umbricht. */}
-          <details className="relative lg:hidden">
-            <summary className="flex list-none items-center rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-background [&::-webkit-details-marker]:hidden">
-              <MoreVertical className="h-4 w-4" />
-            </summary>
-            <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 shadow-lg">
+              <X className="h-4 w-4" />
+              Abbrechen
+            </Link>
+            <Link
+              href={`/auftraege/neu?customer_id=${id}`}
+              className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+            >
+              <Wrench className="h-4 w-4" />
+              Auftrag erstellen
+            </Link>
+            <div className="hidden gap-2 lg:flex">
               <form action={duplicateWithId}>
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-background"
+                  className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-white hover:bg-white/20"
                 >
                   <Copy className="h-4 w-4" />
                   Duplizieren
@@ -300,29 +316,74 @@ export default async function KundeDetailPage({
               <form action={deleteWithId}>
                 <button
                   type="submit"
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                  className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-white hover:bg-white/20"
                 >
                   <Trash2 className="h-4 w-4" />
                   Löschen
                 </button>
               </form>
             </div>
-          </details>
+            {/* Auf Mobile werden die selteneren Aktionen in ein Menü eingeklappt,
+                damit die Aktionsleiste nicht über mehrere Zeilen umbricht. */}
+            <details className="relative lg:hidden">
+              <summary className="flex list-none items-center rounded-[11px] border border-white/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-white hover:bg-white/20 [&::-webkit-details-marker]:hidden">
+                <MoreVertical className="h-4 w-4" />
+              </summary>
+              <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-border bg-card p-1.5 text-foreground shadow-lg">
+                <form action={duplicateWithId}>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-background"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Duplizieren
+                  </button>
+                </form>
+                <form action={deleteWithId}>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Löschen
+                  </button>
+                </form>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Umsatz gesamt", value: revenueAll > 0 ? formatEuro(revenueAll) : "—" },
+            { label: "Aufträge", value: String(ordersCountAll ?? 0) },
+            { label: "Angebote", value: String(quotesCountAll) },
+            { label: "Rechnungen", value: String(invoicesCountAll) },
+            { label: "Objekte", value: String(objectsCountAll ?? 0) },
+            { label: "Letzter Auftrag", value: lastOrderDateAll ? formatDate(lastOrderDateAll) : "—" },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl bg-white/10 px-3 py-2.5">
+              <p className="text-[10.5px] text-white/70">{stat.label}</p>
+              <p className="mt-0.5 truncate text-sm font-bold tabular-nums">{stat.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {message && <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-sm text-brand-dark">{message}</p>}
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <div className="mt-6 flex gap-2 overflow-x-auto border-b border-border pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-6 flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
             <Link
               key={t.key}
               href={`/kunden/${id}?tab=${t.key}`}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${
-                activeTab === t.key ? "bg-brand text-white" : "bg-card text-muted hover:text-foreground"
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1.5 text-sm font-medium ${
+                activeTab === t.key
+                  ? "bg-gradient-to-br from-[#3a63ff] to-[#5b3ec9] text-white shadow-sm"
+                  : "text-muted hover:bg-background hover:text-foreground"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -611,7 +672,7 @@ export default async function KundeDetailPage({
         </div>
 
         <aside className="lg:sticky lg:top-6">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold">
               <Info className="h-4 w-4" />
               Kundenübersicht
