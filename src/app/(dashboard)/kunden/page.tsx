@@ -821,7 +821,7 @@ export default async function KundenPage({
             return (
               <Link
                 key={customer.id}
-                href={panelHref(customer.id)}
+                href={`/kunden/${customer.id}`}
                 className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-brand/40 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -943,7 +943,7 @@ export default async function KundenPage({
                 const label = c.company_name?.trim() || c.name;
                 return (
                   <li key={c.id}>
-                    <Link href={panelHref(c.id)} className="flex items-center gap-2.5 group">
+                    <Link href={`/kunden/${c.id}`} className="flex items-center gap-2.5 group">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-700 text-[11px] font-semibold text-white shadow-sm">
                         {initials(label)}
                       </span>
