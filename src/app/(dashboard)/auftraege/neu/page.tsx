@@ -38,12 +38,15 @@ export default async function NeuerAuftragPage({
       <Link href="/auftraege" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Auftragsliste
       </Link>
-      <div className="mt-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Neuer Auftrag</h1>
-        <p className="mt-1 text-sm text-muted">
-          Legen Sie einen neuen Auftrag Schritt für Schritt an – Kunde, Auftragsart, Termin, Ressourcen, Hinweise und
-          Dokumente.
-        </p>
+      <div className="relative mt-2 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10">
+          <h1 className="text-2xl font-semibold tracking-tight">Neuer Auftrag</h1>
+          <p className="mt-1 text-sm text-white/80">
+            Legen Sie einen neuen Auftrag Schritt für Schritt an – Kunde, Auftragsart, Termin, Ressourcen, Hinweise und
+            Dokumente.
+          </p>
+        </div>
       </div>
 
       {error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
