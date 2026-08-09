@@ -33,16 +33,20 @@ export default async function AuftragDetailPage({
       <Link href="/auftraege" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Auftragsliste
       </Link>
-      <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{order.title}</h1>
-        <form action={deleteWithId}>
-          <button
-            type="submit"
-            className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-          >
-            Auftrag löschen
-          </button>
-        </form>
+
+      <div className="relative mt-2 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="break-words text-2xl font-semibold tracking-tight">{order.title}</h1>
+          <form action={deleteWithId}>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-3.5 py-2 text-sm font-medium text-white hover:bg-white/20"
+            >
+              Auftrag löschen
+            </button>
+          </form>
+        </div>
       </div>
 
       {message && (
