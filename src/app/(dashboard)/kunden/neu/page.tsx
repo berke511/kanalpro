@@ -37,27 +37,30 @@ export default async function NeuerKundePage({
         Zurück zur Kundenliste
       </Link>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Neuer Kunde</h1>
-          <p className="mt-1 text-sm text-muted">Lege einen neuen Kunden mit allen Stammdaten an.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/kunden"
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-background"
-          >
-            <X className="h-4 w-4" />
-            Abbrechen
-          </Link>
-          <button
-            type="submit"
-            form={FORM_ID}
-            className="hidden items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark lg:inline-flex"
-          >
-            <Save className="h-4 w-4" />
-            Speichern
-          </button>
+      <div className="relative mt-2 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Neuer Kunde</h1>
+            <p className="mt-1 text-sm text-white/80">Lege einen neuen Kunden mit allen Stammdaten an.</p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/kunden"
+              className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-medium text-white hover:bg-white/20"
+            >
+              <X className="h-4 w-4" />
+              Abbrechen
+            </Link>
+            <button
+              type="submit"
+              form={FORM_ID}
+              className="hidden items-center gap-1.5 rounded-[11px] bg-white px-4 py-2.5 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90 lg:inline-flex"
+            >
+              <Save className="h-4 w-4" />
+              Speichern
+            </button>
+          </div>
         </div>
       </div>
 
