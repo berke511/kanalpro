@@ -83,7 +83,7 @@ export function EinsatzplanungGrid({
   // gesamte Woche immer auf einen Blick sichtbar ist – auch auf schmalen
   // Smartphone-Bildschirmen – statt sie erst zur Seite schieben zu müssen.
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm">
+    <div className="rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
       <div className="flex">
         {/* Stundenraster links */}
         <div className="w-9 shrink-0 border-r border-border pt-9 sm:w-14">
