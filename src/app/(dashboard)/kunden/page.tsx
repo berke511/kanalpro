@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, ClipboardList, FileText, Receipt, Star, UserPlus, Users, Wrench, X } from "lucide-react";
+import { Building2, ClipboardList, Clock, FileText, Receipt, Star, TrendingUp, UserPlus, Users, Wrench, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { formatEuro } from "@/lib/format";
 import {
@@ -190,13 +190,54 @@ export default async function KundenPage({
   ]);
 
   const kpis = [
-    { label: "Gesamte Kunden", value: totalCount ?? 0, icon: Users },
-    { label: "Neukunden", value: neukundenCount ?? 0, icon: UserPlus },
-    { label: "Aktive Kunden", value: (bestandskundenCount ?? 0) + (wartungskundenCount ?? 0), icon: ClipboardList },
-    { label: "Wartungsverträge", value: maintenanceCount ?? 0, icon: Wrench },
-    { label: "Offene Angebote", value: openQuotesCount ?? 0, icon: FileText },
-    { label: "Offene Rechnungen", value: openInvoicesCount ?? 0, icon: Receipt },
+    { label: "Gesamte Kunden", value: totalCount ?? 0, icon: Users, gradient: "from-blue-400 to-blue-700" },
+    { label: "Neukunden", value: neukundenCount ?? 0, icon: UserPlus, gradient: "from-emerald-400 to-emerald-700" },
+    { label: "Aktive Kunden", value: (bestandskundenCount ?? 0) + (wartungskundenCount ?? 0), icon: ClipboardList, gradient: "from-indigo-400 to-indigo-700" },
+    { label: "Wartungsverträge", value: maintenanceCount ?? 0, icon: Wrench, gradient: "from-teal-400 to-teal-700" },
+    { label: "Offene Angebote", value: openQuotesCount ?? 0, icon: FileText, gradient: "from-slate-400 to-slate-700" },
+    { label: "Offene Rechnungen", value: openInvoicesCount ?? 0, icon: Receipt, gradient: "from-amber-400 to-amber-700" },
   ];
+
+  // Zusätzliche, unternehmensweite Kennzahlen für die Seitenleiste (Top-
+  // Kunden nach Umsatz, neueste Kunden) – bewusst unabhängig von der
+  // aktuellen Such-/Filteransicht, gleiches Prinzip wie die KPI-Kacheln
+  // oben. Umsatzberechnung folgt demselben Muster wie in
+  // rechnungen/statistiken/page.tsx (bezahlte Rechnungen, laufendes Jahr).
+  const yearStart = `${new Date().getUTCFullYear()}-01-01`;
+  const [{ data: revenueInvoices }, { data: revenueItems }, { data: newestCustomers }] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, customer_id, customers(name, company_name), status, kind, issue_date, payment_date")
+      .eq("kind", "rechnung")
+      .eq("status", "bezahlt")
+      .eq("is_archived", false),
+    supabase.from("invoice_items").select("invoice_id, quantity, unit_price"),
+    supabase
+      .from("customers")
+      .select("id, name, company_name, created_at")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false })
+      .limit(4),
+  ]);
+
+  const revenueItemsByInvoice = new Map<string, number>();
+  for (const it of revenueItems ?? []) {
+    revenueItemsByInvoice.set(
+      it.invoice_id,
+      (revenueItemsByInvoice.get(it.invoice_id) ?? 0) + Number(it.quantity) * Number(it.unit_price),
+    );
+  }
+  const revenueByCustomerName = new Map<string, number>();
+  for (const inv of revenueInvoices ?? []) {
+    const d = inv.payment_date ?? inv.issue_date;
+    if (!d || d < yearStart) continue;
+    const c = inv.customers as { name: string | null; company_name: string | null } | null;
+    const label = c?.company_name?.trim() || c?.name?.trim() || "Unbekannt";
+    revenueByCustomerName.set(label, (revenueByCustomerName.get(label) ?? 0) + (revenueItemsByInvoice.get(inv.id) ?? 0));
+  }
+  const topCustomers = Array.from(revenueByCustomerName.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
   // Subquery-basierte Schnittmengenfilter: Letzter Auftrag, offene
   // Rechnungen/Angebote. Jede aktive Bedingung liefert eine Menge von
@@ -655,38 +696,43 @@ export default async function KundenPage({
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Kundenverwaltung</h1>
-          <p className="mt-1 text-sm text-muted">
-            {totalFilteredCount} Kunde{totalFilteredCount === 1 ? "" : "n"}
-          </p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Kundenverwaltung</h1>
+            <p className="mt-1 text-sm text-white/80">
+              {totalFilteredCount} Kunde{totalFilteredCount === 1 ? "" : "n"}
+            </p>
+          </div>
+          <Link
+            href="/kunden/neu"
+            className="flex items-center gap-1.5 rounded-[11px] bg-white px-4 py-2.5 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+          >
+            <UserPlus className="h-4 w-4" />
+            Neuer Kunde
+          </Link>
         </div>
-        <Link
-          href="/kunden/neu"
-          className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-dark"
-        >
-          <UserPlus className="h-4 w-4" />
-          Neuer Kunde
-        </Link>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div key={kpi.label} className="rounded-2xl border border-border bg-card p-[15px] shadow-sm">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-[9px] bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
-              <p className="mt-2.5 text-xs text-muted">{kpi.label}</p>
-              <p className="mt-0.5 text-xl font-semibold tabular-nums">{kpi.value}</p>
+              <p className="mt-2.5 text-xl font-bold tabular-nums tracking-tight">{kpi.value}</p>
+              <p className="mt-0.5 text-[10.5px] text-muted-2">{kpi.label}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="min-w-0 lg:col-span-2">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex max-w-xl flex-1 flex-wrap gap-3">
           <CustomerSearchInput initialQuery={state.q} />
         </div>
@@ -782,7 +828,7 @@ export default async function KundenPage({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand-dark">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-700 text-xs font-semibold text-white shadow-sm">
                       {isCompany ? <Building2 className="h-4 w-4" /> : initials(customer.name)}
                     </span>
                     <div className="min-w-0">
@@ -855,6 +901,68 @@ export default async function KundenPage({
           </div>
         </div>
       )}
+      </div>
+
+      <aside className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm">
+              <TrendingUp className="h-3.5 w-3.5" />
+            </span>
+            <h2 className="text-sm font-semibold">Top-Kunden nach Umsatz</h2>
+          </div>
+          <p className="mt-0.5 text-[11px] text-muted-2">Laufendes Jahr</p>
+          {topCustomers.length === 0 ? (
+            <p className="mt-4 text-xs text-muted">Noch keine bezahlten Rechnungen in diesem Jahr.</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {topCustomers.map(([name, revenue], index) => (
+                <li key={name} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-brand-dark">
+                    {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{name}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                    {formatEuro(revenue)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-sm">
+              <Clock className="h-3.5 w-3.5" />
+            </span>
+            <h2 className="text-sm font-semibold">Neueste Kunden</h2>
+          </div>
+          {(newestCustomers ?? []).length === 0 ? (
+            <p className="mt-4 text-xs text-muted">Noch keine Kunden angelegt.</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {(newestCustomers ?? []).map((c) => {
+                const label = c.company_name?.trim() || c.name;
+                return (
+                  <li key={c.id}>
+                    <Link href={panelHref(c.id)} className="flex items-center gap-2.5 group">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-700 text-[11px] font-semibold text-white shadow-sm">
+                        {initials(label)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground group-hover:text-brand">{label}</p>
+                        <p className="text-[11px] text-muted-2">{formatDate(c.created_at.slice(0, 10))}</p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </aside>
+      </div>
 
       {panelData && <CustomerDetailPanel data={panelData} />}
     </div>
