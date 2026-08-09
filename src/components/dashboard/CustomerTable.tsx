@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
@@ -316,7 +317,7 @@ export function CustomerTable({
     "flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-background hover:text-foreground";
 
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/60 px-3 py-2">
         {selected.size > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -584,7 +585,7 @@ export function CustomerTable({
                       </Link>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand-dark">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-700 text-xs font-semibold text-white shadow-sm">
                           {isCompany ? <Building2 className="h-4 w-4" /> : initials(customer.name)}
                         </span>
                         <div className="min-w-0">
