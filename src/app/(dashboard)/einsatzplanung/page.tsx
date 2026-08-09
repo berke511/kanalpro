@@ -1,5 +1,6 @@
+
 import Link from "next/link";
-import { CalendarDays, Filter, Truck, User } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Filter, Sun, Truck, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
 import { canManageResourcesAndSchedule } from "@/lib/roles";
@@ -57,6 +58,37 @@ function getMonthStart(offsetMonths: number) {
   return new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + offsetMonths, 1));
 }
 
+// Beschriftungen für die Vor-/Zurück-Navigation im Hero-Header: statt
+// nackter Pfeile zeigen die Buttons den relativen Tag/Zeitraum plus das
+// tatsächliche Datum an (z. B. "Gestern · 17.08." bzw. "Vorige Woche ·
+// 10.–16.08."), damit sofort klar ist, wohin man navigiert.
+function dayRelativeLabel(targetOffset: number) {
+  if (targetOffset === -1) return "Gestern";
+  if (targetOffset === 0) return "Heute";
+  if (targetOffset === 1) return "Morgen";
+  const d = dateFromISO(todayBerlinISO());
+  d.setUTCDate(d.getUTCDate() + targetOffset);
+  return d.toLocaleDateString("de-DE", { weekday: "short", timeZone: "UTC" });
+}
+
+function dayDateLabel(targetOffset: number) {
+  const d = dateFromISO(todayBerlinISO());
+  d.setUTCDate(d.getUTCDate() + targetOffset);
+  return formatShort(toISODate(d));
+}
+
+function weekRangeLabel(targetOffsetWeeks: number) {
+  const monday = getMonday(targetOffsetWeeks);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  return `${formatShort(toISODate(monday))} – ${formatShort(toISODate(sunday))}`;
+}
+
+function monthNameLabel(targetOffsetMonths: number) {
+  const start = getMonthStart(targetOffsetMonths);
+  return start.toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 export default async function EinsatzplanungPage({
   searchParams,
 }: {
@@ -110,6 +142,27 @@ export default async function EinsatzplanungPage({
     rangeStart = weekDays[0];
     rangeEnd = weekDays[6];
     headerLabel = `${formatShort(rangeStart)} – ${formatShort(rangeEnd)}`;
+  }
+
+  let prevNavMain: string;
+  let prevNavSub: string;
+  let nextNavMain: string;
+  let nextNavSub: string;
+  if (view === "tag") {
+    prevNavMain = dayRelativeLabel(offset - 1);
+    prevNavSub = dayDateLabel(offset - 1);
+    nextNavMain = dayRelativeLabel(offset + 1);
+    nextNavSub = dayDateLabel(offset + 1);
+  } else if (view === "monat") {
+    prevNavMain = "Voriger Monat";
+    prevNavSub = monthNameLabel(offset - 1);
+    nextNavMain = "Nächster Monat";
+    nextNavSub = monthNameLabel(offset + 1);
+  } else {
+    prevNavMain = "Vorige Woche";
+    prevNavSub = weekRangeLabel(offset - 1);
+    nextNavMain = "Nächste Woche";
+    nextNavSub = weekRangeLabel(offset + 1);
   }
 
   const supabase = await createClient();
@@ -237,6 +290,24 @@ export default async function EinsatzplanungPage({
     .sort((a, b) => b.percent - a.percent)
     .slice(0, 6);
 
+  const avgEmployeeUtilization =
+    employeeUtilization.length > 0
+      ? Math.round(employeeUtilization.reduce((sum, e) => sum + e.percent, 0) / employeeUtilization.length)
+      : 0;
+  const avgVehicleUtilization =
+    vehicleUtilization.length > 0
+      ? Math.round(vehicleUtilization.reduce((sum, v) => sum + v.percent, 0) / vehicleUtilization.length)
+      : 0;
+  const todayScheduledCount = visibleOrders.filter((o) => o.scheduled_date === todayISO).length;
+
+  const kpis = [
+    { label: "Einsätze im Zeitraum", value: visibleOrders.length, gradient: "from-blue-400 to-blue-700", Icon: CalendarDays },
+    { label: "Heute geplant", value: todayScheduledCount, gradient: "from-indigo-400 to-indigo-700", Icon: Sun },
+    { label: "Nicht eingeplant", value: unscheduledOrders?.length ?? 0, gradient: "from-amber-400 to-amber-700", Icon: Clock },
+    { label: "Ø Mitarbeiterauslastung", value: `${avgEmployeeUtilization}%`, gradient: "from-emerald-400 to-emerald-700", Icon: User },
+    { label: "Ø Fahrzeugauslastung", value: `${avgVehicleUtilization}%`, gradient: "from-purple-400 to-purple-700", Icon: Truck },
+  ];
+
   // URL-Hilfsfunktionen: Basis-Query (ohne "panel") für Filterwechsel und
   // Panel-Öffnen/-Schließen – Muster identisch zu /auftraege.
   function buildQuery(overrides: Record<string, string | number | undefined>) {
@@ -339,53 +410,72 @@ export default async function EinsatzplanungPage({
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
-            <CalendarDays className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Einsatzplanung & Disposition</h1>
-            <p className="mt-0.5 text-sm text-muted">{headerLabel}</p>
-          </div>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10">
+          <h1 className="text-2xl font-semibold tracking-tight">Einsatzplanung & Disposition</h1>
+          <p className="mt-1 text-sm text-white/80">{headerLabel}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 text-sm font-medium shadow-sm">
+        <div className="relative z-10 mt-5 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-xl border border-white/25 bg-white/15 p-1 text-sm font-medium">
             {(["tag", "woche", "monat"] as const).map((v) => (
               <Link
                 key={v}
                 href={buildQuery({ view: v, offset: 0 })}
                 className={`rounded-lg px-3 py-1.5 capitalize transition-all duration-150 ${
-                  view === v
-                    ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm"
-                    : "text-muted hover:bg-background hover:text-foreground"
+                  view === v ? "bg-white text-brand-dark shadow-sm" : "text-white/85 hover:bg-white/15"
                 }`}
               >
                 {v}
               </Link>
             ))}
           </div>
-          <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+          <div className="flex items-stretch gap-0.5 rounded-xl border border-white/25 bg-white/15 p-1">
             <Link
               href={buildQuery({ offset: offset - 1 })}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-white transition-colors hover:bg-white/15"
             >
-              ←
+              <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-left leading-tight">
+                <span className="block text-xs font-semibold">{prevNavMain}</span>
+                <span className="block text-[10px] font-medium text-white/70">{prevNavSub}</span>
+              </span>
             </Link>
             <Link
               href={buildQuery({ offset: 0 })}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-brand-soft hover:text-brand"
+              className="flex items-center rounded-lg px-3.5 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
             >
               Heute
             </Link>
             <Link
               href={buildQuery({ offset: offset + 1 })}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-white transition-colors hover:bg-white/15"
             >
-              →
+              <span className="text-right leading-tight">
+                <span className="block text-xs font-semibold">{nextNavMain}</span>
+                <span className="block text-[10px] font-medium text-white/70">{nextNavSub}</span>
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
           </div>
         </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]"
+          >
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
+              <kpi.Icon className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <p className="text-lg font-bold leading-tight text-foreground">{kpi.value}</p>
+              <p className="text-[11px] text-muted-2">{kpi.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5 shadow-sm">
@@ -414,7 +504,7 @@ export default async function EinsatzplanungPage({
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         <div className="w-full shrink-0 lg:w-72">
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               Nicht eingeplante Aufträge
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark px-1.5 text-xs font-semibold text-white shadow-sm">
@@ -448,7 +538,7 @@ export default async function EinsatzplanungPage({
 
         <div key={`${view}-${offset}`} className="min-w-0 flex-1 animate-fade-in">
           {view === "monat" ? (
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
               <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase text-muted">
                 {WEEKDAY_LABELS.map((w) => (
                   <div key={w}>{w}</div>
