@@ -730,9 +730,7 @@ export default async function KundenPage({
         })}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-      <div className="min-w-0 lg:col-span-2">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <div className="flex max-w-xl flex-1 flex-wrap gap-3">
           <CustomerSearchInput initialQuery={state.q} />
         </div>
@@ -901,9 +899,8 @@ export default async function KundenPage({
           </div>
         </div>
       )}
-      </div>
 
-      <aside className="space-y-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm">
@@ -961,7 +958,6 @@ export default async function KundenPage({
             </ul>
           )}
         </div>
-      </aside>
       </div>
 
       {panelData && <CustomerDetailPanel data={panelData} />}
