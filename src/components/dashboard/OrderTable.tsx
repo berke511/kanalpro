@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useMemo, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
@@ -403,7 +404,7 @@ export function OrderTable({
     "flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-background hover:text-foreground";
 
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/60 px-3 py-2">
         {selected.size > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -786,7 +787,7 @@ export function OrderTable({
                           <span
                             key={e.id}
                             title={e.name}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-brand-soft text-[10px] font-semibold text-brand-dark"
+                            className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-gradient-to-br from-blue-400 to-blue-700 text-[10px] font-semibold text-white shadow-sm"
                           >
                             {initials(e.name)}
                           </span>
