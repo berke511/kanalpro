@@ -175,7 +175,7 @@ export function EinsatzplanungGrid({
                       }}
                     >
                       <p className={`truncate font-semibold ${colors.text}`}>{order.title}</p>
-                      <p className="truncate text-muted">{order.customerName ?? "—"}</p>
+                      <p className="truncate font-semibold text-foreground">{order.customerName ?? "—"}</p>
                       {order.employeeNames.length > 0 && (
                         <p className="truncate text-muted">{order.employeeNames.join(", ")}</p>
                       )}
