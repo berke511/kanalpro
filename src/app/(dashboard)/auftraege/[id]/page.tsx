@@ -69,7 +69,7 @@ export default async function AuftragDetailPage({
   const deleteWithId = deleteOrder.bind(null, id);
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="p-6">
       <Link href="/auftraege" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Auftragsliste
       </Link>
