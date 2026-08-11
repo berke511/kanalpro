@@ -172,6 +172,94 @@ export async function updateOrder(id: string, formData: FormData) {
   redirect(`/auftraege/${id}?message=Gespeichert`);
 }
 
+// Vollständiges Bearbeiten-Formular (Vorlage "Übersicht + Formular" auf
+// /auftraege/[id]) – deckt im Gegensatz zum alten updateOrder() oben auch
+// Auftragsart, Priorität, Uhrzeit/Dauer sowie mehrere Mitarbeiter/
+// Fahrzeuge/Maschinen ab. Ressourcen werden per Diff abgeglichen (entfernte
+// Häkchen werden auch wirklich entfernt, nicht nur ergänzt).
+export async function updateOrderFull(id: string, formData: FormData) {
+  const { supabase, companyId, userId } = await requireCompanyContext();
+
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) {
+    redirect(`/auftraege/${id}?error=Titel+ist+erforderlich`);
+  }
+
+  const orderKindRaw = String(formData.get("order_kind") ?? "sonstige");
+  const orderKind = (ORDER_KINDS as readonly string[]).includes(orderKindRaw) ? orderKindRaw : "sonstige";
+  const priorityRaw = String(formData.get("priority") ?? "standard");
+  const priority = (ORDER_PRIORITIES as readonly string[]).includes(priorityRaw) ? priorityRaw : "standard";
+  const statusRaw = String(formData.get("status") ?? "offen");
+  const status = (ORDER_STATUSES as readonly string[]).includes(statusRaw) ? statusRaw : "offen";
+
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      title,
+      description: emptyToNull(formData.get("description")),
+      order_kind: orderKind,
+      priority,
+      status,
+      customer_id: emptyToNull(formData.get("customer_id")),
+      scheduled_date: emptyToNull(formData.get("scheduled_date")),
+      start_time: emptyToNull(formData.get("start_time")),
+      planned_duration_minutes: intOrNull(formData.get("planned_duration_minutes")),
+      updated_by: userId,
+    })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/auftraege/${id}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const employeeIds = formData.getAll("employee_ids").map(String).filter(Boolean);
+  const resourceIds = [...formData.getAll("vehicle_ids"), ...formData.getAll("machine_ids")].map(String).filter(Boolean);
+
+  const [{ data: currentAssignments }, { data: currentResources }] = await Promise.all([
+    supabase.from("order_assignments").select("id, employee_id").eq("order_id", id),
+    supabase.from("order_resources").select("id, fleet_item_id").eq("order_id", id),
+  ]);
+
+  const currentEmployeeIds = new Set((currentAssignments ?? []).map((a) => a.employee_id));
+  const currentResourceIds = new Set((currentResources ?? []).map((r) => r.fleet_item_id));
+
+  const toRemoveAssignmentIds = (currentAssignments ?? []).filter((a) => !employeeIds.includes(a.employee_id)).map((a) => a.id);
+  const toAddEmployeeIds = employeeIds.filter((eid) => !currentEmployeeIds.has(eid));
+
+  const toRemoveResourceIds = (currentResources ?? []).filter((r) => !resourceIds.includes(r.fleet_item_id)).map((r) => r.id);
+  const toAddResourceIds = resourceIds.filter((rid) => !currentResourceIds.has(rid));
+
+  if (toRemoveAssignmentIds.length > 0) {
+    await supabase.from("order_assignments").delete().in("id", toRemoveAssignmentIds);
+  }
+  if (toAddEmployeeIds.length > 0) {
+    await supabase.from("order_assignments").insert(
+      toAddEmployeeIds.map((employeeId) => ({ company_id: companyId, order_id: id, employee_id: employeeId, assigned_by: userId })),
+    );
+  }
+  if (toRemoveResourceIds.length > 0) {
+    await supabase.from("order_resources").delete().in("id", toRemoveResourceIds);
+  }
+  if (toAddResourceIds.length > 0) {
+    await supabase.from("order_resources").insert(
+      toAddResourceIds.map((fleetItemId) => ({ company_id: companyId, order_id: id, fleet_item_id: fleetItemId })),
+    );
+  }
+
+  await logOrderAudit(supabase, {
+    companyId,
+    orderId: id,
+    orderLabel: title,
+    actorId: userId,
+    action: "updated",
+  });
+
+  revalidatePath("/auftraege");
+  revalidatePath(`/auftraege/${id}`);
+  revalidatePath("/einsatzplanung");
+  redirect(`/auftraege/${id}?message=Gespeichert`);
+}
+
 export async function deleteOrder(id: string) {
   const { supabase, companyId, userId, role } = await requireCompanyContext();
 
