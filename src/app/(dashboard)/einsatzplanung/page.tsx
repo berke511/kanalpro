@@ -3,13 +3,11 @@ import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Filter, Sun, Truck, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
-import { canManageResourcesAndSchedule } from "@/lib/roles";
 import { dateFromISO, nowBerlinMinutes, todayBerlinISO } from "@/lib/date";
 import { ORDER_KIND_COLOR, ORDER_STATUSES, STATUS_LABELS } from "@/lib/orders";
 import { EinsatzplanungGrid, type CalendarOrder } from "@/components/dashboard/EinsatzplanungGrid";
 import { EinsatzplanungFilterBar } from "@/components/dashboard/EinsatzplanungFilterBar";
 import { UnscheduledOrderCard } from "@/components/dashboard/UnscheduledOrderCard";
-import { EinsatzplanungDetailPanel, type EinsatzplanungPanelData } from "@/components/dashboard/EinsatzplanungDetailPanel";
 
 const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const VIEWS = ["woche", "tag", "monat"] as const;
@@ -21,7 +19,6 @@ type RawSearchParams = {
   employee?: string;
   vehicle?: string;
   status?: string;
-  panel?: string;
   error?: string;
   message?: string;
 };
@@ -169,9 +166,13 @@ export default async function EinsatzplanungPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const profile = user ? await getOrCreateProfile(supabase, user) : null;
-  const role = profile?.role ?? null;
-  const canManage = canManageResourcesAndSchedule(role);
+  // Erzeugt beim ersten Dashboard-Aufruf Firma/Profil, falls noch nicht
+  // vorhanden (Seiteneffekt) – der Rückgabewert wird hier nicht mehr
+  // benötigt, seit die frühere Detail-Seitenleiste (inkl. rollenabhängiger
+  // Aktions-Buttons) durch die eigene Auftragsseite ersetzt wurde.
+  if (user) {
+    await getOrCreateProfile(supabase, user);
+  }
 
   const [{ data: employeeOptions }, { data: fleetOptions }] = await Promise.all([
     supabase.from("profiles").select("id, full_name").order("full_name", { ascending: true }),
@@ -308,8 +309,9 @@ export default async function EinsatzplanungPage({
     { label: "Ø Fahrzeugauslastung", value: `${avgVehicleUtilization}%`, gradient: "from-purple-400 to-purple-700", Icon: Truck },
   ];
 
-  // URL-Hilfsfunktionen: Basis-Query (ohne "panel") für Filterwechsel und
-  // Panel-Öffnen/-Schließen – Muster identisch zu /auftraege.
+  // URL-Hilfsfunktion: Basis-Query für Filterwechsel – Muster identisch zu
+  // /auftraege. Auftragsdetails öffnen sich seit der Umstellung auf eine
+  // eigene Seite (/auftraege/{id}) statt in einer Seitenleiste hier.
   function buildQuery(overrides: Record<string, string | number | undefined>) {
     const params = new URLSearchParams();
     const merged = { view, offset: offset || undefined, employee: employeeFilter || undefined, vehicle: vehicleFilter || undefined, status: statusFilter || undefined, ...overrides };
@@ -323,81 +325,6 @@ export default async function EinsatzplanungPage({
   }
 
   const baseQuery = buildQuery({}).split("?")[1] ?? "";
-
-  function panelHref(orderId: string) {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", orderId);
-    return `/einsatzplanung?${params.toString()}`;
-  }
-
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    const qs = params.toString();
-    return qs ? `/einsatzplanung?${qs}` : "/einsatzplanung";
-  }
-
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  let panelData: EinsatzplanungPanelData | null = null;
-
-  if (panelId) {
-    const { data: panelOrder } = await supabase
-      .from("orders")
-      .select(
-        "id, order_number, title, status, priority, order_kind, scheduled_date, start_time, planned_duration_minutes, customer_id, property_id",
-      )
-      .eq("id", panelId)
-      .maybeSingle();
-
-    if (panelOrder) {
-      const [{ data: customerRow }, { data: propertyRow }, { data: assignRows }, { data: resRows }] = await Promise.all([
-        panelOrder.customer_id
-          ? supabase.from("customers").select("name, company_name, phone, email, street, postal_code, city").eq("id", panelOrder.customer_id).maybeSingle()
-          : Promise.resolve({ data: null }),
-        panelOrder.property_id
-          ? supabase.from("customer_properties").select("name, street, postal_code, city").eq("id", panelOrder.property_id).maybeSingle()
-          : Promise.resolve({ data: null }),
-        supabase
-          .from("order_assignments")
-          .select("employee_id, profiles!order_assignments_employee_id_fkey(full_name)")
-          .eq("order_id", panelId),
-        supabase.from("order_resources").select("fleet_item_id, fleet_items(name, license_plate, kind)").eq("order_id", panelId),
-      ]);
-
-      const addressLine = propertyRow
-        ? [propertyRow.street, [propertyRow.postal_code, propertyRow.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
-        : customerRow
-          ? [customerRow.street, [customerRow.postal_code, customerRow.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")
-          : null;
-
-      const allResources = (resRows ?? []).map((r) => ({
-        id: r.fleet_item_id,
-        name: r.fleet_items?.license_plate ? `${r.fleet_items.license_plate} · ${r.fleet_items.name}` : r.fleet_items?.name ?? "Unbekannt",
-        kind: r.fleet_items?.kind ?? "fahrzeug",
-      }));
-
-      panelData = {
-        id: panelOrder.id,
-        order_number: panelOrder.order_number,
-        title: panelOrder.title,
-        status: panelOrder.status,
-        priority: panelOrder.priority,
-        order_kind: panelOrder.order_kind,
-        scheduled_date: panelOrder.scheduled_date,
-        start_time: panelOrder.start_time,
-        planned_duration_minutes: panelOrder.planned_duration_minutes,
-        customerName: customerRow ? customerRow.company_name || customerRow.name : null,
-        customerPhone: customerRow?.phone ?? null,
-        customerEmail: customerRow?.email ?? null,
-        addressLine: addressLine || null,
-        employees: (assignRows ?? []).map((a) => ({ id: a.employee_id, name: a.profiles?.full_name ?? "Unbekannt" })),
-        vehicles: allResources.filter((r) => r.kind !== "maschine").map(({ id, name }) => ({ id, name })),
-        machines: allResources.filter((r) => r.kind === "maschine").map(({ id, name }) => ({ id, name })),
-        closeHref: panelCloseHref(),
-        canManage,
-      };
-    }
-  }
 
   const statusOptions = ORDER_STATUSES.map((s) => ({ id: s, label: STATUS_LABELS[s] ?? s }));
   const employeeSelectOptions = (employeeOptions ?? []).map((e) => ({ id: e.id, label: e.full_name || "Unbenannt" }));
@@ -586,7 +513,6 @@ export default async function EinsatzplanungPage({
               todayISO={todayISO}
               nowMinutes={nowBerlinMinutes()}
               weekdayLabels={view === "tag" ? [new Date(`${days[0]}T00:00:00Z`).toLocaleDateString("de-DE", { weekday: "short", timeZone: "UTC" })] : WEEKDAY_LABELS}
-              panelHref={panelHref}
             />
           )}
 
@@ -647,8 +573,6 @@ export default async function EinsatzplanungPage({
             </div>
           )}
         </div>
-
-        {panelData && <EinsatzplanungDetailPanel data={panelData} />}
       </div>
     </div>
   );
