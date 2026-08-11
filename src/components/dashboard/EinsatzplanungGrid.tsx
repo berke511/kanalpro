@@ -65,14 +65,12 @@ export function EinsatzplanungGrid({
   todayISO,
   nowMinutes,
   weekdayLabels,
-  panelHref,
 }: {
   days: string[];
   ordersByDay: Record<string, CalendarOrder[]>;
   todayISO: string;
   nowMinutes: number;
   weekdayLabels: string[];
-  panelHref: (orderId: string) => string;
 }) {
   const hours = Array.from({ length: HOUR_END - HOUR_START + 1 }, (_, i) => HOUR_START + i);
   const nowTop = ((nowMinutes - HOUR_START * 60) / ((HOUR_END - HOUR_START) * 60)) * GRID_HEIGHT;
@@ -126,7 +124,7 @@ export function EinsatzplanungGrid({
                     return (
                       <Link
                         key={o.id}
-                        href={panelHref(o.id)}
+                        href={`/auftraege/${o.id}`}
                         className={`block truncate rounded-md border-l-2 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:shadow ${colors.text}`}
                       >
                         {o.title}
@@ -164,7 +162,7 @@ export function EinsatzplanungGrid({
                   return (
                     <Link
                       key={order.id}
-                      href={panelHref(order.id)}
+                      href={`/auftraege/${order.id}`}
                       title={`${order.title} · ${order.customerName ?? ""}`}
                       className={`absolute overflow-hidden rounded-lg border-l-4 ${colors.border} ${colors.bg} px-1.5 py-1 text-[11px] shadow-sm transition-all duration-150 hover:z-10 hover:-translate-y-0.5 hover:shadow-lg`}
                       style={{
