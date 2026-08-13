@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { AlertTriangle, Phone, Truck } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -21,7 +22,7 @@ export function EmployeeCard({ employee, href }: { employee: EmployeeCardData; h
   return (
     <Link
       href={href}
-      className={`group flex flex-col rounded-2xl border border-border bg-card p-4 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md ${
+      className={`group flex flex-col rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)] transition-all duration-150 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md ${
         employee.isArchived ? "opacity-60" : ""
       }`}
     >
