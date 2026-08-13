@@ -25,7 +25,6 @@ import {
   DOCUMENT_CATEGORIES,
   DOCUMENT_CATEGORY_LABELS,
   EMPLOYEE_STATUSES,
-  EMPLOYEE_STATUS_BADGE_CLASS,
   EMPLOYEE_STATUS_LABELS,
   QUALIFICATION_TYPES,
   QUALIFICATION_TYPE_LABELS,
@@ -156,44 +155,48 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
   const labelClass = "text-xs font-medium text-muted";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-          <div className="relative h-14 w-14 shrink-0">
-            {data.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.photoUrl} alt={data.fullName ?? ""} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
-            ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-lg font-semibold text-white shadow-sm">
-                {initialsFor(data.fullName)}
-              </span>
-            )}
+    <>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative h-14 w-14 shrink-0">
+              {data.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.photoUrl} alt={data.fullName ?? ""} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-lg font-semibold text-white">
+                  {initialsFor(data.fullName)}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-2xl font-semibold tracking-tight">
+                  {data.fullName || "—"}
+                  {data.isSelf && <span className="ml-1.5 text-sm font-normal text-white/70">(Du)</span>}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {EMPLOYEE_STATUS_LABELS[data.status] ?? data.status}
+                </span>
+                {data.isArchived && <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">Archiviert</span>}
+              </div>
+              <p className="mt-1 text-sm text-white/80">{ROLE_LABELS[data.role] ?? data.role}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">
-              {data.fullName || "—"}
-              {data.isSelf && <span className="ml-1.5 text-xs font-normal text-muted">(Du)</span>}
-            </h3>
-            <p className="truncate text-sm text-muted">{ROLE_LABELS[data.role] ?? data.role}</p>
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${EMPLOYEE_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
-            {EMPLOYEE_STATUS_LABELS[data.status] ?? data.status}
-          </span>
-          {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
           {(data.canChangeStatus || data.canManage) && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {data.canChangeStatus && (
                 <form action={data.updateStatusAction}>
                   <select
                     name="status"
                     defaultValue={data.status}
                     onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                    className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+                    className="rounded-[11px] border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white outline-none [color-scheme:dark]"
                   >
                     {EMPLOYEE_STATUSES.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} className="text-foreground">
                         {EMPLOYEE_STATUS_LABELS[s]}
                       </option>
                     ))}
@@ -203,9 +206,9 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
               {data.canManage && (
                 <Link
                   href={data.hrefs.tabs.profil}
-                  className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-brand/30 hover:bg-brand-soft"
+                  className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-4 w-4" />
                   Bearbeiten
                 </Link>
               )}
@@ -213,27 +216,43 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
           )}
         </div>
 
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            return (
-              <Link
-                key={t.key}
-                href={data.hrefs.tabs[t.key]}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  data.activeTab === t.key
-                    ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm"
-                    : "text-muted hover:bg-background hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {t.label}
-              </Link>
-            );
-          })}
+        <div className="relative z-10 mt-5 grid grid-cols-3 gap-3 sm:max-w-md">
+          <div className="rounded-xl bg-white/10 px-3 py-2.5">
+            <p className="text-[10.5px] text-white/70">Resturlaub</p>
+            <p className="mt-0.5 text-sm font-bold tabular-nums">{restUrlaub} Tage</p>
+          </div>
+          <div className="rounded-xl bg-white/10 px-3 py-2.5">
+            <p className="text-[10.5px] text-white/70">Krankheitstage</p>
+            <p className="mt-0.5 text-sm font-bold tabular-nums">{data.sickDaysCurrentYear}</p>
+          </div>
+          <div className="rounded-xl bg-white/10 px-3 py-2.5">
+            <p className="text-[10.5px] text-white/70">Überstunden</p>
+            <p className="mt-0.5 text-sm font-bold tabular-nums">{data.overtimeHours}h</p>
+          </div>
         </div>
+      </div>
 
-        <div className="mt-4">
+      <div className="mt-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.key}
+              href={data.hrefs.tabs[t.key]}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                data.activeTab === t.key
+                  ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm"
+                  : "text-muted hover:bg-background hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
           {data.activeTab === "uebersicht" && (
             <div className="space-y-4 text-sm">
               <div className="space-y-2.5 rounded-xl bg-background p-3">
@@ -766,7 +785,7 @@ export function EmployeeDetailPanel({ data }: { data: EmployeeDetailPanelData })
             </div>
           )}
         </div>
-      </div>
+    </>
   );
 }
 
