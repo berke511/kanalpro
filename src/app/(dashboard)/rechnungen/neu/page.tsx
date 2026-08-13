@@ -18,7 +18,7 @@ export default async function NeuesRechnungPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-xl p-6">
+    <div className="p-6">
       <Link href="/rechnungen" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Zurück zur Übersicht
