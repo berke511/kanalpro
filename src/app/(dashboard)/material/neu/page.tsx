@@ -18,7 +18,7 @@ export default async function NeuesMaterialPage({
   const supplierOptions = Array.from(new Set((suppliers ?? []).map((s) => s.supplier_name).filter((v): v is string => Boolean(v)))).sort();
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="p-6">
       <Link href="/material" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Übersicht
       </Link>
