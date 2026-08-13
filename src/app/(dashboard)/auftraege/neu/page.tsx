@@ -34,7 +34,7 @@ export default async function NeuerAuftragPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <Link href="/auftraege" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Auftragsliste
       </Link>
