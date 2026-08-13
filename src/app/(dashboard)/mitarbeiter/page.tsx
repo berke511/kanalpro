@@ -97,16 +97,41 @@ export default async function MitarbeiterPage({
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const kpis = [
-    { key: "gesamt", label: "Gesamtzahl", icon: Users, value: activeEmployees.length },
-    { key: "verfuegbar", label: "Verfügbar", icon: UserCheck, value: activeEmployees.filter((e) => e.status === "verfuegbar").length },
-    { key: "einsatz", label: "Im Einsatz", icon: Briefcase, value: activeEmployees.filter((e) => e.status === "einsatz").length },
-    { key: "urlaub", label: "Im Urlaub", icon: Plane, value: activeEmployees.filter((e) => e.status === "urlaub").length },
-    { key: "krank", label: "Krankgemeldet", icon: HeartPulse, value: activeEmployees.filter((e) => e.status === "krank").length },
+    { key: "gesamt", label: "Gesamtzahl", icon: Users, value: activeEmployees.length, gradient: "from-blue-400 to-blue-700" },
+    {
+      key: "verfuegbar",
+      label: "Verfügbar",
+      icon: UserCheck,
+      value: activeEmployees.filter((e) => e.status === "verfuegbar").length,
+      gradient: "from-emerald-400 to-emerald-700",
+    },
+    {
+      key: "einsatz",
+      label: "Im Einsatz",
+      icon: Briefcase,
+      value: activeEmployees.filter((e) => e.status === "einsatz").length,
+      gradient: "from-indigo-400 to-indigo-700",
+    },
+    {
+      key: "urlaub",
+      label: "Im Urlaub",
+      icon: Plane,
+      value: activeEmployees.filter((e) => e.status === "urlaub").length,
+      gradient: "from-cyan-400 to-cyan-700",
+    },
+    {
+      key: "krank",
+      label: "Krankgemeldet",
+      icon: HeartPulse,
+      value: activeEmployees.filter((e) => e.status === "krank").length,
+      gradient: "from-red-400 to-red-700",
+    },
     {
       key: "neu",
       label: "Neu (30 Tage)",
       icon: CalendarPlus,
       value: activeEmployees.filter((e) => new Date(e.created_at) >= thirtyDaysAgo).length,
+      gradient: "from-amber-400 to-amber-700",
     },
   ];
 
@@ -173,14 +198,15 @@ export default async function MitarbeiterPage({
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center gap-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
             <UserSquare2 className="h-5 w-5" />
           </span>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Mitarbeiterverwaltung</h1>
-            <p className="mt-0.5 text-sm text-muted">{activeEmployees.length} Mitarbeiter im Unternehmen</p>
+            <p className="mt-1 text-sm text-white/80">{activeEmployees.length} Mitarbeiter im Unternehmen</p>
           </div>
         </div>
       </div>
@@ -188,12 +214,15 @@ export default async function MitarbeiterPage({
       {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
       {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div
+              key={kpi.key}
+              className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]"
+            >
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
@@ -216,7 +245,7 @@ export default async function MitarbeiterPage({
       </div>
 
       {isAdmin && (
-        <details className="mt-4 rounded-2xl border border-border bg-card shadow-sm">
+        <details className="mt-4 rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
           <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-foreground">
             Neuen Mitarbeiter einladen
           </summary>
