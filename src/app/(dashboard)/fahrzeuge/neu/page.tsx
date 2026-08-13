@@ -21,7 +21,7 @@ export default async function NeuerFleetItemPage({
   }));
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <div className="p-6">
       <Link href="/fahrzeuge" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Übersicht
       </Link>
