@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
@@ -57,7 +58,7 @@ export default async function NeuerBerichtPage({
   const materialOptions = (materials ?? []).map((m) => ({ id: m.id, label: m.material_number ? `${m.material_number} · ${m.name}` : m.name, unit: m.unit }));
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="p-6">
       <Link href="/berichte" className="text-sm text-muted hover:text-foreground">
         ← Zurück zur Übersicht
       </Link>
