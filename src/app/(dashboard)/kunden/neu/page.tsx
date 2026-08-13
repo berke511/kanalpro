@@ -31,7 +31,7 @@ export default async function NeuerKundePage({
   const missingFields = missing ? missing.split(",") : undefined;
 
   return (
-    <div className="mx-auto max-w-6xl p-4 pb-28 sm:p-6 lg:pb-6">
+    <div className="p-4 pb-28 sm:p-6 lg:pb-6">
       <Link href="/kunden" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Zurück zur Kundenliste
