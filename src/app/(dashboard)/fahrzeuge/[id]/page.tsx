@@ -54,7 +54,7 @@ export default async function FahrzeugDetailPage({
   if (!data) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
       <Link href="/fahrzeuge" className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />
         Zur Fuhrpark-Übersicht
