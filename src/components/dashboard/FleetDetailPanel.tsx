@@ -10,7 +10,6 @@ import {
   Info,
   MapPin,
   Pencil,
-  ShieldCheck,
   Trash2,
   Users,
   Wrench,
@@ -24,7 +23,6 @@ import {
   FLEET_DOCUMENT_CATEGORIES,
   FLEET_DOCUMENT_CATEGORY_LABELS,
   FLEET_KIND_LABELS,
-  FLEET_STATUS_BADGE_CLASS,
   FLEET_STATUS_LABELS,
   FLEET_STATUSES,
   FUEL_TYPE_LABELS,
@@ -199,87 +197,88 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="relative h-14 w-14 shrink-0">
-          {data.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.photoUrl} alt={data.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
-          ) : (
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-lg font-semibold text-white shadow-sm">
-              {initialsFor(data.name)}
-            </span>
+    <>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative h-14 w-14 shrink-0">
+              {data.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={data.photoUrl} alt={data.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm" />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-lg font-semibold text-white">
+                  {initialsFor(data.name)}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-2xl font-semibold tracking-tight">{data.name}</h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {FLEET_STATUS_LABELS[data.status] ?? data.status}
+                </span>
+                {data.isArchived && <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">Archiviert</span>}
+              </div>
+              <p className="mt-1 truncate text-sm text-white/80">
+                {subtitle}
+                {data.licensePlate && ` · ${data.licensePlate}`}
+              </p>
+            </div>
+          </div>
+          {data.canManage && (
+            <div className="flex flex-wrap items-center gap-2">
+              <form action={data.updateStatusAction}>
+                <select
+                  name="status"
+                  defaultValue={data.status}
+                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                  className="rounded-[11px] border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white outline-none [color-scheme:dark]"
+                >
+                  {FLEET_STATUSES.map((s) => (
+                    <option key={s} value={s} className="text-foreground">
+                      {FLEET_STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </form>
+              <Link
+                href={data.hrefs.tabs.technik}
+                className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+              >
+                <Pencil className="h-4 w-4" />
+                Bearbeiten
+              </Link>
+            </div>
           )}
         </div>
-        <div className="min-w-0">
-          <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{data.name}</h3>
-          <p className="truncate text-sm text-muted">{subtitle}</p>
-        </div>
-      </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${FLEET_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
-          {FLEET_STATUS_LABELS[data.status] ?? data.status}
-        </span>
-        {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
-        {data.canManage && (
-          <div className="ml-auto flex items-center gap-2">
-            <form action={data.updateStatusAction}>
-              <select
-                name="status"
-                defaultValue={data.status}
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+        <div className="relative z-10 mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {statTiles.map((tile) => (
+            <div key={tile.key} className="rounded-xl bg-white/10 px-3 py-2.5">
+              <p className="text-[10.5px] text-white/70">{tile.label}</p>
+              <p
+                className={`mt-0.5 truncate text-sm font-bold tabular-nums ${
+                  tile.tone === "danger" ? "text-red-200" : tile.tone === "warn" ? "text-amber-200" : ""
+                }`}
+                title={tile.value}
               >
-                {FLEET_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {FLEET_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </form>
-            <Link
-              href={data.hrefs.tabs.technik}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-brand/30 hover:bg-brand-soft"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Bearbeiten
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {data.licensePlate && (
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5">
-          <ShieldCheck className="h-4 w-4 text-muted" />
-          <span className="font-mono text-sm font-semibold tracking-wider text-foreground">{data.licensePlate}</span>
+                {tile.value}
+              </p>
+            </div>
+          ))}
         </div>
-      )}
-
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {statTiles.map((tile) => (
-          <div key={tile.key} className="rounded-xl bg-background p-2.5 text-center">
-            <p
-              className={`truncate text-sm font-semibold ${
-                tile.tone === "danger" ? "text-red-600" : tile.tone === "warn" ? "text-amber-600" : "text-foreground"
-              }`}
-              title={tile.value}
-            >
-              {tile.value}
-            </p>
-            <p className="text-[11px] text-muted">{tile.label}</p>
-          </div>
-        ))}
       </div>
 
-      <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
+      <div className="mt-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map((t) => {
           const Icon = t.icon;
           return (
             <Link
               key={t.key}
               href={data.hrefs.tabs[t.key]}
-              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1.5 text-sm font-medium transition-colors ${
                 data.activeTab === t.key ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-muted hover:bg-background hover:text-foreground"
               }`}
             >
@@ -290,7 +289,7 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
         })}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
         {data.activeTab === "uebersicht" && (
             <div className="space-y-4 text-sm">
               <div className="space-y-2.5 rounded-xl bg-background p-3">
@@ -810,6 +809,6 @@ export function FleetDetailPanel({ data }: { data: FleetDetailPanelData }) {
             </div>
           )}
         </div>
-      </div>
+    </>
   );
 }
