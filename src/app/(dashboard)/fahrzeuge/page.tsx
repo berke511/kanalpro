@@ -128,16 +128,35 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
   // ohne archivierte Einträge.
   const activeItems = allItems.filter((i) => !i.is_archived);
   const kpis = [
-    { key: "gesamt", label: "Gesamt", icon: Layers, value: activeItems.length },
-    { key: "verfuegbar", label: "Verfügbar", icon: CheckCircle2, value: activeItems.filter((i) => i.status === "verfuegbar").length },
-    { key: "im_einsatz", label: "Im Einsatz", icon: Truck, value: activeItems.filter((i) => i.status === "im_einsatz").length },
-    { key: "wartung", label: "In Wartung", icon: Wrench, value: activeItems.filter((i) => i.status === "wartung" || i.status === "werkstatt").length },
-    { key: "defekt", label: "Defekt", icon: Ban, value: activeItems.filter((i) => i.status === "defekt").length },
+    { key: "gesamt", label: "Gesamt", icon: Layers, value: activeItems.length, gradient: "from-blue-400 to-blue-700" },
+    {
+      key: "verfuegbar",
+      label: "Verfügbar",
+      icon: CheckCircle2,
+      value: activeItems.filter((i) => i.status === "verfuegbar").length,
+      gradient: "from-emerald-400 to-emerald-700",
+    },
+    {
+      key: "im_einsatz",
+      label: "Im Einsatz",
+      icon: Truck,
+      value: activeItems.filter((i) => i.status === "im_einsatz").length,
+      gradient: "from-indigo-400 to-indigo-700",
+    },
+    {
+      key: "wartung",
+      label: "In Wartung",
+      icon: Wrench,
+      value: activeItems.filter((i) => i.status === "wartung" || i.status === "werkstatt").length,
+      gradient: "from-amber-400 to-amber-700",
+    },
+    { key: "defekt", label: "Defekt", icon: Ban, value: activeItems.filter((i) => i.status === "defekt").length, gradient: "from-red-400 to-red-700" },
     {
       key: "tuev",
       label: "TÜV fällig",
       icon: AlertTriangle,
       value: activeItems.filter((i) => isDueSoon(i.tuv_due_date) || isOverdue(i.tuv_due_date)).length,
+      gradient: "from-cyan-400 to-cyan-700",
     },
   ];
 
@@ -283,32 +302,38 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
-            <Truck className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Fahrzeug- & Maschinenverwaltung</h1>
-            <p className="mt-0.5 text-sm text-muted">{activeItems.length} Einträge im Fuhrpark</p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+              <Truck className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Fahrzeug- & Maschinenverwaltung</h1>
+              <p className="mt-1 text-sm text-white/80">{activeItems.length} Einträge im Fuhrpark</p>
+            </div>
           </div>
+          {isAdmin && (
+            <Link
+              href="/fahrzeuge/neu"
+              className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+            >
+              + Neuer Eintrag
+            </Link>
+          )}
         </div>
-        {isAdmin && (
-          <Link href="/fahrzeuge/neu" className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md">
-            + Neuer Eintrag
-          </Link>
-        )}
       </div>
 
       {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
       {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
@@ -318,7 +343,7 @@ export default async function FahrzeugePage({ searchParams }: { searchParams: Pr
         })}
       </div>
 
-      <details className="mt-4 rounded-2xl border border-border bg-card shadow-sm">
+      <details className="mt-4 rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
         <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-foreground">Flotten-Statistiken</summary>
         <div className="grid grid-cols-2 gap-3 border-t border-border p-5 sm:grid-cols-4">
           <div className="rounded-xl bg-background p-3">
