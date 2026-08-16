@@ -5,8 +5,11 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
-import { INVITABLE_ROLES, canChangeEmployeeStatus, canManageEmployees } from "@/lib/roles";
+import { INVITABLE_ROLES, ROLE_LABELS, canChangeEmployeeStatus, canManageEmployees } from "@/lib/roles";
 import { DOCUMENT_CATEGORIES, EMPLOYEE_STATUSES, QUALIFICATION_TYPES, WORK_TIME_MODELS } from "@/lib/employees";
+import { sendInviteEmail } from "@/lib/email";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function requireCompanyContext() {
   const supabase = await createClient();
@@ -58,19 +61,46 @@ export async function createInvite(formData: FormData) {
   const { supabase, companyId, userId } = await requireAdminContext();
   const roleRaw = String(formData.get("role") ?? "techniker");
   const role = (INVITABLE_ROLES as readonly string[]).includes(roleRaw) ? roleRaw : "techniker";
+  const email = toNullableString(formData.get("email"));
 
-  const { error } = await supabase.from("company_invites").insert({
-    company_id: companyId,
-    role,
-    created_by: userId,
-  });
-
-  if (error) {
-    redirect(`/mitarbeiter?error=${encodeURIComponent(error.message)}`);
+  if (!email || !EMAIL_PATTERN.test(email)) {
+    redirect("/mitarbeiter?error=Bitte+eine+g%C3%BCltige+E-Mail-Adresse+angeben");
   }
 
+  const { data: invite, error } = await supabase
+    .from("company_invites")
+    .insert({
+      company_id: companyId,
+      role,
+      email,
+      created_by: userId,
+    })
+    .select("token")
+    .single();
+
+  if (error || !invite) {
+    redirect(`/mitarbeiter?error=${encodeURIComponent(error?.message ?? "Einladung konnte nicht erstellt werden")}`);
+  }
+
+  const { data: company } = await supabase.from("companies").select("name").eq("id", companyId).maybeSingle();
+  const inviteUrl = await getInviteUrl(invite.token);
+
+  const result = await sendInviteEmail({
+    to: email,
+    companyName: company?.name ?? "KanalPro",
+    roleLabel: ROLE_LABELS[role] ?? role,
+    inviteUrl,
+  });
+
   revalidatePath("/mitarbeiter");
-  redirect("/mitarbeiter?message=Einladung+erstellt");
+
+  if (!result.sent) {
+    redirect(
+      `/mitarbeiter?message=Einladung+erstellt,+E-Mail-Versand+fehlgeschlagen&error=${encodeURIComponent(result.reason)}`,
+    );
+  }
+
+  redirect(`/mitarbeiter?message=${encodeURIComponent(`Einladung an ${email} verschickt`)}`);
 }
 
 export async function revokeInvite(id: string) {
