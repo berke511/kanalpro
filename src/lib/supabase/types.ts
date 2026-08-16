@@ -163,6 +163,7 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          email: string | null
           id: string
           role: string
           token: string
@@ -173,6 +174,7 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          email?: string | null
           id?: string
           role?: string
           token?: string
@@ -183,6 +185,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          email?: string | null
           id?: string
           role?: string
           token?: string
