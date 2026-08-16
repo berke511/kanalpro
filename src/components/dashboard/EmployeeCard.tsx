@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { AlertTriangle, Phone, Truck } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/roles";
