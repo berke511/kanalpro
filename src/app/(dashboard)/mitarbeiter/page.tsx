@@ -1,4 +1,5 @@
 
+
 import Link from "next/link";
 import {
   Briefcase,
@@ -63,7 +64,7 @@ export default async function MitarbeiterPage({
     isAdmin
       ? supabase
           .from("company_invites")
-          .select("id, token, role, created_at")
+          .select("id, token, role, email, created_at")
           .is("accepted_at", null)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as never[] }),
@@ -251,10 +252,23 @@ export default async function MitarbeiterPage({
           </summary>
           <div className="border-t border-border p-5">
             <p className="text-sm text-muted">
-              Erstelle einen Einladungslink und teile ihn mit deinem Kollegen. Nach der Registrierung wird er
-              automatisch eurem Unternehmen zugeordnet.
+              Gib E-Mail-Adresse und Rolle ein – die Einladung wird direkt per E-Mail verschickt. Nach der
+              Registrierung wird die Person automatisch eurem Unternehmen zugeordnet.
             </p>
             <form action={createInvite} className="mt-4 flex flex-wrap items-end gap-3">
+              <div className="min-w-[220px] flex-1">
+                <label htmlFor="email" className="text-sm font-medium">
+                  E-Mail-Adresse
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="kollege@firma.de"
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+              </div>
               <div>
                 <label htmlFor="role" className="text-sm font-medium">
                   Rolle
@@ -276,7 +290,7 @@ export default async function MitarbeiterPage({
                 type="submit"
                 className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md"
               >
-                Einladungslink erstellen
+                Einladung per E-Mail senden
               </button>
             </form>
 
@@ -285,7 +299,9 @@ export default async function MitarbeiterPage({
                 {inviteUrls.map((invite) => (
                   <li key={invite.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">{ROLE_LABELS[invite.role] ?? invite.role}</p>
+                      <p className="text-sm font-medium">
+                        {invite.email ?? "Ohne E-Mail"} · {ROLE_LABELS[invite.role] ?? invite.role}
+                      </p>
                       <p className="mt-0.5 truncate text-xs text-muted">{invite.url}</p>
                     </div>
                     <form action={revokeInvite.bind(null, invite.id)}>
