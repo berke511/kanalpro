@@ -252,7 +252,7 @@ export default async function KundeDetailPage({
   const saveFormId = activeTab === "adressen" ? FORM_ID_ADRESSEN : FORM_ID_ALLGEMEIN;
 
   return (
-    <div className={`mx-auto max-w-6xl p-4 sm:p-6 ${showSaveButton ? "pb-28 lg:pb-6" : ""}`}>
+    <div className={`p-4 sm:p-6 ${showSaveButton ? "pb-28 lg:pb-6" : ""}`}>
       <Link href="/kunden" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Zurück zur Kundenliste
