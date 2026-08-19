@@ -146,19 +146,20 @@ export function FleetFilterPanel({
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted" htmlFor="filter-manufacturer">
                       Hersteller
                     </label>
-                    <select
+                    <input
                       id="filter-manufacturer"
                       name="manufacturer"
+                      list="filter-manufacturer-options"
                       defaultValue={initial.manufacturer}
+                      placeholder="Alle Hersteller"
+                      autoComplete="off"
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      <option value="">Alle Hersteller</option>
+                    />
+                    <datalist id="filter-manufacturer-options">
                       {manufacturerOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
+                        <option key={m} value={m} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                 )}
 
@@ -167,19 +168,20 @@ export function FleetFilterPanel({
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted" htmlFor="filter-location">
                       Standort
                     </label>
-                    <select
+                    <input
                       id="filter-location"
                       name="location"
+                      list="filter-location-options"
                       defaultValue={initial.location}
+                      placeholder="Alle Standorte"
+                      autoComplete="off"
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      <option value="">Alle Standorte</option>
+                    />
+                    <datalist id="filter-location-options">
                       {locationOptions.map((l) => (
-                        <option key={l} value={l}>
-                          {l}
-                        </option>
+                        <option key={l} value={l} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                 )}
 
