@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -160,19 +161,20 @@ export function MaterialFilterPanel({
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted" htmlFor="filter-supplier">
                       Lieferant
                     </label>
-                    <select
+                    <input
                       id="filter-supplier"
                       name="supplier"
+                      list="filter-supplier-options"
                       defaultValue={initial.supplier}
+                      placeholder="Alle Lieferanten"
+                      autoComplete="off"
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand"
-                    >
-                      <option value="">Alle Lieferanten</option>
+                    />
+                    <datalist id="filter-supplier-options">
                       {supplierOptions.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
+                        <option key={s} value={s} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                 )}
 
