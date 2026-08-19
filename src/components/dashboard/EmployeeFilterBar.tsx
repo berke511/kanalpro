@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -70,25 +71,49 @@ export function EmployeeFilterBar({
       </select>
 
       {departmentOptions.length > 0 && (
-        <select value={department} onChange={(e) => updateParam("department", e.target.value)} className={selectClass}>
-          <option value="">Abteilung: Alle</option>
-          {departmentOptions.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+        <>
+          <input
+            key={`department-${department}`}
+            type="text"
+            list="employee-department-options"
+            defaultValue={department}
+            placeholder="Abteilung: Alle"
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") updateParam("department", e.currentTarget.value);
+            }}
+            onBlur={(e) => updateParam("department", e.currentTarget.value)}
+            className={selectClass}
+          />
+          <datalist id="employee-department-options">
+            {departmentOptions.map((d) => (
+              <option key={d} value={d} />
+            ))}
+          </datalist>
+        </>
       )}
 
       {locationOptions.length > 0 && (
-        <select value={location} onChange={(e) => updateParam("location", e.target.value)} className={selectClass}>
-          <option value="">Standort: Alle</option>
-          {locationOptions.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
+        <>
+          <input
+            key={`location-${location}`}
+            type="text"
+            list="employee-location-options"
+            defaultValue={location}
+            placeholder="Standort: Alle"
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") updateParam("location", e.currentTarget.value);
+            }}
+            onBlur={(e) => updateParam("location", e.currentTarget.value)}
+            className={selectClass}
+          />
+          <datalist id="employee-location-options">
+            {locationOptions.map((l) => (
+              <option key={l} value={l} />
+            ))}
+          </datalist>
+        </>
       )}
 
       {hasFilters && (
