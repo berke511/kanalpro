@@ -171,11 +171,9 @@ function exportMaterialPdf(rows: MaterialRow[]) {
 
 export function MaterialTable({
   items,
-  panelBaseQuery,
   showingArchived = false,
 }: {
   items: MaterialRow[];
-  panelBaseQuery: string;
   showingArchived?: boolean;
 }) {
   const router = useRouter();
@@ -198,13 +196,6 @@ export function MaterialTable({
     } catch {
       // localStorage nicht verfügbar – Änderung bleibt dann nur für diese Anzeige ohne Effekt.
     }
-  }
-
-  function panelHref(id: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.delete("panelTab");
-    params.set("panel", id);
-    return `/material?${params.toString()}`;
   }
 
   const allSelected = items.length > 0 && items.every((i) => selected.has(i.id));
@@ -266,7 +257,7 @@ export function MaterialTable({
     "flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted hover:bg-background hover:text-foreground";
 
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-background/60 px-3 py-2">
         {selected.size > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -410,7 +401,7 @@ export function MaterialTable({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={panelHref(item.id)} className="font-medium text-foreground hover:text-brand">
+                  <Link href={`/material/${item.id}`} className="font-medium text-foreground hover:text-brand">
                     {item.name}
                   </Link>
                   {item.materialNumber && <p className="text-xs text-muted">{item.materialNumber}</p>}
@@ -457,7 +448,7 @@ export function MaterialTable({
                     <>
                       <button type="button" className="fixed inset-0 z-10 cursor-default" aria-label="Menü schließen" onClick={() => setRowMenuOpenId(null)} />
                       <div className="absolute right-2 z-20 mt-1 w-44 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                        <Link href={panelHref(item.id)} onClick={() => setRowMenuOpenId(null)} className="block rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
+                        <Link href={`/material/${item.id}`} onClick={() => setRowMenuOpenId(null)} className="block rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
                           Details öffnen
                         </Link>
                         <button
