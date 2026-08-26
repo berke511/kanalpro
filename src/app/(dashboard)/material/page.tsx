@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { AlertTriangle, Ban, Boxes, CheckCircle2, Package, TrendingDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -17,30 +18,10 @@ import { monthRangeBerlin, todayBerlinISO } from "@/lib/date";
 import { MaterialCard, type MaterialCardData } from "@/components/dashboard/MaterialCard";
 import { MaterialFilterPanel } from "@/components/dashboard/MaterialFilterPanel";
 import { MaterialTable, type MaterialRow } from "@/components/dashboard/MaterialTable";
-import { MaterialDetailPanel, type MaterialDetailPanelData, type PanelTabKey } from "@/components/dashboard/MaterialDetailPanel";
 import { MaterialScanner } from "@/components/dashboard/MaterialScanner";
 import { MaterialImportButton } from "@/components/dashboard/MaterialImportButton";
-import {
-  addMaterialLocation,
-  addMaterialMovement,
-  archiveMaterial,
-  deleteMaterial,
-  deleteMaterialDocument,
-  deleteMaterialLocation,
-  importMaterialsCsv,
-  releaseMaterialReservation,
-  removeMaterialPhoto,
-  reserveMaterialForTarget,
-  consumeMaterialReservation,
-  consumeOrderMaterial,
-  updateMaterialProfile,
-  updateMaterialStatus,
-  uploadMaterialDocument,
-  uploadMaterialPhoto,
-} from "./actions";
+import { addMaterialLocation, deleteMaterialLocation, importMaterialsCsv } from "./actions";
 import { redirect } from "next/navigation";
-
-const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "bewegungen", "auftraege", "dokumente"];
 
 type RawSearchParams = {
   q?: string;
@@ -52,8 +33,6 @@ type RawSearchParams = {
   lowStock?: string;
   outOfStock?: string;
   archived?: string;
-  panel?: string;
-  panelTab?: string;
   scan?: string;
   error?: string;
   message?: string;
@@ -88,9 +67,9 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
   const outOfStockFilter = raw.outOfStock === "1";
   const showArchived = raw.archived === "1";
 
-  // URL-Hilfsfunktionen fürs Detailpanel/Filter (gleiches Muster wie
-  // /fahrzeuge, /mitarbeiter, /kunden) – vorab gebaut, damit der
-  // QR-/Barcode-Scanner (siehe unten) direkt dorthin weiterleiten kann.
+  // URL-Hilfsfunktion fürs View-Umschalten (gleiches Muster wie /fahrzeuge,
+  // /mitarbeiter, /kunden) – vorab gebaut, damit der QR-/Barcode-Scanner
+  // (siehe unten) auf Fehlerfälle direkt zurückverlinken kann.
   const baseParams = new URLSearchParams();
   if (q) baseParams.set("q", q);
   if (view !== "list") baseParams.set("view", view);
@@ -103,20 +82,6 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
   if (showArchived) baseParams.set("archived", "1");
   const baseQuery = baseParams.toString();
 
-  function panelHref(id: string, tab: PanelTabKey = "uebersicht") {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", id);
-    if (tab !== "uebersicht") params.set("panelTab", tab);
-    else params.delete("panelTab");
-    return `/material?${params.toString()}`;
-  }
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
-    const qs = params.toString();
-    return qs ? `/material?${qs}` : "/material";
-  }
   function viewHref(nextView: string) {
     const params = new URLSearchParams(baseQuery);
     if (nextView === "list") params.delete("view");
@@ -128,7 +93,8 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
   // QR-/Barcode-Scan: der Scanner (Client-Komponente) navigiert per GET
   // hierher; die Auflösung Code → Material passiert serverseitig, damit sie
   // unabhängig davon funktioniert, ob der Code über die Kamera oder manuell
-  // eingegeben wurde.
+  // eingegeben wurde. Bei Treffer geht es direkt auf die eigene Detailseite
+  // /material/[id] (gleiches Muster wie /fahrzeuge, /mitarbeiter).
   if (raw.scan && raw.scan.trim()) {
     const code = raw.scan.trim();
     // Materialnummern/QR-Codes bestehen ausschließlich aus "M-" + Ziffern
@@ -141,29 +107,22 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
       ? await supabase.from("materials").select("id").or(`qr_code.eq.${safeCode},material_number.eq.${safeCode}`).maybeSingle()
       : { data: null };
     if (scanned) {
-      redirect(panelHref(scanned.id));
+      redirect(`/material/${scanned.id}`);
     }
     const params = new URLSearchParams(baseQuery);
     params.set("error", `Kein Material mit dem Code "${code}" gefunden`);
     redirect(`/material?${params.toString()}`);
   }
 
-  const [{ data: allItemsRaw }, { data: allLocationsRaw }, { data: employeesRaw }, { data: fleetItemsRaw }] = await Promise.all([
+  const [{ data: allItemsRaw }, { data: allLocationsRaw }] = await Promise.all([
     supabase.from("materials").select("*").order("name", { ascending: true }),
     supabase.from("material_locations").select("id, name").order("name", { ascending: true }),
-    supabase.from("profiles").select("id, full_name, is_archived").order("full_name", { ascending: true }),
-    supabase.from("fleet_items").select("id, name, license_plate").order("name", { ascending: true }),
   ]);
 
   const allItems = allItemsRaw ?? [];
   const allLocations = allLocationsRaw ?? [];
-  const employees = employeesRaw ?? [];
-  const activeEmployees = employees.filter((e) => !e.is_archived);
-  const fleetItems = fleetItemsRaw ?? [];
 
   const locationNameById = Object.fromEntries(allLocations.map((l) => [l.id, l.name]));
-  const employeeNameById = Object.fromEntries(employees.map((e) => [e.id, e.full_name ?? "Unbenannt"]));
-  const fleetLabelById = Object.fromEntries(fleetItems.map((f) => [f.id, f.license_plate ? `${f.license_plate} · ${f.name}` : f.name]));
 
   const materialIds = allItems.map((i) => i.id);
 
@@ -213,12 +172,30 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
   const offeneReservierungen = (openReservations ?? []).length + (openOrderMaterials ?? []).length;
 
   const kpis = [
-    { key: "gesamt", label: "Gesamtanzahl", icon: Boxes, value: activeItems.length },
-    { key: "lagerwert", label: "Lagerwert", icon: Package, value: formatEuro(lagerwert) },
-    { key: "niedrig", label: "Niedriger Bestand", icon: TrendingDown, value: activeItems.filter((i) => isLowStock(Number(i.quantity), i.min_quantity !== null ? Number(i.min_quantity) : null)).length },
-    { key: "nicht_verfuegbar", label: "Nicht verfügbar", icon: Ban, value: activeItems.filter((i) => isOutOfStock(Number(i.quantity))).length },
-    { key: "heute_verbraucht", label: "Heute verbraucht", icon: CheckCircle2, value: heuteVerbraucht.toLocaleString("de-DE") },
-    { key: "reservierungen", label: "Offene Reservierungen", icon: AlertTriangle, value: offeneReservierungen },
+    { key: "gesamt", label: "Gesamtanzahl", icon: Boxes, value: activeItems.length, gradient: "from-blue-400 to-blue-700" },
+    { key: "lagerwert", label: "Lagerwert", icon: Package, value: formatEuro(lagerwert), gradient: "from-purple-400 to-purple-700" },
+    {
+      key: "niedrig",
+      label: "Niedriger Bestand",
+      icon: TrendingDown,
+      value: activeItems.filter((i) => isLowStock(Number(i.quantity), i.min_quantity !== null ? Number(i.min_quantity) : null)).length,
+      gradient: "from-amber-400 to-amber-700",
+    },
+    {
+      key: "nicht_verfuegbar",
+      label: "Nicht verfügbar",
+      icon: Ban,
+      value: activeItems.filter((i) => isOutOfStock(Number(i.quantity))).length,
+      gradient: "from-red-400 to-red-700",
+    },
+    {
+      key: "heute_verbraucht",
+      label: "Heute verbraucht",
+      icon: CheckCircle2,
+      value: heuteVerbraucht.toLocaleString("de-DE"),
+      gradient: "from-emerald-400 to-emerald-700",
+    },
+    { key: "reservierungen", label: "Offene Reservierungen", icon: AlertTriangle, value: offeneReservierungen, gradient: "from-cyan-400 to-cyan-700" },
   ];
 
   // Material-Statistiken (Meist verwendete Materialien, Verbrauch pro
@@ -343,173 +320,43 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
     (outOfStockFilter ? 1 : 0) +
     (showArchived ? 1 : 0);
 
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
-  let panelData: MaterialDetailPanelData | null = null;
-
-  if (panelId) {
-    const { data: panelItem } = await supabase.from("materials").select("*").eq("id", panelId).maybeSingle();
-
-    if (panelItem) {
-      const returnTo = panelHref(panelId, panelTab);
-
-      const [{ data: movements }, { data: reservations }, { data: orderMaterials }, { data: documents }] = await Promise.all([
-        supabase
-          .from("material_movements")
-          .select("id, movement_type, quantity, from_location_id, to_location_id, reason, performed_by, created_at")
-          .eq("material_id", panelId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("material_reservations")
-          .select("id, quantity, target_type, fleet_item_id, employee_id, note, status, reserved_at")
-          .eq("material_id", panelId)
-          .order("reserved_at", { ascending: false }),
-        supabase
-          .from("order_materials")
-          .select("id, quantity, status, order_id, orders(id, title)")
-          .eq("material_id", panelId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("material_documents")
-          .select("id, category, file_name, storage_path, size_bytes, created_at")
-          .eq("material_id", panelId)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      let documentUrlByPath: Record<string, string> = {};
-      const docPaths = (documents ?? []).map((d) => d.storage_path);
-      if (docPaths.length > 0) {
-        const { data: signed } = await supabase.storage.from("material-documents").createSignedUrls(docPaths, 60 * 10);
-        documentUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
-      }
-
-      let photoUrl: string | null = null;
-      if (panelItem.photo_path) {
-        const { data: signed } = await supabase.storage.from("material-photos").createSignedUrl(panelItem.photo_path, 60 * 10);
-        photoUrl = signed?.signedUrl ?? null;
-      }
-
-      const reserved = reservedByMaterialId[panelId] ?? 0;
-
-      panelData = {
-        id: panelItem.id,
-        materialNumber: panelItem.material_number,
-        name: panelItem.name,
-        category: panelItem.category,
-        status: panelItem.status,
-        notes: panelItem.notes,
-        photoUrl,
-        qrCode: panelItem.qr_code,
-        unit: panelItem.unit,
-        quantity: Number(panelItem.quantity),
-        minQuantity: panelItem.min_quantity !== null ? Number(panelItem.min_quantity) : null,
-        reservedQuantity: reserved,
-        availableQuantity: availableQuantity(Number(panelItem.quantity), reserved),
-        locationId: panelItem.location_id,
-        locationName: panelItem.location_id ? locationNameById[panelItem.location_id] ?? null : null,
-        locationOptions: allLocations,
-        supplierName: panelItem.supplier_name,
-        supplierContactName: panelItem.supplier_contact_name,
-        supplierPhone: panelItem.supplier_phone,
-        supplierEmail: panelItem.supplier_email,
-        purchasePrice: panelItem.purchase_price !== null ? Number(panelItem.purchase_price) : null,
-        unitPrice: panelItem.unit_price !== null ? Number(panelItem.unit_price) : null,
-        taxRate: panelItem.tax_rate !== null ? Number(panelItem.tax_rate) : null,
-        lastOrderedAt: panelItem.last_ordered_at,
-        isArchived: panelItem.is_archived,
-        movements: (movements ?? []).map((m) => ({
-          id: m.id,
-          movement_type: m.movement_type,
-          quantity: Number(m.quantity),
-          from_location_name: m.from_location_id ? locationNameById[m.from_location_id] ?? null : null,
-          to_location_name: m.to_location_id ? locationNameById[m.to_location_id] ?? null : null,
-          reason: m.reason,
-          performed_by_name: m.performed_by ? employeeNameById[m.performed_by] ?? null : null,
-          created_at: m.created_at,
-        })),
-        reservations: (reservations ?? []).map((r) => ({
-          id: r.id,
-          quantity: Number(r.quantity),
-          target_type: r.target_type,
-          target_label:
-            r.target_type === "fahrzeug"
-              ? fleetLabelById[r.fleet_item_id ?? ""] ?? "Unbekanntes Fahrzeug"
-              : employeeNameById[r.employee_id ?? ""] ?? "Unbekannter Mitarbeiter",
-          note: r.note,
-          status: r.status,
-          reserved_at: r.reserved_at,
-          releaseAction: releaseMaterialReservation.bind(null, r.id, returnTo),
-          consumeAction: consumeMaterialReservation.bind(null, r.id, returnTo),
-        })),
-        fleetOptions: fleetItems.map((f) => ({ id: f.id, label: f.license_plate ? `${f.license_plate} · ${f.name}` : f.name })),
-        employeeOptions: activeEmployees.map((e) => ({ id: e.id, label: e.full_name ?? "Unbenannt" })),
-        orderMaterials: (orderMaterials ?? []).map((om) => ({
-          id: om.id,
-          orderId: om.order_id,
-          orderTitle: (om as unknown as { orders: { id: string; title: string } | null }).orders?.title ?? "Unbekannter Auftrag",
-          quantity: Number(om.quantity),
-          status: om.status,
-          consumeAction: consumeOrderMaterial.bind(null, om.id, returnTo),
-        })),
-        documents: (documents ?? []).map((d) => ({
-          id: d.id,
-          category: d.category,
-          file_name: d.file_name,
-          size_bytes: d.size_bytes,
-          created_at: d.created_at,
-          url: documentUrlByPath[d.storage_path] ?? null,
-          deleteAction: deleteMaterialDocument.bind(null, d.id, d.storage_path, returnTo),
-        })),
-        canManage: isAdmin,
-        activeTab: panelTab,
-        hrefs: {
-          close: panelCloseHref(),
-          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
-        },
-        updateStatusAction: updateMaterialStatus.bind(null, panelId, returnTo),
-        updateProfileAction: updateMaterialProfile.bind(null, panelId, returnTo),
-        uploadPhotoAction: uploadMaterialPhoto.bind(null, panelId, returnTo),
-        removePhotoAction: removeMaterialPhoto.bind(null, panelId, returnTo),
-        addMovementAction: addMaterialMovement.bind(null, panelId, returnTo),
-        reserveAction: reserveMaterialForTarget.bind(null, panelId, returnTo),
-        uploadDocumentAction: uploadMaterialDocument.bind(null, panelId, returnTo),
-        archiveAction: archiveMaterial.bind(null, panelId, !panelItem.is_archived),
-        deleteAction: deleteMaterial.bind(null, panelId, returnTo),
-      };
-    }
-  }
-
-  const importAction = importMaterialsCsv.bind(null, panelCloseHref());
-  const addLocationAction = addMaterialLocation.bind(null, panelCloseHref());
+  const importAction = importMaterialsCsv.bind(null, "/material");
+  const addLocationAction = addMaterialLocation.bind(null, "/material");
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
-            <Boxes className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Materialverwaltung</h1>
-            <p className="mt-0.5 text-sm text-muted">{activeItems.length} Materialien im Lager</p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+              <Boxes className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Materialverwaltung</h1>
+              <p className="mt-1 text-sm text-white/80">{activeItems.length} Materialien im Lager</p>
+            </div>
           </div>
+          {isAdmin && (
+            <Link
+              href="/material/neu"
+              className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+            >
+              + Neues Material
+            </Link>
+          )}
         </div>
-        {isAdmin && (
-          <Link href="/material/neu" className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md">
-            + Neues Material
-          </Link>
-        )}
       </div>
 
       {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
       {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
@@ -519,7 +366,7 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
         })}
       </div>
 
-      <details className="mt-4 rounded-2xl border border-border bg-card shadow-sm">
+      <details className="mt-4 rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
         <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-foreground">Material-Statistiken</summary>
         <div className="grid grid-cols-1 gap-4 border-t border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl bg-background p-3">
@@ -566,13 +413,13 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
       </details>
 
       {isAdmin && (
-        <details className="mt-4 rounded-2xl border border-border bg-card shadow-sm">
+        <details className="mt-4 rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
           <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-semibold text-foreground">Lagerorte verwalten</summary>
           <div className="space-y-3 border-t border-border p-5">
             <div className="flex flex-wrap gap-2">
               {allLocations.length === 0 && <p className="text-xs text-muted">Noch keine Lagerorte angelegt.</p>}
               {allLocations.map((l) => (
-                <form key={l.id} action={deleteMaterialLocation.bind(null, l.id, panelCloseHref())} className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs">
+                <form key={l.id} action={deleteMaterialLocation.bind(null, l.id, "/material")} className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs">
                   <span>{l.name}</span>
                   <button type="submit" className="text-muted hover:text-red-600" aria-label={`${l.name} löschen`}>
                     ×
@@ -629,22 +476,18 @@ export default async function MaterialPage({ searchParams }: { searchParams: Pro
         {isAdmin && <MaterialImportButton action={importAction} />}
       </div>
 
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          {materialRows.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Materialien gefunden.</p>
-          ) : view === "grid" ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {materialCards.map((item) => (
-                <MaterialCard key={item.id} item={item} href={panelHref(item.id)} />
-              ))}
-            </div>
-          ) : (
-            <MaterialTable items={materialRows} panelBaseQuery={baseQuery} showingArchived={showArchived} />
-          )}
-        </div>
-
-        {panelData && <MaterialDetailPanel data={panelData} />}
+      <div className="mt-6">
+        {materialRows.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Materialien gefunden.</p>
+        ) : view === "grid" ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {materialCards.map((item) => (
+              <MaterialCard key={item.id} item={item} href={`/material/${item.id}`} />
+            ))}
+          </div>
+        ) : (
+          <MaterialTable items={materialRows} showingArchived={showArchived} />
+        )}
       </div>
 
       {!isAdmin && (
