@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Archive,
   ArchiveRestore,
@@ -21,7 +19,6 @@ import {
   Send,
   Trash2,
   User,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/date";
@@ -140,7 +137,6 @@ function statusForm(action: (formData: FormData) => void, status: string, label:
 }
 
 export function InvoiceDetailPanel({ data }: { data: InvoiceDetailPanelData }) {
-  const router = useRouter();
   const isQuote = data.kind === "angebot";
   const items = [...data.items].sort((a, b) => a.position - b.position);
   const totals = calculateTotals(items, data.taxRate);
@@ -153,157 +149,177 @@ export function InvoiceDetailPanel({ data }: { data: InvoiceDetailPanelData }) {
     ...(!isQuote ? [{ key: "zahlung" as PanelTabKey, label: "Zahlung", icon: CreditCard }] : []),
   ];
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") router.push(data.hrefs.close);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [router, data.hrefs.close]);
-
   const inputClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/10";
   const labelClass = "text-xs font-medium text-muted";
   const quickBtnClass =
     "flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-brand/30 hover:bg-brand-soft";
 
+  const heroStatTiles = [
+    { key: "summe", label: "Summe", value: formatEuro(totals.gross) },
+    {
+      key: "termin",
+      label: isQuote ? "Gültig bis" : "Fällig am",
+      value: (isQuote ? data.validUntil : data.dueDate) ? formatDate((isQuote ? data.validUntil : data.dueDate)!) : "—",
+    },
+    {
+      key: "zahlung",
+      label: isQuote ? "Angesehen" : "Bezahlt",
+      value: isQuote ? (data.viewedAt ? "Ja" : "Nein") : formatEuro(data.paidAmount),
+    },
+    { key: "bearbeiter", label: "Bearbeiter", value: data.assignedToName ?? "Niemand" },
+  ];
+
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] lg:hidden" onClick={() => router.push(data.hrefs.close)} />
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-lg animate-slide-in-right overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:animate-none lg:shadow-none">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{isQuote ? "Angebotsakte" : "Rechnungsakte"}</h2>
-          <Link href={data.hrefs.close} className="rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-foreground">
-            <X className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="mt-4 flex items-center gap-3">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-lg font-semibold text-white shadow-sm">
-            {initialsFor(data.customerName)}
-          </span>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{data.invoiceNumber ?? "Ohne Nummer"}</h3>
-            <p className="truncate text-sm text-muted">
-              {INVOICE_KIND_LABELS[data.kind] ?? data.kind} · {data.customerName ?? "Kein Kunde zugeordnet"}
-            </p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-semibold text-white">
+              {initialsFor(data.customerName)}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-2xl font-semibold tracking-tight">{data.invoiceNumber ?? "Ohne Nummer"}</h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {STATUS_LABELS[data.effectiveStatus] ?? data.effectiveStatus}
+                </span>
+                {data.isArchived && <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">Archiviert</span>}
+                {data.dunningLevel > 0 && <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">{DUNNING_LABELS[data.dunningLevel]}</span>}
+              </div>
+              <p className="mt-1 truncate text-sm text-white/80">
+                {INVOICE_KIND_LABELS[data.kind] ?? data.kind} · {data.customerName ?? "Kein Kunde zugeordnet"}
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${STATUS_BADGE_CLASS[data.effectiveStatus] ?? "bg-gray-100 text-gray-600"}`}>
-            {STATUS_LABELS[data.effectiveStatus] ?? data.effectiveStatus}
-          </span>
-          {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
-          {data.dunningLevel > 0 && <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600">{DUNNING_LABELS[data.dunningLevel]}</span>}
           {data.canManage && (
-            <form action={data.setStatusAction} className="ml-auto">
-              <select
-                name="status"
-                defaultValue={data.status}
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+            <div className="flex flex-wrap items-center gap-2">
+              <form action={data.setStatusAction}>
+                <select
+                  name="status"
+                  defaultValue={data.status}
+                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                  className="rounded-[11px] border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white outline-none [color-scheme:dark]"
+                >
+                  {statusesForKind(data.kind).map((s) => (
+                    <option key={s} value={s} className="text-foreground">
+                      {STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </form>
+              <Link
+                href={data.hrefs.pdf}
+                target="_blank"
+                className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
               >
-                {statusesForKind(data.kind).map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </form>
+                <FileText className="h-4 w-4" />
+                PDF öffnen
+              </Link>
+            </div>
           )}
         </div>
 
-        {/* Quick Actions */}
-        {data.canManage && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {data.status === "entwurf" && (
-              <form action={data.sendAction}>
-                <button type="submit" className={quickBtnClass}>
-                  <Send className="h-3.5 w-3.5" />
-                  Versenden
-                </button>
-              </form>
-            )}
-            <Link href={data.hrefs.pdf} target="_blank" className={quickBtnClass}>
-              <FileText className="h-3.5 w-3.5" />
-              PDF öffnen
-            </Link>
-            {data.customerEmail && (
-              <a
-                href={`mailto:${data.customerEmail}?subject=${encodeURIComponent(`${INVOICE_KIND_LABELS[data.kind]} ${data.invoiceNumber ?? ""}`)}`}
-                className={quickBtnClass}
-              >
-                <Mail className="h-3.5 w-3.5" />
-                Per Mail senden
-              </a>
-            )}
-            {isQuote && QUOTE_PENDING_STATUSES.includes(data.status) && (
-              <>
-                {statusForm(data.setStatusAction, "angenommen", "Angenommen", "flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100")}
-                {statusForm(data.setStatusAction, "abgelehnt", "Abgelehnt", "flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100")}
-              </>
-            )}
-            {isQuote && data.status === "angenommen" && !data.convertedToInvoiceId && (
-              <form action={data.convertAction}>
-                <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand-soft px-2.5 py-1.5 text-xs font-medium text-brand-dark hover:bg-brand/10">
-                  <ArrowRightLeft className="h-3.5 w-3.5" />
-                  Rechnung erstellen
-                </button>
-              </form>
-            )}
-            {!isQuote && BILL_OPEN_STATUSES.includes(data.status) && (
-              <Link href={data.hrefs.tabs.zahlung} className={quickBtnClass}>
-                <CreditCard className="h-3.5 w-3.5" />
-                Zahlung erfassen
-              </Link>
-            )}
-            {!isQuote && data.effectiveStatus === "ueberfaellig" && (
-              <form action={data.increaseDunningAction}>
-                <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
-                  <Ban className="h-3.5 w-3.5" />
-                  Mahnstufe erhöhen
-                </button>
-              </form>
-            )}
-            {isQuote && !data.viewedAt && (
-              <form action={data.markViewedAction}>
-                <button type="submit" className={quickBtnClass}>
-                  <Eye className="h-3.5 w-3.5" />
-                  Als geöffnet markieren
-                </button>
-              </form>
-            )}
-            <form action={data.duplicateAction}>
-              <button type="submit" className={quickBtnClass}>
-                <Copy className="h-3.5 w-3.5" />
-                Kopieren
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            return (
-              <Link
-                key={t.key}
-                href={data.hrefs.tabs[t.key]}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  data.activeTab === t.key ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-muted hover:bg-background hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {t.label}
-              </Link>
-            );
-          })}
+        <div className="relative z-10 mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {heroStatTiles.map((tile) => (
+            <div key={tile.key} className="rounded-xl bg-white/10 px-3 py-2.5">
+              <p className="text-[10.5px] text-white/70">{tile.label}</p>
+              <p className="mt-0.5 truncate text-sm font-bold tabular-nums" title={tile.value}>
+                {tile.value}
+              </p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="mt-4">
+      <div className="mt-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.key}
+              href={data.hrefs.tabs[t.key]}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                data.activeTab === t.key ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-muted hover:bg-background hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
           {data.activeTab === "uebersicht" && (
             <div className="space-y-4 text-sm">
+              {/* Schnellaktionen */}
+              {data.canManage && (
+                <div className="flex flex-wrap gap-1.5">
+                  {data.status === "entwurf" && (
+                    <form action={data.sendAction}>
+                      <button type="submit" className={quickBtnClass}>
+                        <Send className="h-3.5 w-3.5" />
+                        Versenden
+                      </button>
+                    </form>
+                  )}
+                  {data.customerEmail && (
+                    <a
+                      href={`mailto:${data.customerEmail}?subject=${encodeURIComponent(`${INVOICE_KIND_LABELS[data.kind]} ${data.invoiceNumber ?? ""}`)}`}
+                      className={quickBtnClass}
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      Per Mail senden
+                    </a>
+                  )}
+                  {isQuote && QUOTE_PENDING_STATUSES.includes(data.status) && (
+                    <>
+                      {statusForm(data.setStatusAction, "angenommen", "Angenommen", "flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100")}
+                      {statusForm(data.setStatusAction, "abgelehnt", "Abgelehnt", "flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100")}
+                    </>
+                  )}
+                  {isQuote && data.status === "angenommen" && !data.convertedToInvoiceId && (
+                    <form action={data.convertAction}>
+                      <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand-soft px-2.5 py-1.5 text-xs font-medium text-brand-dark hover:bg-brand/10">
+                        <ArrowRightLeft className="h-3.5 w-3.5" />
+                        Rechnung erstellen
+                      </button>
+                    </form>
+                  )}
+                  {!isQuote && BILL_OPEN_STATUSES.includes(data.status) && (
+                    <Link href={data.hrefs.tabs.zahlung} className={quickBtnClass}>
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Zahlung erfassen
+                    </Link>
+                  )}
+                  {!isQuote && data.effectiveStatus === "ueberfaellig" && (
+                    <form action={data.increaseDunningAction}>
+                      <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-medium text-orange-700 hover:bg-orange-100">
+                        <Ban className="h-3.5 w-3.5" />
+                        Mahnstufe erhöhen
+                      </button>
+                    </form>
+                  )}
+                  {isQuote && !data.viewedAt && (
+                    <form action={data.markViewedAction}>
+                      <button type="submit" className={quickBtnClass}>
+                        <Eye className="h-3.5 w-3.5" />
+                        Als geöffnet markieren
+                      </button>
+                    </form>
+                  )}
+                  <form action={data.duplicateAction}>
+                    <button type="submit" className={quickBtnClass}>
+                      <Copy className="h-3.5 w-3.5" />
+                      Kopieren
+                    </button>
+                  </form>
+                </div>
+              )}
+
               {/* PDF-Vorschau-artige Karte */}
               <div className="rounded-xl border border-border bg-background p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -716,7 +732,6 @@ export function InvoiceDetailPanel({ data }: { data: InvoiceDetailPanelData }) {
               </div>
             </div>
           )}
-        </div>
       </div>
     </>
   );
