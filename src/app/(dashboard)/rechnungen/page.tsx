@@ -24,28 +24,9 @@ import {
 } from "@/lib/invoices";
 import { InvoiceTable, type InvoiceRow } from "@/components/dashboard/InvoiceTable";
 import { InvoiceFilterPanel } from "@/components/dashboard/InvoiceFilterPanel";
-import { InvoiceDetailPanel, type InvoiceDetailPanelData, type PanelTabKey } from "@/components/dashboard/InvoiceDetailPanel";
 import { CustomerPreviewPanel, type CustomerPreviewData } from "@/components/dashboard/CustomerPreviewPanel";
 import { RemindersWidget, type ReminderItem } from "@/components/dashboard/RemindersWidget";
 import { InvoiceEmptyState } from "@/components/dashboard/InvoiceEmptyState";
-import {
-  addInvoiceItem,
-  archiveInvoice,
-  assignInvoice,
-  convertQuoteToInvoice,
-  deleteInvoice,
-  deleteInvoiceItem,
-  duplicateInvoice,
-  increaseDunningLevel,
-  markInvoiceViewed,
-  recordPayment,
-  sendInvoice,
-  setInvoiceStatus,
-  updateInvoice,
-  updateInvoiceItem,
-} from "./actions";
-
-const PANEL_TABS: readonly PanelTabKey[] = ["uebersicht", "positionen", "verlauf", "zahlung"];
 
 type RawSearchParams = {
   q?: string;
@@ -62,8 +43,6 @@ type RawSearchParams = {
   paidOnly?: string;
   overdueOnly?: string;
   archived?: string;
-  panel?: string;
-  panelTab?: string;
   customerPreview?: string;
   error?: string;
   message?: string;
@@ -121,19 +100,8 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
   if (showArchived) baseParams.set("archived", "1");
   const baseQuery = baseParams.toString();
 
-  function panelHref(id: string, tab: PanelTabKey = "uebersicht") {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", id);
-    if (tab !== "uebersicht") params.set("panelTab", tab);
-    else params.delete("panelTab");
-    return `/rechnungen?${params.toString()}`;
-  }
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
-    const qs = params.toString();
-    return qs ? `/rechnungen?${qs}` : "/rechnungen";
+  function docHref(id: string, tab: "uebersicht" | "zahlung" = "uebersicht") {
+    return tab === "uebersicht" ? `/rechnungen/${id}` : `/rechnungen/${id}?tab=${tab}`;
   }
   function customerPreviewCloseHref() {
     const params = new URLSearchParams(baseQuery);
@@ -145,14 +113,11 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
     const params = new URLSearchParams(baseQuery);
     if (nextKind) params.set("kind", nextKind);
     else params.delete("kind");
-    params.delete("panel");
-    params.delete("panelTab");
     const qs = params.toString();
     return qs ? `/rechnungen?${qs}` : "/rechnungen";
   }
 
-  const [{ data: companyRow }, { data: invoicesRaw }, { data: itemsRaw }, { data: employeesRaw }, { data: customersRaw }, { data: ordersRaw }] = await Promise.all([
-    supabase.from("companies").select("name").eq("id", profile.company_id).maybeSingle(),
+  const [{ data: invoicesRaw }, { data: itemsRaw }, { data: employeesRaw }, { data: customersRaw }, { data: ordersRaw }] = await Promise.all([
     supabase
       .from("invoices")
       .select(
@@ -165,7 +130,6 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
     supabase.from("orders").select("id, title, customer_id, status").order("created_at", { ascending: false }),
   ]);
 
-  const companyName = companyRow?.name ?? "Mein Unternehmen";
   const employees = employeesRaw ?? [];
   const activeEmployees = employees.filter((e) => !e.is_archived);
   const employeeNameById = Object.fromEntries(employees.map((e) => [e.id, e.full_name ?? "Unbenannt"]));
@@ -215,12 +179,12 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
   const ueberfaelligeRechnungen = activeInvoices.filter((i) => i.kind === "rechnung" && i.effectiveStatus === "ueberfaellig").length;
 
   const kpis = [
-    { key: "offene_angebote", label: "Offene Angebote", icon: FileText, value: offeneAngebote },
-    { key: "warten", label: "Warten auf Antwort", icon: Clock3, value: angeboteWartenAufAntwort },
-    { key: "offene_rechnungen", label: "Offene Rechnungen", icon: Receipt, value: offeneRechnungen },
-    { key: "bezahlt_monat", label: "Bezahlt diesen Monat", icon: CheckCircle2, value: formatEuro(bezahltDiesenMonat) },
-    { key: "umsatz_monat", label: "Umsatz diesen Monat", icon: TrendingUp, value: formatEuro(umsatzDiesenMonat) },
-    { key: "ueberfaellig", label: "Überfällige Rechnungen", icon: AlertTriangle, value: ueberfaelligeRechnungen },
+    { key: "offene_angebote", label: "Offene Angebote", icon: FileText, value: offeneAngebote, gradient: "from-blue-400 to-blue-700" },
+    { key: "warten", label: "Warten auf Antwort", icon: Clock3, value: angeboteWartenAufAntwort, gradient: "from-amber-400 to-amber-700" },
+    { key: "offene_rechnungen", label: "Offene Rechnungen", icon: Receipt, value: offeneRechnungen, gradient: "from-indigo-400 to-indigo-700" },
+    { key: "bezahlt_monat", label: "Bezahlt diesen Monat", icon: CheckCircle2, value: formatEuro(bezahltDiesenMonat), gradient: "from-emerald-400 to-emerald-700" },
+    { key: "umsatz_monat", label: "Umsatz diesen Monat", icon: TrendingUp, value: formatEuro(umsatzDiesenMonat), gradient: "from-purple-400 to-purple-700" },
+    { key: "ueberfaellig", label: "Überfällige Rechnungen", icon: AlertTriangle, value: ueberfaelligeRechnungen, gradient: "from-red-400 to-red-700" },
   ];
 
   // ===================================================================
@@ -245,7 +209,7 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
   const reminders: ReminderItem[] = [];
   for (const i of activeInvoices) {
     if (i.kind === "angebot" && QUOTE_PENDING_STATUSES.includes(i.status) && i.valid_until === tomorrowISO) {
-      reminders.push({ id: `expiring-${i.id}`, type: "quote_expiring", title: `Angebot ${i.invoice_number ?? ""} läuft morgen ab`, subtitle: i.customerName ?? "", href: panelHref(i.id) });
+      reminders.push({ id: `expiring-${i.id}`, type: "quote_expiring", title: `Angebot ${i.invoice_number ?? ""} läuft morgen ab`, subtitle: i.customerName ?? "", href: docHref(i.id) });
     }
     if (i.kind === "rechnung" && BILL_OPEN_STATUSES.includes(i.status) && daysBetweenISO(i.issue_date, today) >= 14) {
       reminders.push({
@@ -253,7 +217,7 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
         type: "invoice_overdue",
         title: `Rechnung ${i.invoice_number ?? ""} seit ${daysBetweenISO(i.issue_date, today)} Tagen offen`,
         subtitle: i.customerName ?? "",
-        href: panelHref(i.id),
+        href: docHref(i.id),
       });
     }
     if (i.kind === "rechnung" && i.payment_date && daysBetweenISO(i.payment_date, today) >= 0 && daysBetweenISO(i.payment_date, today) <= 3 && Number(i.paid_amount) > 0) {
@@ -262,11 +226,11 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
         type: "payment_received",
         title: `Zahlung für ${i.invoice_number ?? ""} eingegangen`,
         subtitle: `${formatEuro(Number(i.paid_amount))} · ${i.customerName ?? ""}`,
-        href: panelHref(i.id, "zahlung"),
+        href: docHref(i.id, "zahlung"),
       });
     }
     if (i.kind === "angebot" && i.viewed_at && daysBetweenISO(i.viewed_at.slice(0, 10), today) <= 3) {
-      reminders.push({ id: `viewed-${i.id}`, type: "quote_viewed", title: `Kunde hat Angebot ${i.invoice_number ?? ""} geöffnet`, subtitle: i.customerName ?? "", href: panelHref(i.id) });
+      reminders.push({ id: `viewed-${i.id}`, type: "quote_viewed", title: `Kunde hat Angebot ${i.invoice_number ?? ""} geöffnet`, subtitle: i.customerName ?? "", href: docHref(i.id) });
     }
   }
   reminders.sort((a, b) => a.id.localeCompare(b.id));
@@ -331,110 +295,10 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
   }));
 
   // ===================================================================
-  // Detailpanel (Angebot/Rechnung)
-  // ===================================================================
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "uebersicht";
-  let panelData: InvoiceDetailPanelData | null = null;
-
-  if (panelId) {
-    const panelInvoice = allInvoices.find((i) => i.id === panelId);
-    if (panelInvoice) {
-      const returnTo = panelHref(panelId, panelTab);
-      const items = (itemsByInvoiceId.get(panelId) ?? []).sort((a, b) => a.position - b.position);
-      const customer = panelInvoice.customers as CustomerLike | null;
-      const customerAddress = customer ? [customer.street, [customer.postal_code, customer.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") : null;
-
-      const [{ data: history }, { data: sourceQuote }, { data: convertedInvoice }] = await Promise.all([
-        supabase
-          .from("invoice_history")
-          .select("id, action, summary, actor_id, created_at")
-          .eq("invoice_id", panelId)
-          .order("created_at", { ascending: false }),
-        panelInvoice.source_quote_id ? supabase.from("invoices").select("invoice_number").eq("id", panelInvoice.source_quote_id).maybeSingle() : Promise.resolve({ data: null }),
-        panelInvoice.converted_to_invoice_id ? supabase.from("invoices").select("invoice_number").eq("id", panelInvoice.converted_to_invoice_id).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
-
-      panelData = {
-        id: panelInvoice.id,
-        invoiceNumber: panelInvoice.invoice_number,
-        kind: panelInvoice.kind,
-        status: panelInvoice.status,
-        effectiveStatus: panelInvoice.effectiveStatus,
-        issueDate: panelInvoice.issue_date,
-        dueDate: panelInvoice.due_date,
-        validUntil: panelInvoice.valid_until,
-        taxRate: Number(panelInvoice.tax_rate ?? 19),
-        notes: panelInvoice.notes,
-        paidAmount: Number(panelInvoice.paid_amount),
-        paymentMethod: panelInvoice.payment_method,
-        paymentDate: panelInvoice.payment_date,
-        sentAt: panelInvoice.sent_at,
-        viewedAt: panelInvoice.viewed_at,
-        dunningLevel: Number(panelInvoice.dunning_level),
-        isArchived: panelInvoice.is_archived,
-        companyName,
-        customerId: panelInvoice.customer_id,
-        customerName: panelInvoice.customerName,
-        customerEmail: panelInvoice.customerEmail,
-        customerPhone: customer?.phone ?? null,
-        customerContactPerson: customer?.contact_person ?? null,
-        customerAddress: customerAddress || null,
-        orderId: panelInvoice.order_id,
-        orderLabel: panelInvoice.orderTitle,
-        assignedToId: panelInvoice.assigned_to,
-        assignedToName: panelInvoice.assigned_to ? employeeNameById[panelInvoice.assigned_to] ?? null : null,
-        employeeOptions: activeEmployees.map((e) => ({ id: e.id, label: e.full_name ?? "Unbenannt" })),
-        customerOptions: customers.map((c) => ({ id: c.id, label: c.name })),
-        orderOptions: orders.map((o) => ({ id: o.id, label: o.title })),
-        sourceQuoteId: panelInvoice.source_quote_id,
-        sourceQuoteNumber: sourceQuote?.invoice_number ?? null,
-        convertedToInvoiceId: panelInvoice.converted_to_invoice_id,
-        convertedToInvoiceNumber: convertedInvoice?.invoice_number ?? null,
-        items: items.map((it) => ({
-          id: it.id,
-          description: it.description,
-          quantity: it.quantity,
-          unit_price: it.unit_price,
-          position: it.position,
-          updateAction: updateInvoiceItem.bind(null, it.id, returnTo),
-          deleteAction: deleteInvoiceItem.bind(null, panelId, it.id, returnTo),
-        })),
-        history: (history ?? []).map((h) => ({
-          id: h.id,
-          action: h.action,
-          summary: h.summary,
-          actorName: h.actor_id ? employeeNameById[h.actor_id] ?? null : null,
-          created_at: h.created_at,
-        })),
-        canManage,
-        activeTab: panelTab,
-        hrefs: {
-          close: panelCloseHref(),
-          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
-          pdf: `/rechnungen/${panelId}/pdf`,
-        },
-        updateAction: updateInvoice.bind(null, panelId, returnTo),
-        addItemAction: addInvoiceItem.bind(null, panelId, returnTo),
-        sendAction: sendInvoice.bind(null, panelId, returnTo),
-        setStatusAction: setInvoiceStatus.bind(null, panelId, returnTo),
-        recordPaymentAction: recordPayment.bind(null, panelId, returnTo),
-        convertAction: convertQuoteToInvoice.bind(null, panelId, returnTo),
-        markViewedAction: markInvoiceViewed.bind(null, panelId, returnTo),
-        increaseDunningAction: increaseDunningLevel.bind(null, panelId, returnTo),
-        assignAction: assignInvoice.bind(null, panelId, returnTo),
-        archiveAction: archiveInvoice.bind(null, panelId, !panelInvoice.is_archived, returnTo),
-        duplicateAction: duplicateInvoice.bind(null, panelId, returnTo),
-        deleteAction: deleteInvoice.bind(null, panelId, returnTo),
-      };
-    }
-  }
-
-  // ===================================================================
-  // Kundenvorschau (Spec-Punkt 6) – nur wenn kein Dokument-Panel offen ist.
+  // Kundenvorschau (Spec-Punkt 6)
   // ===================================================================
   let customerPreviewData: CustomerPreviewData | null = null;
-  const customerPreviewId = !panelId && raw.customerPreview ? raw.customerPreview.trim() : null;
+  const customerPreviewId = raw.customerPreview ? raw.customerPreview.trim() : null;
   if (customerPreviewId) {
     const { data: customerRow } = await supabase
       .from("customers")
@@ -481,39 +345,45 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
 
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
-            <Receipt className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Angebote &amp; Rechnungen</h1>
-            <p className="mt-0.5 text-sm text-muted">{activeInvoices.length} aktive Dokumente</p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+              <Receipt className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Angebote &amp; Rechnungen</h1>
+              <p className="mt-1 text-sm text-white/80">{activeInvoices.length} aktive Dokumente</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <RemindersWidget items={reminders} />
-          <Link href="/rechnungen/statistiken" className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground hover:bg-background">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Statistiken</span>
-          </Link>
-          {canManage && (
-            <Link href="/rechnungen/neu" className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md">
-              + Neu
+          <div className="flex items-center gap-2">
+            <RemindersWidget items={reminders} />
+            <Link
+              href="/rechnungen/statistiken"
+              className="flex items-center gap-1.5 rounded-[11px] border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white hover:bg-white/20"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Statistiken</span>
             </Link>
-          )}
+            {canManage && (
+              <Link href="/rechnungen/neu" className="rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90">
+                + Neu
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
       {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
       {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
@@ -597,12 +467,11 @@ export default async function RechnungenPage({ searchParams }: { searchParams: P
           {invoiceRows.length === 0 ? (
             <InvoiceEmptyState filtered={hasAnyInvoices && isFiltered} />
           ) : (
-            <InvoiceTable items={invoiceRows} panelBaseQuery={baseQuery} showingArchived={showArchived} />
+            <InvoiceTable items={invoiceRows} filterQuery={baseQuery} showingArchived={showArchived} />
           )}
         </div>
 
-        {panelData && <InvoiceDetailPanel data={panelData} />}
-        {!panelData && customerPreviewData && <CustomerPreviewPanel data={customerPreviewData} />}
+        {customerPreviewData && <CustomerPreviewPanel data={customerPreviewData} />}
       </div>
 
       {!canManage && (
