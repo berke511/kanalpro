@@ -170,11 +170,11 @@ type SortKey = "date" | "amount" | "customer" | "status";
 
 export function InvoiceTable({
   items,
-  panelBaseQuery,
+  filterQuery,
   showingArchived = false,
 }: {
   items: InvoiceRow[];
-  panelBaseQuery: string;
+  filterQuery: string;
   showingArchived?: boolean;
 }) {
   const router = useRouter();
@@ -200,22 +200,14 @@ export function InvoiceTable({
     }
   }
 
-  function panelHref(id: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.delete("panelTab");
-    params.set("panel", id);
-    return `/rechnungen?${params.toString()}`;
+  function docHref(id: string) {
+    return `/rechnungen/${id}`;
   }
-  function panelHrefTab(id: string, tab: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.set("panel", id);
-    params.set("panelTab", tab);
-    return `/rechnungen?${params.toString()}`;
+  function docHrefTab(id: string, tab: string) {
+    return `/rechnungen/${id}?tab=${tab}`;
   }
   function customerHref(customerId: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
+    const params = new URLSearchParams(filterQuery);
     params.set("customerPreview", customerId);
     return `/rechnungen?${params.toString()}`;
   }
@@ -438,7 +430,7 @@ export function InvoiceTable({
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <Link href={panelHref(item.id)} className="font-medium text-foreground hover:text-brand">
+                  <Link href={docHref(item.id)} className="font-medium text-foreground hover:text-brand">
                     {item.invoiceNumber ?? "Ohne Nummer"}
                   </Link>
                   <p className="text-xs text-muted sm:hidden">{INVOICE_KIND_LABELS[item.kind] ?? item.kind}</p>
@@ -473,7 +465,7 @@ export function InvoiceTable({
                 <td className="px-2 py-3">
                   <div className="flex items-center justify-end gap-0.5">
                     <div className="hidden items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
-                      <Link href={panelHref(item.id)} title="Anzeigen" className="rounded-md p-1.5 text-muted hover:bg-background hover:text-foreground">
+                      <Link href={docHref(item.id)} title="Anzeigen" className="rounded-md p-1.5 text-muted hover:bg-background hover:text-foreground">
                         <Eye className="h-4 w-4" />
                       </Link>
                       <Link href={`/rechnungen/${item.id}/pdf`} target="_blank" title="PDF öffnen" className="rounded-md p-1.5 text-muted hover:bg-background hover:text-foreground">
@@ -517,7 +509,7 @@ export function InvoiceTable({
                         <>
                           <button type="button" className="fixed inset-0 z-10 cursor-default" aria-label="Menü schließen" onClick={() => setRowMenuOpenId(null)} />
                           <div className="absolute right-2 z-20 mt-1 w-52 rounded-lg border border-border bg-card p-1.5 shadow-lg">
-                            <Link href={panelHref(item.id)} onClick={() => setRowMenuOpenId(null)} className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
+                            <Link href={docHref(item.id)} onClick={() => setRowMenuOpenId(null)} className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background">
                               <Pencil className="h-3.5 w-3.5" />
                               Bearbeiten
                             </Link>
@@ -527,7 +519,7 @@ export function InvoiceTable({
                             </Link>
                             {item.kind === "rechnung" && (
                               <Link
-                                href={panelHrefTab(item.id, "zahlung")}
+                                href={docHrefTab(item.id, "zahlung")}
                                 onClick={() => setRowMenuOpenId(null)}
                                 className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
                               >
@@ -535,7 +527,7 @@ export function InvoiceTable({
                                 Zahlung erfassen
                               </Link>
                             )}
-                            <form action={duplicateInvoice.bind(null, item.id, panelHref(item.id))}>
+                            <form action={duplicateInvoice.bind(null, item.id, docHref(item.id))}>
                               <button
                                 type="submit"
                                 onClick={() => setRowMenuOpenId(null)}
