@@ -2,33 +2,11 @@ import Link from "next/link";
 import { CalendarCheck, CalendarDays, CheckCircle2, ClipboardList, Clock, FileSignature } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateProfile } from "@/lib/supabase/profile";
-import { canCreateOrdersAndLinkCommercialDocuments, canDeleteOrArchiveOrders } from "@/lib/roles";
+import { canDeleteOrArchiveOrders } from "@/lib/roles";
 import { REPORT_STATUSES, REPORT_STATUS_LABELS, formatMinutesAsHours } from "@/lib/reports";
 import { dateFromISO, todayBerlinISO } from "@/lib/date";
 import { ReportTable, type ReportRow } from "@/components/dashboard/ReportTable";
 import { ReportFilterPanel } from "@/components/dashboard/ReportFilterPanel";
-import { ReportDetailPanel, type PanelTabKey, type ReportDetailPanelData } from "@/components/dashboard/ReportDetailPanel";
-import {
-  addReportEmployee,
-  addReportMachine,
-  addReportMaterial,
-  archiveReport,
-  consumeReportMaterial,
-  deleteReport,
-  deleteReportPhoto,
-  finalizeOrderFromReport,
-  markReportPdfGenerated,
-  prepareInvoiceFromReport,
-  removeReportEmployee,
-  removeReportMachine,
-  removeReportMaterial,
-  saveReportSignature,
-  updateReportDetails,
-  updateReportStatus,
-  uploadReportPhoto,
-} from "./actions";
-
-const PANEL_TABS: readonly PanelTabKey[] = ["kunde", "auftrag", "mitarbeiter", "arbeitszeit", "material", "fotos", "unterschrift", "pdf", "historie"];
 
 type RawSearchParams = {
   q?: string;
@@ -39,8 +17,6 @@ type RawSearchParams = {
   from?: string;
   to?: string;
   signed?: string;
-  panel?: string;
-  panelTab?: string;
   error?: string;
   message?: string;
 };
@@ -61,7 +37,6 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
 
   const currentProfile = await getOrCreateProfile(supabase, user);
   const role = currentProfile?.role ?? null;
-  const canLinkCommercial = canCreateOrdersAndLinkCommercialDocuments(role);
   const canArchiveOrDelete = canDeleteOrArchiveOrders(role) || role === "disponent" || role === "buero";
   const today = todayBerlinISO();
 
@@ -74,33 +49,7 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
   const toFilter = (raw.to ?? "").trim();
   const signedFilter = raw.signed === "1" ? "1" : raw.signed === "0" ? "0" : "";
 
-  const baseParams = new URLSearchParams();
-  if (q) baseParams.set("q", q);
-  statusFilter.forEach((s) => baseParams.append("status", s));
-  if (employeeFilter) baseParams.set("employee", employeeFilter);
-  if (customerFilter) baseParams.set("customer", customerFilter);
-  if (orderFilter) baseParams.set("order", orderFilter);
-  if (fromFilter) baseParams.set("from", fromFilter);
-  if (toFilter) baseParams.set("to", toFilter);
-  if (signedFilter) baseParams.set("signed", signedFilter);
-  const baseQuery = baseParams.toString();
-
-  function panelHref(id: string, tab: PanelTabKey = "kunde") {
-    const params = new URLSearchParams(baseQuery);
-    params.set("panel", id);
-    if (tab !== "kunde") params.set("panelTab", tab);
-    else params.delete("panelTab");
-    return `/berichte?${params.toString()}`;
-  }
-  function panelCloseHref() {
-    const params = new URLSearchParams(baseQuery);
-    params.delete("panel");
-    params.delete("panelTab");
-    const qs = params.toString();
-    return qs ? `/berichte?${qs}` : "/berichte";
-  }
-
-  const [{ data: allReportsRaw }, { data: employeesRaw }, { data: fleetItemsRaw }, { data: materialsRaw }] = await Promise.all([
+  const [{ data: allReportsRaw }, { data: employeesRaw }] = await Promise.all([
     supabase
       .from("service_reports")
       .select(
@@ -108,18 +57,12 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
       )
       .order("report_date", { ascending: false }),
     supabase.from("profiles").select("id, full_name, is_archived").order("full_name", { ascending: true }),
-    supabase.from("fleet_items").select("id, name, kind, license_plate").order("name", { ascending: true }),
-    supabase.from("materials").select("id, name, material_number, unit, unit_price").eq("is_archived", false).order("name", { ascending: true }),
   ]);
 
   const allReports = allReportsRaw ?? [];
   const employees = employeesRaw ?? [];
   const activeEmployees = employees.filter((e) => !e.is_archived);
   const employeeNameById = Object.fromEntries(employees.map((e) => [e.id, e.full_name ?? "Unbenannt"]));
-  const fleetItems = fleetItemsRaw ?? [];
-  const fleetLabelById = Object.fromEntries(fleetItems.map((f) => [f.id, f.license_plate ? `${f.license_plate} · ${f.name}` : f.name]));
-  const materials = materialsRaw ?? [];
-  const materialOptions = materials.map((m) => ({ id: m.id, label: m.material_number ? `${m.material_number} · ${m.name}` : m.name, unit: m.unit }));
 
   type RawReport = (typeof allReports)[number];
   function orderOf(r: RawReport) {
@@ -154,12 +97,12 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
   const avgMinutes = withHours.length ? Math.round((withHours.reduce((sum, r) => sum + Number(r.hours_worked) * 60, 0)) / withHours.length) : null;
 
   const kpis = [
-    { key: "heute", label: "Berichte heute", icon: CalendarDays, value: berichteHeute },
-    { key: "unterschrift", label: "Unterschriften ausstehend", icon: FileSignature, value: unterschriftenAusstehend },
-    { key: "woche", label: "Berichte diese Woche", icon: CalendarCheck, value: berichteDieseWoche },
-    { key: "offen", label: "Offene Berichte", icon: ClipboardList, value: offeneBerichte },
-    { key: "abgeschlossen", label: "Abgeschlossene Berichte", icon: CheckCircle2, value: abgeschlosseneBerichte },
-    { key: "dauer", label: "Ø Arbeitszeit", icon: Clock, value: avgMinutes !== null ? formatMinutesAsHours(avgMinutes) : "—" },
+    { key: "heute", label: "Berichte heute", icon: CalendarDays, value: berichteHeute, gradient: "from-blue-400 to-blue-700" },
+    { key: "unterschrift", label: "Unterschriften ausstehend", icon: FileSignature, value: unterschriftenAusstehend, gradient: "from-amber-400 to-amber-700" },
+    { key: "woche", label: "Berichte diese Woche", icon: CalendarCheck, value: berichteDieseWoche, gradient: "from-indigo-400 to-indigo-700" },
+    { key: "offen", label: "Offene Berichte", icon: ClipboardList, value: offeneBerichte, gradient: "from-purple-400 to-purple-700" },
+    { key: "abgeschlossen", label: "Abgeschlossene Berichte", icon: CheckCircle2, value: abgeschlosseneBerichte, gradient: "from-emerald-400 to-emerald-700" },
+    { key: "dauer", label: "Ø Arbeitszeit", icon: Clock, value: avgMinutes !== null ? formatMinutesAsHours(avgMinutes) : "—", gradient: "from-cyan-400 to-cyan-700" },
   ];
 
   // Filteroptionen aus den vorhandenen Berichten ableiten (kein separater
@@ -223,185 +166,38 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
   const activeCount =
     statusFilter.length + (employeeFilter ? 1 : 0) + (customerFilter ? 1 : 0) + (orderFilter ? 1 : 0) + (fromFilter ? 1 : 0) + (toFilter ? 1 : 0) + (signedFilter ? 1 : 0);
 
-  const panelId = raw.panel && raw.panel.trim().length > 0 ? raw.panel.trim() : null;
-  const panelTab: PanelTabKey = PANEL_TABS.includes(raw.panelTab as PanelTabKey) ? (raw.panelTab as PanelTabKey) : "kunde";
-  let panelData: ReportDetailPanelData | null = null;
-
-  if (panelId) {
-    const { data: panelItem } = await supabase.from("service_reports").select("*").eq("id", panelId).maybeSingle();
-
-    if (panelItem) {
-      const returnTo = panelHref(panelId, panelTab);
-
-      const [{ data: order }, { data: customer }, { data: reportEmployees }, { data: reportMachines }, { data: reportMaterials }, { data: photos }, { data: history }] = await Promise.all([
-        supabase.from("orders").select("id, order_number, title, order_kind, onsite_contact, property_id").eq("id", panelItem.order_id).maybeSingle(),
-        panelItem.customer_id
-          ? supabase.from("customers").select("name, contact_person, phone, email, street, postal_code, city").eq("id", panelItem.customer_id).maybeSingle()
-          : Promise.resolve({ data: null }),
-        supabase.from("report_employees").select("id, employee_id").eq("report_id", panelId),
-        supabase.from("report_machines").select("id, fleet_item_id").eq("report_id", panelId),
-        supabase.from("report_materials").select("id, material_id, quantity, unit_price, consumed_at, materials(name, unit)").eq("report_id", panelId),
-        supabase.from("report_photos").select("id, category, file_name, storage_path, created_at").eq("report_id", panelId).order("created_at", { ascending: false }),
-        supabase.from("report_history").select("id, action, summary, actor_id, created_at").eq("report_id", panelId).order("created_at", { ascending: false }),
-      ]);
-
-      let property: { name: string | null; street: string | null; city: string | null } | null = null;
-      if (order?.property_id) {
-        const { data } = await supabase.from("customer_properties").select("name, street, postal_code, city").eq("id", order.property_id).maybeSingle();
-        property = data ? { name: data.name, street: data.street, city: [data.postal_code, data.city].filter(Boolean).join(" ") } : null;
-      }
-
-      let photoUrlByPath: Record<string, string> = {};
-      const photoPaths = (photos ?? []).map((p) => p.storage_path);
-      if (photoPaths.length > 0) {
-        const { data: signed } = await supabase.storage.from("report-photos").createSignedUrls(photoPaths, 60 * 10);
-        photoUrlByPath = Object.fromEntries((signed ?? []).map((s) => [s.path ?? "", s.signedUrl]).filter(([p]) => p));
-      }
-
-      let signatureUrl: string | null = null;
-      if (panelItem.customer_signature_path) {
-        const { data: signed } = await supabase.storage.from("report-signatures").createSignedUrl(panelItem.customer_signature_path, 60 * 10);
-        signatureUrl = signed?.signedUrl ?? null;
-      }
-
-      const usedEmployeeIds = new Set((reportEmployees ?? []).map((e) => e.employee_id));
-      const usedMachineIds = new Set((reportMachines ?? []).map((m) => m.fleet_item_id));
-
-      panelData = {
-        id: panelItem.id,
-        reportNumber: panelItem.report_number,
-        status: panelItem.status,
-        isArchived: panelItem.is_archived,
-        reportDate: panelItem.report_date,
-        startTime: panelItem.start_time,
-        endTime: panelItem.end_time,
-        breakMinutes: panelItem.break_minutes,
-        durationMinutes: panelItem.hours_worked !== null ? Math.round(Number(panelItem.hours_worked) * 60) : null,
-        weather: panelItem.weather,
-        workTypes: panelItem.work_types ?? [],
-        workPerformed: panelItem.work_performed,
-        internalNotes: panelItem.internal_notes,
-        customer: customer
-          ? {
-              name: customer.name,
-              contactPerson: customer.contact_person,
-              phone: customer.phone,
-              email: customer.email,
-              street: customer.street,
-              postalCode: customer.postal_code,
-              city: customer.city,
-            }
-          : null,
-        order: {
-          id: order?.id ?? panelItem.order_id,
-          orderNumber: order?.order_number ?? null,
-          title: order?.title ?? "Unbekannter Auftrag",
-          orderKind: order?.order_kind ?? null,
-          onsiteContact: order?.onsite_contact ?? null,
-          propertyName: property?.name ?? null,
-          propertyStreet: property?.street ?? null,
-          propertyCity: property?.city ?? null,
-        },
-        employees: (reportEmployees ?? []).map((e) => ({
-          id: e.id,
-          name: employeeNameById[e.employee_id] ?? "Unbenannt",
-          removeAction: removeReportEmployee.bind(null, e.id, returnTo),
-        })),
-        employeeOptions: activeEmployees.filter((e) => !usedEmployeeIds.has(e.id)).map((e) => ({ id: e.id, label: e.full_name ?? "Unbenannt" })),
-        machines: (reportMachines ?? []).map((m) => ({
-          id: m.id,
-          label: fleetLabelById[m.fleet_item_id] ?? "Unbekannt",
-          removeAction: removeReportMachine.bind(null, m.id, returnTo),
-        })),
-        machineOptions: fleetItems.filter((f) => !usedMachineIds.has(f.id)).map((f) => ({ id: f.id, label: fleetLabelById[f.id] ?? f.name })),
-        materials: (reportMaterials ?? []).map((m) => {
-          const info = (m as unknown as { materials: { name: string; unit: string } | null }).materials;
-          return {
-            id: m.id,
-            materialId: m.material_id,
-            name: info?.name ?? "Unbekanntes Material",
-            quantity: Number(m.quantity),
-            unit: info?.unit ?? "Stück",
-            unitPrice: m.unit_price !== null ? Number(m.unit_price) : null,
-            consumedAt: m.consumed_at,
-            consumeAction: consumeReportMaterial.bind(null, m.id, panelItem.order_id, returnTo),
-            removeAction: removeReportMaterial.bind(null, m.id, returnTo),
-          };
-        }),
-        materialOptions,
-        photos: (photos ?? []).map((p) => ({
-          id: p.id,
-          category: p.category,
-          fileName: p.file_name,
-          url: photoUrlByPath[p.storage_path] ?? null,
-          createdAt: p.created_at,
-          deleteAction: deleteReportPhoto.bind(null, p.id, p.storage_path, returnTo),
-        })),
-        signature: {
-          name: panelItem.customer_signature_name,
-          role: panelItem.customer_signature_role,
-          signedAt: panelItem.signed_at,
-          url: signatureUrl,
-        },
-        pdfGeneratedAt: panelItem.pdf_generated_at,
-        history: (history ?? []).map((h) => ({
-          id: h.id,
-          action: h.action,
-          summary: h.summary,
-          actorName: h.actor_id ? employeeNameById[h.actor_id] ?? null : null,
-          createdAt: h.created_at,
-        })),
-        canManage: true,
-        canArchiveOrDelete,
-        canLinkCommercial,
-        invoicePreparedAt: panelItem.invoice_prepared_at,
-        activeTab: panelTab,
-        hrefs: {
-          close: panelCloseHref(),
-          tabs: Object.fromEntries(PANEL_TABS.map((t) => [t, panelHref(panelId, t)])) as Record<PanelTabKey, string>,
-        },
-        updateStatusAction: updateReportStatus.bind(null, panelId, returnTo),
-        updateDetailsAction: updateReportDetails.bind(null, panelId, returnTo),
-        addEmployeeAction: addReportEmployee.bind(null, panelId, returnTo),
-        addMachineAction: addReportMachine.bind(null, panelId, returnTo),
-        addMaterialAction: addReportMaterial.bind(null, panelId, returnTo),
-        uploadPhotoAction: uploadReportPhoto.bind(null, panelId, returnTo),
-        saveSignatureAction: saveReportSignature.bind(null, panelId, returnTo),
-        markPdfAction: markReportPdfGenerated.bind(null, panelId, returnTo),
-        finalizeOrderAction: finalizeOrderFromReport.bind(null, panelId, panelItem.order_id, returnTo),
-        prepareInvoiceAction: prepareInvoiceFromReport.bind(null, panelId, returnTo),
-        archiveAction: archiveReport.bind(null, panelId, !panelItem.is_archived, returnTo),
-        deleteAction: deleteReport.bind(null, panelId, "/berichte"),
-      };
-    }
-  }
-
   return (
     <div className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
-            <ClipboardList className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Einsatz- & Abschlussberichte</h1>
-            <p className="mt-0.5 text-sm text-muted">{activeReports.length} Bericht{activeReports.length === 1 ? "" : "e"}</p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+              <ClipboardList className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Einsatz- & Abschlussberichte</h1>
+              <p className="mt-1 text-sm text-white/80">{activeReports.length} Bericht{activeReports.length === 1 ? "" : "e"}</p>
+            </div>
           </div>
+          <Link
+            href="/berichte/neu"
+            className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
+          >
+            + Neuer Einsatzbericht
+          </Link>
         </div>
-        <Link href="/berichte/neu" className="rounded-lg bg-gradient-to-br from-brand to-brand-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:shadow-md">
-          + Neuer Einsatzbericht
-        </Link>
       </div>
 
       {raw.error && <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{raw.error}</p>}
       {raw.message && <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{raw.message}</p>}
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-soft text-brand">
+            <div key={kpi.key} className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${kpi.gradient} text-white shadow-md`}>
                 <Icon className="h-4 w-4" />
               </span>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
@@ -442,16 +238,12 @@ export default async function BerichtePage({ searchParams }: { searchParams: Pro
         />
       </div>
 
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          {reportRows.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Einsatzberichte gefunden.</p>
-          ) : (
-            <ReportTable items={reportRows} panelBaseQuery={baseQuery} canManage={canArchiveOrDelete} />
-          )}
-        </div>
-
-        {panelData && <ReportDetailPanel data={panelData} />}
+      <div className="mt-6">
+        {reportRows.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted">Keine Einsatzberichte gefunden.</p>
+        ) : (
+          <ReportTable items={reportRows} canManage={canArchiveOrDelete} />
+        )}
       </div>
     </div>
   );
