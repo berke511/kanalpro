@@ -100,11 +100,9 @@ export function exportReportsCsv(rows: ReportRow[]) {
 
 export function ReportTable({
   items,
-  panelBaseQuery,
   canManage,
 }: {
   items: ReportRow[];
-  panelBaseQuery: string;
   canManage: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -126,10 +124,7 @@ export function ReportTable({
   }
 
   function panelHref(id: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.delete("panelTab");
-    params.set("panel", id);
-    return `/berichte?${params.toString()}`;
+    return `/berichte/${id}`;
   }
 
   const actionBtnClass =
