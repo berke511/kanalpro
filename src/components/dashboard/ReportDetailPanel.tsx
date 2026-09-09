@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Building2,
   Camera,
@@ -14,7 +12,6 @@ import {
   Truck,
   Users,
   Wrench,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/date";
@@ -22,7 +19,6 @@ import { formatEuro } from "@/lib/format";
 import {
   REPORT_PHOTO_CATEGORIES,
   REPORT_PHOTO_CATEGORY_LABELS,
-  REPORT_STATUS_BADGE_CLASS,
   REPORT_STATUS_LABELS,
   REPORT_STATUSES,
   WORK_TYPES,
@@ -120,16 +116,6 @@ export type ReportDetailPanelData = {
 };
 
 export function ReportDetailPanel({ data }: { data: ReportDetailPanelData }) {
-  const router = useRouter();
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") router.push(data.hrefs.close);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [router, data.hrefs.close]);
-
   const inputClass =
     "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/10";
   const labelClass = "text-xs font-medium text-muted";
@@ -141,69 +127,90 @@ export function ReportDetailPanel({ data }: { data: ReportDetailPanelData }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-30 bg-black/20 backdrop-blur-[2px] lg:hidden" onClick={() => router.push(data.hrefs.close)} />
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-md animate-slide-in-right overflow-y-auto border-l border-border bg-card p-5 shadow-xl lg:sticky lg:top-0 lg:z-0 lg:h-[calc(100vh-2rem)] lg:max-w-none lg:animate-none lg:shadow-none">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Einsatzbericht</h2>
-          <Link href={data.hrefs.close} className="rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-foreground">
-            <X className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="mt-4 flex items-center gap-3">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-lg font-semibold text-white shadow-sm">
-            {initialsFor(data.customer?.name ?? data.order.title)}
-          </span>
-          <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold tracking-tight text-foreground">{data.reportNumber ?? "Einsatzbericht"}</h3>
-            <p className="truncate text-sm text-muted">
-              {data.order.orderNumber ?? data.order.title} · {formatDate(data.reportDate)}
-            </p>
+      <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-[#3a63ff] via-[#3151e6] to-[#5b3ec9] px-6 py-6 text-white shadow-lg shadow-brand/25 sm:px-8">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-white/20 blur-2xl" />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-semibold text-white">
+              {initialsFor(data.customer?.name ?? data.order.title)}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-2xl font-semibold tracking-tight">{data.reportNumber ?? "Einsatzbericht"}</h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  {REPORT_STATUS_LABELS[data.status] ?? data.status}
+                </span>
+                {data.isArchived && <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">Archiviert</span>}
+              </div>
+              <p className="mt-1 truncate text-sm text-white/80">
+                {data.order.orderNumber ?? data.order.title} · {formatDate(data.reportDate)}
+              </p>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium shadow-sm ${REPORT_STATUS_BADGE_CLASS[data.status] ?? "bg-gray-100 text-gray-600"}`}>
-            {REPORT_STATUS_LABELS[data.status] ?? data.status}
-          </span>
-          {data.isArchived && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">Archiviert</span>}
           {data.canManage && (
-            <form action={data.updateStatusAction} className="ml-auto">
-              <select
-                name="status"
-                defaultValue={data.status}
-                onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium outline-none focus:border-brand"
+            <div className="flex flex-wrap items-center gap-2">
+              <form action={data.updateStatusAction}>
+                <select
+                  name="status"
+                  defaultValue={data.status}
+                  onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                  className="rounded-[11px] border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-white outline-none [color-scheme:dark]"
+                >
+                  {REPORT_STATUSES.map((s) => (
+                    <option key={s} value={s} className="text-foreground">
+                      {REPORT_STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </form>
+              <Link
+                href={data.hrefs.tabs.arbeitszeit}
+                className="flex items-center gap-1.5 rounded-[11px] bg-white px-3.5 py-2 text-sm font-bold text-brand-dark shadow-md hover:bg-white/90"
               >
-                {REPORT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {REPORT_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </form>
+                <PenLine className="h-4 w-4" />
+                Bearbeiten
+              </Link>
+            </div>
           )}
         </div>
 
-        <div className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            return (
-              <Link
-                key={t.key}
-                href={data.hrefs.tabs[t.key]}
-                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  data.activeTab === t.key ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-muted hover:bg-background hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {t.label}
-              </Link>
-            );
-          })}
+        <div className="relative z-10 mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { key: "dauer", label: "Arbeitszeit", value: formatMinutesAsHours(data.durationMinutes) },
+            { key: "mitarbeiter", label: "Mitarbeiter", value: data.employees.length > 0 ? data.employees.map((e) => e.name).join(", ") : "Niemand" },
+            { key: "unterschrift", label: "Unterschrift", value: data.signature.signedAt ? "Unterschrieben" : "Ausstehend" },
+            { key: "pdf", label: "PDF", value: data.pdfGeneratedAt ? "Erzeugt" : "Offen" },
+          ].map((tile) => (
+            <div key={tile.key} className="rounded-xl bg-white/10 px-3 py-2.5">
+              <p className="text-[10.5px] text-white/70">{tile.label}</p>
+              <p className="mt-0.5 truncate text-sm font-bold tabular-nums" title={tile.value}>
+                {tile.value}
+              </p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="mt-4">
+      <div className="mt-6 flex gap-1.5 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.key}
+              href={data.hrefs.tabs[t.key]}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1.5 text-sm font-medium transition-colors ${
+                data.activeTab === t.key ? "bg-gradient-to-br from-brand to-brand-dark text-white shadow-sm" : "text-muted hover:bg-background hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-[0_1px_2px_rgba(16,24,40,.04),0_8px_20px_rgba(16,24,40,.06)]">
           {/* Kundendaten */}
           {data.activeTab === "kunde" && (
             <div className="space-y-3 text-sm">
@@ -611,26 +618,25 @@ export function ReportDetailPanel({ data }: { data: ReportDetailPanelData }) {
           )}
         </div>
 
-        {data.canArchiveOrDelete && (
-          <div className="mt-6 flex items-center justify-between gap-2 border-t border-border pt-4">
-            <form action={data.archiveAction}>
-              <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background">
-                {data.isArchived ? "Dearchivieren" : "Archivieren"}
-              </button>
-            </form>
-            <form
-              action={data.deleteAction}
-              onSubmit={(e) => {
-                if (!window.confirm("Diesen Bericht unwiderruflich löschen?")) e.preventDefault();
-              }}
-            >
-              <button type="submit" className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
-                Löschen
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
+      {data.canArchiveOrDelete && (
+        <div className="mt-4 flex items-center justify-between gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          <form action={data.archiveAction}>
+            <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-background">
+              {data.isArchived ? "Dearchivieren" : "Archivieren"}
+            </button>
+          </form>
+          <form
+            action={data.deleteAction}
+            onSubmit={(e) => {
+              if (!window.confirm("Diesen Bericht unwiderruflich löschen?")) e.preventDefault();
+            }}
+          >
+            <button type="submit" className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
+              Löschen
+            </button>
+          </form>
+        </div>
+      )}
     </>
   );
 }
