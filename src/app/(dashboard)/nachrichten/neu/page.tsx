@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { NewConversationForm } from "@/components/dashboard/NewConversationForm";
 import { createConversation } from "../actions";
 
@@ -11,16 +10,14 @@ export default async function NeueNachrichtPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) {
     return null;
   }
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) {
     return null;
   }

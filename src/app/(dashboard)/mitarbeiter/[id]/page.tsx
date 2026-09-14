@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { canManageEmployees } from "@/lib/roles";
 import { todayBerlinISO } from "@/lib/date";
 import { EmployeeDetailPanel, type PanelTabKey } from "@/components/dashboard/EmployeeDetailPanel";
@@ -23,14 +22,12 @@ export default async function MitarbeiterDetailPage({
 }) {
   const { id } = await params;
   const { tab } = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) return null;
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   const role = profile?.role ?? null;
   const isAdmin = canManageEmployees(role);
   const today = todayBerlinISO();

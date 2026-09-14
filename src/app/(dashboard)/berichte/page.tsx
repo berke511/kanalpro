@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CalendarCheck, CalendarDays, CheckCircle2, ClipboardList, Clock, FileSignature } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { canDeleteOrArchiveOrders } from "@/lib/roles";
 import { REPORT_STATUSES, REPORT_STATUS_LABELS, formatMinutesAsHours } from "@/lib/reports";
 import { dateFromISO, todayBerlinISO } from "@/lib/date";
@@ -28,14 +27,12 @@ function toArray(value: string | string[] | undefined): string[] {
 
 export default async function BerichtePage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) return null;
 
-  const currentProfile = await getOrCreateProfile(supabase, user);
+  const currentProfile = await getRequestProfile();
   const role = currentProfile?.role ?? null;
   const canArchiveOrDelete = canDeleteOrArchiveOrders(role) || role === "disponent" || role === "buero";
   const today = todayBerlinISO();

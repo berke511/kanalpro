@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { formatDate } from "@/lib/date";
 import { formatEuro } from "@/lib/format";
 import { INVOICE_KIND_LABELS, STATUS_BADGE_CLASS, STATUS_LABELS, calculateTotals, effectiveStatus } from "@/lib/invoices";
@@ -19,13 +18,11 @@ import { PrintButton } from "@/components/dashboard/PrintButton";
  */
 export default async function InvoicePdfPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
   if (!user) redirect("/login");
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) redirect("/login?error=Profil+konnte+nicht+geladen+werden");
 
   const [{ data: invoice }, { data: company }] = await Promise.all([

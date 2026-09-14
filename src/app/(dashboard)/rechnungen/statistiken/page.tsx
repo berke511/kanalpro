@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { ArrowLeft, BarChart3 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { formatEuro } from "@/lib/format";
 import { monthRangeBerlin, todayBerlinISO } from "@/lib/date";
 import { calculateTotals, daysBetweenISO } from "@/lib/invoices";
 import { VerticalBarChart, HorizontalBarList, ProgressRing } from "@/components/dashboard/InvoiceCharts";
 
 export default async function RechnungenStatistikenPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
   if (!user) return null;
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) return null;
 
   const [{ data: invoices }, { data: items }] = await Promise.all([

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { MessageSquare, MessageSquarePlus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { listMyConversations } from "@/lib/messaging";
 import { ConversationListPane } from "@/components/dashboard/ConversationListPane";
 import { NachrichtenShell } from "@/components/dashboard/NachrichtenShell";
@@ -12,16 +11,14 @@ import { NachrichtenShell } from "@/components/dashboard/NachrichtenShell";
 // {children} (die rechte Spalte) wird ausgetauscht. Die Konversationsliste
 // bleibt dadurch links immer sichtbar und lädt nicht bei jedem Klick neu.
 export default async function NachrichtenLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) {
     return null;
   }
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) {
     return null;
   }

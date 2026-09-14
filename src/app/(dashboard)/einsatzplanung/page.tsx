@@ -1,8 +1,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Filter, Sun, Truck, User } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestProfile } from "@/lib/supabase/request";
 import { dateFromISO, nowBerlinMinutes, todayBerlinISO } from "@/lib/date";
 import { ORDER_KIND_COLOR, ORDER_STATUSES, STATUS_LABELS } from "@/lib/orders";
 import { EinsatzplanungGrid, type CalendarOrder } from "@/components/dashboard/EinsatzplanungGrid";
@@ -162,17 +161,14 @@ export default async function EinsatzplanungPage({
     nextNavSub = weekRangeLabel(offset + 1);
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
   // Erzeugt beim ersten Dashboard-Aufruf Firma/Profil, falls noch nicht
   // vorhanden (Seiteneffekt) – der Rückgabewert wird hier nicht mehr
   // benötigt, seit die frühere Detail-Seitenleiste (inkl. rollenabhängiger
-  // Aktions-Buttons) durch die eigene Auftragsseite ersetzt wurde.
-  if (user) {
-    await getOrCreateProfile(supabase, user);
-  }
+  // Aktions-Buttons) durch die eigene Auftragsseite ersetzt wurde. Läuft
+  // über getRequestProfile(), damit sich das mit dem Dashboard-Layout
+  // (das denselben Aufruf ohnehin schon pro Anfrage macht) dedupliziert.
+  await getRequestProfile();
 
   const [{ data: employeeOptions }, { data: fleetOptions }] = await Promise.all([
     supabase.from("profiles").select("id, full_name").order("full_name", { ascending: true }),

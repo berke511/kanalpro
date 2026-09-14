@@ -10,8 +10,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestProfile } from "@/lib/supabase/request";
 import { CustomerSearchInput } from "@/components/dashboard/CustomerSearchInput";
 import { OrderFilterPanel } from "@/components/dashboard/OrderFilterPanel";
 import { OrderTable, type OrderRow } from "@/components/dashboard/OrderTable";
@@ -135,12 +134,8 @@ export default async function AuftraegePage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const profile = user ? await getOrCreateProfile(supabase, user) : null;
+  const supabase = await getRequestSupabase();
+  const profile = await getRequestProfile();
   const role = profile?.role ?? null;
 
   const state: FilterState = {

@@ -1,8 +1,7 @@
 
 import Link from "next/link";
 import { AlertTriangle, Ban, Boxes, CheckCircle2, Package, TrendingDown } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { canManageResourcesAndSchedule } from "@/lib/roles";
 import {
   MATERIAL_CATEGORIES,
@@ -45,14 +44,12 @@ function toArray(value: string | string[] | undefined): string[] {
 
 export default async function MaterialPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) return null;
 
-  const currentProfile = await getOrCreateProfile(supabase, user);
+  const currentProfile = await getRequestProfile();
   const role = currentProfile?.role ?? null;
   const isAdmin = canManageResourcesAndSchedule(role);
   const today = todayBerlinISO();

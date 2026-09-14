@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestProfile } from "@/lib/supabase/request";
 import { canCreateOrdersAndLinkCommercialDocuments } from "@/lib/roles";
 import { createReportFull } from "@/app/(dashboard)/berichte/actions";
 import { ReportWizard } from "@/components/dashboard/ReportWizard";
@@ -11,11 +10,8 @@ export default async function NeuerBerichtPage({
   searchParams: Promise<{ error?: string; order?: string }>;
 }) {
   const { error } = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const profile = user ? await getOrCreateProfile(supabase, user) : null;
+  const supabase = await getRequestSupabase();
+  const profile = await getRequestProfile();
   const canLinkCommercial = canCreateOrdersAndLinkCommercialDocuments(profile?.role ?? null);
 
   const [{ data: orders }, { data: employees }, { data: fleetItems }, { data: materials }] = await Promise.all([

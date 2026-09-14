@@ -9,8 +9,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { canCreateOrdersAndLinkCommercialDocuments } from "@/lib/roles";
 import { monthRangeBerlin, todayBerlinISO } from "@/lib/date";
 import { formatEuro } from "@/lib/format";
@@ -55,13 +54,11 @@ function toArray(value: string | string[] | undefined): string[] {
 
 export default async function RechnungenPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
   if (!user) return null;
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) return null;
 
   const role = profile.role ?? null;

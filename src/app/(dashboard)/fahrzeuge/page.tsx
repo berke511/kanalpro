@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, Ban, CheckCircle2, Layers, Truck, Wrench } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { canManageResourcesAndSchedule } from "@/lib/roles";
 import {
   FLEET_KIND_LABELS,
@@ -43,14 +42,12 @@ function toArray(value: string | string[] | undefined): string[] {
 
 export default async function FahrzeugePage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) return null;
 
-  const currentProfile = await getOrCreateProfile(supabase, user);
+  const currentProfile = await getRequestProfile();
   const role = currentProfile?.role ?? null;
   const isAdmin = canManageResourcesAndSchedule(role);
   const today = todayBerlinISO();

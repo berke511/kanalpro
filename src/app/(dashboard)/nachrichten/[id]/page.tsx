@@ -2,8 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, LogOut, MoreVertical, UserPlus, Users } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { conversationDisplayName } from "@/lib/messaging";
 import { ChatThread } from "@/components/dashboard/ChatThread";
 import { addConversationMember, leaveConversation } from "../actions";
@@ -21,16 +20,14 @@ export default async function ConversationPage({
 }) {
   const { id } = await params;
   const { error, message } = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) {
     return null;
   }
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
   if (!profile) {
     return null;
   }

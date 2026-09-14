@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { hasFullAccess } from "@/lib/roles";
 import { syncExpiryReminders, syncFleetReminders, syncLowStockReminders } from "@/lib/notifications";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -12,16 +11,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  const profile = await getOrCreateProfile(supabase, user);
+  const profile = await getRequestProfile();
 
   if (!profile) {
     redirect("/login?error=Profil+konnte+nicht+geladen+werden");

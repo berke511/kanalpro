@@ -10,8 +10,7 @@ import {
   Users,
   UserSquare2,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getOrCreateProfile } from "@/lib/supabase/profile";
+import { getRequestSupabase, getRequestUser, getRequestProfile } from "@/lib/supabase/request";
 import { INVITABLE_ROLES, ROLE_LABELS, ROLES, canManageEmployees } from "@/lib/roles";
 import { EMPLOYEE_STATUSES, isExpiringSoon } from "@/lib/employees";
 import { EmployeeCard, type EmployeeCardData } from "@/components/dashboard/EmployeeCard";
@@ -35,14 +34,12 @@ export default async function MitarbeiterPage({
   searchParams: Promise<RawSearchParams>;
 }) {
   const raw = await searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getRequestSupabase();
+  const user = await getRequestUser();
 
   if (!user) return null;
 
-  const currentProfile = await getOrCreateProfile(supabase, user);
+  const currentProfile = await getRequestProfile();
   const role = currentProfile?.role ?? null;
   const isAdmin = canManageEmployees(role);
 
