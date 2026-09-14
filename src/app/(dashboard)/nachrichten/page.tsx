@@ -15,7 +15,7 @@ export default async function NachrichtenPage({
     <div className="flex h-full flex-col items-center justify-center gap-1.5 p-6 text-center">
       {error && <p className="mb-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">{error}</p>}
       {message && <p className="mb-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700">{message}</p>}
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-brand-dark text-white shadow-md shadow-brand/20">
         <MessageSquare className="h-6 w-6" />
       </span>
       <p className="mt-2 text-sm font-medium text-foreground">Wähle eine Konversation aus</p>
