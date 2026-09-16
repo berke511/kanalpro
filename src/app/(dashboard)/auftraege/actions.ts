@@ -917,5 +917,5 @@ export async function createOrderFull(formData: FormData) {
   }
 
   revalidatePath("/auftraege");
-  redirect(`/auftraege?panel=${inserted.id}`);
+  redirect(`/auftraege/${inserted.id}`);
 }
