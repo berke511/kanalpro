@@ -202,7 +202,6 @@ export function OrderTable({
   currentSort,
   currentDir,
   showingArchived,
-  panelBaseQuery,
   density = "comfortable",
   employees = [],
   vehicles = [],
@@ -214,7 +213,6 @@ export function OrderTable({
   currentSort: string;
   currentDir: "asc" | "desc";
   showingArchived: boolean;
-  panelBaseQuery: string;
   density?: "comfortable" | "compact";
   employees?: Array<{ id: string; label: string }>;
   vehicles?: Array<{ id: string; label: string }>;
@@ -254,15 +252,10 @@ export function OrderTable({
     }
   }
 
-  // Öffnet das rechte Detailpanel für den angeklickten Auftrag, statt auf
-  // die volle Profilseite zu navigieren – alle übrigen Filter/Sortier-/
-  // Seiten-Parameter bleiben dabei erhalten (gleiches Muster wie /kunden).
+  // Verlinkt auf die eigene Auftrags-Detailseite /auftraege/[id], optional
+  // direkt zu einem bestimmten Reiter (gleiches Muster wie /berichte).
   function panelHref(orderId: string, tab?: string) {
-    const params = new URLSearchParams(panelBaseQuery);
-    params.set("panel", orderId);
-    if (tab) params.set("panelTab", tab);
-    else params.delete("panelTab");
-    return `/auftraege?${params.toString()}`;
+    return tab && tab !== "uebersicht" ? `/auftraege/${orderId}?tab=${tab}` : `/auftraege/${orderId}`;
   }
 
   function isFavorite(order: OrderRow) {
@@ -904,7 +897,7 @@ export function OrderTable({
                             <Eye className="h-3.5 w-3.5" /> Auftrag ansehen
                           </Link>
                           <Link
-                            href={`/auftraege/${order.id}`}
+                            href={panelHref(order.id, "bearbeiten")}
                             className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm hover:bg-background"
                             onClick={() => setOpenMenuId(null)}
                           >
