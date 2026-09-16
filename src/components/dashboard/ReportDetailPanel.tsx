@@ -250,7 +250,7 @@ export function ReportDetailPanel({ data }: { data: ReportDetailPanelData }) {
                   </p>
                 )}
               </div>
-              <Link href={`/auftraege?panel=${data.order.id}`} className="inline-block text-sm font-medium text-brand hover:text-brand-dark">
+              <Link href={`/auftraege/${data.order.id}`} className="inline-block text-sm font-medium text-brand hover:text-brand-dark">
                 Zum Auftrag →
               </Link>
               {data.canLinkCommercial && data.status !== "abgeschlossen" && (
