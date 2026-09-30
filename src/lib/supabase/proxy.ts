@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
   "/passwort-zuruecksetzen",
   "/impressum",
   "/datenschutz",
+  "/wartung",
   "/",
 ];
 
